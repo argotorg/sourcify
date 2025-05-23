@@ -1,3 +1,0 @@
-[submodule "services/database/database-specs"]
-path = services/database/database-specs
-url = https://github.com/verifier-alliance/database-specs

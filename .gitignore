@@ -1,32 +1,3 @@
 .idea
 .DS_Store
-db/
 node_modules/
-mockRepository*
-test-s3/
-server.log
-source-verify.dab
-dist/
-**/.env
-**/.env-backup
-**/*.key
-stats**
-tmp
-metacoin-source-verify/
-**/synced
-**/sort.log
-**/.env.secrets
-logs
-**/too_big.txt
-chain-tests-report/
-coverage
-workspace/
-.nx/workspace-data
-.nx/cache
-.nx/installation
-
-# Ignore the server local config file. See .nxignore
-**/config/local.js
-
-# Sourcify release script temporary file
-.release_package_data.tmp

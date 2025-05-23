@@ -1,0 +1,3 @@
+curl -X 'GET' \
+  'http://127.0.0.1:17651/verify/0ccabac0-841f-4bde-b250-07307caf0efd' \
+  -H 'accept: application/json'

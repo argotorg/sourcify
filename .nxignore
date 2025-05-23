@@ -1,5 +1,0 @@
-# Explicitly don't ignore local.js config file, even if it's ignored by git.
-# This should invalidate the cache for tasks if local.js is changed
-
-# For some reason this needs to be defined in the root and not under services/server. Otherwise the nx cache ignores this file and changes to this never trigger a re-build. More info: https://github.com/nrwl/nx/issues/6821
-!**/config/local.js

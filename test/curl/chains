@@ -1,0 +1,3 @@
+curl -X 'GET' \
+  'http://127.0.0.1:17651/chains' \
+  -H 'accept: application/json'
