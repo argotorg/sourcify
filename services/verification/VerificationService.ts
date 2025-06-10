@@ -1,7 +1,7 @@
 import {
   SolidityJsonInput,
   VerificationExport,
-  CompilationTarget,
+  CompilationTarget, Metadata
 } from "@ethereum-sourcify/lib-sourcify";
 import { ConflictError } from "../../common/errors/ConflictError";
 import { asyncLocalStorage } from "../../common/async-context";
@@ -15,8 +15,8 @@ import {
   VerifyError,
   VerifyErrorExport,
   VerifyFromEtherscanInput,
-  type VerifyFromJsonInput,
-  type VerifyOutput,
+  type VerifyFromJsonInput, VerifyFromMetadataInput,
+  type VerifyOutput
 } from "../workers/workerTypes";
 import { EtherscanResult } from "../utils/etherscan-util";
 import { StoreService } from "../store/StoreService";
@@ -108,23 +108,27 @@ export class VerificationService {
     return verificationId;
   }
 
-  public async verifyFromEtherscanViaWorker(
+  public async verifyFromMetadataViaWorker(
     verificationEndpoint: string,
     chainId: number,
     address: string,
-    etherscanResult: EtherscanResult,
+    metadata: Metadata,
+    sources: Record<string, string>,
+    creationTransactionHash?: string,
   ): Promise<VerificationJobId> {
     const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
 
-    const input: VerifyFromEtherscanInput = {
+    const input: VerifyFromMetadataInput = {
       chainId,
       address,
-      etherscanResult,
+      metadata,
+      sources,
+      creationTransactionHash,
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
     const task = this.workerPool
-      .run(input, { name: "verifyFromEtherscan" })
+      .run(input, { name: "verifyFromMetadata" })
       .then((output: VerifyOutput) => {
         return this.handleWorkerResponse(verificationId, output);
       })

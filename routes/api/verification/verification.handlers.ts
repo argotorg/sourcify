@@ -51,8 +51,7 @@ export async function verifyFromJsonInputEndpoint(
 
   const services = req.app.get("services") as Services;
   const chain = getChainId(req.params.chainId)
-  const verificationId =
-    await services.verification.verifyFromJsonInputViaWorker(
+  const verificationId = await services.verification.verifyFromJsonInputViaWorker(
       req.baseUrl + req.path,
       chain,
       req.params.address,
@@ -77,44 +76,27 @@ interface VerifyFromMetadataRequest extends Request {
   };
 }
 
-interface VerifyFromEtherscanRequest extends Request {
-  params: {
-    chainId: string;
-    address: string;
-  };
-  body: {
-    apiKey?: string;
-  };
-}
-
-export async function verifyFromEtherscanEndpoint(
-  req: VerifyFromEtherscanRequest,
+export async function verifyFromMetadataEndpoint(
+  req: VerifyFromMetadataRequest,
   res: VerifyResponse,
 ) {
-  console.debug("verifyFromEtherscanEndpoint", {
+  console.debug("verifyFromMetadataEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
+    sources: req.body.sources,
+    metadata: req.body.metadata,
+    creationTransactionHash: req.body.creationTransactionHash,
   });
 
   const services = req.app.get("services") as Services;
-  const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap;
-
-  // Fetch here to give early feedback to the user.
-  // Then, process in worker.
-  const etherscanResult = await fetchFromEtherscan(
-    sourcifyChainMap[req.params.chainId],
-    req.params.address,
-    req.body?.apiKey,
-    true,
-  );
   const chain = getChainId(req.params.chainId)
-
-  const verificationId =
-    await services.verification.verifyFromEtherscanViaWorker(
+  const verificationId = await services.verification.verifyFromMetadataViaWorker(
       req.baseUrl + req.path,
       chain,
       req.params.address,
-      etherscanResult,
+      req.body.metadata,
+      req.body.sources,
+      req.body.creationTransactionHash,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });

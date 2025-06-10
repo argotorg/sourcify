@@ -4,11 +4,11 @@ import {
   validateContractIdentifier,
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
-  validateStandardJsonInput,
+  validateStandardJsonInput, validateMetadata
 } from "../middlewares";
 import {
   verifyFromJsonInputEndpoint,
-  verifyFromEtherscanEndpoint,
+  verifyFromMetadataEndpoint
 } from "./verification.handlers";
 import { Router } from "express";
 
@@ -27,13 +27,14 @@ router
   );
 
 router
-  .route("/verify/etherscan/:chainId/:address")
+  .route("/verify/metadata/:chainId/:address")
   .post(
     validateChainId,
     validateAddress,
+    validateMetadata,
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
-    verifyFromEtherscanEndpoint,
+    verifyFromMetadataEndpoint,
   );
 
 export default router;

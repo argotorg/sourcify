@@ -17,7 +17,7 @@ export interface VerifyFromJsonInput extends VerificationWorkerInput {
 }
 
 export interface VerifyFromMetadataInput extends VerificationWorkerInput {
-  chainId: string;
+  chainId: number;
   address: string;
   metadata: Metadata;
   sources: Record<string, string>;
