@@ -14,11 +14,11 @@ import os from "os";
 import {
   VerifyError,
   VerifyErrorExport,
-  VerifyFromEtherscanInput,
+  VerifyFromConfluxscanInput,
   type VerifyFromJsonInput, VerifyFromMetadataInput,
   type VerifyOutput
 } from "../workers/workerTypes";
-import { EtherscanResult } from "../utils/etherscan-util";
+import { ConfluxscanResult } from "../utils/confluxscan-util";
 import { StoreService } from "../store/StoreService";
 import { ChainMap } from "../../server";
 import { ChainInstance } from "../../config/Loader";
@@ -129,6 +129,34 @@ export class VerificationService {
 
     const task = this.workerPool
       .run(input, { name: "verifyFromMetadata" })
+      .then((output: VerifyOutput) => {
+        return this.handleWorkerResponse(verificationId, output);
+      })
+      .finally(() => {
+        this.runningTasks.delete(task);
+      });
+    this.runningTasks.add(task);
+
+    return verificationId;
+  }
+
+  public async verifyFromConfluxscanViaWorker(
+    verificationEndpoint: string,
+    chainId: number,
+    address: string,
+    etherscanResult: ConfluxscanResult,
+  ): Promise<VerificationJobId> {
+    const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
+
+    const input: VerifyFromConfluxscanInput = {
+      chainId,
+      address,
+      confluxscanResult: etherscanResult,
+      traceId: asyncLocalStorage.getStore()?.traceId,
+    };
+
+    const task = this.workerPool
+      .run(input, { name: "verifyFromConfluxscan" })
       .then((output: VerifyOutput) => {
         return this.handleWorkerResponse(verificationId, output);
       })

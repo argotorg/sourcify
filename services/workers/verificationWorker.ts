@@ -12,18 +12,16 @@ import { v4 as uuidv4 } from "uuid";
 import { getCreatorTx } from "../utils/contract-creation-util";
 import type {
   VerifyErrorExport,
-  VerifyFromEtherscanInput,
+  VerifyFromConfluxscanInput,
   VerifyFromJsonInput,
   VerifyFromMetadataInput,
   VerifyOutput,
   VerificationWorkerInput,
 } from "./workerTypes";
 import {
-  ProcessedEtherscanResult,
-  isVyperResult,
-  processSolidityResultFromEtherscan,
-  processVyperResultFromEtherscan,
-} from "../utils/etherscan-util";
+  ProcessedConfluxscanResult,
+  processSolidityResultFromConfluxscan,
+} from "../utils/confluxscan-util";
 import { asyncLocalStorage } from "../../common/async-context";
 import { Chain } from "../chain/Chain";
 import { ChainInstance } from "../../config/Loader";
@@ -77,10 +75,10 @@ export async function verifyFromMetadata(
   return runWorkerFunctionWithContext(_verifyFromMetadata, input);
 }
 
-export async function verifyFromEtherscan(
-  input: VerifyFromEtherscanInput,
+export async function verifyFromConfluxscan(
+  input: VerifyFromConfluxscanInput,
 ): Promise<VerifyOutput> {
-  return runWorkerFunctionWithContext(_verifyFromEtherscan, input);
+  return runWorkerFunctionWithContext(_verifyFromConfluxscan, input);
 }
 
 async function _verifyFromJsonInput({
@@ -118,15 +116,15 @@ async function _verifyFromJsonInput({
     };
   }
 
-  const sourcifyChain = chainMap[chainId];
+  const chain = chainMap[chainId];
   const foundCreationTxHash =
     creationTransactionHash ||
-    (await getCreatorTx(sourcifyChain, address)) ||
+    (await getCreatorTx(chain, address)) ||
     undefined;
 
   const verification = new Verification(
     compilation,
-    sourcifyChain,
+    chain,
     address,
     foundCreationTxHash,
   );
@@ -167,15 +165,15 @@ async function _verifyFromMetadata({
     };
   }
 
-  const sourcifyChain = chainMap[chainId];
+  const chain = chainMap[chainId];
   const foundCreationTxHash =
     creationTransactionHash ||
-    (await getCreatorTx(sourcifyChain, address)) ||
+    (await getCreatorTx(chain, address)) ||
     undefined;
 
   let verification = new Verification(
     compilation,
-    sourcifyChain,
+    chain,
     address,
     foundCreationTxHash,
   );
@@ -204,7 +202,7 @@ async function _verifyFromMetadata({
     );
     verification = new Verification(
       compilationWithAllSources,
-      sourcifyChain,
+      chain,
       address,
       foundCreationTxHash,
     );
@@ -223,20 +221,12 @@ async function _verifyFromMetadata({
   };
 }
 
-async function _verifyFromEtherscan({
+async function _verifyFromConfluxscan({
   chainId,
   address,
-  etherscanResult,
-}: VerifyFromEtherscanInput): Promise<VerifyOutput> {
-  let processedResult: ProcessedEtherscanResult;
-  if (isVyperResult(etherscanResult)) {
-    processedResult = await processVyperResultFromEtherscan(
-      etherscanResult,
-      true,
-    );
-  } else {
-    processedResult = processSolidityResultFromEtherscan(etherscanResult, true);
-  }
+  confluxscanResult,
+}: VerifyFromConfluxscanInput): Promise<VerifyOutput> {
+  const processedResult: ProcessedConfluxscanResult = processSolidityResultFromConfluxscan(confluxscanResult);
 
   return _verifyFromJsonInput({
     chainId,

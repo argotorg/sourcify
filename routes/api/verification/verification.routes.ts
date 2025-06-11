@@ -4,9 +4,11 @@ import {
   validateContractIdentifier,
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
-  validateStandardJsonInput, validateMetadata
+  validateStandardJsonInput,
+  validateMetadata
 } from "../middlewares";
 import {
+  verifyFromConfluxscanEndpoint,
   verifyFromJsonInputEndpoint,
   verifyFromMetadataEndpoint
 } from "./verification.handlers";
@@ -35,6 +37,16 @@ router
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromMetadataEndpoint,
+  );
+
+router
+  .route("/verify/confluxscan/:chainId/:address")
+  .post(
+    validateChainId,
+    validateAddress,
+    checkIfAlreadyVerified,
+    checkIfJobIsAlreadyRunning,
+    verifyFromConfluxscanEndpoint,
   );
 
 export default router;

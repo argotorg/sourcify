@@ -24,10 +24,10 @@ export type ErrorCode =
   | "proxy_resolution_error"
   | "job_not_found"
   | "duplicate_verification_request"
-  | "etherscan_request_failed"
-  | "etherscan_limit"
-  | "not_etherscan_verified"
-  | "malformed_etherscan_response";
+  | "confluxscan_request_failed"
+  | "confluxscan_limit"
+  | "not_confluxscan_verified"
+  | "malformed_confluxscan_response";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -135,52 +135,52 @@ export class AlreadyVerifiedError extends ConflictError {
   }
 }
 
-export class EtherscanRequestFailedError extends BadGatewayError {
+export class ConfluxscanRequestFailedError extends BadGatewayError {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
     super(message);
     this.payload = {
-      customCode: "etherscan_request_failed",
+      customCode: "confluxscan_request_failed",
       message,
       errorId: uuidv4(),
     };
   }
 }
 
-export class EtherscanLimitError extends TooManyRequests {
+export class ConfluxscanLimitError extends TooManyRequests {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
     super(message);
     this.payload = {
-      customCode: "etherscan_limit",
+      customCode: "confluxscan_limit",
       message,
       errorId: uuidv4(),
     };
   }
 }
 
-export class NotEtherscanVerifiedError extends NotFoundError {
+export class NotConfluxscanVerifiedError extends NotFoundError {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
     super(message);
     this.payload = {
-      customCode: "not_etherscan_verified",
+      customCode: "not_confluxscan_verified",
       message,
       errorId: uuidv4(),
     };
   }
 }
 
-export class MalformedEtherscanResponseError extends BadRequestError {
+export class MalformedConfluxscanResponseError extends BadRequestError {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
     super(message);
     this.payload = {
-      customCode: "malformed_etherscan_response",
+      customCode: "malformed_confluxscan_response",
       message,
       errorId: uuidv4(),
     };

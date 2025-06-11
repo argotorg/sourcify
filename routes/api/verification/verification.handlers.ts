@@ -5,9 +5,9 @@ import { TypedResponse } from "../../types";
 import { Request } from "express";
 import { Services } from "../../../services/services";
 import { StatusCodes } from "http-status-codes";
-import { fetchFromEtherscan } from "../../../services/utils/etherscan-util";
-import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
+import { fetchFromConfluxscan } from "../../../services/utils/confluxscan-util";
 import { getChainId } from "../errors";
+import { ChainMap } from "../../../server";
 
 interface VerifyFromJsonInputRequest extends Request {
   params: {
@@ -100,4 +100,45 @@ export async function verifyFromMetadataEndpoint(
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });
+}
+
+interface VerifyFromConfluxscanRequest extends Request {
+  params: {
+    chainId: string;
+    address: string;
+  };
+  body: {
+    apiKey?: string;
+  };
+}
+
+export async function verifyFromConfluxscanEndpoint(
+  req: VerifyFromConfluxscanRequest,
+  res: VerifyResponse,
+) {
+  console.debug("verifyFromConfluxscanEndpoint", {
+    chainId: req.params.chainId,
+    address: req.params.address,
+  })
+
+  const chainMap = req.app.get("chains") as ChainMap
+
+  // Fetch here to give early feedback to the user.
+  // Then, process in worker.
+  const confluxscanResult = await fetchFromConfluxscan(
+    chainMap[req.params.chainId],
+    req.params.address,
+    req.body?.apiKey,
+  )
+
+  const services = req.app.get("services") as Services;
+  const chain = getChainId(req.params.chainId)
+  const verificationId = await services.verification.verifyFromConfluxscanViaWorker(
+      req.baseUrl + req.path,
+      chain,
+      req.params.address,
+      confluxscanResult,
+    )
+
+  res.status(StatusCodes.ACCEPTED).json({ verificationId })
 }

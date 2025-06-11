@@ -1,7 +1,7 @@
 import type { SolidityJsonInput, VyperJsonInput, VerificationExport, CompilationTarget, Metadata, } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../routes/api/errors";
 import { JobErrorData } from "../store/Tables";
-import { EtherscanResult } from "../utils/etherscan-util";
+import { ConfluxscanResult } from "../utils/confluxscan-util";
 
 export interface VerificationWorkerInput {
   traceId?: string;
@@ -24,10 +24,10 @@ export interface VerifyFromMetadataInput extends VerificationWorkerInput {
   creationTransactionHash?: string;
 }
 
-export interface VerifyFromEtherscanInput extends VerificationWorkerInput {
+export interface VerifyFromConfluxscanInput extends VerificationWorkerInput {
   chainId: number;
   address: string;
-  etherscanResult: EtherscanResult;
+  confluxscanResult: ConfluxscanResult;
 }
 
 export class VerifyError extends Error {

@@ -1,13 +1,11 @@
-import {
-  ContractCreationFetcher,
-  SourcifyChain,
-} from "@ethereum-sourcify/lib-sourcify";
+import { ContractCreationFetcher} from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
+import { Chain } from "../chain/Chain";
+import {format} from "js-conflux-sdk";
 
 const ETHERSCAN_REGEX = ["at txn.*href=.*/tx/(0x.{64})"]; // save as string to be able to return the txRegex in /chains response. If stored as RegExp returns {}
 const ETHERSCAN_SUFFIX = "address/${ADDRESS}";
-const BLOCKSCOUT_REGEX_OLD =
-  'transaction_hash_link" href="${BLOCKSCOUT_PREFIX}/tx/(.*?)"';
+const BLOCKSCOUT_REGEX_OLD = 'transaction_hash_link" href="${BLOCKSCOUT_PREFIX}/tx/(.*?)"';
 const BLOCKSCOUT_REGEX_NEW = "at txn.*href.*/tx/(0x.{64}?)";
 const BLOCKSCOUT_SUFFIX = "address/${ADDRESS}/transactions";
 const ETHERSCAN_API_SUFFIX = `/api?module=contract&action=getcontractcreation&contractaddresses=\${ADDRESS}&apikey=`;
@@ -15,11 +13,9 @@ const BLOCKSSCAN_SUFFIX = "api/accounts/${ADDRESS}";
 const BLOCKSCOUT_API_SUFFIX = "/api/v2/addresses/${ADDRESS}";
 const TELOS_SUFFIX = "v1/contract/${ADDRESS}";
 const METER_SUFFIX = "api/accounts/${ADDRESS}";
-const AVALANCHE_SUBNET_SUFFIX =
-  "contracts/${ADDRESS}/transactions:getDeployment";
+const AVALANCHE_SUBNET_SUFFIX = "contracts/${ADDRESS}/transactions:getDeployment";
 const NEXUS_SUFFIX = "v1/${RUNTIME}/accounts/${ADDRESS}";
-const ROUTESCAN_API_URL =
-  "https://api.routescan.io/v2/network/${CHAIN_TYPE}/evm/${CHAIN_ID}/etherscan?module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}";
+const ROUTESCAN_API_URL = "https://api.routescan.io/v2/network/${CHAIN_TYPE}/evm/${CHAIN_ID}/etherscan?module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}";
 
 function getApiContractCreationFetcher(
   url: string,
@@ -245,13 +241,13 @@ async function getCreatorTxUsingFetcher(
  * @returns
  */
 export const getCreatorTx = async (
-  sourcifyChain: SourcifyChain,
+  chain: Chain,
   contractAddress: string,
 ): Promise<string | null> => {
   // Try blockscout first
-  if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi) {
+  if (chain.fetchContractCreationTxUsing?.blockscoutApi) {
     const fetcher = getBlockscoutApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi.url,
+      chain.fetchContractCreationTxUsing?.blockscoutApi.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
@@ -260,10 +256,10 @@ export const getCreatorTx = async (
   }
 
   // Try routescan if blockscout fails
-  if (sourcifyChain.fetchContractCreationTxUsing?.routescanApi) {
+  if (chain.fetchContractCreationTxUsing?.routescanApi) {
     const fetcher = getRoutescanApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.routescanApi.type,
-      sourcifyChain.chainId,
+      chain.fetchContractCreationTxUsing?.routescanApi.type,
+      chain.chainId,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
@@ -273,12 +269,12 @@ export const getCreatorTx = async (
 
   // Try etherscan if routescan fails
   if (
-    sourcifyChain.fetchContractCreationTxUsing?.etherscanApi &&
-    sourcifyChain?.etherscanApi?.apiURL
+    chain.fetchContractCreationTxUsing?.etherscanApi &&
+    chain?.etherscanApi?.apiURL
   ) {
-    const apiKey = process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""];
+    const apiKey = process.env[chain.etherscanApi.apiKeyEnvName || ""];
     const fetcher = getEtherscanApiContractCreatorFetcher(
-      sourcifyChain.etherscanApi.apiURL,
+      chain.etherscanApi.apiURL,
       apiKey || "",
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
@@ -286,9 +282,9 @@ export const getCreatorTx = async (
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.avalancheApi) {
+  if (chain.fetchContractCreationTxUsing?.avalancheApi) {
     const fetcher = getAvalancheApiContractCreatorFetcher(
-      sourcifyChain.chainId.toString(),
+      chain.chainId.toString(),
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
@@ -296,55 +292,55 @@ export const getCreatorTx = async (
     }
   }
 
-  if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutScrape) {
+  if (chain.fetchContractCreationTxUsing?.blockscoutScrape) {
     const fetcher = getBlockscoutScrapeContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blockscoutScrape.url,
+      chain.fetchContractCreationTxUsing?.blockscoutScrape.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi) {
+  if (chain.fetchContractCreationTxUsing?.blocksScanApi) {
     const fetcher = getBlocksScanApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi.url,
+      chain.fetchContractCreationTxUsing?.blocksScanApi.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.meterApi) {
+  if (chain.fetchContractCreationTxUsing?.meterApi) {
     const fetcher = getMeterApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.meterApi.url,
+      chain.fetchContractCreationTxUsing?.meterApi.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.telosApi) {
+  if (chain.fetchContractCreationTxUsing?.telosApi) {
     const fetcher = getTelosApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.telosApi.url,
+      chain.fetchContractCreationTxUsing?.telosApi.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.etherscanScrape) {
+  if (chain.fetchContractCreationTxUsing?.etherscanScrape) {
     const fetcher = getEtherscanScrapeContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.etherscanScrape.url,
+      chain.fetchContractCreationTxUsing?.etherscanScrape.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
     }
   }
-  if (sourcifyChain.fetchContractCreationTxUsing?.nexusApi) {
+  if (chain.fetchContractCreationTxUsing?.nexusApi) {
     const fetcher = getNexusApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.nexusApi.url,
-      sourcifyChain.fetchContractCreationTxUsing?.nexusApi.runtime,
+      chain.fetchContractCreationTxUsing?.nexusApi.url,
+      chain.fetchContractCreationTxUsing?.nexusApi.runtime,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
@@ -357,7 +353,7 @@ export const getCreatorTx = async (
     contractAddress,
   });
   const result = await findContractCreationTxByBinarySearch(
-    sourcifyChain,
+    chain,
     contractAddress,
   );
   if (result) {
@@ -365,7 +361,7 @@ export const getCreatorTx = async (
   }
 
   console.warn("Couldn't fetch creator tx", {
-    chainId: sourcifyChain.chainId,
+    chainId: chain.chainId,
     contractAddress,
   });
 
@@ -416,7 +412,7 @@ async function getCreatorTxByScraping(
     );
   }
 
-  console.debug("Couldn't find creator tx via scraping", {
+  console.debug("Could not find creator tx via scraping", {
     fetchAddress,
     status: res.status,
   });
@@ -444,16 +440,16 @@ async function fetchFromApi(fetchAddress: string) {
  *
  */
 export async function findContractCreationTxByBinarySearch(
-  sourcifyChain: SourcifyChain,
+  chain: Chain,
   contractAddress: string,
 ): Promise<string | null> {
   try {
-    const currentBlockNumber = await sourcifyChain.getBlockNumber();
+    const currentBlockNumber = await chain.getBlockNumber();
     let left = 0;
     let right = currentBlockNumber;
 
     console.debug("Starting binary search for contract creation block", {
-      chainId: sourcifyChain.chainId,
+      chainId: chain.chainId,
       contractAddress,
       currentBlockNumber,
     });
@@ -463,7 +459,7 @@ export async function findContractCreationTxByBinarySearch(
     // Binary search to find the first block where the contract exists
     while (left < right) {
       const mid = Math.floor((left + right) / 2);
-      const code = await sourcifyChain.getBytecode(contractAddress, mid);
+      const code = await chain.getBytecode(contractAddress, mid);
       binarySearchCount++;
 
       // If no code at mid, contract was created after this block
@@ -480,17 +476,17 @@ export async function findContractCreationTxByBinarySearch(
     const creationBlock = left;
 
     console.debug("Found contract creation block", {
-      chainId: sourcifyChain.chainId,
+      chainId: chain.chainId,
       contractAddress,
       creationBlock,
       binarySearchCount,
     });
 
     // Get all transactions in the creation block
-    const block = await sourcifyChain.getBlock(creationBlock, true);
+    const block = await chain.getBlock(creationBlock, true);
     if (!block || !block.prefetchedTransactions) {
       console.warn("Block empty or not found during binary search", {
-        chainId: sourcifyChain.chainId,
+        chainId: chain.chainId,
         contractAddress,
         creationBlock,
         binarySearchCount,
@@ -499,32 +495,30 @@ export async function findContractCreationTxByBinarySearch(
     }
 
     // Check each transaction in the block to find the creation transaction
+    const normalizedAddress = format.hexAddress(contractAddress)
     for (const tx of block.prefetchedTransactions) {
       // Skip if not a contract creation transaction
       if (tx.to !== null) continue;
 
       console.debug("Found tx with tx.to===null", {
         contractAddress,
-        chainId: sourcifyChain.chainId,
+        chainId: chain.chainId,
         txHash: tx.hash,
         block: block.number,
       });
 
       try {
-        const receipt = await sourcifyChain.getTxReceipt(tx.hash);
+        const receipt = await chain.getTxReceipt(tx.hash);
 
         // Check if this transaction created our contract
-        if (
-          receipt.contractAddress?.toLowerCase() ===
-          contractAddress.toLowerCase()
-        ) {
+        if (receipt?.contractAddress && (format.hexAddress(receipt.contractAddress) === normalizedAddress)) {
           console.info(
             "Found contract creation transaction using binary search",
             {
               contractAddress,
               creationBlock,
               transactionHash: tx.hash,
-              chainId: sourcifyChain.chainId,
+              chainId: chain.chainId,
             },
           );
           return tx.hash;
@@ -537,7 +531,7 @@ export async function findContractCreationTxByBinarySearch(
       contractAddress,
       creationBlock,
       binarySearchCount,
-      chainId: sourcifyChain.chainId,
+      chainId: chain.chainId,
     });
     return null;
   } catch (error: any) {

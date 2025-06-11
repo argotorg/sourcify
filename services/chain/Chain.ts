@@ -1,23 +1,37 @@
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { ChainInstance, isConfluxOption } from "../../config/Loader";
-import { TransactionReceipt, TransactionResponse } from "ethers";
-import { Conflux, format } from "js-conflux-sdk";
+import {
+  Block,
+  BlockParams,
+  Signature,
+  TransactionReceipt,
+  TransactionResponse,
+  TransactionResponseParams
+} from "ethers";
+import { Conflux, format, Transaction } from "js-conflux-sdk";
 
 export class Chain extends SourcifyChain {
+  readonly baseGetBlockNumber = this.getBlockNumber
+  readonly baseGetBlock = this.getBlock
   readonly baseGetTx = this.getTx
   readonly baseGetTxReceipt = this.getTxReceipt
   readonly baseGetBytecode = this.getBytecode
   readonly baseGetContractCreationBytecodeAndReceipt = this.getContractCreationBytecodeAndReceipt
   readonly baseGetCreationBytecodeForFactory = this.getCreationBytecodeForFactory
 
-  readonly confluxSupported: boolean
+  readonly confluxscanApi?: {
+    apiURL: string;
+    apiKeyEnvName?: string;
+  };
+  readonly corespace: boolean
   readonly confluxSdks: Conflux[]
 
   constructor(chainObj: ChainInstance) {
     super(chainObj)
-    this.confluxSupported = chainObj.confluxSupported
+    this.confluxscanApi = chainObj.confluxscanApi
+    this.corespace = chainObj.corespace
     this.confluxSdks = [];
-    if(this.confluxSupported) {
+    if(this.corespace) {
       for (const rpc of chainObj.rpc) {
         let option: string | Conflux.ConfluxOption
         if(typeof rpc === 'string'){
@@ -46,14 +60,15 @@ export class Chain extends SourcifyChain {
       supported: this.supported,
       fetchContractCreationTxUsing: this.fetchContractCreationTxUsing,
       etherscanApi: this.etherscanApi,
+      confluxscanApi: this.confluxscanApi,
       traceSupportedRPCs: this.traceSupportedRPCs,
-      confluxSupported: this.confluxSupported
+      corespace: this.corespace
     };
   };
 
   // override SourcifyChain method
   getTx = async (creatorTxHash: string) => {
-    if(!this.confluxSupported) {
+    if(!this.corespace) {
       return this.baseGetTx(creatorTxHash)
     }
 
@@ -113,7 +128,7 @@ export class Chain extends SourcifyChain {
 
   // override SourcifyChain method
   getTxReceipt = async (creatorTxHash: string) => {
-    if(!this.confluxSupported) {
+    if(!this.corespace) {
       return this.baseGetTxReceipt(creatorTxHash)
     }
 
@@ -175,17 +190,18 @@ export class Chain extends SourcifyChain {
     address: string,
     blockNumber?: number,
   ) => {
-    if(!this.confluxSupported) {
+    if(!this.corespace) {
       return this.baseGetBytecode(address,blockNumber)
     }
 
     let currentProviderIndex = 0;
+    const epochNumber = blockNumber
     for (const sdk of this.confluxSdks) {
       currentProviderIndex++;
       try {
         console.info('Fetching bytecode', {
           address,
-          blockNumber,
+          epochNumber,
           providerUrl: sdk.provider.url,
           chainId: this.chainId,
           currentProviderIndex,
@@ -193,12 +209,12 @@ export class Chain extends SourcifyChain {
         });
         // Race the RPC call with a timeout
         const bytecode = await Promise.race([
-          sdk.getCode(address, blockNumber),
+          sdk.getCode(address, epochNumber),
           this.rejectInMs(sdk.provider.url),
         ]);
         console.info('Fetched bytecode', {
           address,
-          blockNumber,
+          epochNumber,
           bytecodeLength: bytecode.length,
           bytecodeStart: bytecode.slice(0, 32),
           providerUrl: sdk.provider.url,
@@ -209,7 +225,7 @@ export class Chain extends SourcifyChain {
         if (err instanceof Error) {
           console.warn('Failed to fetch bytecode', {
             address,
-            blockNumber,
+            epochNumber,
             providerUrl: sdk.provider.url,
             chainId: this.chainId,
             error: err.message,
@@ -222,7 +238,7 @@ export class Chain extends SourcifyChain {
     throw new Error(
       'None of the RPCs responded fetching bytecode for ' +
       address +
-      (blockNumber ? ` at block ${blockNumber}` : '') +
+      (epochNumber ? ` at epoch ${epochNumber}` : '') +
       ' on chain ' +
       this.chainId,
     );
@@ -234,7 +250,7 @@ export class Chain extends SourcifyChain {
     transactionHash: string,
     creatorTx?: TransactionResponse,
   ) => {
-    if(!this.confluxSupported) {
+    if(!this.corespace) {
       return this.baseGetContractCreationBytecodeAndReceipt(address,transactionHash,creatorTx)
     }
 
@@ -274,7 +290,7 @@ export class Chain extends SourcifyChain {
     creatorTxHash: string,
     address: string,
   ) => {
-    if(!this.confluxSupported) {
+    if(!this.corespace) {
       return this.baseGetCreationBytecodeForFactory(creatorTxHash, address)
     }
 
@@ -340,12 +356,13 @@ export class Chain extends SourcifyChain {
 
     let createTrace: any
     const createTraces = []
+    const normalizedAddress = format.hexAddress(address)
     for (const trace of traces) {
       if(trace.type === 'create') {
         createTraces.push(trace)
       }
       if(trace.type === 'create_result') {
-        if((trace.action.addr as string).toLowerCase() === address.toLowerCase()) {
+        if(trace?.action?.addr && (format.hexAddress(trace.action.addr) === normalizedAddress)) {
           createTrace = createTraces.pop()
           break
         } else{
@@ -415,4 +432,143 @@ export class Chain extends SourcifyChain {
       this.chainId,
     );
   };
+
+  getBlockNumber = async () => {
+    if(!this.corespace) {
+      return this.baseGetBlockNumber()
+    }
+
+    for (const sdk of this.confluxSdks) {
+      try {
+        const epoch = await Promise.race([
+          sdk.getEpochNumber(),
+          this.rejectInMs(sdk.provider.url),
+        ])
+        console.log('Fetched cfx_epochNumber', {
+          epochNumber: epoch,
+          providerUrl: sdk.provider.url,
+          chainId: this.chainId,
+        })
+        return epoch
+      } catch (err) {
+        if (err instanceof Error) {
+          console.warn('Failed to fetch cfx_epochNumber', {
+            providerUrl: sdk.provider.url,
+            chainId: this.chainId,
+            error: err.message,
+          })
+        } else {
+          throw err
+        }
+      }
+    }
+    throw new Error(`None of the RPCs responded fetching the epochNumber on chain ${this.chainId}`)
+  }
+
+  getBlock = async (blockNumber: number, preFetchTxs = true): Promise<Block> => {
+    if(!this.corespace) {
+      return this.baseGetBlock(blockNumber, preFetchTxs)
+    }
+
+    const epochNumber = blockNumber
+    for (const sdk of this.confluxSdks) {
+      try {
+        const hashes = await sdk.getBlocksByEpochNumber(epochNumber).catch(err=>{
+          const msg = `${err}`
+          if (msg.includes('expected a numbers with less than largest epoch number.')) {
+          } else {
+            console.log(`Failed to get blocks at epoch ${epochNumber}`, err)
+          }
+          return []
+        })
+
+        if(hashes.length) {
+          const blocks = await Promise.race([
+            Promise.all(hashes.map(hash=>{
+              return sdk.getBlockByHash(hash, preFetchTxs);
+            })),
+            this.rejectInMs(sdk.provider.url),
+          ])
+
+          let ethersBlock: Block
+          if (hashes.length === blocks.length) {
+            const params = this.buildBlockParams(blocks)
+            ethersBlock = new Block(params, sdk.provider)
+            console.info('Fetched epoch', {
+              epochNumber,
+              blockTimestamp: params.timestamp,
+              providerUrl: sdk.provider.url,
+              chainId: this.chainId,
+            })
+          } else {
+            console.info('Epoch not published yet', {
+              epochNumber,
+              providerUrl: sdk.provider.url,
+              chainId: this.chainId,
+            })
+          }
+          return ethersBlock
+        }
+      } catch (err: any) {
+        console.warn('Failed to fetch the epoch', {
+          epochNumber,
+          providerUrl: sdk.provider.url,
+          chainId: this.chainId,
+          error: err.message,
+        })
+      }
+    }
+
+    console.error('None of the RPCs responded for fetching epoch', {
+      epochNumber,
+      providers: this.providers.map((p) => p.url),
+      chainId: this.chainId,
+    })
+    throw new Error(`None of the RPCs responded fetching epoch ${epochNumber} on chain ${this.chainId}`)
+  }
+
+  buildBlockParams = (blocks: any[]): BlockParams => {
+    const pivotBlock = blocks[blocks.length - 1]
+
+    const transactions = [] as TransactionResponseParams[]
+    let txIndex = 0
+    for (const block of blocks) {
+      for (const tx of block.transactions as Transaction[]) {
+        transactions.push({
+          blockNumber: pivotBlock.epochNumber,
+          blockHash: pivotBlock.hash,
+          hash: tx.hash,
+          index: txIndex++,
+          type: tx.type,
+          to: tx.to,
+          from: tx.from,
+          nonce: Number(tx.nonce),
+          gasLimit: BigInt(tx.gas),
+          gasPrice: BigInt(tx.gasPrice),
+          maxPriorityFeePerGas: BigInt(tx.maxPriorityFeePerGas || 0),
+          maxFeePerGas: BigInt(tx.maxFeePerGas || 0),
+          data: tx.data.toString(),
+          value: BigInt(tx.value),
+          chainId: BigInt(tx.chainId),
+          signature: Signature.from(),
+          accessList: null,
+        } as TransactionResponseParams)
+      }
+    }
+
+    return {
+      hash: pivotBlock.hash,
+      number: pivotBlock.epochNumber,
+      timestamp: pivotBlock.timestamp,
+      parentHash: pivotBlock.parentHash,
+      nonce: `${pivotBlock.nonce}`,
+      difficulty: BigInt(pivotBlock.difficulty),
+      gasLimit: BigInt(pivotBlock.gasLimit),
+      gasUsed: BigInt(pivotBlock.gasUsed),
+      miner: pivotBlock.miner,
+      extraData: "",
+      baseFeePerGas: BigInt(pivotBlock.baseFeePerGas || 0),
+      transactions: transactions,
+    } as BlockParams
+  }
 }

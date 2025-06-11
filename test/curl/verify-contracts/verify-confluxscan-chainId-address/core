@@ -1,0 +1,7 @@
+curl -X 'POST' \
+  'http://127.0.0.1:17651/verify/confluxscan/1029/0x8B959b946dB685094372c22e053803f797E366C4' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "apiKey": "xxx"
+}'

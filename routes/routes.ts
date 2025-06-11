@@ -1,8 +1,8 @@
 import { Router } from "express"; // static is a reserved word
-import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
 import lookupRoutes from "./api/lookup/lookup.routes";
 import jobsRoutes from "./api/jobs/jobs.routes";
 import verificationRoutes from "./api/verification/verification.routes";
+import { ChainMap } from "../server";
 
 const router: Router = Router();
 
@@ -11,9 +11,9 @@ router.get("/health", (_req, res) => {
 });
 
 router.get("/chains", (_req, res) => {
-  const sourcifyChainMap = _req.app.get("chains") as SourcifyChainMap;
-  const sourcifyChainsArray = Object.values(sourcifyChainMap)
-  const sourcifyChains = sourcifyChainsArray.map(
+  const chainMap = _req.app.get("chains") as ChainMap;
+  const chainsArray = Object.values(chainMap)
+  const chains = chainsArray.map(
     ({
       rpcWithoutApiKeys,
       name,
@@ -21,6 +21,7 @@ router.get("/chains", (_req, res) => {
       chainId,
       supported,
       etherscanApi,
+      confluxscanApi,
       traceSupportedRPCs,
     }) => {
       return {
@@ -30,12 +31,13 @@ router.get("/chains", (_req, res) => {
         rpc: rpcWithoutApiKeys,
         traceSupportedRPCs,
         supported,
-        etherscanAPI: etherscanApi?.apiURL, // Needed in the UI
+        etherscanAPI: etherscanApi?.apiURL,
+        confluxscanApi: confluxscanApi?.apiURL,
       };
     },
   );
 
-  res.status(200).json(sourcifyChains);
+  res.status(200).json(chains);
 });
 
 router.use("/", lookupRoutes);

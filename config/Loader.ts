@@ -15,8 +15,8 @@ export interface Config {
 
 export type ChainInstance = SourcifyChainInstance & {
     rpc: Array<string | FetchRequestRPC | Conflux.ConfluxOption>;
-    confluxSupported?: boolean;
-    confluxScanApi?: {
+    corespace?: boolean;
+    confluxscanApi?: {
         apiURL: string;
         apiKeyEnvName?: string;
     };

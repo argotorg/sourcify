@@ -11,15 +11,15 @@ import { FIELDS_TO_STORED_PROPERTIES } from "../../services/store/Tables";
 import { reduceAccessorStringToProperty } from "../../services/utils/util";
 import { Services } from "../../services/services";
 import type { Metadata, SolidityJsonInput} from "@ethereum-sourcify/lib-sourcify";
-import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
+import { ChainMap } from "../../server";
 
 export function validateChainId(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap
-  const keys = new Set(Object.keys(sourcifyChainMap))
+  const chainMap = req.app.get("chains") as ChainMap
+  const keys = new Set(Object.keys(chainMap))
   if(!keys.has(req.params.chainId)) {
     console.info("Invalid chainId in params", {
       params: req.params,

@@ -27,8 +27,8 @@ export default {
       name: "Conflux eSpace mainnet",
       chainId: 1030,
       supported: true,
-      confluxScanApi: {
-        apiURL: "https://evmapi.confluxscan.org",
+      confluxscanApi: {
+        apiURL: "https://evmapi-stage.confluxscan.org",
       },
       rpc: [
         'http://evm.confluxrpc.com'
@@ -44,7 +44,7 @@ export default {
       name: "Conflux eSpace testnet",
       chainId: 71,
       supported: true,
-      confluxScanApi: {
+      confluxscanApi: {
         apiURL: "https://evmapi-testnet.confluxscan.org",
       },
       rpc: [
@@ -61,9 +61,9 @@ export default {
       name: "Conflux coreSpace mainnet",
       chainId: 1029,
       supported: true,
-      confluxSupported: true,
-      confluxScanApi: {
-        apiURL: "https://api.confluxscan.org",
+      corespace: true,
+      confluxscanApi: {
+        apiURL: "https://api-stage.confluxscan.org",
       },
       rpc: [
         'http://main.confluxrpc.com'
@@ -79,8 +79,8 @@ export default {
       name: "Conflux coreSpace testnet",
       chainId: 1,
       supported: true,
-      confluxSupported: true,
-      confluxScanApi: {
+      corespace: true,
+      confluxscanApi: {
         apiURL: "https://api-testnet.confluxscan.org",
       },
       rpc: [
