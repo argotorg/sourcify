@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import defaultConfig from "./Config";
 import { SourcifyChainInstance } from "@ethereum-sourcify/lib-sourcify";
 import { Options } from "sequelize";
@@ -16,7 +15,11 @@ export interface Config {
 
 export type ChainInstance = SourcifyChainInstance & {
     rpc: Array<string | FetchRequestRPC | Conflux.ConfluxOption>;
-    confluxSupported?: boolean
+    confluxSupported?: boolean;
+    confluxScanApi?: {
+        apiURL: string;
+        apiKeyEnvName?: string;
+    };
 }
 
 export function isConfluxOption(obj: any): obj is Conflux.ConfluxOption {
@@ -26,23 +29,23 @@ export function isConfluxOption(obj: any): obj is Conflux.ConfluxOption {
 
     const opt = obj as Conflux.ConfluxOption;
 
-    const hasDefaultGasPrice = !('defaultGasPrice' in obj)
-      || typeof obj.defaultGasPrice === 'string'
-      || typeof obj.defaultGasPrice === 'number'
-    const hasUrl = !('url' in obj)
-      || typeof obj.url === 'string'
-    const hasRetry = !('retry' in obj)
-      || typeof obj.retry === 'number'
-    const hasTimeout = !('timeout' in obj)
-      || typeof obj.timeout === 'number'
-    const hasNetworkId = !('networkId' in obj)
-      || typeof obj.networkId === 'number'
-    const hasUseWechatProvider = !('useWechatProvider' in obj)
-      || typeof obj.useWechatProvider === 'boolean'
-    const hasUseHexAddressInParameter = !('useHexAddressInParameter' in obj)
-      || typeof obj.useHexAddressInParameter === 'boolean'
-    const hasUseVerboseAddress = !('useVerboseAddress' in obj)
-      || typeof obj.useVerboseAddress === 'boolean'
+    const hasDefaultGasPrice = !('defaultGasPrice' in opt)
+      || typeof opt.defaultGasPrice === 'string'
+      || typeof opt.defaultGasPrice === 'number'
+    const hasUrl = !('url' in opt)
+      || typeof opt.url === 'string'
+    const hasRetry = !('retry' in opt)
+      || typeof opt.retry === 'number'
+    const hasTimeout = !('timeout' in opt)
+      || typeof opt.timeout === 'number'
+    const hasNetworkId = !('networkId' in opt)
+      || typeof opt.networkId === 'number'
+    const hasUseWechatProvider = !('useWechatProvider' in opt)
+      || typeof opt.useWechatProvider === 'boolean'
+    const hasUseHexAddressInParameter = !('useHexAddressInParameter' in opt)
+      || typeof opt.useHexAddressInParameter === 'boolean'
+    const hasUseVerboseAddress = !('useVerboseAddress' in opt)
+      || typeof opt.useVerboseAddress === 'boolean'
 
     return hasDefaultGasPrice && hasUrl && hasRetry
       && hasTimeout && hasNetworkId && hasUseWechatProvider
@@ -64,10 +67,6 @@ export interface DatabaseOptions extends Options{
     readonly : boolean
 }
 
-export function loadConfig(customized = 'Local'): Config {
-    if (fs.existsSync(`${__dirname}/${customized}.js`)){
-        const customizedConfig = require(`./${customized}`)
-        return {...defaultConfig, ...customizedConfig}
-    }
+export function loadConfig(): Config {
     return defaultConfig as Config;
 }

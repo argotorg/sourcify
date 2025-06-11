@@ -25,6 +25,7 @@
     "abitype": "1.0.8",
     "chalk": "4.1.2",
     "config": "3.3.12",
+    "dotenv": "^16.5.0",
     "ethers": "6.13.7",
     "express": "5.1.0",
     "express-fileupload": "1.5.1",
