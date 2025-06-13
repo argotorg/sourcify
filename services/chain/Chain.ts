@@ -1,5 +1,5 @@
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import { ChainInstance, isConfluxOption } from "../../config/Loader";
+import { ChainInstance, FetchContractCreationTxUsing, isConfluxOption } from "../../config/Loader";
 import {
   Block,
   BlockParams,
@@ -23,12 +23,14 @@ export class Chain extends SourcifyChain {
     apiURL: string;
     apiKeyEnvName?: string;
   };
+  readonly fetchContractCreationTxUsing?: FetchContractCreationTxUsing
   readonly corespace: boolean
   readonly confluxSdks: Conflux[]
 
   constructor(chainObj: ChainInstance) {
     super(chainObj)
     this.confluxscanApi = chainObj.confluxscanApi
+    this.fetchContractCreationTxUsing = chainObj.fetchContractCreationTxUsing
     this.corespace = chainObj.corespace
     this.confluxSdks = [];
     if(this.corespace) {
@@ -38,6 +40,7 @@ export class Chain extends SourcifyChain {
           option = {
             url: rpc,
             networkId: chainObj.networkId | chainObj.chainId,
+            // logger: console
           } as Conflux.ConfluxOption
         } else if(isConfluxOption(rpc)) {
           option = rpc
@@ -309,9 +312,9 @@ export class Chain extends SourcifyChain {
         address,
         providerUrl: sdk.provider.url,
         chainId: this.chainId,
-      });
+      })
       try {
-        return this.extractFromParityTrace(creatorTxHash, address, sdk)
+        return await this.extractFromParityTrace(creatorTxHash, address, sdk)
       } catch (e: any) {
         console.info('Failed to fetch creation bytecode from parity traces', {
           creatorTxHash,
@@ -319,7 +322,7 @@ export class Chain extends SourcifyChain {
           providerUrl: sdk.provider.url,
           chainId: this.chainId,
           error: e.message,
-        });
+        })
       }
     }
 

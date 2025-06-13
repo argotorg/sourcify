@@ -66,12 +66,13 @@ export default {
         apiURL: "https://api-stage.confluxscan.org",
       },
       rpc: [
-        'http://main.confluxrpc.com'
+        'http://main.confluxrpc.com',
+        'http://main-internal.confluxrpc.com'
       ],
       traceSupportedRPCs: [
         {
           type: 'trace_transaction',
-          index: 0,
+          index: 1,
         }
       ],
     },

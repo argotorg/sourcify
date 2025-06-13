@@ -2,7 +2,8 @@ import defaultConfig from "./Config";
 import { SourcifyChainInstance } from "@ethereum-sourcify/lib-sourcify";
 import { Options } from "sequelize";
 import {
-    FetchRequestRPC,
+    FetchContractCreationTxMethods,
+    FetchRequestRPC
 } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
 import { Conflux } from "js-conflux-sdk";
 
@@ -19,6 +20,14 @@ export type ChainInstance = SourcifyChainInstance & {
     confluxscanApi?: {
         apiURL: string;
         apiKeyEnvName?: string;
+    };
+    fetchContractCreationTxUsing?: FetchContractCreationTxUsing
+}
+
+export interface FetchContractCreationTxUsing extends FetchContractCreationTxMethods {
+    confluxscanApi?: boolean;
+    confluxscanScrape?: {
+        url: string;
     };
 }
 

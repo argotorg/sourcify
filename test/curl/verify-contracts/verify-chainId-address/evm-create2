@@ -1,0 +1,5 @@
+curl -X 'POST' \
+  'http://127.0.0.1:17651/verify/1030/0x700d841E087f4038639B214e849beab622F178c6' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '@700d841E.json'
