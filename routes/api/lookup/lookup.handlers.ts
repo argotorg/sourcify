@@ -25,6 +25,7 @@ interface ListContractsRequest extends Request {
     limit?: string;
     sort?: string;
     afterMatchId?: string;
+    addresses?: string;
   };
 }
 
@@ -41,15 +42,18 @@ export async function listContractsEndpoint(
     limit: req.query.limit,
     sort: req.query.sort,
     afterMatchId: req.query.afterMatchId,
+    addresses: req.query.addresses,
   });
   const services = req.app.get("services") as Services;
   const chain = getChainId(req.params.chainId)
+  const addresses = req.query?.addresses?.split(",");
 
   const contracts = await services.store.getContractsByChainId(
     chain,
     parseInt(req.query.limit || "200"),
     req.query.sort === "desc" || !req.query.sort,
-    req.query.afterMatchId)
+    req.query.afterMatchId,
+    addresses)
 
   res.status(StatusCodes.OK).json(contracts);
 }

@@ -464,6 +464,7 @@ export class StoreService
     limit: number,
     descending: boolean,
     afterMatchId?: string,
+    addresses?: string[],
   ): Promise<{ results: VerifiedContractMinimal[] }> => {
     await this.init();
 
@@ -472,6 +473,7 @@ export class StoreService
       limit,
       descending,
       afterMatchId,
+      addresses,
     );
 
     const results: VerifiedContractMinimal[] = sourcifyMatchesResult.map(

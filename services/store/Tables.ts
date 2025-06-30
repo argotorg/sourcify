@@ -567,7 +567,7 @@ export type GetVerificationJobsByChainAndAddressResult = {
 };
 
 const sourcesAggregation =
-  "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
+  "json_objectagg(compiled_contracts_sources.path, json_object('content', sources.content))";
 
 export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
@@ -624,33 +624,33 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   devdoc: "compiled_contracts.compilation_artifacts->>'$.devdoc' as devdoc",
   source_ids:
     "compiled_contracts.compilation_artifacts->>'$.sources' as source_ids",
-  std_json_input: `json_build_object(
+  std_json_input: `json_object(
     'language', LOWER(compiled_contracts.language), 
     'sources', ${sourcesAggregation},
     'settings', compiled_contracts.compiler_settings
   ) as std_json_input`,
-  std_json_output: `json_build_object(
+  std_json_output: `json_object(
     'sources', compiled_contracts.compilation_artifacts->>'$.sources',
-    'contracts', json_build_object(
+    'contracts', json_object(
       substring(
         compiled_contracts.fully_qualified_name, 
         1, 
         length(compiled_contracts.fully_qualified_name) - length(split_part(compiled_contracts.fully_qualified_name, ':', -1)) - 1
       ), 
-      json_build_object(
-        split_part(compiled_contracts.fully_qualified_name, ':', -1), json_build_object(
+      json_object(
+        split_part(compiled_contracts.fully_qualified_name, ':', -1), json_object(
           'abi', compiled_contracts.compilation_artifacts->>'$.abi',
           'metadata', cast(sourcify_matches.metadata as text),
           'userdoc', compiled_contracts.compilation_artifacts->>'$.userdoc',
           'devdoc', compiled_contracts.compilation_artifacts->>'$.devdoc',
           'storageLayout', compiled_contracts.compilation_artifacts->>'$.storageLayout',
-          'evm', json_build_object(
-            'bytecode', json_build_object(
+          'evm', json_object(
+            'bytecode', json_object(
               'object', nullif(CONVERT(recompiled_creation_code.code USING utf8), '0x'),
               'sourceMap', compiled_contracts.creation_code_artifacts->>'$.sourceMap',
               'linkReferences', compiled_contracts.creation_code_artifacts->>'$.linkReferences'
             ),
-            'deployedBytecode', json_build_object(
+            'deployedBytecode', json_object(
               'object', nullif(CONVERT(recompiled_runtime_code.code USING utf8), '0x'),
               'sourceMap', compiled_contracts.runtime_code_artifacts->>'$.sourceMap',
               'linkReferences', compiled_contracts.runtime_code_artifacts->>'$.linkReferences',

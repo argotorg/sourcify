@@ -267,18 +267,29 @@ export class Dao {
     limit: number,
     descending: boolean,
     afterId?: string,
+    addresses?: string[],
   ): Promise<GetSourcifyMatchesByChainResult[]> {
-    const values: Array<number | string> = [chain, limit];
+    const values: {[key: string]: number | string | string[]} = {
+      chain,
+      limit,
+    }
     const orderBy = descending
       ? "ORDER BY sourcify_matches.id DESC"
       : "ORDER BY sourcify_matches.id ASC";
 
     let queryWhere = "";
     if (afterId) {
+      values.afterId = afterId
       queryWhere = descending
-        ? "WHERE sourcify_matches.id < $3"
-        : "WHERE sourcify_matches.id > $3";
-      values.push(afterId);
+        ? "WHERE sourcify_matches.id < :afterId"
+        : "WHERE sourcify_matches.id > :afterId"
+    }
+
+    if(addresses?.length) {
+      values.addresses = addresses
+      queryWhere = queryWhere
+        ? `${queryWhere} AND contract_deployments.address IN (:addresses)`
+        : `WHERE contract_deployments.address IN (:addresses)`
     }
 
     const selectors = [
@@ -296,10 +307,10 @@ export class Dao {
         JOIN verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
         JOIN contract_deployments ON 
             contract_deployments.id = verified_contracts.deployment_id
-            AND contract_deployments.chain_id = ?
+            AND contract_deployments.chain_id = :chain
         ${queryWhere}
         ${orderBy}
-        LIMIT ?
+        LIMIT :limit
       `,
       {
         type: QueryTypes.SELECT,
