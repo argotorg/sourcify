@@ -15,6 +15,14 @@
     "database": "sourcify",
     "port": { "ENV": "DOCKER_HOST_POSTGRES_TEST_PORT" }
   },
+  "local-docker": {
+    "driver": "pg",
+    "host": "db",
+    "user": "sourcify",
+    "password": "sourcify",
+    "database": "sourcify",
+    "port": 5432
+  },
   "production": {
     "driver": "pg",
     "host": { "ENV": "POSTGRES_HOST" },

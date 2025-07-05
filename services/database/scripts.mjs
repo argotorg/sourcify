@@ -484,7 +484,7 @@ const processContract = async (
     }
     let url = `${sourcifyInstance}/verify`;
     if (deprecated) {
-      url = `${sourcifyInstance}/verify-deprecated`;
+      url = `${sourcifyInstance}/private/verify-deprecated`;
       switch (matchType) {
         case "full_match":
           body.match = "perfect";

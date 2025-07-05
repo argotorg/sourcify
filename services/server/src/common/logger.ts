@@ -3,8 +3,13 @@ import chalk from "chalk";
 import {
   setLibSourcifyLogger,
   setLibSourcifyLoggerLevel,
+  ILibSourcifyLogger,
 } from "@ethereum-sourcify/lib-sourcify";
 import { asyncLocalStorage } from "./async-context";
+import {
+  setCompilersLogger,
+  setCompilersLoggerLevel,
+} from "@ethereum-sourcify/compilers";
 
 export enum LogLevels {
   error = 0,
@@ -15,19 +20,7 @@ export enum LogLevels {
 }
 
 export const validLogLevels = Object.values(LogLevels);
-
-if (
-  process.env.NODE_LOG_LEVEL &&
-  !validLogLevels.includes(process.env.NODE_LOG_LEVEL)
-) {
-  throw new Error(`Invalid log level: ${process.env.NODE_LOG_LEVEL}`);
-}
-
-const loggerInstance: Logger = createLogger({
-  level:
-    process.env.NODE_LOG_LEVEL ||
-    (process.env.NODE_ENV === "production" ? "info" : "debug"),
-});
+const loggerInstance: Logger = createLogger();
 
 // 2024-03-06T17:04:16.375Z [warn]: [RepositoryV2Service] Storing contract address=0x5FbDB2315678afecb367f032d93F642f64180aa3, chainId=1337, matchQuality=0.5
 const rawlineFormat = format.printf(
@@ -181,46 +174,52 @@ export function setLogLevel(level: string): void {
   process.env.NODE_LOG_LEVEL = level;
   // Also set lib-sourcify's logger level
   setLibSourcifyLoggerLevel(logLevelStringToNumber(level));
+  setCompilersLoggerLevel(logLevelStringToNumber(level));
 }
 
-// here we override the standard LibSourcify's Logger with a custom one
-setLibSourcifyLogger({
-  logLevel: logLevelStringToNumber(serverLoggerInstance.level), // same as the server
-  setLevel(level: number) {
-    this.logLevel = level;
-  },
-  log(level, msg, metadata) {
-    const logObject = {
-      service:
-        process.env.NODE_ENV === "production"
-          ? "LibSourcify"
-          : chalk.cyan("[LibSourcify]"),
-      message: msg,
-      ...metadata,
-    };
-    if (level <= this.logLevel) {
-      switch (level) {
-        case 0:
-          serverLoggerInstance.error(logObject);
-          break;
-        case 1:
-          serverLoggerInstance.warn(logObject);
-          break;
-        case 2:
-          serverLoggerInstance.info(logObject);
-          break;
-        // Use winston's log levels https://github.com/winstonjs/winston?tab=readme-ov-file#logging-levels
-        // We don't use http (3) and verbose (4)
-        case 5:
-          serverLoggerInstance.debug(logObject);
-          break;
-        case 6:
-          serverLoggerInstance.silly(logObject);
-          break;
-        default:
-          serverLoggerInstance.info(logObject);
-          break;
+const makePackageLogger = (packageName: string): ILibSourcifyLogger => {
+  return {
+    logLevel: logLevelStringToNumber(serverLoggerInstance.level), // same as the server
+    setLevel(level: number) {
+      this.logLevel = level;
+    },
+    log(level, msg, metadata) {
+      const logObject = {
+        service:
+          process.env.NODE_ENV === "production"
+            ? packageName
+            : chalk.cyan(`[${packageName}]`),
+        message: msg,
+        ...metadata,
+      };
+      if (level <= this.logLevel) {
+        switch (level) {
+          case 0:
+            serverLoggerInstance.error(logObject);
+            break;
+          case 1:
+            serverLoggerInstance.warn(logObject);
+            break;
+          case 2:
+            serverLoggerInstance.info(logObject);
+            break;
+          // Use winston's log levels https://github.com/winstonjs/winston?tab=readme-ov-file#logging-levels
+          // We don't use http (3) and verbose (4)
+          case 5:
+            serverLoggerInstance.debug(logObject);
+            break;
+          case 6:
+            serverLoggerInstance.silly(logObject);
+            break;
+          default:
+            serverLoggerInstance.info(logObject);
+            break;
+        }
       }
-    }
-  },
-});
+    },
+  };
+};
+
+// here we override the standard LibSourcify's Logger with a custom one
+setLibSourcifyLogger(makePackageLogger("LibSourcify"));
+setCompilersLogger(makePackageLogger("Compilers"));

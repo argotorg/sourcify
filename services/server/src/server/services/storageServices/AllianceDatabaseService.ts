@@ -1,10 +1,7 @@
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
 import { WStorageService } from "../StorageService";
-import {
-  AbstractCheckedContract,
-  Match,
-} from "@ethereum-sourcify/lib-sourcify";
+import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import { WStorageIdentifiers } from "./identifiers";
 
 export class AllianceDatabaseService
@@ -12,17 +9,18 @@ export class AllianceDatabaseService
   implements WStorageService
 {
   IDENTIFIER = WStorageIdentifiers.AllianceDatabase;
-  async storeMatch(recompiledContract: AbstractCheckedContract, match: Match) {
-    if (!match.creationMatch) {
+
+  async storeVerification(verification: VerificationExport) {
+    if (!verification.status.creationMatch) {
       throw new Error("Can't store to AllianceDatabase without creationMatch");
     }
-    await this.insertOrUpdateVerifiedContract(recompiledContract, match);
+    await super.insertOrUpdateVerification(verification);
     logger.info("Stored to AllianceDatabase", {
-      name: recompiledContract.name,
-      address: match.address,
-      chainId: match.chainId,
-      runtimeMatch: match.runtimeMatch,
-      creationMatch: match.creationMatch,
+      name: verification.compilation.compilationTarget.name,
+      address: verification.address,
+      chainId: verification.chainId,
+      runtimeMatch: verification.status.runtimeMatch,
+      creationMatch: verification.status.creationMatch,
     });
   }
 }

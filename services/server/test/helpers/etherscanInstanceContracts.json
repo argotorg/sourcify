@@ -294,42 +294,6 @@
       "expectedStatus": "partial"
     }
   ],
-  "1116": [
-    {
-      "address": "0x3034802fc4c9a278d0886ed77fd3f79fd789c898",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x732544bb91e6cf23bb02e7b8d61d4a8b9c15b73b",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
-  "1115": [
-    {
-      "address": "0x396433f5279972b9c0a0b783e3dc0078fde8571a",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xd87666942b1b023c5abfabf7f59120c269f8ba02",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
-  "1114": [
-    {
-      "address": "0x06fd8b725adba12a76b21f0a03accbf30d64dc55",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xa4807B287191a9044Cc3CEe537641E9B829cF2F1",
-      "type": "standard-json",
-      "expectedStatus": "partial"
-    }
-  ],
   "1101": [
     {
       "address": "0xe10Add2ad591A7AC3CA46788a06290De017b9fB4",
@@ -364,13 +328,6 @@
       "address": "0xfD9B8B1B7e44b39DFA04D66159Ac21B68141eD38",
       "type": "standard-json",
       "expectedStatus": "perfect"
-    }
-  ],
-  "1030": [
-    {
-      "address": "0x14b2D3bC65e74DAE1030EAFd8ac30c533c976A9b",
-      "type": "single",
-      "expectedStatus": "partial"
     }
   ],
   "43114": [
@@ -476,7 +433,7 @@
     {
       "address": "0x06565ed324Ee9fb4DB0FF80B7eDbE4Cb007555a3",
       "type": "single",
-      "expectedStatus": "partial"
+      "expectedStatus": "perfect"
     },
     {
       "address": "0x9B1B4b0FD15eF697E2E61C29ee933b227C68dDb2",
@@ -516,6 +473,18 @@
       "address": "0xD779479d792Ab8E94f61d6b2682a877B2868A8AD",
       "type": "standard-json",
       "expectedStatus": "perfect"
+    }
+  ],
+  "560048": [
+    {
+      "address": "0x39cC8eB3F950CA5655937CFB2b01849547057E2c",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    },
+    {
+      "address": "0x0178DaECcbA08EF6bfbac16490AEFBDF84D46B65",
+      "type": "single",
+      "expectedStatus": "partial"
     }
   ]
 }

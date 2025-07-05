@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /verify/vyper:
     post:
-      deprecated: false
+      deprecated: true
       description: |
         Sends provided Vyper contract files for verification.
       tags:
-        - Stateless Verification
+        - (Deprecated) Stateless Verification
       requestBody:
         required: true
         content:

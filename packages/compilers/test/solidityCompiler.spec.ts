@@ -25,6 +25,14 @@ describe('Verify Solidity Compiler', () => {
       false,
     );
   });
+  it('Should throw an error if the compiler is not found', async () => {
+    try {
+      await getSolcExecutable(compilersPath, 'linux-amd64', 'invalid-version');
+      expect.fail('Expected error was not thrown');
+    } catch (error) {
+      expect(error).to.be.instanceOf(Error);
+    }
+  });
   if (process.platform === 'linux') {
     it('Should fetch latest solc from github', async () => {
       expect(
@@ -88,7 +96,23 @@ describe('Verify Solidity Compiler', () => {
         },
       );
     } catch (e: any) {
-      expect(e.message.startsWith('Compiler error:')).to.be.true;
+      expect(e.message.startsWith('Compiler error')).to.be.true;
+      expect(e.errors).to.deep.equal([
+        {
+          component: 'general',
+          errorCode: '2314',
+          formattedMessage:
+            "ParserError: Expected '{' but got '}'\n --> test.sol:1:35:\n  |\n1 | contract C { function f() public  } }\n  |                                   ^\n\n",
+          message: "Expected '{' but got '}'",
+          severity: 'error',
+          sourceLocation: {
+            end: 35,
+            file: 'test.sol',
+            start: 34,
+          },
+          type: 'ParserError',
+        },
+      ]);
     }
   });
   it('Should compile with solcjs', async () => {

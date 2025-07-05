@@ -3,10 +3,10 @@ openapi: "3.0.0"
 paths:
   /session/input-solc-json:
     post:
-      deprecated: false
+      deprecated: true
       summary: Verify solc-json
       tags:
-        - Session Verification
+        - (Deprecated) Session Verification
       requestBody:
         content:
           application/json:

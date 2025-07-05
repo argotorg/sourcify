@@ -2,20 +2,35 @@ import {
   BadRequestError,
   NotFoundError,
   InternalServerError,
+  ConflictError,
 } from "../../common/errors";
 import { v4 as uuidv4 } from "uuid";
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { error as openApiValidatorErrors } from "express-openapi-validator";
 import logger from "../../common/logger";
+import {
+  getErrorMessageFromCode,
+  SourcifyLibErrorCode,
+  SourcifyLibErrorParameters,
+} from "@ethereum-sourcify/lib-sourcify";
+import { TooManyRequests } from "../../common/errors/TooManyRequests";
+import { BadGatewayError } from "../../common/errors/BadGatewayError";
+import { JobErrorData } from "../services/utils/database-util";
 
 export type ErrorCode =
-  | VerificationError
-  | "unknown_error"
+  | VerificationErrorCode
+  | "internal_error"
   | "route_not_found"
   | "unsupported_chain"
   | "invalid_parameter"
+  | "invalid_json"
   | "proxy_resolution_error"
-  | "job_not_found";
+  | "job_not_found"
+  | "duplicate_verification_request"
+  | "etherscan_request_failed"
+  | "etherscan_limit"
+  | "not_etherscan_verified"
+  | "malformed_etherscan_response";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -24,20 +39,22 @@ export interface GenericErrorResponse {
 }
 
 export interface MatchingErrorResponse extends GenericErrorResponse {
+  customCode: VerificationErrorCode;
   recompiledCreationCode?: string;
   recompiledRuntimeCode?: string;
   onchainCreationCode?: string;
   onchainRuntimeCode?: string;
-  creatorTransactionHash?: string;
+  creationTransactionHash?: string;
+  errorData?: JobErrorData;
 }
 
-export class UnknownError extends InternalServerError {
+export class InternalError extends InternalServerError {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
     super(message);
     this.payload = {
-      customCode: "unknown_error",
+      customCode: "internal_error",
       message,
       errorId: uuidv4(),
     };
@@ -96,6 +113,97 @@ export class JobNotFoundError extends NotFoundError {
   }
 }
 
+export class DuplicateVerificationRequestError extends TooManyRequests {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "duplicate_verification_request",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class AlreadyVerifiedError extends ConflictError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "already_verified",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class EtherscanRequestFailedError extends BadGatewayError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "etherscan_request_failed",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class EtherscanLimitError extends TooManyRequests {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "etherscan_limit",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class NotEtherscanVerifiedError extends NotFoundError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "not_etherscan_verified",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class MalformedEtherscanResponseError extends BadRequestError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "malformed_etherscan_response",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class InvalidJsonError extends BadRequestError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "invalid_json",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
 // Maps OpenApiValidator errors to our custom error format
 export function errorHandler(
   err: any,
@@ -109,6 +217,11 @@ export function errorHandler(
     return;
   }
 
+  if (err instanceof SyntaxError) {
+    next(new InvalidJsonError(err.message));
+    return;
+  }
+
   if (
     err instanceof openApiValidatorErrors.BadRequest ||
     err instanceof openApiValidatorErrors.RequestEntityTooLarge ||
@@ -118,27 +231,33 @@ export function errorHandler(
     return;
   }
 
-  logger.error("Unknown server error: ", err);
-  next(new UnknownError("The server encountered an unexpected error."));
+  logger.error("API v2 internal error: ", { error: err });
+  next(new InternalError("The server encountered an unexpected error."));
 }
 
-// TODO: Add sensible error codes here,
-// possibly from lib-sourcify after the verification flow refactoring
-export type VerificationError =
-  | "non_existing_contract"
-  | "non_matching_bytecodes";
+export type VerificationErrorCode =
+  | SourcifyLibErrorCode
+  | "unsupported_language"
+  | "already_verified"
+  | "internal_error";
+
+export type VerificationErrorParameters =
+  | SourcifyLibErrorParameters
+  | {
+      code: VerificationErrorCode;
+    };
 
 export function getVerificationErrorMessage(
-  code: VerificationError,
-  chainId: string,
-  address: string,
+  params: VerificationErrorParameters,
 ) {
-  switch (code) {
-    case "non_existing_contract":
-      return `Contract ${address} does not exist on chain ${chainId}`;
-    case "non_matching_bytecodes":
-      return `The onchain and recompiled bytecodes don't match`;
+  switch (params.code) {
+    case "unsupported_language":
+      return "The provided language is not supported.";
+    case "already_verified":
+      return "The contract is already verified and the job didn't yield a better match.";
+    case "internal_error":
+      return "The server encountered an unexpected error.";
     default:
-      return `Unknown verification error`;
+      return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }
 }

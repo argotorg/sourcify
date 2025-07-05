@@ -131,7 +131,7 @@ describe("/", function () {
     chai.expect(err).to.be.null;
     chai.expect(res.body).to.haveOwnProperty("error");
     const errorMessage = res.body.error.toLowerCase();
-    chai.expect(res.status).to.equal(StatusCodes.INTERNAL_SERVER_ERROR);
+    chai.expect(res.status).to.equal(StatusCodes.BAD_REQUEST);
     chai.expect(errorMessage).to.include("missing");
     chai.expect(errorMessage).to.include("Storage".toLowerCase());
   };
@@ -144,7 +144,11 @@ describe("/", function () {
       .field("chain", chainFixture.chainId)
       .attach(
         "files",
-        chainFixture.defaultContractModifiedSourceIpfs,
+        Buffer.from(
+          JSON.stringify(
+            chainFixture.defaultContractMetadataWithModifiedIpfsHash,
+          ),
+        ),
         "metadata.json",
       )
       .end((err, res) => {
@@ -176,10 +180,10 @@ describe("/", function () {
 
   // We cannot split this into multiple tests because there is a global beforeEach that resets the database
   it("Should skip verification for /verify, /verify/etherscan and /verify/solc-json if contract is already verified", async () => {
-    // Spy on the verifyDeployed method
-    const verifyDeployedSpy = sinon.spy(
+    // Spy on the verifyFromCompilation method
+    const verifyFromCompilationSpy = sinon.spy(
       serverFixture.server.services.verification,
-      "verifyDeployed",
+      "verifyFromCompilation",
     );
 
     // Perform the initial verification
@@ -202,24 +206,24 @@ describe("/", function () {
       "perfect",
     );
 
-    // Verify that verifyDeployed was called during the initial verification
+    // Verify that verifyFromCompilation was called during the initial verification
     chai.expect(
-      verifyDeployedSpy.calledOnce,
-      "verifyDeployed should be called once during initial verification",
+      verifyFromCompilationSpy.calledOnce,
+      "verifyFromCompilation should be called once during initial verification",
     ).to.be.true;
 
     // The first time the contract is verified, the storageTimestamp is not returned
     chai.expect(initialResponse.body.result[0].storageTimestamp).to.not.exist;
 
     // Reset the spy before calling the endpoint again
-    verifyDeployedSpy.resetHistory();
+    verifyFromCompilationSpy.resetHistory();
 
     /**
-     * Test /verify endpoint is not calling verifyDeployed again
+     * Test /verify endpoint is not calling verifyFromCompilation again
      */
     chai.expect(
-      verifyDeployedSpy.notCalled,
-      "verifyDeployed should not be called for /verify",
+      verifyFromCompilationSpy.notCalled,
+      "verifyFromCompilation should not be called for /verify",
     ).to.be.true;
     let res = await chai
       .request(serverFixture.server.app)
@@ -240,15 +244,15 @@ describe("/", function () {
       "perfect",
     );
 
-    // Verify that verifyDeployed was NOT called
+    // Verify that verifyFromCompilation was NOT called
     chai.expect(
-      verifyDeployedSpy.notCalled,
-      "verifyDeployed should not be called for /verify",
+      verifyFromCompilationSpy.notCalled,
+      "verifyFromCompilation should not be called for /verify",
     ).to.be.true;
     chai.expect(res.body.result[0].storageTimestamp).to.exist;
 
     /**
-     * Test /verify/etherscan endpoint is not calling verifyDeployed again
+     * Test /verify/etherscan endpoint is not calling verifyFromCompilation again
      */
     res = await chai
       .request(serverFixture.server.app)
@@ -266,15 +270,15 @@ describe("/", function () {
       "perfect",
     );
 
-    // Verify that verifyDeployed was NOT called
+    // Verify that verifyFromCompilation was NOT called
     chai.expect(
-      verifyDeployedSpy.notCalled,
-      "verifyDeployed should not be called for /verify/etherscan",
+      verifyFromCompilationSpy.notCalled,
+      "verifyFromCompilation should not be called for /verify/etherscan",
     ).to.be.true;
     chai.expect(res.body.result[0].storageTimestamp).to.exist;
 
     /**
-     * Test /verify/solc-json endpoint is not calling verifyDeployed again
+     * Test /verify/solc-json endpoint is not calling verifyFromCompilation again
      */
     const solcJsonPath = path.join(
       __dirname,
@@ -306,36 +310,18 @@ describe("/", function () {
       "perfect",
     );
 
-    // Verify that verifyDeployed was NOT called
+    // Verify that verifyFromCompilation was NOT called
     chai.expect(
-      verifyDeployedSpy.notCalled,
-      "verifyDeployed should not be called for /verify/solc-json",
+      verifyFromCompilationSpy.notCalled,
+      "verifyFromCompilation should not be called for /verify/solc-json",
     ).to.be.true;
     chai.expect(res.body.result[0].storageTimestamp).to.exist;
 
-    // Restore the original verifyDeployed method
-    verifyDeployedSpy.restore();
+    // Restore the original verifyFromCompilation method
+    verifyFromCompilationSpy.restore();
   });
 
-  it("Should upgrade creation match from 'null' to 'perfect', delete partial from repository and update creationTx information in database", async () => {
-    const partialMetadata = (
-      await import("../../../testcontracts/Storage/metadataModified.json")
-    ).default;
-    const partialMetadataBuffer = Buffer.from(JSON.stringify(partialMetadata));
-
-    const partialSourcePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "..",
-      "testcontracts",
-      "Storage",
-      "StorageModified.sol",
-    );
-    const partialSourceBuffer = fs.readFileSync(partialSourcePath);
-
-    const partialMetadataURL = `/repository/contracts/partial_match/${chainFixture.chainId}/${chainFixture.defaultContractAddress}/metadata.json`;
-
+  it("Should upgrade creation match from 'null' to 'perfect', update verified_contracts and contract_deployments creation information in database", async () => {
     // Block the getTransactionReceipt call and the binary search for the creation tx hash and creationMatch will be set to null
     const restoreGetTx =
       serverFixture.server.chainRepository.sourcifyChainMap[
@@ -352,8 +338,8 @@ describe("/", function () {
       .post("/")
       .field("address", chainFixture.defaultContractAddress)
       .field("chain", chainFixture.chainId)
-      .attach("files", partialMetadataBuffer, "metadata.json")
-      .attach("files", partialSourceBuffer);
+      .attach("files", chainFixture.defaultContractMetadata, "metadata.json")
+      .attach("files", chainFixture.defaultContractSource);
 
     // Restore the getTransactionReceipt call
     serverFixture.server.chainRepository.sourcifyChainMap[
@@ -367,11 +353,24 @@ describe("/", function () {
       null,
       chainFixture.defaultContractAddress,
       chainFixture.chainId,
-      "partial",
+      "perfect",
     );
 
-    res = await chai.request(serverFixture.server.app).get(partialMetadataURL);
-    chai.expect(res.body).to.deep.equal(partialMetadata);
+    // Creation match should be false
+    const verifiedContractsWithFalseCreationMatchResult =
+      await serverFixture.sourcifyDatabase.query(
+        "SELECT creation_match FROM verified_contracts",
+      );
+    chai
+      .expect(verifiedContractsWithFalseCreationMatchResult?.rows)
+      .to.have.length(1);
+    chai
+      .expect(verifiedContractsWithFalseCreationMatchResult?.rows)
+      .to.deep.equal([
+        {
+          creation_match: false,
+        },
+      ]);
 
     const contractDeploymentWithoutCreatorTransactionHash =
       await serverFixture.sourcifyDatabase.query(
@@ -409,7 +408,7 @@ describe("/", function () {
 
     const contractDeploymentWithCreatorTransactionHash =
       await serverFixture.sourcifyDatabase.query(
-        "SELECT encode(transaction_hash, 'hex') as transaction_hash, block_number, transaction_index, contract_id FROM contract_deployments",
+        "SELECT encode(transaction_hash, 'hex') as transaction_hash, block_number, transaction_index, contract_id FROM contract_deployments order by created_at desc limit 1",
       );
 
     const contractIdWithCreatorTransactionHash =
@@ -434,22 +433,27 @@ describe("/", function () {
       "SELECT encode(source_hash, 'hex') as source_hash FROM compiled_contracts_sources",
     );
 
-    chai.expect(sourcesResult?.rows).to.have.length(2);
+    chai.expect(sourcesResult?.rows).to.have.length(1);
     chai.expect(sourcesResult?.rows).to.deep.equal([
-      {
-        source_hash:
-          "fd080cadfc692807b0d856c83148034ab5c47ededd67ea6c93c500a2a0fd4378",
-      },
       {
         source_hash:
           "fb898a1d72892619d00d572bca59a5d98a9664169ff850e2389373e2421af4aa",
       },
     ]);
 
-    await waitSecs(2); // allow server some time to execute the deletion (it started *after* the last response)
+    const verifiedContractsResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT creation_match FROM verified_contracts order by id desc",
+    );
 
-    res = await chai.request(serverFixture.server.app).get(partialMetadataURL);
-    chai.expect(res.status).to.equal(StatusCodes.NOT_FOUND);
+    chai.expect(verifiedContractsResult?.rows).to.have.length(2);
+    chai.expect(verifiedContractsResult?.rows).to.deep.equal([
+      {
+        creation_match: true,
+      },
+      {
+        creation_match: false,
+      },
+    ]);
   });
 
   it("Should upgrade creation match from 'partial' to 'perfect' even if existing runtime match is already 'perfect'", async () => {
@@ -735,6 +739,97 @@ describe("/", function () {
       .to.equal(JSON.stringify(correctMetadata));
   });
 
+  it("should verify a contract on deprecated chain (Goerli) and store it correctly in the database", async () => {
+    // Use Goerli chain ID (5) which is deprecated
+    const address = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f"; // Sample address
+    const goerliChainId = "5"; // Goerli chain ID
+    const matchStatus = "perfect"; // Request match type parameter for deprecated chain
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/private/verify-deprecated")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: address,
+        chain: goerliChainId,
+        match: matchStatus,
+        files: {
+          "metadata.json": chainFixture.defaultContractMetadata.toString(),
+          "Storage.sol": chainFixture.defaultContractSource.toString(),
+        },
+      });
+
+    // Verify API response
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      address,
+      goerliChainId,
+      matchStatus,
+    );
+
+    // Verify the response result has the correct address and chainId
+    chai
+      .expect(res.body.result[0].address.toLowerCase())
+      .to.equal(address.toLowerCase());
+    chai.expect(res.body.result[0].chainId).to.equal(goerliChainId);
+    chai.expect(res.body.result[0].status).to.equal(matchStatus);
+
+    // Use a comprehensive query to get all verification details in a single query
+    const verificationDetails = await serverFixture.sourcifyDatabase.query(
+      `SELECT 
+          runtime_match,
+          creation_match,
+          onchain_runtime_code.code as onchain_runtime_code,
+          onchain_creation_code.code as onchain_creation_code,
+          cd.chain_id,
+          cd.block_number,
+          cd.transaction_index,
+          cd.transaction_hash,
+          cd.deployer
+        FROM verified_contracts vc
+        LEFT JOIN contract_deployments cd ON cd.id = vc.deployment_id
+        LEFT JOIN contracts c ON c.id = cd.contract_id
+        LEFT JOIN code onchain_runtime_code ON onchain_runtime_code.code_hash = c.runtime_code_hash
+        LEFT JOIN code onchain_creation_code ON onchain_creation_code.code_hash = c.creation_code_hash
+        WHERE cd.address = $1`,
+      [Buffer.from(address.substring(2), "hex")],
+    );
+
+    // Verify that we got a result
+    chai.expect(verificationDetails.rows.length).to.equal(1);
+    const details = verificationDetails.rows[0];
+
+    // Verify chain ID and address
+    chai.expect(details.chain_id).to.equal(goerliChainId);
+
+    // Verify the deployment information
+    chai.expect(details.block_number).to.equal("-1"); // Special value for deprecated chains
+    chai.expect(details.transaction_index).to.equal("-1"); // Special value for deprecated chains
+    chai.expect(details.transaction_hash).to.be.null; // Should be null for deprecated chains
+    chai.expect(details.deployer).to.be.null; // Should be null for deprecated chains
+
+    // Verify match status
+    chai.expect(details.runtime_match).to.equal(true);
+    chai.expect(details.creation_match).to.equal(true);
+
+    // Check if the onchain bytecodes have the special deprecated message
+    const deprecatedMessage =
+      "0x2121212121212121212121202d20636861696e207761732064657072656361746564206174207468652074696d65206f6620766572696669636174696f6e";
+
+    // Convert database bytecode (Buffer) to hex string for comparison
+    const onchainRuntimeHex =
+      "0x" + Buffer.from(details.onchain_runtime_code).toString("hex");
+    const onchainCreationHex =
+      "0x" + Buffer.from(details.onchain_creation_code).toString("hex");
+
+    // Verify the special deprecated message was stored as bytecode
+    chai.expect(onchainRuntimeHex).to.equal(deprecatedMessage);
+    chai.expect(onchainCreationHex).to.equal(deprecatedMessage);
+  });
+
   describe("solc standard input json", () => {
     it("should return validation error for adding standard input JSON without a compiler version", async () => {
       const address = await deployFromAbiAndBytecode(
@@ -969,7 +1064,7 @@ describe("/", function () {
             chai
               .expect(res.body.error)
               .to.equal(
-                "It seems your contract's metadata hashes match but not the bytecodes. You should add all the files input to the compiler during compilation and remove all others. See the issue for more information: https://github.com/ethereum/sourcify/issues/618",
+                "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/ethereum/sourcify/issues/618",
               );
             done();
           });

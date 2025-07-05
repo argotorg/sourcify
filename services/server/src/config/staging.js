@@ -33,9 +33,5 @@ module.exports = {
     secure: true, // Set Secure in the Set-Cookie header i.e. require https
     storeType: "database",
   },
-  rateLimit: {
-    enabled: false,
-    windowMs: 1 * 1000, // 1 sec
-    max: 2,
-  },
+  upgradeContract: true,
 };

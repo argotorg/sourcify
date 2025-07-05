@@ -1,25 +1,60 @@
 openapi: 3.1.0
 info:
-  version: 1.0.0
-  title: Sourcify API
-  description: API to interact with Sourcify
+  version: 2.1.0
+  title: Sourcify APIv2
+  description: |-
+    Welcome to the Sourcify's APIv2.
+
+    Important differences between the deprecated legacy API and the new APIv2:
+    - **Ticketing**: The verfication requests resolve into tickets/verification jobs. 
+      - Previously the verification happened during the HTTP request, which resulted in timeouts if compilation took longer
+    - **Standard JSON as default**: In the current design we take the standard JSON format as our main verification endpoint. We still support verification with metadata at `/v2/verify/metadata`.
+    - **Lean API**: We keep the number of endpoints minimal compared to v1. We won't have a session API. 
+    - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
   license:
     name: MIT
     url: https://github.com/ethereum/sourcify/blob/master/LICENSE
+  contact:
+    name: Sourcify
+    url: 'https://sourcify.dev'
+    email: hello@sourcify.dev
 servers:
-  $ref: "servers.yaml"
+  - url: https://sourcify.dev/server
+    description: Production server
+  - url: https://staging.sourcify.dev/server
+    description: Staging server
+  - url: http://localhost:5555
+    description: Local development server address on default port 5555.
 tags:
   - name: Contract Lookup
     description: API v2 - Tools and endpoints for looking up contract information
-  - name: Stateless Verification 
-    description: API v1 - Main verification endpoints
-  - name: Repository
-    description: API v1 - Access to already verified contracts and files
-  - name: Session Verification
+  - name: Verify Contracts
+    description: API v2 - Submit a contract for verification
+  - name: Verification Jobs
+    description: API v2 - Check the status of a verification job
+  - name: (Deprecated) Stateless Verification
+    description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
+  - name: (Deprecated) Repository
+    description: API v1 - Access to already verified contracts and files. - Deprecated. Please use the API v2 Contract Lookup instead.
+  - name: (Deprecated) Session Verification
     description: API v1 - Used by the Sourcify UI to verify contracts. Not intended for external usage. Will require CORS.
 paths:
+  /private/verify-deprecated:
+    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
+  /private/upgrade-contract:
+    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1upgrade-contract"
+  /v2/verify/{chainId}/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1verify~1{chainId}~1{address}"
+  /v2/verify/metadata/{chainId}/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1verify~1metadata~1{chainId}~1{address}"
+  /v2/verify/etherscan/{chainId}/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1verify~1etherscan~1{chainId}~1{address}"
+  /v2/verify/{verificationId}:
+    $ref: "apiv2.yaml#/paths/~1v2~1verify~1{verificationId}"
   /v2/contract/{chainId}/{address}:
     $ref: "apiv2.yaml#/paths/~1v2~1contract~1{chainId}~1{address}"
+  /v2/contract/all-chains/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1contract~1all-chains~1{address}"
   /v2/contracts/{chainId}:
     $ref: "apiv2.yaml#/paths/~1v2~1contracts~1{chainId}"
   /verify:
@@ -30,8 +65,8 @@ paths:
     $ref: "server/apiv1/verification/etherscan/stateless/etherscan.stateless.paths.yaml#/paths/~1verify~1etherscan"
   /verify/solc-json:
     $ref: "server/apiv1/verification/solc-json/stateless/solc-json.stateless.paths.yaml#/paths/~1verify~1solc-json"
-  /repository/contracts/{full_match | partial_match}/{chain}/{address}/{filePath}:
-    $ref: "server/apiv1/repository/get-file-static.stateless.paths.yaml#/paths/~1repository~1contracts~1{full_match | partial_match}~1{chain}~1{address}~1{filePath}"
+  /repository/contracts/{matchType}/{chain}/{address}/{filePath}:
+    $ref: "server/apiv1/repository/get-file-static.stateless.paths.yaml#/paths/~1repository~1contracts~1{matchType}~1{chain}~1{address}~1{filePath}"
   /check-all-by-addresses:
     $ref: "server/apiv1/repository/check-all-by-addresses.stateless.paths.yaml#/paths/~1check-all-by-addresses"
   /check-by-addresses:
@@ -64,12 +99,12 @@ paths:
     $ref: "server/apiv1/verification/solc-json/session/solc-json.session.paths.yaml#/paths/~1session~1input-solc-json"
   /session/verify/etherscan:
     $ref: "server/apiv1/verification/etherscan/session/etherscan.session.paths.yaml#/paths/~1session~1verify~1etherscan"
-  /change-log-level:
+  /private/change-log-level:
     post:
       summary: Change the logging level of the application
       description: Allows changing the logging level dynamically at runtime for the application. Requires Basic Authentication.
       tags:
-        - Logging
+        - Private
       security:
         - BearerAuth: []
       requestBody:

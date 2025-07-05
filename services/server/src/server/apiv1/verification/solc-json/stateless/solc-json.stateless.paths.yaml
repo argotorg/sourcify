@@ -3,10 +3,10 @@ openapi: "3.0.0"
 paths:
   /verify/solc-json:
     post:
-      deprecated: false
+      deprecated: true
       summary: Verify solc-json
       tags:
-        - Stateless Verification
+        - (Deprecated) Stateless Verification
       requestBody:
         content:
           application/json:

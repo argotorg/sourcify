@@ -1,9 +1,7 @@
 import { Response, Request } from "express";
 import {
-  ContractWrapperMap,
   SendableContract,
   getSessionJSON,
-  isVerifiable,
   verifyContractsInSession,
 } from "../../verification.common";
 import {
@@ -44,9 +42,7 @@ export async function verifyContractsInSessionEndpoint(
       }),
     ),
   });
-  /* eslint-enable indent*/
 
-  const verifiable: ContractWrapperMap = {};
   for (const receivedContract of receivedContracts) {
     const id = receivedContract.verificationId;
     const contractWrapper = session.contractWrappers[id];
@@ -54,16 +50,13 @@ export async function verifyContractsInSessionEndpoint(
       contractWrapper.address = receivedContract.address;
       contractWrapper.chainId = receivedContract.chainId;
       contractWrapper.creatorTxHash = receivedContract.creatorTxHash;
-      if (isVerifiable(contractWrapper)) {
-        verifiable[id] = contractWrapper;
-      }
     }
   }
 
   await verifyContractsInSession(
     solc,
     vyper,
-    verifiable,
+    session.contractWrappers,
     session,
     services.verification,
     services.storage,

@@ -101,5 +101,6 @@ export interface PgSourcifyMatch {
   creation_match: string | null;
   runtime_match: string | null;
   created_at: Date;
+  updated_at: Date;
   metadata: any;
 }

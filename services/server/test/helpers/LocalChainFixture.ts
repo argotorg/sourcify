@@ -11,8 +11,11 @@ import nock from "nock";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
 import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
+import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import { ChildProcess, spawn } from "child_process";
 import treeKill from "tree-kill";
+import { SolidityMetadataContract } from "@ethereum-sourcify/lib-sourcify";
+import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
 
 const storageContractSourcePath = path.join(
   __dirname,
@@ -39,6 +42,7 @@ const DEFAULT_CHAIN_ID = "31337";
 
 export type LocalChainFixtureOptions = {
   chainId?: string;
+  port?: number;
 };
 
 export class LocalChainFixture {
@@ -47,14 +51,17 @@ export class LocalChainFixture {
   defaultContractMetadata = Buffer.from(
     JSON.stringify(storageContractMetadata),
   );
-  defaultContractMetadataObject = storageContractMetadata;
+  defaultContractMetadataObject = storageContractMetadata as Metadata;
   defaultContractModifiedMetadata = Buffer.from(
     JSON.stringify(storageContractMetadataModified),
   );
-  defaultContractModifiedSourceIpfs = getModifiedSourceIpfs();
+  defaultContractMetadataWithModifiedIpfsHash =
+    getMetadataWithModifiedIpfsHash();
   defaultContractArtifact = storageContractArtifact;
+  defaultContractJsonInput = storageJsonInput;
 
-  private _chainId?: string;
+  private _chainId: string;
+  private _port: number;
   private _localSigner?: JsonRpcSigner;
   private _defaultContractAddress?: string;
   private _defaultContractCreatorTx?: string;
@@ -109,6 +116,7 @@ export class LocalChainFixture {
    */
   constructor(options: LocalChainFixtureOptions = {}) {
     this._chainId = options.chainId ?? DEFAULT_CHAIN_ID;
+    this._port = options.port ?? HARDHAT_PORT;
 
     before(async () => {
       // Init IPFS mock with all the necessary pinned files
@@ -116,7 +124,7 @@ export class LocalChainFixture {
         path.join(__dirname, "..", "mocks", "ipfs"),
       );
       for (const ipfsKey of Object.keys(mockContent)) {
-        nock(process.env.IPFS_GATEWAY || "")
+        nock(SolidityMetadataContract.getGlobalIpfsGateway().url || "")
           .persist()
           .get("/" + ipfsKey)
           .reply(function () {
@@ -124,7 +132,7 @@ export class LocalChainFixture {
           });
       }
 
-      this.hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
+      this.hardhatNodeProcess = await startHardhatNetwork(this._port);
 
       const sourcifyChainHardhat = LOCAL_CHAINS[1];
       const ethersNetwork = new Network(
@@ -132,7 +140,7 @@ export class LocalChainFixture {
         sourcifyChainHardhat.chainId,
       );
       this._localSigner = await new JsonRpcProvider(
-        `http://localhost:${HARDHAT_PORT}`,
+        `http://localhost:${this._port}`,
         ethersNetwork,
         { staticNetwork: ethersNetwork },
       ).getSigner();
@@ -200,7 +208,7 @@ function stopHardhatNetwork(hardhatNodeProcess: ChildProcess) {
 }
 
 // Changes the IPFS hash inside the metadata file to make the source unfetchable
-function getModifiedSourceIpfs(): Buffer {
+function getMetadataWithModifiedIpfsHash(): Metadata {
   const ipfsAddress =
     storageContractMetadata.sources["project:/contracts/Storage.sol"].urls[1];
   // change the last char in ipfs hash of the source file
@@ -215,5 +223,5 @@ function getModifiedSourceIpfs(): Buffer {
   );
   modifiedIpfsMetadata.sources["project:/contracts/Storage.sol"].urls[1] =
     modifiedIpfsAddress;
-  return Buffer.from(JSON.stringify(modifiedIpfsMetadata));
+  return modifiedIpfsMetadata;
 }

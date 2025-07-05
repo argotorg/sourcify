@@ -4,6 +4,7 @@ const {
 } = require("../server/services/storageServices/identifiers");
 
 module.exports = {
+  verifyDeprecated: true,
   repositoryV1: {
     path: "/tmp/repositoryV1-test/",
   },

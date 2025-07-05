@@ -1,5 +1,34 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.5.3 - 2025-06-18
+
+- Update readme and .env.dev for documentation
+- Update packages
+
+## sourcify-database@2.5.2 - 2025-05-20
+
+- update dependencies
+
+## sourcify-database@2.5.1 - 2025-05-06
+
+- update dependencies
+
+## sourcify-database@2.5.0 - 2025-04-30
+
+- Add `error_data` column to `verification_jobs` table
+- Add local-docker migration configuration
+- Update dependencies
+
+## sourcify-database@2.4.0 - 2025-04-09
+
+- Add `updated_at` to `sourcify_matches`
+
+## sourcify-database@2.3.0 - 2025-03-19
+
+- Add verification_jobs tables
+- Update the VerA schema
+- Update dependencies
+
 ## sourcify-database@2.2.1 - 2025-02-18
 
 - Make Dune namespace configurable

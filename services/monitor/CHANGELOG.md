@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.3.14 - 2025-06-18
+
+- Update packages
+
+## sourcify-monitor@1.3.13 - 2025-05-20
+
+- update dependencies
+
+## sourcify-monitor@1.3.12 - 2025-05-12
+
+- Update dependencies
+
+## sourcify-monitor@1.3.11 - 2025-05-06
+
+- update dependencies
+
+## sourcify-monitor@1.3.10 - 2025-04-30
+
+- Add Ethereum Testnet Hoodi (560048) to monitored chains
+- Update dependencies
+
+## sourcify-monitor@1.3.9 - 2025-04-09
+
+- Update dependencies
+- Use the new `FetchRequestRPC`
+
+## sourcify-monitor@1.3.8 - 2025-03-19
+
+- Update dependencies
+
 ## sourcify-monitor@1.3.7 - 2025-02-18
 
 - Add Zircuit mainnet (48900) to monitored chains

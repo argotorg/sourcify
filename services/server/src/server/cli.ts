@@ -18,23 +18,38 @@ import genFunc from "connect-pg-simple";
 // local imports
 import logger from "../common/logger";
 import { sourcifyChainsMap } from "../sourcify-chains";
-import { Server } from "./server";
-import { ChainRepository } from "../sourcify-chain-repository";
+import { LibSourcifyConfig, Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
-
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
-// Supported Chains
+// lib-sourcify configuration
+const libSourcifyConfig: LibSourcifyConfig = {};
+if (process.env.IPFS_GATEWAY || process.env.IPFS_GATEWAY_HEADERS) {
+  try {
+    libSourcifyConfig.ipfsGateway = {
+      url: process.env.IPFS_GATEWAY || "https://ipfs.io/ipfs/",
+      headers: JSON.parse(process.env.IPFS_GATEWAY_HEADERS || "{}"),
+    };
+  } catch (error) {
+    logger.error("Error setting lib-sourcify IPFS gateway", { error });
+    throw new Error("Error setting lib-sourcify IPFS gateway");
+  }
+}
 
-const chainRepository = new ChainRepository(sourcifyChainsMap);
+if (process.env.RPC_TIMEOUT) {
+  try {
+    libSourcifyConfig.rpcTimeout = parseInt(process.env.RPC_TIMEOUT);
+  } catch (error) {
+    logger.error("Error setting lib-sourcify RPC timeout", { error });
+    throw new Error("Error setting lib-sourcify RPC timeout");
+  }
+}
 
-logger.info("SourcifyChains.Initialized", {
-  supportedChainsCount: chainRepository.supportedChainsArray.length,
-  allChainsCount: chainRepository.sourcifyChainsArray.length,
-  supportedChains: chainRepository.supportedChainsArray.map((c) => c.chainId),
-  allChains: chainRepository.sourcifyChainsArray.map((c) => c.chainId),
-});
+// This variable is used to set the log level for the server and lib-sourcify
+const logLevel =
+  process.env.NODE_LOG_LEVEL ||
+  (process.env.NODE_ENV === "production" ? "info" : "debug");
 
 // Solidity Compiler
 
@@ -65,32 +80,30 @@ const server = new Server(
   {
     port: config.get("server.port"),
     maxFileSize: config.get("server.maxFileSize"),
-    rateLimit: {
-      enabled: config.get("rateLimit.enabled"),
-      windowMs: config.get("rateLimit.enabled")
-        ? config.get("rateLimit.windowMs")
-        : undefined,
-      max: config.get("rateLimit.enabled")
-        ? config.get("rateLimit.max")
-        : undefined,
-      whitelist: config.get("rateLimit.enabled")
-        ? config.get("rateLimit.whitelist")
-        : undefined,
-      // Don't log IPs in production master
-      hideIpInLogs: process.env.NODE_ENV === "production",
-    },
     corsAllowedOrigins: config.get("corsAllowedOrigins"),
     solc,
     vyper,
-    chains: chainRepository.sourcifyChainMap,
+    chains: sourcifyChainsMap,
     verifyDeprecated: config.get("verifyDeprecated"),
+    upgradeContract: config.get("upgradeContract"),
     sessionOptions: getSessionOptions(),
-    loggingToken: process.env.SETLOGGING_TOKEN,
+    sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
+    logLevel,
+    libSourcifyConfig,
   },
   {
     initCompilers: config.get("initCompilers") || false,
+    sourcifyChainMap: sourcifyChainsMap,
     solcRepoPath,
     solJsonRepoPath,
+    vyperRepoPath,
+    workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
+      ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
+      : undefined,
+    concurrentVerificationsPerWorker: process.env
+      .CONCURRENT_VERIFICATIONS_PER_WORKER
+      ? parseInt(process.env.CONCURRENT_VERIFICATIONS_PER_WORKER)
+      : undefined,
   },
   {
     serverUrl: config.get("serverUrl"),

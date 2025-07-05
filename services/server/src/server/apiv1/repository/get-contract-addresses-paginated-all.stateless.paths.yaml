@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /files/contracts/any/{chain}:
     get:
-      deprecated: false
+      deprecated: true
       summary: Get the contract addresses verified on a chain (full or partial match)
       description: Returns the verified contracts from the repository for the desired chain. Searches for full and partial matches. API is paginated. Limit must be a number between 1 and 200.
       tags:
-        - Repository
+        - (Deprecated) Repository
       parameters:
         - name: chain
           in: path

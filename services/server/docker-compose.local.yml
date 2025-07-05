@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: "sourcify"
+      POSTGRES_USER: "sourcify"
+      POSTGRES_PASSWORD: "sourcify"
+    ports:
+      - 5431:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Needed to separate the migration because node must have PID 1 in service server
+  run-migrations:
+    image: node:22.5.1-bullseye-slim
+    volumes:
+      - ../database:/home/app/services/database
+    command: /bin/bash -c "cd /home/app/services/database && npm run migrate:up -- --env local-docker"
+    restart: "no"
+    deploy:
+      restart_policy:
+        condition: none
+    depends_on:
+      db:
+        condition: service_healthy
+
+  server:
+    build:
+      context: ../..
+      dockerfile: services/server/Dockerfile
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    volumes:
+      - ./src/config/local.js:/home/app/services/server/dist/config/local.js
+    depends_on:
+      db:
+        condition: service_started
+      run-migrations:
+        condition: service_completed_successfully

@@ -28,7 +28,9 @@ exports.up = function (db, callback) {
         `ALTER TABLE contract_deployments ALTER COLUMN transaction_hash DROP NOT NULL;
         ALTER TABLE contract_deployments ALTER COLUMN block_number DROP NOT NULL;
         ALTER TABLE contract_deployments ALTER COLUMN transaction_index DROP NOT NULL;
-        ALTER TABLE contract_deployments ALTER COLUMN deployer DROP NOT NULL;`,
+        ALTER TABLE contract_deployments ALTER COLUMN deployer DROP NOT NULL;
+        ALTER TABLE contract_deployments DROP CONSTRAINT IF EXISTS contract_deployments_pseudo_pkey;
+        ALTER TABLE contract_deployments ADD CONSTRAINT contract_deployments_pseudo_pkey UNIQUE (chain_id, address, transaction_hash, contract_id);`,
       ),
       db.runSql.bind(
         db,
@@ -45,12 +47,22 @@ exports.up = function (db, callback) {
             creation_match varchar NULL,
             runtime_match varchar NULL,
             created_at timestamptz NOT NULL DEFAULT now(),
+            updated_at timestamptz NOT NULL DEFAULT NOW(),
             metadata json NOT NULL,
             CONSTRAINT sourcify_matches_pkey PRIMARY KEY (id),
             CONSTRAINT sourcify_matches_pseudo_pkey UNIQUE (verified_contract_id)
         );
         CREATE INDEX sourcify_matches_verified_contract_id_idx ON sourcify_matches USING btree (verified_contract_id);
         ALTER TABLE sourcify_matches ADD CONSTRAINT sourcify_matches_verified_contract_id_fk FOREIGN KEY (verified_contract_id) REFERENCES verified_contracts(id) ON DELETE RESTRICT ON UPDATE RESTRICT;`,
+      ),
+      db.runSql.bind(
+        db,
+        `
+        CREATE TRIGGER update_set_updated_at
+            BEFORE UPDATE ON sourcify_matches
+            FOR EACH ROW
+            EXECUTE FUNCTION trigger_set_updated_at();
+        `,
       ),
       db.runSql.bind(
         db,
@@ -87,12 +99,14 @@ exports.up = function (db, callback) {
             verified_contract_id BIGINT,
             error_code varchar,
             error_id uuid,
+            error_data json,
             verification_endpoint varchar NOT NULL,
             hardware varchar,
             compilation_time BIGINT,
             CONSTRAINT verification_jobs_pkey PRIMARY KEY (id),
             CONSTRAINT verification_jobs_verified_contract_id_fk FOREIGN KEY (verified_contract_id) REFERENCES verified_contracts(id) ON DELETE RESTRICT ON UPDATE RESTRICT
-        );`,
+        );
+        CREATE INDEX verification_jobs_chain_id_address_idx ON verification_jobs USING btree (chain_id, contract_address);`,
       ),
       db.runSql.bind(
         db,
@@ -102,7 +116,7 @@ exports.up = function (db, callback) {
             recompiled_runtime_code bytea,
             onchain_creation_code bytea,
             onchain_runtime_code bytea,
-            creator_transaction_hash bytea,
+            creation_transaction_hash bytea,
             CONSTRAINT verification_jobs_ephemeral_pkey PRIMARY KEY (id),
             CONSTRAINT verification_jobs_ephemeral_id_fk FOREIGN KEY (id) REFERENCES verification_jobs(id) ON DELETE CASCADE ON UPDATE CASCADE
         );`,
@@ -137,7 +151,9 @@ exports.down = function (db, callback) {
         `ALTER TABLE contract_deployments ALTER COLUMN deployer SET NOT NULL;
         ALTER TABLE contract_deployments ALTER COLUMN transaction_index SET NOT NULL;
         ALTER TABLE contract_deployments ALTER COLUMN block_number SET NOT NULL;
-        ALTER TABLE contract_deployments ALTER COLUMN transaction_hash SET NOT NULL;`,
+        ALTER TABLE contract_deployments ALTER COLUMN transaction_hash SET NOT NULL;
+        ALTER TABLE contract_deployments DROP CONSTRAINT IF EXISTS contract_deployments_pseudo_pkey;
+        ALTER TABLE contract_deployments ADD CONSTRAINT contract_deployments_pseudo_pkey UNIQUE (chain_id, address, transaction_hash);`,
       ),
       db.runSql.bind(
         db,

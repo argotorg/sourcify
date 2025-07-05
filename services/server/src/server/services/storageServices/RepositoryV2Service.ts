@@ -8,18 +8,17 @@
 import Path from "path";
 import fs from "fs";
 import {
-  Match,
-  Status,
+  VerificationStatus,
   StringMap,
-  AbstractCheckedContract,
+  VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
 import { V1MatchLevelWithoutAny, MatchQuality, PathConfig } from "../../types";
 import logger from "../../../common/logger";
 import { getAddress, id as keccak256 } from "ethers";
-import { getMatchStatus } from "../../common";
 import { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import { exists, readFile } from "../utils/util";
+import { getMatchStatus } from "../../apiv1/controllers.common";
 
 export interface RepositoryV2ServiceOptions {
   repositoryPath?: string;
@@ -89,98 +88,101 @@ export class RepositoryV2Service implements WStorageService {
     logger.silly(`Saved file to ${this.IDENTIFIER}`, { abolsutePath });
   }
 
-  public async storeMatch(
-    contract: AbstractCheckedContract,
-    match: Match,
-  ): Promise<void | Match> {
+  public async storeVerification(verification: VerificationExport) {
     if (
-      match.address &&
-      (match.runtimeMatch === "perfect" ||
-        match.runtimeMatch === "partial" ||
-        match.creationMatch === "perfect" ||
-        match.creationMatch === "partial")
+      verification.address &&
+      (verification.status.runtimeMatch === "perfect" ||
+        verification.status.runtimeMatch === "partial" ||
+        verification.status.creationMatch === "perfect" ||
+        verification.status.creationMatch === "partial")
     ) {
       // Delete the partial matches if we now have a perfect match instead.
       if (
-        match.runtimeMatch === "perfect" ||
-        match.creationMatch === "perfect"
+        verification.status.runtimeMatch === "perfect" ||
+        verification.status.creationMatch === "perfect"
       ) {
-        await this.deletePartialIfExists(match.chainId, match.address);
+        await this.deletePartialIfExists(
+          verification.chainId.toString(),
+          verification.address,
+        );
       }
       const matchQuality: MatchQuality = this.statusToMatchQuality(
-        getMatchStatus(match),
+        getMatchStatus(verification.status),
       );
 
       await this.storeSources(
         matchQuality,
-        match.chainId,
-        match.address,
-        contract.sources,
+        verification.chainId.toString(),
+        verification.address,
+        verification.compilation.sources,
       );
 
       // Store metadata
       await this.storeJSON(
         matchQuality,
-        match.chainId,
-        match.address,
+        verification.chainId.toString(),
+        verification.address,
         "metadata.json",
-        contract.metadata,
+        verification.compilation.metadata,
       );
 
-      if (match.abiEncodedConstructorArguments) {
+      if (verification.transformations.creation.values.constructorArguments) {
         await this.storeTxt(
           matchQuality,
-          match.chainId,
-          match.address,
+          verification.chainId.toString(),
+          verification.address,
           "constructor-args.txt",
-          match.abiEncodedConstructorArguments,
+          verification.transformations.creation.values.constructorArguments,
         );
       }
 
-      if (match.creatorTxHash) {
+      if (verification.deploymentInfo.txHash) {
         await this.storeTxt(
           matchQuality,
-          match.chainId,
-          match.address,
+          verification.chainId.toString(),
+          verification.address,
           "creator-tx-hash.txt",
-          match.creatorTxHash,
-        );
-      }
-
-      if (match.libraryMap && Object.keys(match.libraryMap).length) {
-        await this.storeJSON(
-          matchQuality,
-          match.chainId,
-          match.address,
-          "library-map.json",
-          match.libraryMap,
+          verification.deploymentInfo.txHash,
         );
       }
 
       if (
-        match.immutableReferences &&
-        Object.keys(match.immutableReferences).length > 0
+        verification.libraryMap &&
+        Object.keys(verification.libraryMap).length
       ) {
         await this.storeJSON(
           matchQuality,
-          match.chainId,
-          match.address,
+          verification.chainId.toString(),
+          verification.address,
+          "library-map.json",
+          verification.libraryMap,
+        );
+      }
+
+      if (
+        verification.compilation.immutableReferences &&
+        Object.keys(verification.compilation.immutableReferences).length > 0
+      ) {
+        await this.storeJSON(
+          matchQuality,
+          verification.chainId.toString(),
+          verification.address,
           "immutable-references.json",
-          match.immutableReferences,
+          verification.compilation.immutableReferences,
         );
       }
 
       logger.info(`Stored contract to ${this.IDENTIFIER}`, {
-        address: match.address,
-        chainId: match.chainId,
-        runtimeMatch: match.runtimeMatch,
-        creationMatch: match.creationMatch,
-        name: contract.name,
+        address: verification.address,
+        chainId: verification.chainId.toString(),
+        runtimeMatch: verification.status.runtimeMatch,
+        creationMatch: verification.status.creationMatch,
+        name: verification.compilation.compilationTarget.name,
       });
-    } else if (match.runtimeMatch === "extra-file-input-bug") {
-      return match;
     } else {
-      throw new Error(`Unknown match status: ${match.runtimeMatch}`);
+      throw new Error(
+        `Unknown match status: ${verification.status.runtimeMatch}`,
+      );
     }
   }
 
@@ -204,7 +206,7 @@ export class RepositoryV2Service implements WStorageService {
    * @param status
    * @returns {MatchQuality} matchQuality
    */
-  private statusToMatchQuality(status: Status): MatchQuality {
+  private statusToMatchQuality(status: VerificationStatus): MatchQuality {
     if (status === "perfect") return "full";
     if (status === "partial") return status;
     throw new Error(`Invalid match status: ${status}`);

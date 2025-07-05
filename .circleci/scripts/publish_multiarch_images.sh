@@ -7,7 +7,7 @@ set -e
 
 NAMESPACE="ghcr.io/ethereum/sourcify"
 # Define the list of services
-services=("server" "monitor" "repository")
+services=("server" "monitor")
 
 # Login to Github Container Registry
 echo $GITHUB_CR_PAT | docker login ghcr.io --username kuzdogan --password-stdin

@@ -1,9 +1,7 @@
 {
   "settings": {
     "evmVersion": "istanbul",
-    "libraries": {
-      "": {}
-    },
+    "libraries": {},
     "metadata": {
       "bytecodeHash": "ipfs"
     },

@@ -1,0 +1,220 @@
+openapi: "3.0.0"
+
+paths:
+  /private/verify-deprecated:
+    post:
+      deprecated: false
+      description: |
+        Sends provided files for verification
+      tags:
+        - Private
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+                - chain
+                - files
+              properties:
+                address:
+                  type: string
+                  format: address
+                  example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                chain:
+                  type: string
+                  example: "1"
+                files:
+                  type: object
+                  example:
+                    metadata.json: "{...}"
+                    SimpleStorage.sol: "// file"
+                creatorTxHash:
+                  type: string
+                chosenContract:
+                  type: string
+                match:
+                  type: string
+      responses:
+        "200":
+          description: The contract has been successfully checked or sourcified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        address:
+                          type: string
+                        chainId:
+                          type: string
+                        status:
+                          type: string
+                        message:
+                          type: string
+                        libraryMap:
+                          type: object
+              examples:
+                Perfect Match:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "perfect"
+                        libraryMap:
+                          lib1: "0x3f681646d4a755815f9cb19e1acc8565a0c2ac"
+                          lib2: "0x4f681646d4a755815f9cb19e1acc8565a0c2ac"
+                Partial Match:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "partial"
+                        libraryMap:
+                          lib1: "0x3f681646d4a755815f9cb19e1acc8565a0c2ac"
+                          lib2: "0x4f681646d4a755815f9cb19e1acc8565a0c2ac"
+                Not Deployed:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "null"
+                        message: "Chain #1 does not have a contract deployed at 0x...."
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Metadata not found:
+                  value:
+                    error: 'Metadata file not found. Did you include "metadata.json"?'
+                Bad Formatted Json:
+                  value:
+                    error: "Unexpected token ' in JSON at position 107"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                File Not Found:
+                  value:
+                    error: "Couldn't extract files from the request. Please make sure you have added files"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Resource Missing:
+                  value:
+                    error: "Resource missing; unsuccessful fetching: contracts/SingleFile.sol"
+                Deployed and recompiled mismatch:
+                  value:
+                    error: "The deployed and recompiled bytecode don't match."
+  /private/upgrade-contract:
+    post:
+      deprecated: false
+      description: |
+        Upgrades an existing contract verification by re-verifying it with the provided data.
+      tags:
+        - Private
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sourcifyMatchId
+              properties:
+                sourcifyMatchId:
+                  type: number
+                  description: The ID of the Sourcify match to upgrade.
+                  example: 1
+      responses:
+        "200":
+          description: The contract verification has been successfully upgraded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                      verifiedContractId:
+                        type: string
+              examples:
+                Success:
+                  value:
+                    result:
+                      message: "Contract upgrade successful"
+                      verifiedContractId: 1
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Missing ID:
+                  value:
+                    error: "sourcifyMatchId is required"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Contract Not Found:
+                  value:
+                    error: "Verified contract not found"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Database Error:
+                  value:
+                    error: "Database service not available"
+                Verification Error:
+                  value:
+                    error: "Error during verification process"

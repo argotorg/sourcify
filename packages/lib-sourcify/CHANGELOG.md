@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.1.4 - 2025-06-18
+
+- Add a new CompilationError code `compiler_error` and include the full compiler error output in the thrown CompilationError
+
+## @ethereum-sourcify/lib-sourcify@2.1.3 - 2025-05-20
+
+- Remove creatorTxHash's undefined assignment when creation match fails (#2154)
+- Fix findAuxdataPositions handling the case of multiple equal auxdata (#2159)
+
+## @ethereum-sourcify/lib-sourcify@2.1.2 - 2025-05-12
+
+- Add support for zeroed-out placeholders to accept bytecodes from the database (#2150)
+- Handle : characters in contract paths correctly (#2143)
+
+
+## @ethereum-sourcify/lib-sourcify@2.1.1 - 2025-05-06
+
+- Update creation information only if `extractConstructorArgumentsTransformation` doesn't throw
+
+## @ethereum-sourcify/lib-sourcify@2.1.0 - 2025-04-30
+
+- Remove environment variables for enabling lib-sourcify to run in the browser
+- Add configuration functions in replacement of environment variables
+- Add documentation about running lib-sourcify in the browser
+- Update dependencies
+
+## @ethereum-sourcify/lib-sourcify@2.0.0 - 2025-04-09
+
+- (Breaking change) Complete refactoring of the verification flow (#1845)
+- Add Validation classes and types (#1851)
+- Add Compilation classes and types (#1849)
+- Implement tests for the new verification flow
+- Implement SolidityMetadataContract (#1869)
+- Add Verification classes (#1879)
+- Improve auxdata position generation return types and error handling (#1993)
+- Add VerificationExport (#1994)
+
+## @ethereum-sourcify/lib-sourcify@1.13.0 - 2025-03-19
+
+- Use @ethereum-sourcify/compilers package instead of built-in compiler
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@1.12.1 - 2025-02-18
 
 - update dependencies

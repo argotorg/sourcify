@@ -6,9 +6,9 @@ import {
   V1MatchLevel,
   V1MatchLevelWithoutAny,
   PaginatedData,
+  Match,
 } from "../../types";
 import { NotFoundError } from "../../../common/errors";
-import { Match } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import { Services } from "../../services/services";
 import {

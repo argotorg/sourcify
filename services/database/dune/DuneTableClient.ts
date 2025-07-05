@@ -377,6 +377,11 @@ export default class DuneTableClient {
           nullable: false,
         },
         {
+          name: "updated_at",
+          type: "timestamp",
+          nullable: false,
+        },
+        {
           name: "metadata",
           type: "varchar",
           nullable: false,

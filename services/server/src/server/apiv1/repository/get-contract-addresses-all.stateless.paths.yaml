@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /files/contracts/{chain}:
     get:
-      deprecated: false
+      deprecated: true
       summary: (Deprecated) Get the first 200 contract addresses verified on a chain (full or partial match)
       description: Returns the first 200 verified contracts from the repository for the desired chain. Searches for full and partial matches. This endpoint is deprecated and only retuns 200 addresses. Use `/files/contracts/any/` and `/files/contracts/full/` instead
       tags:
-        - Repository
+        - (Deprecated) Repository
       parameters:
         - name: chain
           in: path

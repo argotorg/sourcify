@@ -41,10 +41,10 @@ jobs:
           command: npx lerna run build
       - run:
           name: lint
-          command: npm run lerna-lint
+          command: npx lerna run lint
       - run:
           name: test
-          command: npx lerna run lerna-test
+          command: npx lerna run test --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "localhost"

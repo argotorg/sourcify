@@ -4,15 +4,21 @@ import config from "config";
 import path from "path";
 import fs from "fs";
 import { getAddress, id } from "ethers";
-import { getMatchStatus } from "../../src/server/common";
 import type { Response } from "superagent";
 import type { Done } from "mocha";
 import { Pool } from "pg";
 import {
   Transformation,
   TransformationValues,
+  VerificationStatus,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ServerFixture } from "./ServerFixture";
+import { getMatchStatus } from "../../src/server/apiv1/controllers.common";
+import { MatchLevel } from "../../src/server/types";
+import { toVerificationStatus } from "../../src/server/services/utils/util";
+import chaiHttp from "chai-http";
+
+chai.use(chaiHttp);
 
 export const assertValidationError = (
   err: Error | null,
@@ -40,7 +46,7 @@ export const assertVerification = async (
   done: Done | null,
   expectedAddress: string,
   expectedChain: string,
-  expectedStatus = "perfect",
+  expectedStatus: VerificationStatus = "perfect",
 ) => {
   try {
     chai.expect(err).to.be.null;
@@ -78,7 +84,7 @@ export const assertVerificationSession = async (
   done: Done | null,
   expectedAddress: string | undefined,
   expectedChain: string | undefined,
-  expectedStatus: string,
+  expectedStatus: VerificationStatus,
 ) => {
   try {
     chai.expect(err).to.be.null;
@@ -164,13 +170,13 @@ export async function assertTransformations(
     .to.deep.equal(expectedCreationTransformationValues);
 }
 
-async function assertContractSaved(
+export async function assertContractSaved(
   sourcifyDatabase: Pool | null,
   expectedAddress: string | undefined,
   expectedChain: string | undefined,
-  expectedStatus: string,
-  testS3Path: string | null,
-  testS3Bucket: string | null,
+  expectedStatus: VerificationStatus,
+  testS3Path?: string | null,
+  testS3Bucket?: string | null,
 ) {
   if (expectedStatus === "perfect" || expectedStatus === "partial") {
     // Check if saved to fs repository
@@ -275,11 +281,86 @@ async function assertContractSaved(
           getMatchStatus({
             runtimeMatch: contract.runtime_match,
             creationMatch: contract.creation_match,
-            address: "0x" + contract.address.toString("hex"),
-            chainId: contract.chain_id,
           }),
         )
         .to.equal(expectedStatus);
     }
   }
+}
+
+export async function assertJobVerification(
+  serverFixture: ServerFixture,
+  verifyResponse: Response,
+  resolveWorkers: () => Promise<void>,
+  testChainId: string,
+  testAddress: string,
+  expectedMatch: MatchLevel,
+) {
+  chai
+    .expect(verifyResponse.status)
+    .to.equal(202, "Response body: " + JSON.stringify(verifyResponse.body));
+  chai.expect(verifyResponse.body).to.have.property("verificationId");
+  chai
+    .expect(verifyResponse.body.verificationId)
+    .to.match(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+    );
+
+  const jobRes = await chai
+    .request(serverFixture.server.app)
+    .get(`/v2/verify/${verifyResponse.body.verificationId}`);
+
+  chai
+    .expect(jobRes.status)
+    .to.equal(200, "Response body: " + JSON.stringify(verifyResponse.body));
+  chai.expect(jobRes.body).to.deep.include({
+    isJobCompleted: false,
+    verificationId: verifyResponse.body.verificationId,
+    contract: {
+      match: null,
+      creationMatch: null,
+      runtimeMatch: null,
+      chainId: testChainId,
+      address: testAddress,
+    },
+  });
+  chai.expect(jobRes.body.error).to.be.undefined;
+
+  await resolveWorkers();
+
+  const jobRes2 = await chai
+    .request(serverFixture.server.app)
+    .get(`/v2/verify/${verifyResponse.body.verificationId}`);
+
+  const verifiedContract = {
+    match: expectedMatch,
+    chainId: testChainId,
+    address: testAddress,
+  };
+
+  chai
+    .expect(jobRes2.status)
+    .to.equal(200, "Response body: " + JSON.stringify(verifyResponse.body));
+  chai.expect(jobRes2.body).to.include({
+    isJobCompleted: true,
+    verificationId: verifyResponse.body.verificationId,
+  });
+  chai.expect(jobRes2.body.error).to.be.undefined;
+  chai.expect(jobRes2.body.contract).to.include(verifiedContract);
+
+  const contractRes = await chai
+    .request(serverFixture.server.app)
+    .get(`/v2/contract/${testChainId}/${testAddress}`);
+
+  chai
+    .expect(contractRes.status)
+    .to.equal(200, "Response body: " + JSON.stringify(verifyResponse.body));
+  chai.expect(contractRes.body).to.include(verifiedContract);
+
+  await assertContractSaved(
+    serverFixture.sourcifyDatabase,
+    testAddress,
+    testChainId,
+    toVerificationStatus(expectedMatch),
+  );
 }

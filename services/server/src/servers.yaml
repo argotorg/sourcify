@@ -1,6 +1,0 @@
-- url: https://sourcify.dev/server
-  description: Production server
-- url: https://staging.sourcify.dev/server
-  description: Staging server
-- url: http://localhost:5555
-  description: Local development server address on default port 5555.

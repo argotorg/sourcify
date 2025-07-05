@@ -3,10 +3,10 @@ openapi: "3.0.0"
 paths:
   /session/input-files:
     post:
-      deprecated: false
+      deprecated: true
       summary: Add input files
       tags:
-        - Session Verification
+        - (Deprecated) Session Verification
       requestBody:
         content:
           application/json:

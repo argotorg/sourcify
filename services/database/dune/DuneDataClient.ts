@@ -78,6 +78,7 @@ export interface InsertData {
     creation_match: DuneVarbinary | null;
     runtime_match: DuneVarbinary | null;
     created_at: Date;
+    updated_at: Date;
     metadata: DuneObject;
   }>;
   verified_contracts: Array<{

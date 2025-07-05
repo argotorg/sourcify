@@ -1,0 +1,91 @@
+{
+  "compiler": {
+    "version": "0.8.23+commit.f704f362"
+  },
+  "language": "Solidity",
+  "output": {
+    "abi": [
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "hello",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "sender",
+            "type": "address"
+          }
+        ],
+        "name": "Greeted",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "greeting_",
+            "type": "string"
+          }
+        ],
+        "name": "greet",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "greeting",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "",
+            "type": "string"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ],
+    "devdoc": {
+      "kind": "dev",
+      "methods": {},
+      "version": 1
+    },
+    "userdoc": {
+      "kind": "user",
+      "methods": {},
+      "version": 1
+    }
+  },
+  "settings": {
+    "compilationTarget": {
+      "TheGraphGreeter.sol": "TheGraphGreeter"
+    },
+    "evmVersion": "shanghai",
+    "libraries": {},
+    "metadata": {
+      "bytecodeHash": "ipfs"
+    },
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "remappings": []
+  },
+  "sources": {
+    "TheGraphGreeter.sol": {
+      "keccak256": "0x2a5494d7f0c4bc7cc1574e965fd7de9d380339686c1b8793661301816c07e716",
+      "license": "MIT",
+      "urls": [
+        "bzz-raw://5fc66775d3a1cf0a2138e81bc4a4b97de34d37c005cee01912cd376e03e4db54",
+        "dweb:/ipfs/QmZakxHtrBojLUhckhk975rP8RRi2NwxAWi5BBzTpkRk9Q"
+      ]
+    }
+  },
+  "version": 1
+}

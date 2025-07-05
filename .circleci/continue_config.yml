@@ -3,8 +3,8 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@4.1.0
-  gcp-cli: circleci/gcp-cli@3.2.1
+  codecov: codecov/codecov@4.2.0
+  gcp-cli: circleci/gcp-cli@3.3.1
 
 ## Commands via the gcp-cli orb to authenticate with GCP
 # From https://github.com/jtreutel/circleci-gcp-oidc-test/blob/master/.circleci/config.yml
@@ -49,9 +49,6 @@ commands:
 
 # Pipeline parameters to run module builds if related files have been changed
 parameters:
-  run-build-repository:
-    type: boolean
-    default: false
   run-build-server:
     type: boolean
     default: false
@@ -148,7 +145,6 @@ workflows:
         - equal: [staging, << pipeline.git.branch >>]
         # - or:
         #     [
-        #       << pipeline.parameters.run-build-repository >>,
         #       << pipeline.parameters.run-build-server >>,
         #       << pipeline.parameters.run-build-monitor >>,
         #       << pipeline.parameters.run-build-packages >>,
@@ -159,26 +155,20 @@ workflows:
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
-      - build-push-repository-amd64:
-          run-build: << pipeline.parameters.run-build-repository >>
       - build-push-server-amd64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
       - build-push-monitor-arm64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
-      - build-push-repository-arm64:
-          run-build: << pipeline.parameters.run-build-repository >>
       - build-push-server-arm64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
       - publish-multiarch-images:
           requires:
             - build-push-monitor-amd64
-            - build-push-repository-amd64
             - build-push-server-amd64
             - build-push-monitor-arm64
-            - build-push-repository-arm64
             - build-push-server-arm64
       - deploy:
           requires:
@@ -215,12 +205,6 @@ jobs:
       SERVICE: "monitor"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/monitor/Dockerfile"
-  build-push-repository-amd64:
-    <<: *build-base
-    environment:
-      SERVICE: "repository"
-      DOCKER_BUILD_CONTEXT: "./h5ai-nginx"
-      DOCKERFILE: "./h5ai-nginx/Dockerfile"
   build-push-server-amd64:
     <<: *build-base
     environment:
@@ -234,12 +218,6 @@ jobs:
       SERVICE: "monitor"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/monitor/Dockerfile"
-  build-push-repository-arm64:
-    <<: *build-base-arm64
-    environment:
-      SERVICE: "repository"
-      DOCKER_BUILD_CONTEXT: "./h5ai-nginx"
-      DOCKERFILE: "./h5ai-nginx/Dockerfile"
   build-push-server-arm64:
     <<: *build-base-arm64
     environment:
@@ -248,7 +226,7 @@ jobs:
       DOCKERFILE: "services/server/Dockerfile"
   publish-multiarch-images:
     docker:
-      - image: cimg/base:2024.07
+      - image: cimg/base:2024.12
     resource_class: small
     steps:
       - checkout
@@ -302,10 +280,10 @@ jobs:
           command: npx lerna run build
       - run:
           name: lint
-          command: npm run lerna-lint
+          command: npx lerna run lint
       - run:
           name: test
-          command: npx lerna run lerna-test
+          command: npx lerna run test --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "localhost"

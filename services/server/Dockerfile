@@ -40,4 +40,5 @@ ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /home/app/services/server
-CMD ["npm", "start"]
+# node command has to be used directly for SIGTERM handling (NOT npm start)
+CMD ["node", "dist/server/cli.js"]

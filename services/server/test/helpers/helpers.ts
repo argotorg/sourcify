@@ -10,7 +10,7 @@ import {
   Contract,
 } from "ethers";
 import { assertVerificationSession, assertVerification } from "./assertions";
-import chai from "chai";
+import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
 import path from "path";
 import { promises as fs, readFileSync } from "fs";
@@ -18,6 +18,8 @@ import { ServerFixture } from "./ServerFixture";
 import type { Done } from "mocha";
 import { LocalChainFixture } from "./LocalChainFixture";
 import { Pool } from "pg";
+import sinon from "sinon";
+import { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 
@@ -92,7 +94,7 @@ export async function verifyContract(
   creatorTxHash?: string,
   partial: boolean = false,
 ) {
-  await chai
+  const res = await chai
     .request(serverFixture.server.app)
     .post("/")
     .field("address", contractAddress || chainFixture.defaultContractAddress)
@@ -114,6 +116,16 @@ export async function verifyContract(
         ? chainFixture.defaultContractModifiedSource
         : chainFixture.defaultContractSource,
     );
+  expect(
+    res.status,
+    `Verification failed for ${contractAddress} on chain ${chainFixture.chainId}`,
+  ).to.equal(200);
+  expect(res.body.result.length).to.equal(1);
+  expect(res.body.result[0].status).to.equal(partial ? "partial" : "perfect");
+  expect(res.body.result[0].chainId).to.equal(chainFixture.chainId);
+  if (contractAddress) {
+    expect(res.body.result[0].address).to.equal(contractAddress);
+  }
 }
 
 export async function deployAndVerifyContract(
@@ -196,11 +208,11 @@ export async function callContractMethodWithTx(
   return txReceipt;
 }
 
-export function verifyAndAssertEtherscan(
+export function verifyAndAssertEtherscanViaApiV1(
   serverFixture: ServerFixture,
   chainId: string,
   address: string,
-  expectedStatus: string,
+  expectedStatus: VerificationStatus,
   done: Done,
 ) {
   const request = chai
@@ -225,7 +237,7 @@ export function verifyAndAssertEtherscanSession(
   serverFixture: ServerFixture,
   chainId: string,
   address: string,
-  expectedStatus: string,
+  expectedStatus: VerificationStatus,
   done: Done,
 ) {
   chai
@@ -421,4 +433,50 @@ export async function testPartialUpgrade(
         "fb898a1d72892619d00d572bca59a5d98a9664169ff850e2389373e2421af4aa",
     },
   ]);
+}
+
+/**
+ * Should be called inside a describe block.
+ * @returns a function that can be called in it blocks to make the verification workers wait.
+ */
+export function hookIntoVerificationWorkerRun(
+  sandbox: sinon.SinonSandbox,
+  serverFixture: ServerFixture,
+) {
+  let fakeResolvers: (() => Promise<void>)[] = [];
+
+  beforeEach(() => {
+    fakeResolvers = [];
+  });
+
+  afterEach(async () => {
+    await Promise.all(fakeResolvers.map((resolver) => resolver()));
+  });
+
+  const makeWorkersWait = () => {
+    const fakePromise = sinon.promise();
+    const workerPool = serverFixture.server.services.verification["workerPool"];
+    const originalRun = workerPool.run;
+    const runTaskStub = sandbox
+      .stub(workerPool, "run")
+      .callsFake(async (...args) => {
+        await fakePromise;
+        return originalRun.apply(workerPool, args);
+      }) as sinon.SinonStub<[any, any], Promise<any>>;
+
+    const resolveWorkers = async () => {
+      if (fakePromise.status === "pending") {
+        // Start workers
+        fakePromise.resolve(undefined);
+      }
+      // Wait for workers to complete
+      await Promise.all(
+        serverFixture.server.services.verification["runningTasks"],
+      );
+    };
+    fakeResolvers.push(resolveWorkers);
+    return { resolveWorkers, runTaskStub };
+  };
+
+  return makeWorkersWait;
 }

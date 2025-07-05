@@ -2,8 +2,12 @@
 import path from 'path';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import { asyncExec, fetchWithBackoff } from './common';
+import { asyncExec, CompilerError, fetchWithBackoff } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
+import {
+  VyperJsonInput,
+  VyperOutput,
+} from '@ethereum-sourcify/compilers-types';
 
 const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
 
@@ -35,8 +39,8 @@ export function findVyperPlatform(): string | false {
 export async function useVyperCompiler(
   vyperRepoPath: string,
   version: string,
-  vyperJsonInput: any,
-): Promise<any> {
+  vyperJsonInput: VyperJsonInput,
+): Promise<VyperOutput> {
   const vyperPlatform = findVyperPlatform();
   if (!vyperPlatform) {
     throw new Error('Vyper is not supported on this machine.');
@@ -47,12 +51,6 @@ export async function useVyperCompiler(
     vyperPlatform,
     version,
   );
-
-  if (!vyperPath) {
-    throw new Error(
-      'Vyper path not found. Maybe an incorrect version was provided.',
-    );
-  }
 
   let compiled: string | undefined;
   const inputStringified = JSON.stringify(vyperJsonInput);
@@ -79,16 +77,15 @@ export async function useVyperCompiler(
   if (!compiled) {
     throw new Error('Compilation failed. No output from the compiler.');
   }
-  const compiledJSON = JSON.parse(compiled);
+  const compiledJSON = JSON.parse(compiled) as VyperOutput;
   const errorMessages = compiledJSON?.errors?.filter(
-    (e: any) => e.severity === 'error',
+    (e) => e.severity === 'error',
   );
   if (errorMessages && errorMessages.length > 0) {
-    const error = new Error(
-      'Compiler error:\n ' + JSON.stringify(errorMessages),
-    );
-    logError(error.message);
-    throw error;
+    logError('Compiler error', {
+      errorMessages,
+    });
+    throw new CompilerError('Compiler error', errorMessages);
   }
   return compiledJSON;
 }
@@ -97,51 +94,36 @@ export async function getVyperExecutable(
   vyperRepoPath: string,
   platform: string,
   version: string,
-): Promise<string | null> {
+): Promise<string> {
   const fileName = `vyper.${version}.${platform}`;
   const vyperPath = path.join(vyperRepoPath, fileName);
-  if (fs.existsSync(vyperPath) && validateVyperPath(vyperPath)) {
-    logDebug('Found vyper binary', {
-      version,
-      vyperPath,
-      platform,
-    });
+  if (validateVyperPath(vyperPath)) {
     return vyperPath;
   }
+  await fetchAndSaveVyper(platform, vyperPath, version, fileName);
 
-  logDebug('Downloading vyper', {
-    version,
-    vyperPath,
-    platform,
-  });
-  const success = await fetchAndSaveVyper(
-    platform,
-    vyperPath,
-    version,
-    fileName,
-  );
-  if (success) {
-    logDebug('Downloaded vyper', {
-      version,
-      vyperPath,
-      platform,
-    });
+  // Validate the vyper path
+  if (!validateVyperPath(vyperPath)) {
+    throw new Error(
+      `Vyper not found. Maybe an incorrect version was provided. ${vyperPath} - ${version} - ${platform}`,
+    );
   }
-  if (success && !validateVyperPath(vyperPath)) {
-    logError('Cannot validate vyper', {
-      version,
-      vyperPath,
-      platform,
-    });
-    return null;
-  }
-  return success ? vyperPath : null;
+  return vyperPath;
 }
 
 function validateVyperPath(vyperPath: string): boolean {
+  if (!fs.existsSync(vyperPath)) {
+    logDebug('Vyper binary not found', {
+      vyperPath,
+    });
+    return false;
+  }
   // TODO: Handle nodejs only dependencies
   const spawned = spawnSync(vyperPath, ['--version']);
   if (spawned.status === 0) {
+    logDebug('Found vyper binary', {
+      vyperPath,
+    });
     return true;
   }
 
@@ -162,7 +144,7 @@ async function fetchAndSaveVyper(
   vyperPath: string,
   version: string,
   fileName: string,
-): Promise<boolean> {
+): Promise<void> {
   const encodedURIFilename = encodeURIComponent(fileName);
   const versionWithoutCommit = version.split('+')[0];
   const githubVyperURI = `${HOST_VYPER_REPO}v${versionWithoutCommit}/${encodedURIFilename}`;
@@ -186,11 +168,16 @@ async function fetchAndSaveVyper(
       undefined;
     }
     fs.writeFileSync(vyperPath, new DataView(buffer), { mode: 0o755 });
-
-    return true;
+    return;
   } else {
-    logWarn('Failed fetching vyper', { version, platform, vyperPath });
+    logError('Failed fetching vyper', {
+      version,
+      platform,
+      vyperPath,
+      githubVyperURI,
+    });
+    throw new Error(
+      `Failed fetching vyper ${version} for platform ${platform}. Please check if the version is valid.`,
+    );
   }
-
-  return false;
 }

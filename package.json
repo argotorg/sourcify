@@ -1,7 +1,7 @@
 {
   "name": "sourcify-monorepo",
   "private": true,
-  "version": "1.4.7",
+  "version": "1.5.2",
   "description": "Monorepo containing all Sourcify packages, and services",
   "workspaces": [
     "packages/*",
@@ -40,10 +40,10 @@
     "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.57.1",
     "eslint-config-prettier": "9.1.0",
-    "lerna": "8.2.1",
-    "prettier": "3.5.3",
+    "lerna": "8.2.3",
+    "prettier": "3.6.2",
     "ts-node": "10.9.2",
-    "typescript": "5.8.2"
+    "typescript": "5.8.3"
   },
   "optionalDependencies": {
     "fsevents": "2.3.3"

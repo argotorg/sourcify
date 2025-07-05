@@ -1,16 +1,17 @@
 import { Response, Request } from "express";
 import { extractFiles } from "../../verification.common";
 import {
-  VyperCheckedContract,
   IVyperCompiler,
   StringMap,
   VyperSettings,
+  VyperCompilation,
+  VyperJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { NotFoundError, BadRequestError } from "../../../../../common/errors";
-import { getResponseMatchFromMatch } from "../../../../common";
 import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import logger from "../../../../../common/logger";
+import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 
 export type VerifyVyperRequest = Omit<Request, "body"> & {
   body: {
@@ -40,20 +41,34 @@ export async function verifyVyper(
     throw new NotFoundError(msg);
   }
 
-  let checkedContract: VyperCheckedContract;
+  let compilation: VyperCompilation;
   try {
     const sources = inputFiles.reduce((files, file) => {
       files[file.path] = file.buffer.toString();
       return files;
     }, {} as StringMap);
 
-    checkedContract = new VyperCheckedContract(
+    // Create VyperJsonInput
+    const vyperJsonInput: VyperJsonInput = {
+      language: "Vyper",
+      sources: Object.fromEntries(
+        Object.entries(sources).map(([path, content]) => [path, { content }]),
+      ),
+      settings: req.body.compilerSettings,
+    };
+
+    // Create compilation target
+    const compilationTarget = {
+      path: req.body.contractPath,
+      name: req.body.contractName,
+    };
+
+    // Create VyperCompilation
+    compilation = new VyperCompilation(
       vyperCompiler,
       req.body?.compilerVersion,
-      req.body?.contractPath,
-      req.body?.contractName,
-      req.body?.compilerSettings,
-      sources,
+      vyperJsonInput,
+      compilationTarget,
     );
   } catch (error: any) {
     logger.warn("Error initializing Vyper compiler input", {
@@ -64,14 +79,19 @@ export async function verifyVyper(
     );
   }
 
-  const match = await services.verification.verifyDeployed(
-    checkedContract,
-    chainRepository.sourcifyChainMap[req.body?.chain],
+  // Verify using the new verification flow
+  const verification = await services.verification.verifyFromCompilation(
+    compilation,
+    chainRepository.sourcifyChainMap[req.body.chain],
     req.body?.address,
     req.body?.creatorTxHash,
   );
-  if (match.runtimeMatch || match.creationMatch) {
-    await services.storage.storeMatch(checkedContract, match);
-  }
-  return res.send({ result: [getResponseMatchFromMatch(match)] });
+
+  // Store verification result
+  await services.storage.storeVerification(verification.export());
+
+  // Return the result
+  res.send({
+    result: [getApiV1ResponseFromVerification(verification)],
+  });
 }

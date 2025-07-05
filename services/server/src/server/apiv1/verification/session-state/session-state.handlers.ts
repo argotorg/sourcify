@@ -13,8 +13,8 @@ import {
   IVyperCompiler,
   PathBuffer,
   PathContent,
-  getIpfsGateway,
   performFetch,
+  SolidityMetadataContract,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../common/errors";
 
@@ -53,7 +53,7 @@ export async function addInputFilesEndpoint(req: Request, res: Response) {
   const session = req.session;
   const newFilesCount = saveFilesToSession(pathContents, session);
   if (newFilesCount) {
-    await checkContractsInSession(solc, vyper, session);
+    await checkContractsInSession(session);
     await verifyContractsInSession(
       solc,
       vyper,
@@ -113,7 +113,7 @@ export async function addInputContractEndpoint(req: Request, res: Response) {
     throw new BadRequestError("The contract doesn't have a metadata IPFS CID");
   }
 
-  const ipfsGateway = getIpfsGateway();
+  const ipfsGateway = SolidityMetadataContract.getGlobalIpfsGateway();
   const ipfsUrl = `${ipfsGateway.url}${metadataIpfsCid}`;
   const metadataFileName = "metadata.json";
   const retrievedMetadataText = await performFetch(
@@ -142,7 +142,7 @@ export async function addInputContractEndpoint(req: Request, res: Response) {
 
   const newFilesCount = saveFilesToSession(pathContents, session);
   if (newFilesCount) {
-    await checkContractsInSession(solc, vyper, session);
+    await checkContractsInSession(session);
     // verifyValidated fetches missing files from the contract
     await verifyContractsInSession(
       solc,

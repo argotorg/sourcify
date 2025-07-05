@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /check-all-by-addresses:
     get:
-      deprecated: false
+      deprecated: true
       summary: Check if contracts are verified (full or partial match) by addresses and chain IDs
       description: Checks if contract with the desired chain and address is verified and in the repository. It will search for both perfect and partial matches.
       tags:
-        - Repository
+        - (Deprecated) Repository
       parameters:
         - name: addresses
           in: query

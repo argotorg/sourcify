@@ -1,6 +1,3 @@
-[submodule "h5ai-nginx"]
-	path = h5ai-nginx
-	url = https://github.com/sourcifyeth/h5ai-nginx
 [submodule "services/database/database-specs"]
-	path = services/database/database-specs
-	url = https://github.com/verifier-alliance/database-specs
+path = services/database/database-specs
+url = https://github.com/verifier-alliance/database-specs

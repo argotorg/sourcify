@@ -9,6 +9,7 @@ import {
   MatchingErrorResponse,
 } from "../../../src/server/apiv2/errors";
 import { verifyContract } from "../../helpers/helpers";
+import { JobErrorData } from "../../../src/server/services/utils/database-util";
 
 chai.use(chaiHttp);
 
@@ -60,7 +61,7 @@ describe("GET /v2/verify/:verificationId", function () {
       ? new Date(startTime.getTime() + 1000)
       : null;
     const compilationTime = isCompleted ? "1333" : null;
-    const creatorTransactionHash = chainFixture.defaultContractCreatorTx;
+    const creationTransactionHash = chainFixture.defaultContractCreatorTx;
     const recompiledCreationCode =
       chainFixture.defaultContractArtifact.bytecode;
     const recompiledRuntimeCode =
@@ -68,21 +69,25 @@ describe("GET /v2/verify/:verificationId", function () {
     const onchainCreationCode = chainFixture.defaultContractArtifact.bytecode;
     const onchainRuntimeCode =
       chainFixture.defaultContractArtifact.deployedBytecode;
+    let errorData: JobErrorData | null = null;
     let error: MatchingErrorResponse | null = null;
     if (hasError) {
+      errorData = {
+        missingSources: ["someSource.sol"],
+      };
       error = {
-        customCode: "non_matching_bytecodes",
+        customCode: "missing_source",
         errorId: uuidv4(),
-        message: getVerificationErrorMessage(
-          "non_matching_bytecodes",
-          chainFixture.chainId,
-          chainFixture.defaultContractAddress,
-        ),
-        creatorTransactionHash,
+        message: getVerificationErrorMessage({
+          code: "missing_source",
+          missingSources: errorData.missingSources,
+        }),
+        creationTransactionHash,
         recompiledCreationCode,
         recompiledRuntimeCode,
         onchainCreationCode,
         onchainRuntimeCode,
+        errorData,
       };
     }
 
@@ -98,8 +103,9 @@ describe("GET /v2/verify/:verificationId", function () {
         verified_contract_id,
         error_code,
         error_id,
+        error_data,
         verification_endpoint
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         verificationId,
         startTime,
@@ -110,6 +116,7 @@ describe("GET /v2/verify/:verificationId", function () {
         verifiedContractId,
         error?.customCode || null,
         error?.errorId || null,
+        errorData,
         "/verify",
       ],
     );
@@ -121,7 +128,7 @@ describe("GET /v2/verify/:verificationId", function () {
         recompiled_runtime_code,
         onchain_creation_code,
         onchain_runtime_code,
-        creator_transaction_hash
+        creation_transaction_hash
       ) VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         verificationId,
@@ -129,7 +136,7 @@ describe("GET /v2/verify/:verificationId", function () {
         Buffer.from(recompiledRuntimeCode.substring(2), "hex"),
         Buffer.from(onchainCreationCode.substring(2), "hex"),
         Buffer.from(onchainRuntimeCode.substring(2), "hex"),
-        Buffer.from(creatorTransactionHash.substring(2), "hex"),
+        Buffer.from(creationTransactionHash.substring(2), "hex"),
       ],
     );
 

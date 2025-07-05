@@ -8,9 +8,9 @@
       "npmClientArgs": ["--no-package-lock"]
     },
     "version": {
-      "allowBranch": "master"
+      "allowBranch": "release-*"
     }
   },
-  "packages": [".", "services/*", "packages/*"],
+  "packages": ["services/*", "packages/*"],
   "version": "independent"
 }

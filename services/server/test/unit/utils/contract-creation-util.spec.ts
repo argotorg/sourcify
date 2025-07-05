@@ -149,29 +149,65 @@ describe("contract creation util", function () {
 
   // Test each fetchContractCreationTxUsing method
   // We can use the Mainnet to test all below as all support Mainnet
-  const testCases: FetchContractCreationTxMethod[] = [
-    "blockscoutApi",
-    "routescanApi",
-    "etherscanApi",
-    "avalancheApi",
+  const testCases: {
+    type: FetchContractCreationTxMethod;
+    chainId: number;
+    address: string;
+    txHash: string;
+  }[] = [
+    {
+      type: "blockscoutApi",
+      chainId: 1,
+      address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+      txHash:
+        "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
+    },
+    {
+      type: "routescanApi",
+      chainId: 1,
+      address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+      txHash:
+        "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
+    },
+    {
+      type: "etherscanApi",
+      chainId: 1,
+      address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+      txHash:
+        "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
+    },
+    {
+      type: "avalancheApi",
+      chainId: 43114,
+      address: "0xf3D455D5e756EfceC05C49E5721b539265466bbB",
+      txHash:
+        "0x7790ee646f9cf4d4ec0d2e9dbb4943e606d18bab0e36fe71075b0a8246c6be4e",
+    },
+    {
+      type: "veChainApi",
+      chainId: 100009,
+      address: "0xae4c53b120cba91a44832f875107cbc8fbee185c",
+      txHash:
+        "0x0ace736bc4ad5a25e2493d71fbc3315e422068ecefb3715d86ea85ab0ba26716",
+    },
   ];
   for (const testCase of testCases) {
-    it(`should run getCreatorTx with ${testCase}`, async function () {
+    it(`should run getCreatorTx with ${testCase.type}`, async function () {
       const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
         .sourcifyChainsArray;
       const sourcifyChain = sourcifyChainsArray.find(
-        (sourcifyChain) => sourcifyChain.chainId === 1,
+        (sourcifyChain) => sourcifyChain.chainId === testCase.chainId,
       );
       if (!sourcifyChain) {
-        chai.assert.fail("No chain for chainId 1 configured");
+        chai.assert.fail(`No chain for chainId ${testCase.chainId} configured`);
       }
 
       // Don't run if it's an external PR. Etherscan tests need API keys that can't be exposed to external PRs.
       if (
-        testCase === "etherscanApi" &&
+        (testCase.type === "etherscanApi" || testCase.type === "veChainApi") &&
         process.env.CIRCLE_PR_REPONAME !== undefined
       ) {
-        console.log("Skipping Etherscan test for external PR");
+        console.log(`Skipping ${testCase.type} test for external PR`);
         return;
       }
 
@@ -182,7 +218,8 @@ describe("contract creation util", function () {
       );
       if (testChain.fetchContractCreationTxUsing) {
         testChain.fetchContractCreationTxUsing = {
-          [testCase]: testChain.fetchContractCreationTxUsing[testCase],
+          [testCase.type]:
+            testChain.fetchContractCreationTxUsing[testCase.type],
         };
       }
       // Block the getBlockNumber call to block the binary search
@@ -190,16 +227,10 @@ describe("contract creation util", function () {
         throw new Error("Blocked getBlockNumber");
       };
 
-      const creatorTx = await getCreatorTx(
-        testChain,
-        "0x00000000219ab540356cBB839Cbe05303d7705Fa",
-      );
+      const creatorTx = await getCreatorTx(testChain, testCase.address);
       chai
         .expect(creatorTx)
-        .equals(
-          "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
-          `Failed for ${testCase}`,
-        );
+        .equals(testCase.txHash, `Failed for ${testCase.type}`);
     });
   }
 

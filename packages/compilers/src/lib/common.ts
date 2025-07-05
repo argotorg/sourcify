@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
 import { logDebug, logError, logSilly } from '../logger';
+import { OutputError } from '@ethereum-sourcify/compilers-types';
 
 /**
  * Fetches a resource with an exponential timeout.
@@ -88,4 +89,13 @@ export function asyncExec(
     child.stdin.write(inputStringified);
     child.stdin.end();
   });
+}
+
+export class CompilerError extends Error {
+  constructor(
+    message: string,
+    public errors: OutputError[],
+  ) {
+    super(message);
+  }
 }

@@ -1,0 +1,46 @@
+{
+  "compiler": { "version": "0.6.4+commit.1dca32f3" },
+  "language": "Solidity",
+  "output": {
+    "abi": [
+      {
+        "inputs": [],
+        "name": "retrieve",
+        "outputs": [
+          { "internalType": "uint256", "name": "", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "num", "type": "uint256" }
+        ],
+        "name": "store",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ],
+    "devdoc": { "methods": {} },
+    "userdoc": { "methods": {} }
+  },
+  "settings": {
+    "compilationTarget": { "NoImmutable.sol": "NoImmutable" },
+    "evmVersion": "istanbul",
+    "libraries": {},
+    "metadata": { "bytecodeHash": "ipfs" },
+    "optimizer": { "enabled": false, "runs": 200 },
+    "remappings": []
+  },
+  "sources": {
+    "NoImmutable.sol": {
+      "keccak256": "0x1b9113058fc0d35ecd13728d39b136f6eea73a603bf68ffaa23faf0397ba131a",
+      "urls": [
+        "bzz-raw://f1a56b1830d323ae787bf93666711344f5f8f5015cc4236977e5837e74faf5c9",
+        "dweb:/ipfs/QmXurkTv7odZ14rpFtEG7QbTyu4Tu9Lq2jwxbGZVQ1cPV6"
+      ]
+    }
+  },
+  "version": 1
+}

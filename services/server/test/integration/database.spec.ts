@@ -13,6 +13,7 @@ import sinon from "sinon";
 import { assertVerification } from "../helpers/assertions";
 import path from "path";
 import fs from "fs";
+import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 
@@ -46,9 +47,10 @@ describe("Verifier Alliance database", function () {
       );
 
     const compilationTarget: Record<string, string> = {};
-    const fullyQualifiedName: string[] =
-      testCase.fully_qualified_name.split(":");
-    compilationTarget[fullyQualifiedName[0]] = fullyQualifiedName[1];
+    const { contractPath, contractName } = splitFullyQualifiedName(
+      testCase.fully_qualified_name,
+    );
+    compilationTarget[contractPath] = contractName;
     const sources: MetadataSourceMap = {};
     Object.keys(testCase.sources).forEach((path) => {
       sources[path] = {
@@ -123,19 +125,21 @@ describe("Verifier Alliance database", function () {
           : testCase.deployed_creation_code,
         constructorArguments ? [constructorArguments] : undefined,
       );
-    await chai
-      .request(serverFixture.server.app)
-      .post("/verify/vyper")
-      .send({
-        address: contractAddress,
-        chain: chainFixture.chainId,
-        creatorTxHash: txHash,
-        files: testCase.sources,
-        compilerVersion: testCase.version,
-        compilerSettings: testCase.compiler_settings,
-        contractPath: testCase.fully_qualified_name.split(":")[0],
-        contractName: testCase.name,
-      });
+
+    const { contractPath } = splitFullyQualifiedName(
+      testCase.fully_qualified_name,
+    );
+    await chai.request(serverFixture.server.app).post("/verify/vyper").send({
+      address: contractAddress,
+      chain: chainFixture.chainId,
+      creatorTxHash: txHash,
+      files: testCase.sources,
+      compilerVersion: testCase.version,
+      compilerSettings: testCase.compiler_settings,
+      contractPath,
+      contractName: testCase.name,
+    });
+
     await assertDatabase(
       testCase,
       contractAddress,

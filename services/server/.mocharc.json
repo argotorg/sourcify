@@ -5,5 +5,5 @@
     "./test/load-env.js",
     "./test/global-mocks.ts"
   ],
-  "timeout": 60000
+  "timeout": 120000
 }

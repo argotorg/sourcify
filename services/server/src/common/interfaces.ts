@@ -4,7 +4,7 @@ export interface IController {
   registerRoutes(): Router;
 }
 export interface IResponseError {
-  code: number;
+  statusCode: number;
   message: string;
   errors?: any[];
   payload?: Record<string, any>;

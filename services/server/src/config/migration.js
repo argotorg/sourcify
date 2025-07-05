@@ -31,9 +31,4 @@ module.exports = {
   },
   initCompilers: true,
   verifyDeprecated: true,
-  rateLimit: {
-    enabled: false,
-    windowMs: 1 * 1000, // 1 sec
-    max: 2,
-  },
 };

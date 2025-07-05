@@ -1,21 +1,18 @@
 import { Response, Request } from "express";
 import { extractFiles } from "../../verification.common";
 import {
-  checkFilesWithMetadata,
   ISolidityCompiler,
-  IVyperCompiler,
-  SolidityCheckedContract,
-  useAllSources,
+  SolidityMetadataContract,
+  createMetadataContractsFromFiles,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
-import { getResponseMatchFromMatch } from "../../../../common";
 import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
+import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 
 export async function verifySolcJsonEndpoint(req: Request, res: Response) {
   const services = req.app.get("services") as Services;
   const solc = req.app.get("solc") as ISolidityCompiler;
-  const vyper = req.app.get("vyper") as IVyperCompiler;
   const chainRepository = req.app.get("chainRepository") as ChainRepository;
 
   const inputFiles = extractFiles(req, true);
@@ -38,6 +35,7 @@ export async function verifySolcJsonEndpoint(req: Request, res: Response) {
   const chain = req.body?.chain;
   const address = req.body?.address;
 
+  // Get metadata and sources from the Solidity JSON input
   const metadataAndSourcesPathBuffers =
     await services.verification.getAllMetadataAndSourcesFromSolcJson(
       solc,
@@ -45,53 +43,36 @@ export async function verifySolcJsonEndpoint(req: Request, res: Response) {
       compilerVersion,
     );
 
-  const checkedContracts = await checkFilesWithMetadata(
-    solc,
-    vyper,
+  // Create metadata contracts from the files
+  const metadataContracts = await createMetadataContractsFromFiles(
     metadataAndSourcesPathBuffers,
   );
-  const contractToVerify = checkedContracts.find(
-    (c) => c.name === contractName,
+
+  // Find the contract to verify
+  const contractToVerify = metadataContracts.find(
+    (c: SolidityMetadataContract) => c.name === contractName,
   );
+
   if (!contractToVerify) {
     throw new BadRequestError(
       `Couldn't find contract ${contractName} in the provided Solidity JSON Input file.`,
     );
   }
 
-  const match = await services.verification.verifyDeployed(
-    contractToVerify,
+  // Create compilation from the metadata contract
+  const compilation = await contractToVerify.createCompilation(solc);
+
+  // Verify the contract using the new verification flow
+  const verification = await services.verification.verifyFromCompilation(
+    compilation,
     chainRepository.sourcifyChainMap[chain],
     address,
     req.body?.creatorTxHash,
   );
-  // Send to verification again with all source files.
-  if (match.runtimeMatch === "extra-file-input-bug") {
-    const contractWithAllSources = await useAllSources(
-      contractToVerify as SolidityCheckedContract,
-      metadataAndSourcesPathBuffers,
-    );
-    const tempMatch = await services.verification.verifyDeployed(
-      contractWithAllSources,
-      chainRepository.sourcifyChainMap[chain],
-      address, // Due to the old API taking an array of addresses.
-      req.body?.creatorTxHash,
-    );
-    if (
-      tempMatch.runtimeMatch === "perfect" ||
-      tempMatch.creationMatch === "perfect"
-    ) {
-      await services.storage.storeMatch(contractToVerify, tempMatch);
-      res.send({ result: [tempMatch] });
-      return;
-    } else if (tempMatch.runtimeMatch === "extra-file-input-bug") {
-      throw new BadRequestError(
-        "It seems your contract's metadata hashes match but not the bytecodes. You should add all the files input to the compiler during compilation and remove all others. See the issue for more information: https://github.com/ethereum/sourcify/issues/618",
-      );
-    }
-  }
-  if (match.runtimeMatch || match.creationMatch) {
-    await services.storage.storeMatch(contractToVerify, match);
-  }
-  res.send({ result: [getResponseMatchFromMatch(match)] }); // array is an old expected behavior (e.g. by frontend)
+
+  // Store the verification result
+  await services.storage.storeVerification(verification.export());
+
+  // Return the verification result
+  res.send({ result: [getApiV1ResponseFromVerification(verification)] }); // array is an old expected behavior (e.g. by frontend)
 }

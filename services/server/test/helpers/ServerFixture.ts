@@ -2,7 +2,6 @@ import rimraf from "rimraf";
 import { resetDatabase } from "../helpers/helpers";
 import { Server, ServerOptions } from "../../src/server/server";
 import config from "config";
-import http from "http";
 import { sourcifyChainsMap } from "../../src/sourcify-chains";
 import {
   RWStorageIdentifiers,
@@ -16,6 +15,7 @@ import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
+import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 
 export type ServerFixtureOptions = {
   port: number;
@@ -23,6 +23,7 @@ export type ServerFixtureOptions = {
   writeOrWarn: StorageIdentifiers[];
   writeOrErr: StorageIdentifiers[];
   skipDatabaseReset: boolean;
+  chains: SourcifyChainMap;
 };
 
 export class ServerFixture {
@@ -59,7 +60,6 @@ export class ServerFixture {
    * in a different "describe" block.
    */
   constructor(fixtureOptions_?: Partial<ServerFixtureOptions>) {
-    let httpServer: http.Server;
     this.maxFileSize = config.get<number>("server.maxFileSize");
     this.repositoryV1Path = config.get<string>("repositoryV1.path");
 
@@ -90,18 +90,12 @@ export class ServerFixture {
       const serverOptions: ServerOptions = {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
-        rateLimit: config.get<{
-          enabled: boolean;
-          windowMs?: number;
-          max?: number;
-          whitelist?: string[];
-          hideIpInLogs?: boolean;
-        }>("rateLimit"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: sourcifyChainsMap,
+        chains: fixtureOptions_?.chains || sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
-        verifyDeprecated: config.get("verifyDeprecated"),
+        verifyDeprecated: true,
+        upgradeContract: true,
         sessionOptions: {
           secret: config.get("session.secret"),
           name: "sourcify_vid",
@@ -115,13 +109,17 @@ export class ServerFixture {
           },
           store: postgresSessionStore,
         },
+        sourcifyPrivateToken: "sourcify-test-token",
+        logLevel: "debug",
       };
 
       this._server = new Server(
         serverOptions,
         {
+          sourcifyChainMap: sourcifyChainsMap,
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
+          vyperRepoPath: config.get("vyperRepo"),
         },
         {
           serverUrl: config.get("serverUrl"),
@@ -157,19 +155,7 @@ export class ServerFixture {
       );
 
       await this._server.services.init();
-
-      await new Promise<void>((resolve, reject) => {
-        httpServer = this.server.app.listen(
-          this.server.port,
-          (error?: Error) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          },
-        );
-      });
+      await this.server.listen();
       console.log(`Server listening on port ${this.server.port}!`);
     });
 
@@ -183,8 +169,8 @@ export class ServerFixture {
       }
     });
 
-    after(() => {
-      httpServer.close();
+    after(async () => {
+      await this.server.shutdown();
       rimraf.sync(config.get("repositoryV1.path"));
       rimraf.sync(config.get("repositoryV2.path"));
       rimraf.sync(path.join(testS3Path, testS3Bucket));

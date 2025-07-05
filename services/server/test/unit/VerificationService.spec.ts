@@ -6,6 +6,8 @@ import { expect } from "chai";
 import { findSolcPlatform } from "@ethereum-sourcify/compilers";
 import config from "config";
 import rimraf from "rimraf";
+import { StorageService } from "../../src/server/services/StorageService";
+import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 
 describe("VerificationService", function () {
   beforeEach(function () {
@@ -61,11 +63,26 @@ describe("VerificationService", function () {
         });
     }
 
-    const verificationService = new VerificationService({
-      initCompilers: true,
-      solcRepoPath: config.get("solcRepo"),
-      solJsonRepoPath: config.get("solJsonRepo"),
-    });
+    const verificationService = new VerificationService(
+      {
+        initCompilers: true,
+        sourcifyChainMap: {},
+        solcRepoPath: config.get("solcRepo"),
+        solJsonRepoPath: config.get("solJsonRepo"),
+        vyperRepoPath: config.get("vyperRepo"),
+      },
+      new StorageService({
+        enabledServices: {
+          read: RWStorageIdentifiers.RepositoryV1,
+          writeOrWarn: [],
+          writeOrErr: [],
+        },
+        serverUrl: "http://localhost",
+        repositoryV1ServiceOptions: {
+          repositoryPath: config.get("repositoryV1.path"),
+        },
+      }),
+    );
 
     // Call the init method to trigger the download
     await verificationService.init();

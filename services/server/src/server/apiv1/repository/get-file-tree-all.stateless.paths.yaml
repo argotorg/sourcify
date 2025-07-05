@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /files/tree/any/{chain}/{address}:
     get:
-      deprecated: false
+      deprecated: true
       summary: Get file tree (full and partial match)
       description: Returns repository URLs for every file in the source tree for the desired chain and address. Searches for full and partial matches.
       tags:
-        - Repository
+        - (Deprecated) Repository
       parameters:
         - name: chain
           in: path

@@ -7,7 +7,7 @@ module.exports = {
     "plugin:@typescript-eslint/recommended",
     "prettier",
   ],
-  ignorePatterns: ["h5ai-nginx", "**/node_modules/", "**/build/", "**/dist/"],
+  ignorePatterns: ["**/node_modules/", "**/build/", "**/dist/"],
   rules: {
     "@typescript-eslint/ban-types": "off",
     "@typescript-eslint/no-explicit-any": "off",
@@ -17,7 +17,7 @@ module.exports = {
       2,
       { SwitchCase: 1, ignoredNodes: ["ConditionalExpression"] },
     ],
-    "@typescript-eslint/ban-ts-comment": "off"
+    "@typescript-eslint/ban-ts-comment": "off",
   },
   env: {
     node: true,

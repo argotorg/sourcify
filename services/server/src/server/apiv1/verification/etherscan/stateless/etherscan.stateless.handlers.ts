@@ -1,10 +1,8 @@
 import { Response, Request } from "express";
 import {
-  processEtherscanSolidityContract,
-  processEtherscanVyperContract,
-  processRequestFromEtherscan,
-} from "../etherscan.common";
-import { getResponseMatchFromMatch } from "../../../../common";
+  fetchFromEtherscan,
+  getCompilationFromEtherscanResult,
+} from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import {
@@ -12,7 +10,7 @@ import {
   IVyperCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Services } from "../../../../services/services";
-import { BadRequestError } from "../../../../../common/errors";
+import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 
 export async function verifyFromEtherscan(req: Request, res: Response) {
   const services = req.app.get("services") as Services;
@@ -29,40 +27,28 @@ export async function verifyFromEtherscan(req: Request, res: Response) {
 
   logger.info("verifyFromEtherscan", { chain, address, apiKey });
 
-  const { vyperResult, solidityResult } = await processRequestFromEtherscan(
+  const etherscanResult = await fetchFromEtherscan(
     sourcifyChain,
     address,
     apiKey,
   );
 
-  let checkedContract;
-  if (solidityResult) {
-    checkedContract = await processEtherscanSolidityContract(
-      solc,
-      solidityResult.compilerVersion,
-      solidityResult.solcJsonInput,
-      solidityResult.contractName,
-    );
-  } else if (vyperResult) {
-    checkedContract = await processEtherscanVyperContract(
-      vyperCompiler,
-      vyperResult.compilerVersion,
-      vyperResult.vyperJsonInput,
-      vyperResult.contractPath,
-      vyperResult.contractName,
-    );
-  } else {
-    logger.error("Import from Etherscan: unsupported language");
-    throw new BadRequestError("Received unsupported language from Etherscan");
-  }
+  const compilation = await getCompilationFromEtherscanResult(
+    etherscanResult,
+    solc,
+    vyperCompiler,
+  );
 
-  const match = await services.verification.verifyDeployed(
-    checkedContract,
+  // Verify the contract using the new verification flow
+  const verification = await services.verification.verifyFromCompilation(
+    compilation,
     sourcifyChain,
     address,
   );
 
-  await services.storage.storeMatch(checkedContract, match);
+  // Store the verification result
+  await services.storage.storeVerification(verification.export());
 
-  res.send({ result: [getResponseMatchFromMatch(match)] });
+  // Return the verification result
+  res.send({ result: [getApiV1ResponseFromVerification(verification)] });
 }

@@ -1,8 +1,16 @@
 import Path from "path";
 import fs from "fs";
-import { V1MatchLevelWithoutAny, MatchQuality, MatchLevel } from "../../types";
+import {
+  V1MatchLevelWithoutAny,
+  MatchQuality,
+  MatchLevel,
+  Match,
+} from "../../types";
 import { getAddress } from "ethers";
-import { Match, Status } from "@ethereum-sourcify/lib-sourcify";
+import {
+  VerificationStatus,
+  VerificationExport,
+} from "@ethereum-sourcify/lib-sourcify";
 
 export const getFileRelativePath = (
   chainId: string,
@@ -56,11 +64,14 @@ export async function readFile(
 }
 
 /**
- * This function returns a positive number if the first Status
+ * This function returns a positive number if the first VerificationStatus
  * is better than the second one; 0 if they are the same; or a
- * negative number if the first Status is worse than the second one
+ * negative number if the first VerificationStatus is worse than the second one
  */
-export function getStatusDiff(status1: Status, status2: Status): number {
+export function getStatusDiff(
+  status1: VerificationStatus,
+  status2: VerificationStatus,
+): number {
   const scores = {
     error: 0,
     "extra-file-input-bug": 0,
@@ -73,31 +84,46 @@ export function getStatusDiff(status1: Status, status2: Status): number {
 }
 
 /**
- * Verify that either the newMatch runtime or creation match is better
- * ensuring that neither the newMatch runtime nor creation is worse
- * than the existing match
+ * Verify that either the newVerification runtime or creation match is better
+ * ensuring that neither the newVerification runtime nor creation is worse
+ * than the existing verification
  */
-export function isBetterMatch(newMatch: Match, existingMatch: Match): boolean {
+export function isBetterVerification(
+  newVerification: VerificationExport,
+  existingMatch: Match,
+): boolean {
   if (
     /** if newMatch.creationMatch is better */
-    getStatusDiff(newMatch.creationMatch, existingMatch.creationMatch) > 0 &&
+    getStatusDiff(
+      newVerification.status.creationMatch,
+      existingMatch.creationMatch,
+    ) > 0 &&
     /** and newMatch.runtimeMatch is not worse */
-    getStatusDiff(newMatch.runtimeMatch, existingMatch.runtimeMatch) >= 0
+    getStatusDiff(
+      newVerification.status.runtimeMatch,
+      existingMatch.runtimeMatch,
+    ) >= 0
   ) {
     return true;
   }
   if (
     /** if newMatch.runtimeMatch is better */
-    getStatusDiff(newMatch.runtimeMatch, existingMatch.runtimeMatch) > 0 &&
+    getStatusDiff(
+      newVerification.status.runtimeMatch,
+      existingMatch.runtimeMatch,
+    ) > 0 &&
     /** and newMatch.creationMatch is not worse */
-    getStatusDiff(newMatch.creationMatch, existingMatch.creationMatch) >= 0
+    getStatusDiff(
+      newVerification.status.creationMatch,
+      existingMatch.creationMatch,
+    ) >= 0
   ) {
     return true;
   }
   return false;
 }
 
-export function toMatchLevel(status: Status): MatchLevel {
+export function toMatchLevel(status: VerificationStatus): MatchLevel {
   switch (status) {
     case "perfect":
       return "exact_match";
@@ -108,9 +134,20 @@ export function toMatchLevel(status: Status): MatchLevel {
   }
 }
 
+export function toVerificationStatus(level: MatchLevel): VerificationStatus {
+  switch (level) {
+    case "exact_match":
+      return "perfect";
+    case "match":
+      return "partial";
+    default:
+      return null;
+  }
+}
+
 export function getTotalMatchLevel(
-  creationStatus: Status,
-  runtimeStatus: Status,
+  creationStatus: VerificationStatus,
+  runtimeStatus: VerificationStatus,
 ): MatchLevel {
   if (
     ![creationStatus, runtimeStatus].find(

@@ -2,8 +2,7 @@ SCRIPT_DIR=$(dirname "$0")
 
 source "${SCRIPT_DIR}/logging_utils.sh"
 
-check_current_branch() {
-  ## Check if the current branch is master
+is_on_staging_branch() {
   local current_branch=$(git rev-parse --abbrev-ref HEAD)
   if [ "$current_branch" != "staging" ]; then
     error_exit "You are not on the staging branch. Please switch to the staging branch before running this script."
@@ -41,7 +40,7 @@ check_branch_sync() {
   git branch -D tmpStaging
 }
 
-create_gh_pr() {
+create_gh_deploy_pr() {
   # Check if the gh cli is installed
   if ! command -v gh &>/dev/null; then
     error_exit "gh cli could not be found. Please install it before running this script: https://cli.github.com/"
@@ -66,7 +65,7 @@ create_gh_pr() {
 
   if $CREATE_PR; then
     echo "Creating a PR for the staging branch"
-    gh pr create --title "Release" --body "" --head staging --base master
+    gh pr create --title "Deploy latest to production" --body "" --head staging --base master
     if [ $? -ne 0 ]; then
       error_exit "Failed to create PR. Exiting."
     fi
@@ -77,38 +76,17 @@ create_gh_pr() {
   fi
 }
 
-merge_locally() {
-  echo "Locally merging staging into master"
-  git merge staging
-  echo "Merged staging into master"
+ask_if_release_pr_merged() {
+  echo "Now please review and approve the release new versions PR to staging."
 }
 
-switch_to_staging() {
-  echo "Switching to staging..."
-  git checkout staging
-  echo "Checked out staging"
-}
-
-push_to_master() {
-  # Push to master
-  echo "Pushing to master..."
-  git push origin master
-  echo "Pushed to master"
-}
-
-ask_if_changelog_pr_merged() {
-  echo "Now please review and approve the PR from the changelogs branch to staging."
+ask_if_master_pr_merged() {
+  echo "Now please review and approve the 'Deploy latest to production' PR to master."
 }
 
 push_to_staging() {
   echo "Pushing to staging..."
   git push origin staging
-}
-
-switch_to_master() {
-  echo "Switching to master..."
-  git checkout master
-  echo "Checked out master"
 }
 
 create_new_branch() {
@@ -122,11 +100,52 @@ commit_changelogs() {
   git commit -m "Update changelogs"
 }
 
-publish_branch() {
-  local branch_name=$1
+# Function to select a branch name
+select_branch() {
+  echo ""
+  echo "Recent branches:"
+  # Get last 5 branches
+  recent_branches=($(git branch --sort=-committerdate | head -n 5 | sed 's/^[ *]*//' | xargs))
+
+  echo "Choose a branch or create a new one:"
+  PS3="Select branch option (1-$((${#recent_branches[@]} + 1))): "
+
+  options=()
+  for branch in "${recent_branches[@]}"; do
+    options+=("$branch")
+  done
+  options+=("Create new branch")
+
+  select branch_option in "${options[@]}"; do
+    if [ "$branch_option" = "Create new branch" ]; then
+      read -p "Enter new branch name: " BRANCH_NAME
+      break
+    elif [ -n "$branch_option" ]; then
+      BRANCH_NAME="$branch_option"
+      break
+    else
+      echo "Invalid option, please try again."
+    fi
+  done
+
+  echo "Using branch: $BRANCH_NAME"
+  return 0
+}
+
+publish_branch_and_open_pr_to_staging() {
+  # If no branch name is provided, ask the user to select one
+  if [ -z "$1" ]; then
+    select_branch
+    branch_name="$BRANCH_NAME"
+  else
+    branch_name=$1
+  fi
+
   echo "Publishing branch..."
   git push -u origin "$branch_name"
   echo "Branch $branch_name published"
+
+  open_pr_to_staging "$branch_name" "Release new package versions"
 }
 
 open_pr_to_staging() {
@@ -135,12 +154,4 @@ open_pr_to_staging() {
   echo "Opening PR to staging..."
   gh pr create --title "$title" --body "" --head "$branch_name" --base staging
   echo "Opened PR to staging"
-}
-
-switch_to_staging_and_pull() {
-  echo "Switching to staging..."
-  git checkout staging
-  echo "Checked out staging"
-  git pull
-  echo "Pulled latest staging"
 }

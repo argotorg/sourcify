@@ -4,6 +4,13 @@
 
 source "${SCRIPT_DIR}/logging_utils.sh"
 
+# Global declarations for package data arrays
+declare -a directories
+declare -a packageNames
+declare -a versions          # For current versions read from file
+declare -A selected_versions # For selected new versions (pkgName -> newVersion)
+declare IS_GUI_EDITOR=true   # Flag to indicate if a GUI editor is selected, true by default
+
 # Function to parse and increment version
 increment_version() {
   local version=$1
@@ -27,24 +34,85 @@ increment_version() {
   echo "${parts[0]}.${parts[1]}.${parts[2]}"
 }
 
-## Check which packages need an update and write them to the global variables directories, packageNames, versions
-check_packages_for_update() {
+# Function to select an editor for changelog editing
+select_editor() {
+  # Show current editor if set
+  echo ""
+  if [ -n "${EDITOR}" ]; then
+    echo "Current editor set to: ${EDITOR}"
+  else
+    echo "No editor currently set"
+  fi
+  echo ""
+
+  # Always ask for editor choice
+  echo "Choose an editor for editing changelogs:"
+  PS3="Select editor (1-5): "
+  # IS_GUI_EDITOR is true by default. Only set to false for terminal editors.
+  select editor_choice in "cursor" "nano" "vim" "code" "custom"; do
+    case $editor_choice in
+    "cursor")
+      EDITOR="cursor"
+      # IS_GUI_EDITOR remains true
+      break
+      ;;
+    "nano")
+      EDITOR="nano"
+      IS_GUI_EDITOR=false
+      break
+      ;;
+    "vim")
+      EDITOR="vim"
+      IS_GUI_EDITOR=false
+      break
+      ;;
+    "code")
+      EDITOR="code"
+      # IS_GUI_EDITOR remains true
+      break
+      ;;
+    "custom")
+      read -p "Enter the command for your preferred editor: " EDITOR
+      # IS_GUI_EDITOR remains true (assuming custom might be GUI)
+      break
+      ;;
+    *)
+      echo "Invalid option, please try again."
+      ;;
+    esac
+  done
+  echo "Using $EDITOR as the editor for changelogs"
+  if [ "$IS_GUI_EDITOR" = true ]; then
+    echo "Note: $EDITOR might open in a new window. The script will wait for you to save and close it before proceeding with the changelog."
+  fi
+}
+
+# For each directory/package to be updated decide on patch, minor, or major, and then ask for changelog input
+update_packages_and_changelog() {
   echo "Checking which packages need a new version"
 
+  # Help by showing the PR URL
   GITHUB_REPO_FULL_NAME=$(gh repo view --json nameWithOwner -q .nameWithOwner)
   GITHUB_REPO_URL="https://github.com/${GITHUB_REPO_FULL_NAME}"
   GITHUB_PR_URL="${GITHUB_REPO_URL}/pull/${OPEN_PR_NUMBER}"
   GITHUB_PR_URL_FILES="${GITHUB_PR_URL}/files"
 
   # Get the list of changed packages
-  OUTPUT=$(npx lerna changed --all --long --parseable)
+  OUTPUT=$(npx lerna changed --all --long --parseable --include-merged-tags)
 
   if [ -z "$OUTPUT" ]; then
     echo "No packages need to be updated."
     exit 0
   fi
 
+  # Define arrays to hold package directories, names, and versions.
+  declare -a directories
+  declare -a packageNames
+  declare -a versions
+  declare -A selected_versions
+
   # Use process substitution to avoid creating a subshell with a pipeline
+  # Make ":" the delimiter and read the output into variables
   while IFS=: read -r directory packageName version tag; do
     directories+=("$directory")
     packageNames+=("$packageName")
@@ -55,10 +123,8 @@ check_packages_for_update() {
   for index in "${!directories[@]}"; do
     echo "${packageNames[$index]} at ${directories[$index]} (current version: ${versions[$index]})"
   done
-}
 
-# For each directory/package to be updated decide on patch, minor, or major, and then ask for changelog input
-update_packages_and_changelog() {
+  select_editor
 
   for index in "${!directories[@]}"; do
     pkg_name="${packageNames[$index]}"
@@ -67,6 +133,9 @@ update_packages_and_changelog() {
     prompt_execute_or_skip "selecting a version for $pkg_name" select_new_version "$pkg_name" "$current_version"
     prompt_execute_or_skip "updating the changelog for $pkg_name" update_changelog "$pkg_name" "${directories[$index]}"
   done
+
+  # Write all collected package data to the temporary file
+  write_package_data directories packageNames versions selected_versions
 }
 
 # Selects a new version for the package and writes to global selected_versions variable
@@ -123,6 +192,19 @@ update_changelog() {
 
   # Prompt the user to enter changelog details in their default editor
   ${EDITOR:-nano} "$changelog_entry_filename"
+
+  # If a GUI editor is used, wait for the user to save and close the file
+  if [ "$IS_GUI_EDITOR" = true ]; then
+    echo ""
+    read -n 1 -s -r -p "Changelog editor ($EDITOR) was opened. Please save your changes and close the editor, then press any key to continue..."
+    echo ""
+  fi
+
+  # Ensure the changelog entry ends with a newline
+  if [ -s "$changelog_entry_filename" ] && [ -n "$(tail -c1 "$changelog_entry_filename")" ]; then
+    echo "" >>"$changelog_entry_filename"
+  fi
+
   new_changelog_heading="## $pkg_name@${selected_versions["$pkg_name"]} - $today"
   changelog_file="${directory}/CHANGELOG.md"
 
@@ -160,12 +242,15 @@ commit_changelogs() {
 ###
 
 function run_lerna_version() {
+  # Load package data from the temporary file
+  load_package_data_into_arrays
+
   ## Print the new versions before the lerna prompt for convenience
   echo "\\nNew versions for packages:"
   for pkg_name in "${!selected_versions[@]}"; do
     echo "$pkg_name: ${selected_versions[$pkg_name]}"
   done
-  npx lerna version --no-push
+  npx lerna version --no-push --include-merged-tags
 }
 
 ###
@@ -173,7 +258,7 @@ function run_lerna_version() {
 ### We can't simply let lerna do this because CircleCI doesn't run when all tags are published
 ###
 # Priority packages whose tags should be pushed first in specific order
-declare -a priority_packages=("@ethereum-sourcify/bytecode-utils" "@ethereum-sourcify/compilers" "@ethereum-sourcify/lib-sourcify")
+declare -a priority_packages=("@ethereum-sourcify/bytecode-utils" "@ethereum-sourcify/compilers-types" "@ethereum-sourcify/compilers" "@ethereum-sourcify/lib-sourcify")
 
 # Push tags one by one with a delay
 push_tag() {
@@ -184,6 +269,9 @@ push_tag() {
 
 # Main function to handle ordered tag pushing
 push_tags_in_order() {
+  # Load package data from the temporary file
+  load_package_data_into_arrays
+
   # Push priority tags first in the defined order
   for package in "${priority_packages[@]}"; do
     for pkg_index in "${!packageNames[@]}"; do
@@ -211,6 +299,9 @@ push_tags_in_order() {
 ###
 
 create_github_releases() {
+  # Load package data from the temporary file
+  load_package_data_into_arrays
+
   echo "Creating GitHub releases..."
   # Loop through each package to create a GitHub release
   for pkg_index in "${!packageNames[@]}"; do

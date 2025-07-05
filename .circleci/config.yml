@@ -17,7 +17,7 @@ parameters:
 # the path-filtering orb is required to continue a pipeline based on
 # the path of an updated fileset see https://circleci.com/docs/2.0/using-dynamic-configuration/
 orbs:
-  path-filtering: circleci/path-filtering@0.1.7
+  path-filtering: circleci/path-filtering@1.3.0
   continuation: circleci/continuation@0.5.0
 
 # Can add multiple workflows in setup since only one of these will run. Otherwise it's not possible: https://support.circleci.com/hc/en-us/articles/360060934851--Max-number-of-workflows-exceeded-error
@@ -35,11 +35,9 @@ workflows:
       # the path-filtering/filter job determines which pipeline parameters to update.
       - path-filtering/filter:
           name: check-updated-modules
-          # h5ai-nginx without /.* part since it's a submodule. git diff outputs the folder name only, not files under it
           mapping: |
             services/monitor/.* run-build-monitor true
             services/server/.* run-build-server true
-            h5ai-nginx run-build-repository true 
             packages/.* run-build-packages true
           # Compare against the last build of the branch not the default "main" branch
           base-revision: << pipeline.git.base_revision >>
@@ -68,22 +66,6 @@ workflows:
               ignore: /.*/
           requires:
             - npm-publish
-      - build-push-repository-amd64:
-          filters:
-            tags:
-              only: /^sourcify-repository.*/
-            branches:
-              ignore: /.*/
-          requires:
-            - npm-publish
-      - build-push-repository-arm64:
-          filters:
-            tags:
-              only: /^sourcify-repository.*/
-            branches:
-              ignore: /.*/
-          requires:
-            - npm-publish
       - build-push-server-amd64:
           filters:
             tags:
@@ -108,10 +90,8 @@ workflows:
               ignore: /.*/
           requires:
             - build-push-monitor-amd64
-            - build-push-repository-amd64
             - build-push-server-amd64
             - build-push-monitor-arm64
-            - build-push-repository-arm64
             - build-push-server-arm64
   new-branch:
     when:
@@ -182,12 +162,6 @@ jobs:
       SERVICE: "monitor"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/monitor/Dockerfile"
-  build-push-repository-amd64:
-    <<: *build-base
-    environment:
-      SERVICE: "repository"
-      DOCKER_BUILD_CONTEXT: "./h5ai-nginx"
-      DOCKERFILE: "./h5ai-nginx/Dockerfile"
   build-push-server-amd64:
     <<: *build-base
     environment:
@@ -201,12 +175,6 @@ jobs:
       SERVICE: "monitor"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/monitor/Dockerfile"
-  build-push-repository-arm64:
-    <<: *build-base-arm64
-    environment:
-      SERVICE: "repository"
-      DOCKER_BUILD_CONTEXT: "./h5ai-nginx"
-      DOCKERFILE: "./h5ai-nginx/Dockerfile"
   build-push-server-arm64:
     <<: *build-base-arm64
     environment:
@@ -215,7 +183,7 @@ jobs:
       DOCKERFILE: "services/server/Dockerfile"
   publish-multiarch-images:
     docker:
-      - image: cimg/base:2024.07
+      - image: cimg/base:2024.12
     resource_class: small
     steps:
       - checkout
@@ -232,13 +200,6 @@ jobs:
       - image: cimg/node:22.5.1
     steps:
       - checkout
-      - run:
-          name: Check Tag Prefix
-          command: |
-            if [[ "$CIRCLE_TAG" != "@ethereum-sourcify"* ]]; then
-              echo "Skipping npm-publish as tag does not start with @ethereum-sourcify"
-              circleci-agent step halt
-            fi
       - run:
           name: install dependencies
           command: npm install

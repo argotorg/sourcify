@@ -28,3 +28,5 @@ workspace/
 # Ignore the server local config file. See .nxignore
 **/config/local.js
 
+# Sourcify release script temporary file
+.release_package_data.tmp

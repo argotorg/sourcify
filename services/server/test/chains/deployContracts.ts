@@ -4,6 +4,7 @@ import { sourcifyChainsMap } from "../../src/sourcify-chains";
 import { program } from "commander";
 import { JsonRpcProvider } from "ethers";
 import { ChainRepository } from "../../src/sourcify-chain-repository";
+import { createFetchRequest } from "@ethereum-sourcify/lib-sourcify";
 
 program
   .description(
@@ -48,7 +49,11 @@ async function main(chainId: number, privateKey: string) {
   let provider;
   console.log("Using rpc: " + chain.rpc[0]);
   try {
-    provider = new JsonRpcProvider(chain.rpc[0]);
+    if (typeof chain.rpc[0] === "string") {
+      provider = new JsonRpcProvider(chain.rpc[0]);
+    } else {
+      provider = new JsonRpcProvider(createFetchRequest(chain.rpc[0]));
+    }
   } catch (err) {
     console.log(
       `Can't initiate a Provider instance with the chain: ${JSON.stringify(chain)}. \n\nMake sure the chainId is added to src/sourcify-chains.ts and built with npx lerna run build`,

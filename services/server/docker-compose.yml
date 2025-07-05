@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: "sourcify"
+      POSTGRES_USER: "sourcify"
+      POSTGRES_PASSWORD: "sourcify"
+    ports:
+      - 5431:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sourcify-network
+
+  # Needed to separate the migration because node must have PID 1 in service server
+  run-migrations:
+    image: node:22.5.1-bullseye-slim
+    volumes:
+      - ../database:/home/app/services/database
+    command: /bin/bash -c "cd /home/app/services/database && npm install && npm run migrate:up -- --env local-docker"
+    restart: "no"
+    deploy:
+      restart_policy:
+        condition: none
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sourcify-network
+
+  server:
+    image: ghcr.io/ethereum/sourcify/server:latest
+    ports:
+      - "5555:5555"
+      # Pass other env vars from .env file here. Or change the POSTGRES_HOST etc. in .env file.
+    env_file:
+      - .env.docker
+    volumes:
+      # If you want to use your local config, uncomment this line
+      # - ./src/config/local.js:/home/app/services/server/dist/config/local.js
+      - ./src/config/default.js:/home/app/services/server/dist/config/default.js
+      # Change your chains here
+      - ./src/sourcify-chains-example.json:/home/app/services/server/dist/sourcify-chains.json
+    depends_on:
+      db:
+        condition: service_started
+      run-migrations:
+        condition: service_completed_successfully
+    networks:
+      - sourcify-network
+
+networks:
+  sourcify-network:
+    driver: bridge

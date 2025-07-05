@@ -5,7 +5,11 @@ import { spawnSync } from 'child_process';
 import semver from 'semver';
 import { Worker, WorkerOptions } from 'worker_threads';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import { asyncExec, fetchWithBackoff } from './common';
+import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  SolidityJsonInput,
+  SolidityOutput,
+} from '@ethereum-sourcify/compilers-types';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const solc = require('solc');
@@ -39,9 +43,9 @@ export async function useSolidityCompiler(
   solcRepoPath: string,
   solJsonRepoPath: string,
   version: string,
-  solcJsonInput: any,
+  solcJsonInput: SolidityJsonInput,
   forceEmscripten = false,
-): Promise<any> {
+): Promise<SolidityOutput> {
   // For nightly builds, Solidity version is saved as 0.8.17-ci.2022.8.9+commit.6b60524c instead of 0.8.17-nightly.2022.8.9+commit.6b60524c.
   // Not possible to retrieve compilers with "-ci.".
   if (version.includes('-ci.')) version = version.replace('-ci.', '-nightly.');
@@ -51,7 +55,18 @@ export async function useSolidityCompiler(
   const solcPlatform = findSolcPlatform();
   let solcPath;
   if (solcPlatform && !forceEmscripten) {
-    solcPath = await getSolcExecutable(solcRepoPath, solcPlatform, version);
+    // Catch, if this fails we'll fall back to solc-js e.g. very early solc 0.1.4
+    try {
+      solcPath = await getSolcExecutable(solcRepoPath, solcPlatform, version);
+    } catch (error) {
+      logError('Error getting solc executable', {
+        error,
+        solcPlatform,
+        version,
+        solcRepoPath,
+        solJsonRepoPath,
+      });
+    }
   }
   let startCompilation: number;
   if (solcPath && !forceEmscripten) {
@@ -107,16 +122,15 @@ export async function useSolidityCompiler(
   if (!compiled) {
     throw new Error('Compilation failed. No output from the compiler.');
   }
-  const compiledJSON = JSON.parse(compiled);
+  const compiledJSON = JSON.parse(compiled) as SolidityOutput;
   const errorMessages = compiledJSON?.errors?.filter(
-    (e: any) => e.severity === 'error',
+    (e) => e.severity === 'error',
   );
   if (errorMessages && errorMessages.length > 0) {
-    const error = new Error(
-      'Compiler error:\n ' + JSON.stringify(errorMessages),
-    );
-    logError(error.message);
-    throw error;
+    logError('Compiler error', {
+      errorMessages,
+    });
+    throw new CompilerError('Compiler error', errorMessages);
   }
   return compiledJSON;
 }
@@ -133,12 +147,13 @@ export async function getSolcExecutable(
     return solcPath;
   }
 
-  const success = await fetchAndSaveSolc(platform, solcPath, version, fileName);
-  if (success && !validateSolcPath(solcPath)) {
-    logError(`Cannot validate solc ${version}.`);
-    return null;
+  await fetchAndSaveSolc(platform, solcPath, version, fileName);
+  if (!validateSolcPath(solcPath)) {
+    throw new Error(
+      `Solc not found. Maybe an incorrect version was provided. ${solcPath} - ${version} - ${platform}`,
+    );
   }
-  return success ? solcPath : null;
+  return solcPath;
 }
 
 function validateSolcPath(solcPath: string): boolean {
@@ -167,7 +182,7 @@ async function fetchAndSaveSolc(
   solcPath: string,
   version: string,
   fileName: string,
-): Promise<boolean> {
+): Promise<void> {
   const encodedURIFilename = encodeURIComponent(fileName);
   const githubSolcURI = `${HOST_SOLC_REPO}${platform}/${encodedURIFilename}`;
   logInfo('Fetching solc', { version, platform, githubSolcURI, solcPath });
@@ -199,18 +214,17 @@ async function fetchAndSaveSolc(
     }
     fs.writeFileSync(solcPath, new DataView(buffer), { mode: 0o755 });
     logInfo('Saved solc', { version, platform, githubSolcURI, solcPath });
-
-    return true;
   } else {
-    logWarn('Failed fetching solc', {
+    logError('Failed fetching solc', {
       version,
       platform,
       githubSolcURI,
       solcPath,
     });
+    throw new Error(
+      `Failed fetching solc ${version} for platform ${platform}. Please check if the version is valid.`,
+    );
   }
-
-  return false;
 }
 
 /**
@@ -247,9 +261,7 @@ export async function getSolcJs(
       version,
       solJsonPath,
     });
-    if (!(await fetchAndSaveSolc('bin', solJsonPath, version, fileName))) {
-      return false;
-    }
+    await fetchAndSaveSolc('bin', solJsonPath, version, fileName);
   }
 
   const solcjsImports = await import(solJsonPath);

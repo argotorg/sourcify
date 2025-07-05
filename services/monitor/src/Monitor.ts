@@ -1,7 +1,10 @@
 import DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
 import assert from "assert";
 import { EventEmitter } from "stream";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import {
+  FetchRequestRPC,
+  SourcifyChain,
+} from "@ethereum-sourcify/lib-sourcify";
 import logger from "./logger";
 import "./loggerServer"; // Start the dynamic log level server
 import ChainMonitor from "./ChainMonitor";
@@ -12,7 +15,6 @@ import {
   PassedMonitorConfig,
 } from "./types";
 import dotenv from "dotenv";
-import { FetchRequest } from "ethers";
 import defaultConfig from "./defaultConfig";
 import path from "path";
 
@@ -127,21 +129,27 @@ export default class Monitor extends EventEmitter {
   };
 }
 
-export function authenticateRpcs(chain: MonitorChain) {
+export function authenticateRpcs(
+  chain: MonitorChain,
+): (string | FetchRequestRPC)[] {
   return chain.rpc.map((rpc) => {
     if (typeof rpc === "string") {
       if (rpc?.includes("ethpandaops.io")) {
-        const ethersFetchReq = new FetchRequest(rpc);
-        ethersFetchReq.setHeader("Content-Type", "application/json");
-        ethersFetchReq.setHeader(
-          "CF-Access-Client-Id",
-          process.env.CF_ACCESS_CLIENT_ID || "",
-        );
-        ethersFetchReq.setHeader(
-          "CF-Access-Client-Secret",
-          process.env.CF_ACCESS_CLIENT_SECRET || "",
-        );
-        return ethersFetchReq;
+        const fetchRequestRpc: FetchRequestRPC = {
+          type: "FetchRequest",
+          url: rpc,
+          headers: [
+            {
+              headerName: "CF-Access-Client-Id",
+              headerValue: process.env["CF_ACCESS_CLIENT_ID"] || "",
+            },
+            {
+              headerName: "CF-Access-Client-Secret",
+              headerValue: process.env["CF_ACCESS_CLIENT_SECRET"] || "",
+            },
+          ],
+        };
+        return fetchRequestRpc;
       }
       return rpc;
     }

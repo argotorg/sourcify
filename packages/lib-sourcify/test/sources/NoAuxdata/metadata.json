@@ -1,0 +1,74 @@
+{
+  "compiler": {
+    "version": "0.8.28+commit.7893614a"
+  },
+  "language": "Solidity",
+  "output": {
+    "abi": [
+      {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_value",
+            "type": "uint256"
+          }
+        ],
+        "name": "setValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "value",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ],
+    "devdoc": {
+      "kind": "dev",
+      "methods": {},
+      "version": 1
+    },
+    "userdoc": {
+      "kind": "user",
+      "methods": {},
+      "version": 1
+    }
+  },
+  "settings": {
+    "compilationTarget": {
+      "sources/NoAuxdata.sol": "NoAuxdata"
+    },
+    "evmVersion": "istanbul",
+    "libraries": {},
+    "metadata": {
+      "appendCBOR": false
+    },
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "remappings": []
+  },
+  "sources": {
+    "sources/NoAuxdata.sol": {
+      "keccak256": "0xd4eea0e66e920a96471e32573c7853f805b023c38987f0daeea972a3bfb79baf",
+      "license": "MIT",
+      "urls": []
+    }
+  },
+  "version": 1
+}

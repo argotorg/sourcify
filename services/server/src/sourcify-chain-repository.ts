@@ -19,7 +19,7 @@ export class ChainRepository {
   private _sourcifyChainsArray(): SourcifyChain[] {
     const chainsArray = Object.values(this.sourcifyChainMap);
     // Have Ethereum chains on top.
-    const ethereumChainIds = [1, 17000, 5, 11155111, 3, 4];
+    const ethereumChainIds = [1, 560048, 11155111, 17000, 5, 3, 4];
     const ethereumChains = [] as SourcifyChain[];
     ethereumChainIds.forEach((id) => {
       // Ethereum chains might not be in a custom chains.json
@@ -34,13 +34,11 @@ export class ChainRepository {
     // Others, sorted by chainId strings
     const otherChains = chainsArray
       .filter((chain) => !ethereumChainIds.includes(chain.chainId))
-      .sort((a, b) =>
-        a.chainId.toString() > b.chainId.toString()
-          ? 1
-          : a.chainId.toString() < b.chainId.toString()
-            ? -1
-            : 0,
-      );
+      .sort((a, b) => {
+        const aStr = a.title || a.name;
+        const bStr = b.title || b.name;
+        return aStr > bStr ? 1 : aStr < bStr ? -1 : 0;
+      });
 
     const sortedChains = ethereumChains.concat(otherChains);
     return sortedChains;

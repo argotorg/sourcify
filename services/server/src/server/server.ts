@@ -1,23 +1,17 @@
 import path from "path";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
-import util from "util";
 import * as OpenApiValidator from "express-openapi-validator";
 import yamljs from "yamljs";
 import { resolveRefs } from "json-refs";
 import bodyParser from "body-parser";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const fileUpload = require("express-fileupload");
-import {
-  MemoryStore as ExpressRateLimitMemoryStore,
-  rateLimit,
-} from "express-rate-limit";
-import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { asyncLocalStorage } from "../common/async-context";
 
 // local imports
-import logger from "../common/logger";
+import logger, { setLogLevel } from "../common/logger";
 import routes from "./routes";
 import genericErrorHandler from "../common/errors/GenericErrorHandler";
 import { initDeprecatedRoutes } from "./apiv1/deprecated.routes";
@@ -26,14 +20,19 @@ import { Services } from "./services/services";
 import { StorageServiceOptions } from "./services/StorageService";
 import { VerificationServiceOptions } from "./services/VerificationService";
 import {
+  getLibSourcifyLoggerLevel,
   ISolidityCompiler,
   IVyperCompiler,
+  SolidityMetadataContract,
+  SourcifyChain,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ChainRepository } from "../sourcify-chain-repository";
 import { SessionOptions } from "express-session";
 import { makeV1ValidatorFormats } from "./apiv1/validation";
 import { errorHandler as v2ErrorHandler } from "./apiv2/errors";
+import http from "http";
+import { RWStorageIdentifiers } from "./services/storageServices/identifiers";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -41,23 +40,27 @@ declare module "express-serve-static-core" {
   }
 }
 
+export interface LibSourcifyConfig {
+  ipfsGateway?: {
+    url: string;
+    headers?: HeadersInit;
+  };
+  rpcTimeout?: number;
+}
+
 export interface ServerOptions {
   port: string | number;
   maxFileSize: number;
-  rateLimit: {
-    enabled: boolean;
-    windowMs?: number;
-    max?: number;
-    whitelist?: string[];
-    hideIpInLogs?: boolean;
-  };
   corsAllowedOrigins: string[];
   chains: SourcifyChainMap;
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
   verifyDeprecated: boolean;
+  upgradeContract: boolean;
   sessionOptions: SessionOptions;
-  loggingToken?: string;
+  sourcifyPrivateToken?: string;
+  libSourcifyConfig?: LibSourcifyConfig;
+  logLevel?: string;
 }
 
 export class Server {
@@ -65,28 +68,94 @@ export class Server {
   port: string | number;
   services: Services;
   chainRepository: ChainRepository;
+  httpServer?: http.Server;
 
   constructor(
     options: ServerOptions,
     verificationServiceOptions: VerificationServiceOptions,
     storageServiceOptions: StorageServiceOptions,
   ) {
+    setLogLevel(options.logLevel || "info");
+
     this.port = options.port;
     logger.info("Server port set", { port: this.port });
     this.app = express();
 
+    if (options.libSourcifyConfig) {
+      if (options.libSourcifyConfig.ipfsGateway) {
+        SolidityMetadataContract.setGlobalIpfsGateway(
+          options.libSourcifyConfig.ipfsGateway,
+        );
+      }
+
+      if (options.libSourcifyConfig.rpcTimeout) {
+        SourcifyChain.setGlobalRpcTimeout(options.libSourcifyConfig.rpcTimeout);
+      }
+    }
+    logger.info("lib-sourcify config", {
+      ipfsGateway: SolidityMetadataContract.getGlobalIpfsGateway(),
+      rpcTimeout: SourcifyChain.getGlobalRpcTimeout(),
+      logLevel: getLibSourcifyLoggerLevel(),
+    });
+
     this.chainRepository = new ChainRepository(options.chains);
+    logger.info("SourcifyChains.Initialized", {
+      supportedChainsCount: this.chainRepository.supportedChainsArray.length,
+      allChainsCount: this.chainRepository.sourcifyChainsArray.length,
+      supportedChains: this.chainRepository.supportedChainsArray.map(
+        (c) => c.chainId,
+      ),
+      allChains: this.chainRepository.sourcifyChainsArray.map((c) => c.chainId),
+    });
 
     this.services = new Services(
       verificationServiceOptions,
       storageServiceOptions,
     );
 
+    if (
+      !this.services.storage.rwServices[RWStorageIdentifiers.SourcifyDatabase]
+    ) {
+      logger.warn(
+        "No database configured. The database is recommended as storage service. API v2 is disabled without database.",
+      );
+    }
+
+    const handleShutdownSignal = async () => {
+      await this.shutdown();
+      process.exit(0);
+    };
+    process.on("SIGTERM", handleShutdownSignal);
+    process.on("SIGINT", handleShutdownSignal);
+
     this.app.set("chainRepository", this.chainRepository);
     this.app.set("solc", options.solc);
     this.app.set("vyper", options.vyper);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
+    this.app.set("upgradeContract", options.upgradeContract);
     this.app.set("services", this.services);
+
+    // Session API endpoints require non "*" origins because of the session cookies
+    const sessionPaths = [
+      "/session", // all paths /session/verify /session/input-files etc.
+      // legacy endpoint naming below
+      "/input-files",
+      "/restart-session",
+      "/verify-validated",
+    ];
+    this.app.use((req, res, next) => {
+      // startsWith to match /session*
+      if (sessionPaths.some((substr) => req.path.startsWith(substr))) {
+        return cors({
+          origin: options.corsAllowedOrigins,
+          credentials: true,
+        })(req, res, next);
+      }
+      // * for all non-session paths
+      return cors({
+        origin: "*",
+      })(req, res, next);
+    });
 
     this.app.use(
       bodyParser.urlencoded({
@@ -160,16 +229,16 @@ export class Server {
         fileUploader: false,
         validateSecurity: {
           handlers: {
-            // Auth Handler for the /change-log-level endpoint
+            // Auth Handler for the /private/** endpoints
             BearerAuth: (req) => {
               const authHeader = req.headers["authorization"];
               // This is a placeholder token. In a real application, use a more secure method for managing and validating tokens.
               const token = authHeader && authHeader.split(" ")[1];
 
-              if (!options.loggingToken) {
+              if (!options.sourcifyPrivateToken) {
                 return false;
               }
-              return token === options.loggingToken;
+              return token === options.sourcifyPrivateToken;
             },
           },
         },
@@ -181,71 +250,6 @@ export class Server {
         },
       }),
     );
-
-    if (options.rateLimit.enabled) {
-      const hideIpInLogs = options.rateLimit.hideIpInLogs;
-      const limiter = rateLimit({
-        windowMs: options.rateLimit.windowMs,
-        max: options.rateLimit.max,
-        standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-        legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-        message: {
-          error:
-            "You are sending too many verification requests, please slow down.",
-        },
-        handler: (req, res, next, options) => {
-          const ip = getIp(req);
-          const ipHash = ip ? hash(ip) : "";
-          const ipLog = hideIpInLogs ? ipHash : ip;
-          const store = options.store as ExpressRateLimitMemoryStore;
-          const hits = store.hits[ip || ""];
-          logger.debug("Rate limit hit", {
-            method: req.method,
-            path: req.path,
-            ip: ipLog,
-            hits,
-          });
-          res.status(options.statusCode).send(options.message);
-        },
-        keyGenerator: (req: any) => {
-          return getIp(req) || new Date().toISOString();
-        },
-        skip: (req) => {
-          const ip = getIp(req);
-          const whitelist = options.rateLimit.whitelist as string[];
-          for (const ipPrefix of whitelist) {
-            if (ip?.startsWith(ipPrefix)) return true;
-          }
-          return false;
-        },
-      });
-
-      this.app.all("/session/verify*", limiter);
-      this.app.all("/verify*", limiter);
-      this.app.post("/", limiter);
-    }
-
-    // Session API endpoints require non "*" origins because of the session cookies
-    const sessionPaths = [
-      "/session", // all paths /session/verify /session/input-files etc.
-      // legacy endpoint naming below
-      "/input-files",
-      "/restart-session",
-      "/verify-validated",
-    ];
-    this.app.use((req, res, next) => {
-      // startsWith to match /session*
-      if (sessionPaths.some((substr) => req.path.startsWith(substr))) {
-        return cors({
-          origin: options.corsAllowedOrigins,
-          credentials: true,
-        })(req, res, next);
-      }
-      // * for all non-session paths
-      return cors({
-        origin: "*",
-      })(req, res, next);
-    });
 
     // Need this for secure cookies to work behind a proxy. See https://expressjs.com/en/guide/behind-proxies.html
     // true means the leftmost IP in the X-Forwarded-* header is used
@@ -263,10 +267,38 @@ export class Server {
     this.app.use(genericErrorHandler);
   }
 
-  async listen(callback?: () => void) {
-    const promisified: any = util.promisify(this.app.listen);
-    await promisified(this.port);
-    if (callback) callback();
+  async listen(callback?: () => void): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      this.httpServer = this.app.listen(this.port, (error?: Error) => {
+        if (error) {
+          reject(error);
+        } else {
+          if (callback) callback();
+          resolve();
+        }
+      });
+    });
+  }
+
+  async shutdown() {
+    logger.info("Shutting down server");
+    if (this.httpServer) {
+      await new Promise<void>((resolve) => {
+        this.httpServer!.close((error?: Error) => {
+          if (error) {
+            // only thrown if it was not listening
+            logger.error("Error closing server", error);
+            resolve();
+          } else {
+            logger.info("Server closed");
+            resolve();
+          }
+        });
+      });
+    }
+    // Gracefully closing all in-process verifications
+    await this.services.close();
+    logger.info("Services closed");
   }
 
   // We need to resolve the $refs in the openapi file ourselves because the SwaggerUI-expresses does not do it
@@ -290,15 +322,4 @@ export class Server {
       },
     );
   }
-}
-
-function hash(data: string) {
-  return crypto.createHash("sha256").update(data).digest("hex");
-}
-
-function getIp(req: Request) {
-  if (req.headers["x-forwarded-for"]) {
-    return req.headers["x-forwarded-for"].toString();
-  }
-  return req.ip;
 }

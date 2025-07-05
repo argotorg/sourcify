@@ -1,25 +1,19 @@
 import { Response } from "express";
+import { LegacyVerifyRequest, extractFiles } from "../../verification.common";
 import {
-  LegacyVerifyRequest,
-  extractFiles,
-  stringifyInvalidAndMissing,
-} from "../../verification.common";
-import {
-  SolidityCheckedContract,
   ISolidityCompiler,
-  Match,
-  checkFilesWithMetadata,
-  matchWithRuntimeBytecode,
-  useAllSources,
-  IVyperCompiler,
+  SolidityMetadataContract,
+  createMetadataContractsFromFiles,
+  VerificationError,
+  Verification,
+  useAllSourcesAndReturnCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError, NotFoundError } from "../../../../../common/errors";
 import { StatusCodes } from "http-status-codes";
-import { getMatchStatus, getResponseMatchFromMatch } from "../../../../common";
-import logger from "../../../../../common/logger";
 import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
-import { AuxdataStyle } from "@ethereum-sourcify/bytecode-utils";
+import logger from "../../../../../common/logger";
+import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 
 export async function legacyVerifyEndpoint(
   req: LegacyVerifyRequest,
@@ -27,7 +21,6 @@ export async function legacyVerifyEndpoint(
 ): Promise<any> {
   const services = req.app.get("services") as Services;
   const solc = req.app.get("solc") as ISolidityCompiler;
-  const vyper = req.app.get("vyper") as IVyperCompiler;
   const chainRepository = req.app.get("chainRepository") as ChainRepository;
 
   const inputFiles = extractFiles(req);
@@ -37,41 +30,34 @@ export async function legacyVerifyEndpoint(
     throw new NotFoundError(msg);
   }
 
-  let checkedContracts: SolidityCheckedContract[];
+  let metadataContracts: SolidityMetadataContract[];
   try {
-    checkedContracts = (await checkFilesWithMetadata(
-      solc,
-      vyper,
-      inputFiles,
-    )) as SolidityCheckedContract[];
+    metadataContracts = await createMetadataContractsFromFiles(inputFiles);
   } catch (error: any) {
     throw new BadRequestError(error.message);
   }
 
-  const errors = checkedContracts
-    .filter((contract) => !contract.isValid(true))
-    .map(stringifyInvalidAndMissing);
-  if (errors.length) {
+  if (metadataContracts.length === 0) {
     throw new BadRequestError(
-      "Invalid or missing sources in:\n" + errors.join("\n"),
+      `No valid Solidity metadata file found in the provided ${inputFiles.length} files. Please make sure you have added a valid metadata.json file.`,
     );
   }
 
-  if (checkedContracts.length !== 1 && !req.body?.chosenContract) {
-    const contractNames = checkedContracts.map((c) => c.name).join(", ");
-    const msg = `Detected ${checkedContracts.length} contracts (${contractNames}), but can only verify 1 at a time. Please choose a main contract and click Verify again.`;
-    const contractsToChoose = checkedContracts.map((contract) => ({
+  if (metadataContracts.length > 1 && !req.body?.chosenContract) {
+    const contractNames = metadataContracts.map((c) => c.name).join(", ");
+    const msg = `Detected ${metadataContracts.length} contracts (${contractNames}), but can only verify 1 at a time. Please choose a main contract and click Verify again.`;
+    const contractsToChoose = metadataContracts.map((contract) => ({
       name: contract.name,
-      path: contract.compiledPath,
+      path: contract.path,
     }));
     return res
       .status(StatusCodes.BAD_REQUEST)
       .send({ error: msg, contractsToChoose });
   }
 
-  const contract: SolidityCheckedContract = req.body?.chosenContract
-    ? checkedContracts[req.body.chosenContract]
-    : checkedContracts[0];
+  const contract: SolidityMetadataContract = req.body?.chosenContract
+    ? metadataContracts[req.body?.chosenContract]
+    : metadataContracts[0];
 
   if (!contract) {
     throw new NotFoundError(
@@ -80,42 +66,71 @@ export async function legacyVerifyEndpoint(
     );
   }
 
-  const match = await services.verification.verifyDeployed(
-    contract,
-    chainRepository.sourcifyChainMap[req.body?.chain],
-    req.body?.address,
-    req.body?.creatorTxHash,
-  );
-  // Send to verification again with all source files.
-  if (match.runtimeMatch === "extra-file-input-bug") {
-    logger.info("Found extra-file-input-bug", {
-      contract: contract.name,
-      chain: req.body?.chain,
-      address: req.body?.address,
+  // Fetch missing files
+  try {
+    await contract.fetchMissing();
+  } catch (error: any) {
+    logger.debug("Error fetching missing files", {
+      error: error,
     });
-    const contractWithAllSources = await useAllSources(contract, inputFiles);
-    const tempMatch = await services.verification.verifyDeployed(
-      contractWithAllSources,
-      chainRepository.sourcifyChainMap[req.body?.chain],
+  }
+
+  if (!contract.isCompilable()) {
+    throw new BadRequestError(
+      `Invalid or missing sources in ${contract.name}:\n` +
+        `Missing sources: ${Object.keys(contract.missingSources).join(", ")}\n` +
+        `Invalid sources: ${Object.keys(contract.invalidSources).join(", ")}`,
+    );
+  }
+
+  const compilation = await contract.createCompilation(solc);
+
+  let verification: Verification;
+  try {
+    verification = await services.verification.verifyFromCompilation(
+      compilation,
+      chainRepository.sourcifyChainMap[req.body.chain],
       req.body?.address,
       req.body?.creatorTxHash,
     );
+  } catch (error) {
+    // If the error is not a VerificationError, log and rethrow
+    // If the error is not an extra_file_input_bug, log and rethrow
     if (
-      tempMatch.runtimeMatch === "perfect" ||
-      tempMatch.creationMatch === "perfect"
+      !(error instanceof VerificationError) ||
+      error.code !== "extra_file_input_bug"
     ) {
-      await services.storage.storeMatch(contract, tempMatch);
-      return res.send({ result: [getResponseMatchFromMatch(tempMatch)] });
-    } else if (tempMatch.runtimeMatch === "extra-file-input-bug") {
-      throw new BadRequestError(
-        "It seems your contract's metadata hashes match but not the bytecodes. You should add all the files input to the compiler during compilation and remove all others. See the issue for more information: https://github.com/ethereum/sourcify/issues/618",
+      logger.error("Verification error", { error });
+      throw error;
+    }
+
+    // Handle the extra_file_input_bug by logging, reconstructing the compilation with all sources,
+    // and then reattempting the verification.
+    logger.info("Found extra-file-input-bug", {
+      contract: contract.name,
+      chain: req.body.chain,
+      address: req.body.address,
+    });
+    const compilationWithAllSources = await useAllSourcesAndReturnCompilation(
+      compilation,
+      inputFiles,
+    );
+    try {
+      verification = await services.verification.verifyFromCompilation(
+        compilationWithAllSources,
+        chainRepository.sourcifyChainMap[req.body.chain],
+        req.body.address,
+        req.body.creatorTxHash,
       );
+    } catch (fallbackError: any) {
+      // This catch ensures compatibility with the old verification flow
+      logger.warn("Verification error", { error: fallbackError });
+      throw new BadRequestError(fallbackError.message);
     }
   }
-  if (match.runtimeMatch || match.creationMatch) {
-    await services.storage.storeMatch(contract, match);
-  }
-  return res.send({ result: [getResponseMatchFromMatch(match)] }); // array is an old expected behavior (e.g. by frontend)
+
+  await services.storage.storeVerification(verification.export());
+  res.send({ result: [getApiV1ResponseFromVerification(verification)] }); // array is an old expected behavior (e.g. by frontend)
 }
 
 export async function verifyDeprecated(
@@ -123,8 +138,8 @@ export async function verifyDeprecated(
   res: Response,
 ): Promise<any> {
   const solc = req.app.get("solc") as ISolidityCompiler;
-  const vyper = req.app.get("vyper") as IVyperCompiler;
   const services = req.app.get("services") as Services;
+  const chainRepository = req.app.get("chainRepository") as ChainRepository;
 
   const inputFiles = extractFiles(req);
   if (!inputFiles) {
@@ -133,41 +148,28 @@ export async function verifyDeprecated(
     throw new NotFoundError(msg);
   }
 
-  let checkedContracts: SolidityCheckedContract[];
+  let metadataContracts: SolidityMetadataContract[];
   try {
-    checkedContracts = (await checkFilesWithMetadata(
-      solc,
-      vyper,
-      inputFiles,
-    )) as SolidityCheckedContract[];
+    metadataContracts = await createMetadataContractsFromFiles(inputFiles);
   } catch (error: any) {
     throw new BadRequestError(error.message);
   }
 
-  const errors = checkedContracts
-    .filter((contract) => !contract.isValid(true))
-    .map(stringifyInvalidAndMissing);
-  if (errors.length) {
-    throw new BadRequestError(
-      "Invalid or missing sources in:\n" + errors.join("\n"),
-    );
-  }
-
-  if (checkedContracts.length !== 1 && !req.body?.chosenContract) {
-    const contractNames = checkedContracts.map((c) => c.name).join(", ");
-    const msg = `Detected ${checkedContracts.length} contracts (${contractNames}), but can only verify 1 at a time. Please choose a main contract and click Verify again.`;
-    const contractsToChoose = checkedContracts.map((contract) => ({
+  if (metadataContracts.length !== 1 && !req.body?.chosenContract) {
+    const contractNames = metadataContracts.map((c) => c.name).join(", ");
+    const msg = `Detected ${metadataContracts.length} contracts (${contractNames}), but can only verify 1 at a time. Please choose a main contract and click Verify again.`;
+    const contractsToChoose = metadataContracts.map((contract) => ({
       name: contract.name,
-      path: contract.compiledPath,
+      path: contract.path,
     }));
     return res
       .status(StatusCodes.BAD_REQUEST)
       .send({ error: msg, contractsToChoose });
   }
 
-  const contract: SolidityCheckedContract = req.body?.chosenContract
-    ? checkedContracts[req.body.chosenContract]
-    : checkedContracts[0];
+  const contract: SolidityMetadataContract = req.body?.chosenContract
+    ? metadataContracts[req.body?.chosenContract]
+    : metadataContracts[0];
 
   if (!contract) {
     throw new NotFoundError(
@@ -176,66 +178,72 @@ export async function verifyDeprecated(
     );
   }
 
-  const match: Match = {
-    address: req.body?.address,
-    chainId: req.body?.chain,
-    runtimeMatch: null,
-    creationMatch: null,
-    runtimeTransformations: [],
-    creationTransformations: [],
-    runtimeTransformationValues: {},
-    creationTransformationValues: {},
+  // Fetch missing files
+  try {
+    await contract.fetchMissing();
+  } catch (error: any) {
+    logger.debug("Error fetching missing files", {
+      error: error,
+    });
+  }
+
+  const stringifyInvalidAndMissing = (contract: SolidityMetadataContract) => {
+    const errors = Object.keys(contract.invalidSources).concat(
+      Object.keys(contract.missingSources),
+    );
+    return `${contract.name} (${errors.join(", ")})`;
   };
 
-  const generateRuntimeCborAuxdataPositions = async () => {
-    if (!contract.runtimeBytecodeCborAuxdata) {
-      await contract.generateCborAuxdataPositions();
-    }
-    return contract.runtimeBytecodeCborAuxdata || {};
-  };
+  if (!contract.isCompilable()) {
+    throw new BadRequestError(
+      "Invalid or missing sources in:\n" + stringifyInvalidAndMissing(contract),
+    );
+  }
 
   try {
-    const {
-      runtimeBytecode: recompiledRuntimeBytecode,
-      immutableReferences,
-      runtimeLinkReferences,
-      // creationLinkReferences,
-    } = await contract.recompile();
+    // Create a compilation from the contract and compile it
+    const compilation = await contract.createCompilation(solc);
 
-    // we are running also matchWithRuntimeBytecode to extract transformations
-    await matchWithRuntimeBytecode(
-      match,
-      recompiledRuntimeBytecode,
-      recompiledRuntimeBytecode, // onchainBytecode
-      generateRuntimeCborAuxdataPositions,
-      immutableReferences,
-      runtimeLinkReferences,
-      AuxdataStyle.SOLIDITY,
+    // We need to compile the compilation before creating the Verification object
+    // because we are not going to call verify() on the Verification object
+    await compilation.compile();
+    // We don't expect `generateCborAuxdataPositions` to throw an error, so let's throw it if it does
+    // We don't need to log a specific error here because this function is not called by users
+    await compilation.generateCborAuxdataPositions();
+
+    // Create a mock Verification object for deprecated chains
+    const verification = new Verification(
+      compilation,
+      chainRepository.sourcifyChainMap[req.body.chain],
+      req.body.address,
+      req.body.creatorTxHash,
     );
 
-    match;
-    const matchStatus = getMatchStatus(match);
-    if (matchStatus !== "perfect") {
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .send({ error: "Match is neither partial or perfect" });
-    }
-
-    // Override match properties
-    match.runtimeMatch = req.body?.match;
-    match.creationMatch = req.body?.match;
-    // hex for !!!!!!!!!!! - chain was deprecated at the time of verification";
-    match.onchainRuntimeBytecode =
+    // Override verification properties for deprecated chains
+    // The hexadecimal string is '!!!!!!!!! - chain was deprecated at the time of verification'
+    const deprecatedMessage =
       "0x2121212121212121212121202d20636861696e207761732064657072656361746564206174207468652074696d65206f6620766572696669636174696f6e";
-    match.onchainCreationBytecode =
-      "0x2121212121212121212121202d20636861696e207761732064657072656361746564206174207468652074696d65206f6620766572696669636174696f6e";
-    match.blockNumber = -1;
-    match.creatorTxHash = undefined; // null bytea
-    match.txIndex = -1;
-    match.deployer = undefined; // null bytea
 
-    await services.storage.storeMatch(contract, match);
-    return res.send({ result: [getResponseMatchFromMatch(match)] });
+    // Set status based on request match type
+    (verification as any).runtimeMatch = req.body.match;
+    (verification as any).creationMatch = req.body.match;
+
+    // Set mock bytecodes
+    (verification as any)._onchainRuntimeBytecode = deprecatedMessage;
+    (verification as any)._onchainCreationBytecode = deprecatedMessage;
+
+    // Set deployment info
+    (verification as any).blockNumber = -1;
+    (verification as any).creatorTxHash = undefined; // null bytea
+    (verification as any).txIndex = -1;
+    (verification as any).deployer = undefined; // null bytea
+
+    // Store the verification
+    await services.storage.storeVerification(verification.export());
+
+    res.send({
+      result: [getApiV1ResponseFromVerification(verification)],
+    });
   } catch (error: any) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)

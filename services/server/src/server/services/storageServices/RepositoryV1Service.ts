@@ -2,10 +2,9 @@ import dirTree from "directory-tree";
 import Path from "path";
 import fs from "fs";
 import {
-  Match,
-  Status,
+  VerificationStatus,
   StringMap,
-  AbstractCheckedContract,
+  VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   ContractData,
@@ -15,14 +14,15 @@ import {
   V1MatchLevelWithoutAny,
   MatchQuality,
   PathConfig,
+  Match,
 } from "../../types";
 import path from "path";
 import logger from "../../../common/logger";
 import { getAddress } from "ethers";
-import { getMatchStatus } from "../../common";
 import { RWStorageService } from "../StorageService";
 import { RWStorageIdentifiers } from "./identifiers";
 import { exists, readFile } from "../utils/util";
+import { getMatchStatus } from "../../apiv1/controllers.common";
 
 export interface RepositoryV1ServiceOptions {
   repositoryPath: string;
@@ -229,7 +229,7 @@ export class RepositoryV1Service implements RWStorageService {
   async fetchFromStorage(
     fullContractPath: string,
     partialContractPath: string,
-  ): Promise<{ time: Date; status: Status }> {
+  ): Promise<{ time: Date; status: VerificationStatus }> {
     try {
       await fs.promises.access(fullContractPath);
       return {
@@ -366,101 +366,6 @@ export class RepositoryV1Service implements RWStorageService {
     logger.silly("Saved file to repositoryV1", { abolsutePath });
   }
 
-  public async storeMatch(
-    contract: AbstractCheckedContract,
-    match: Match,
-  ): Promise<void | Match> {
-    if (
-      match.address &&
-      (match.runtimeMatch === "perfect" ||
-        match.runtimeMatch === "partial" ||
-        match.creationMatch === "perfect" ||
-        match.creationMatch === "partial")
-    ) {
-      // Delete the partial matches if we now have a perfect match instead.
-      if (
-        match.runtimeMatch === "perfect" ||
-        match.creationMatch === "perfect"
-      ) {
-        await this.deletePartialIfExists(match.chainId, match.address);
-      }
-      const matchQuality: MatchQuality = this.statusToMatchQuality(
-        getMatchStatus(match),
-      );
-
-      await this.storeSources(
-        matchQuality,
-        match.chainId,
-        match.address,
-        contract.sources,
-      );
-
-      // Store metadata
-      await this.storeJSON(
-        matchQuality,
-        match.chainId,
-        match.address,
-        "metadata.json",
-        contract.metadata,
-      );
-
-      if (match.abiEncodedConstructorArguments) {
-        await this.storeTxt(
-          matchQuality,
-          match.chainId,
-          match.address,
-          "constructor-args.txt",
-          match.abiEncodedConstructorArguments,
-        );
-      }
-
-      if (match.creatorTxHash) {
-        await this.storeTxt(
-          matchQuality,
-          match.chainId,
-          match.address,
-          "creator-tx-hash.txt",
-          match.creatorTxHash,
-        );
-      }
-
-      if (match.libraryMap && Object.keys(match.libraryMap).length) {
-        await this.storeJSON(
-          matchQuality,
-          match.chainId,
-          match.address,
-          "library-map.json",
-          match.libraryMap,
-        );
-      }
-
-      if (
-        match.immutableReferences &&
-        Object.keys(match.immutableReferences).length > 0
-      ) {
-        await this.storeJSON(
-          matchQuality,
-          match.chainId,
-          match.address,
-          "immutable-references.json",
-          match.immutableReferences,
-        );
-      }
-
-      logger.info("Stored contract to RepositoryV1", {
-        address: match.address,
-        chainId: match.chainId,
-        name: contract.name,
-        runtimeMatch: match.runtimeMatch,
-        creationMatch: match.creationMatch,
-      });
-    } else if (match.runtimeMatch === "extra-file-input-bug") {
-      return match;
-    } else {
-      throw new Error(`Unknown match status: ${match.runtimeMatch}`);
-    }
-  }
-
   async deletePartialIfExists(chainId: string, address: string) {
     const pathConfig: PathConfig = {
       matchQuality: "partial",
@@ -481,7 +386,7 @@ export class RepositoryV1Service implements RWStorageService {
    * @param status
    * @returns {MatchQuality} matchQuality
    */
-  private statusToMatchQuality(status: Status): MatchQuality {
+  private statusToMatchQuality(status: VerificationStatus): MatchQuality {
     if (status === "perfect") return "full";
     if (status === "partial") return status;
     throw new Error(`Invalid match status: ${status}`);
@@ -585,5 +490,102 @@ export class RepositoryV1Service implements RWStorageService {
 
     sanitizedPath = path.format(parsedPath);
     return { sanitizedPath, originalPath };
+  }
+
+  public async storeVerification(verification: VerificationExport) {
+    if (
+      verification.address &&
+      (verification.status.runtimeMatch === "perfect" ||
+        verification.status.runtimeMatch === "partial" ||
+        verification.status.creationMatch === "perfect" ||
+        verification.status.creationMatch === "partial")
+    ) {
+      // Delete the partial matches if we now have a perfect match instead.
+      if (
+        verification.status.runtimeMatch === "perfect" ||
+        verification.status.creationMatch === "perfect"
+      ) {
+        await this.deletePartialIfExists(
+          verification.chainId.toString(),
+          verification.address,
+        );
+      }
+      const matchQuality: MatchQuality = this.statusToMatchQuality(
+        getMatchStatus(verification.status),
+      );
+
+      await this.storeSources(
+        matchQuality,
+        verification.chainId.toString(),
+        verification.address,
+        verification.compilation.sources,
+      );
+
+      // Store metadata
+      await this.storeJSON(
+        matchQuality,
+        verification.chainId.toString(),
+        verification.address,
+        "metadata.json",
+        verification.compilation.metadata,
+      );
+
+      if (verification.transformations.creation.values.constructorArguments) {
+        await this.storeTxt(
+          matchQuality,
+          verification.chainId.toString(),
+          verification.address,
+          "constructor-args.txt",
+          verification.transformations.creation.values.constructorArguments,
+        );
+      }
+
+      if (verification.deploymentInfo.txHash) {
+        await this.storeTxt(
+          matchQuality,
+          verification.chainId.toString(),
+          verification.address,
+          "creator-tx-hash.txt",
+          verification.deploymentInfo.txHash,
+        );
+      }
+
+      const libraryMap =
+        verification.libraryMap.creation || verification.libraryMap.runtime;
+      if (libraryMap && Object.keys(libraryMap).length) {
+        await this.storeJSON(
+          matchQuality,
+          verification.chainId.toString(),
+          verification.address,
+          "library-map.json",
+          libraryMap,
+        );
+      }
+
+      if (
+        verification.compilation.immutableReferences &&
+        Object.keys(verification.compilation.immutableReferences).length > 0
+      ) {
+        await this.storeJSON(
+          matchQuality,
+          verification.chainId.toString(),
+          verification.address,
+          "immutable-references.json",
+          verification.compilation.immutableReferences,
+        );
+      }
+
+      logger.info(`Stored contract to ${this.IDENTIFIER}`, {
+        address: verification.address,
+        chainId: verification.chainId.toString(),
+        runtimeMatch: verification.status.runtimeMatch,
+        creationMatch: verification.status.creationMatch,
+        name: verification.compilation.compilationTarget.name,
+      });
+    } else {
+      throw new Error(
+        `Unknown match status: ${verification.status.runtimeMatch}`,
+      );
+    }
   }
 }

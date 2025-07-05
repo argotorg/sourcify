@@ -3,11 +3,11 @@ openapi: "3.0.0"
 paths:
   /files/contracts/partial/{chain}:
     get:
-      deprecated: false
+      deprecated: true
       summary: Get the contract addresses partially verified on a chain
       description: Returns the partially verified contracts from the repository for the desired chain. API is paginated. Limit must be a number between 1 and 200.
       tags:
-        - Repository
+        - (Deprecated) Repository
       parameters:
         - name: chain
           in: path

@@ -1,9 +1,7 @@
 import { Response, Request } from "express";
 import {
-  ContractWrapperMap,
   checkContractsInSession,
   getSessionJSON,
-  isVerifiable,
   saveFilesToSession,
   verifyContractsInSession,
 } from "../../verification.common";
@@ -11,15 +9,13 @@ import {
   ISolidityCompiler,
   IVyperCompiler,
   PathContent,
-  Sources,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import {
-  processEtherscanSolidityContract,
-  processEtherscanVyperContract,
-  processRequestFromEtherscan,
   stringToBase64,
-} from "../etherscan.common";
+  getCompilationFromEtherscanResult,
+  fetchFromEtherscan,
+} from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import { Services } from "../../../../services/services";
@@ -42,35 +38,18 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
   const apiKey = req.body?.apiKey;
   const sourcifyChain = chainRepository.supportedChainMap[chain];
 
-  const { vyperResult, solidityResult } = await processRequestFromEtherscan(
+  const etherscanResult = await fetchFromEtherscan(
     sourcifyChain,
     address,
     apiKey,
   );
 
-  let checkedContract;
-  let sources: Sources;
-  if (solidityResult) {
-    checkedContract = await processEtherscanSolidityContract(
-      solc,
-      solidityResult.compilerVersion,
-      solidityResult.solcJsonInput,
-      solidityResult.contractName,
-    );
-    sources = solidityResult.solcJsonInput.sources;
-  } else if (vyperResult) {
-    checkedContract = await processEtherscanVyperContract(
-      vyper,
-      vyperResult.compilerVersion,
-      vyperResult.vyperJsonInput,
-      vyperResult.contractPath,
-      vyperResult.contractName,
-    );
-    sources = vyperResult.vyperJsonInput.sources;
-  } else {
-    logger.error("Import from Etherscan: unsupported language");
-    throw new BadRequestError("Received unsupported language from Etherscan");
-  }
+  const compilation = await getCompilationFromEtherscanResult(
+    etherscanResult,
+    solc,
+    vyper,
+  );
+  const sources = compilation.jsonInput.sources;
 
   const pathContents: PathContent[] = Object.keys(sources).map((path) => {
     if (!sources[path].content) {
@@ -83,9 +62,11 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
       content: stringToBase64(sources[path].content),
     };
   });
+  // Here we need to compile because we need to get the metadata
+  await compilation.compile();
   pathContents.push({
     path: "metadata.json",
-    content: stringToBase64(JSON.stringify(checkedContract.metadata)),
+    content: stringToBase64(JSON.stringify(compilation.metadata)),
   });
   const session = req.session;
   const newFilesCount = saveFilesToSession(pathContents, session);
@@ -93,7 +74,7 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
     throw new BadRequestError("The contract didn't add any new file");
   }
 
-  await checkContractsInSession(solc, vyper, session);
+  await checkContractsInSession(session);
   if (!session.contractWrappers) {
     throw new BadRequestError(
       "Unknown error during the Etherscan verification process",
@@ -101,7 +82,6 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
     return;
   }
 
-  const verifiable: ContractWrapperMap = {};
   for (const id of Object.keys(session.contractWrappers)) {
     const contractWrapper = session.contractWrappers[id];
     if (contractWrapper) {
@@ -109,16 +89,13 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
         contractWrapper.address = address;
         contractWrapper.chainId = chain;
       }
-      if (isVerifiable(contractWrapper)) {
-        verifiable[id] = contractWrapper;
-      }
     }
   }
 
   await verifyContractsInSession(
     solc,
     vyper,
-    verifiable,
+    session.contractWrappers,
     session,
     services.verification,
     services.storage,

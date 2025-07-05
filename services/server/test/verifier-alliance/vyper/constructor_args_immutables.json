@@ -15,23 +15,7 @@
   },
   "compiler_settings": {
     "evmVersion": "london",
-    "libraries": {},
-    "outputSelection": {
-      "test.vy": [
-        "abi",
-        "ast",
-        "interface",
-        "ir",
-        "userdoc",
-        "devdoc",
-        "evm.bytecode.object",
-        "evm.bytecode.opcodes",
-        "evm.deployedBytecode.object",
-        "evm.deployedBytecode.opcodes",
-        "evm.deployedBytecode.sourceMap",
-        "evm.methodIdentifiers"
-      ]
-    }
+    "libraries": {}
   },
   "compilation_artifacts": {
     "abi": [

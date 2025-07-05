@@ -23,6 +23,12 @@
     "rpc": ["https://holesky.drpc.org", "https://1rpc.io/holesky"]
   },
   {
+    "name": "Ethereum Testnet Hoodi",
+    "title": "Ethereum Testnet Hoodi",
+    "chainId": 560048,
+    "rpc": ["https://rpc.hoodi.ethpandaops.io"]
+  },
+  {
     "name": "Arbitrum One",
     "chainId": 42161,
     "rpc": [

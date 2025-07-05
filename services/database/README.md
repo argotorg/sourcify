@@ -6,6 +6,15 @@ Sourcify's database is an extension of the [Verifier Alliance](https://verifiera
 
 The migrations can be run to set up the Sourcify database.
 
+## Running the database
+
+### Run with Docker
+
+For convenience, you can run the Postgres container in `docker-compose.yml` with
+```bash
+docker-compose up
+```
+
 ## Database migrations
 
 ### Prerequisites
@@ -20,8 +29,6 @@ git submodule update --init
 
 - Copy paste `.env.template` in `.env` and set the variables.
 - Run `npm run migrate:up` to update the database to the latest version. This will run the `dev` config in [database.json](./database.json) with `localhost`. To run the migrations in production with `POSTGRES_HOST` use `npm run migrate:up -- --env production`
-
-For convenience, you can run the Postgres container in `docker-compose.yml` with `docker-compose up`.
 
 ### Reset the database
 
@@ -58,7 +65,7 @@ npm run sourcify:database sync https://sourcify.dev/server /home/app/repository/
 
 If there are chains that have been deprecated, their RPCs will not be available anymore so there's no way to fetch the deployment information for these contracts. We had verified these contracts so we might want to have these contracts regardless in our DB. To achieve that we need to put placeholders for the data related to the contract deployment, mostly on the `contract_deployments` table.
 
-The script has a `--deprecated` flag that will take these chains and place their contracts in the database without actually "verifying" them i.e. not comparing the compiled vs onchain contract. In that case the script will submit the contracts to the `/verify-deprecated` endpoint of the Sourcify instance instead of `/verify`. This endpoint is activated if you pass the ` verifiedDeprecated: true` option in the Sourcify server config file.
+The script has a `--deprecated` flag that will take these chains and place their contracts in the database without actually "verifying" them i.e. not comparing the compiled vs onchain contract. In that case the script will submit the contracts to the `/private/verify-deprecated` endpoint of the Sourcify instance instead of `/verify`. This endpoint is activated if you pass the ` verifiedDeprecated: true` option in the Sourcify server config file.
 
 The `contract_deployments` columns of such contracts will have these preset values:
 

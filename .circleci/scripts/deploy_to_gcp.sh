@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Checks the new tag of the built image for each service (server, monitor, repository)
+# Checks the new tag of the built image for each service (server, monitor)
 # The tag value is persisted in worspace/{service}_image_sha.txt by each respective build job
 # If a new image is built with a new tag, a deploy trigger is sent to the sourcifyeth/infra repo
 
@@ -8,7 +8,7 @@
 set -e
 
 # Define the list of services
-services=("server" "monitor" "repository")
+services=("server" "monitor")
 
 ARTIFACT_REGISTRY_URL="europe-west1-docker.pkg.dev/sourcify-project/ghcr-proxy/ethereum/sourcify/"
 
