@@ -1,0 +1,12 @@
+services:
+  verification:
+    image: node:20.11.1
+    command: node /verification/server.js
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./:/verification
+      - ./solc-repo/bin:/verification/solc-repo/bin
+      - ./solc-repo/js:/verification/solc-repo/js
+    env_file:
+      - path: .env
