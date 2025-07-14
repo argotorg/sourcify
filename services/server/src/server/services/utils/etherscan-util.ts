@@ -127,11 +127,6 @@ export const getSolcJsonInputFromEtherscanResult = (
       enabled: etherscanResult.OptimizationUsed === "1",
       runs: parseInt(etherscanResult.Runs),
     },
-    outputSelection: {
-      "*": {
-        "*": ["metadata", "evm.deployedBytecode.object"],
-      },
-    },
     evmVersion:
       etherscanResult.EVMVersion.toLowerCase() !== "default"
         ? etherscanResult.EVMVersion
@@ -312,14 +307,6 @@ export const processSolidityResultFromEtherscan = (
   if (isEtherscanJsonInput(sourceCodeObject)) {
     logger.debug("Etherscan solcJsonInput contract found");
     solcJsonInput = parseEtherscanJsonInput(sourceCodeObject);
-
-    if (solcJsonInput?.settings) {
-      // Tell compiler to output metadata and bytecode
-      solcJsonInput.settings.outputSelection["*"]["*"] = [
-        "metadata",
-        "evm.deployedBytecode.object",
-      ];
-    }
 
     contractPath = getContractPathFromSourcesOrThrow(
       contractName,
