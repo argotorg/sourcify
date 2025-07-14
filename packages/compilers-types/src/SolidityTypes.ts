@@ -88,7 +88,7 @@ export interface SoliditySettings {
   debug?: Debug;
   metadata?: SettingsMetadata;
   libraries?: Libraries;
-  outputSelection: OutputSelection;
+  outputSelection?: OutputSelection;
   modelChecker?: ModelChecker;
 }
 
