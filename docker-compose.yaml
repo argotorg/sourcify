@@ -1,6 +1,7 @@
 services:
   verification:
     image: node:20.11.1
+    mem_limit: 4g
     command: node /verification/server.js
     restart: unless-stopped
     network_mode: host

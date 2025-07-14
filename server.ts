@@ -9,6 +9,8 @@ import { errorHandler as v2ErrorHandler } from "./routes/api/errors";
 import { DatabaseOptions, loadConfig } from "./config/Loader";
 import { Solc } from "./services/compiler/Solc";
 import { Chain } from "./services/chain/Chain";
+import { heapDump } from "./services/utils/profile-util";
+import path from "path";
 const fileUpload = require("express-fileupload");
 
 export type ChainMap = {
@@ -20,11 +22,13 @@ export interface ServerOptions {
   maxFileSize: number;
   chains: ChainMap;
   solc: ISolidityCompiler;
+  enableProfile: boolean;
 }
 
 export class Server {
   app: express.Application
   port: string | number
+  enableProfile: boolean
   chains: ChainMap
   services: Services
 
@@ -35,6 +39,7 @@ export class Server {
   ) {
     this.app = express()
     this.port = options.port
+    this.enableProfile = options.enableProfile
     this.chains = options.chains
     this.services = new Services(verificationOptions, databaseOptions)
 
@@ -63,6 +68,7 @@ const server = new Server(
   {
     port: config.server.port,
     maxFileSize: config.server.maxFileSize,
+    enableProfile: config.server.enableProfile,
     chains: chainMap,
     solc,
   },
@@ -70,8 +76,8 @@ const server = new Server(
     chains: chainMap,
     solcRepoPath: config.solc.solcBinRepo,
     solJsonRepoPath: config.solc.solcJsRepo,
-    workerIdleTimeout: 30,
-    concurrentVerificationsPerWorker: 5
+    workerIdleTimeout: 3000,
+    concurrentVerificationsPerWorker: 1
   },
   config.mysql,
 );
@@ -80,4 +86,11 @@ server.services.init().then(() => {
   server.app.listen(server.port, () => {
     console.info(`Server listening on ${server.port}`);
   });
+  if(server.enableProfile) {
+    const fileName = path.basename(__filename)
+    const extName = path.extname(__filename)
+    const tag = fileName.substr(0, fileName.length - extName.length)
+    const filePath = `${path.dirname(__filename)}/${tag}`
+    heapDump(filePath)
+  }
 });

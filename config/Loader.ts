@@ -64,6 +64,7 @@ export function isConfluxOption(obj: any): obj is Conflux.ConfluxOption {
 export interface ServerOptions{
     port: number
     maxFileSize: number
+    enableProfile: boolean
 }
 
 export interface SolcOptions{

@@ -101,7 +101,11 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output);
       })
       .finally(() => {
-        this.runningTasks.delete(task);
+        const suc = this.runningTasks.delete(task);
+        console.log(`debug runningTasks after del ==\n`, {
+          size: this.runningTasks.size,
+          del: suc
+        })
       });
     this.runningTasks.add(task);
 

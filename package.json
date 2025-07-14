@@ -39,5 +39,8 @@
     "sequelize": "^6.37.7",
     "uuid": "10.0.0",
     "winston": "3.17.0"
+  },
+  "optionalDependencies": {
+    "heapdump": "^0.3.15"
   }
 }

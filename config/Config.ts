@@ -5,7 +5,8 @@ dotenv.config({ path: path.resolve(__dirname, "..", ".env") })
 export default {
   server:{
     port: parseInt(process.env.SERVER_PORT || "17651"),
-    maxFileSize: parseInt(process.env.SERVER_MAX_FILE_SIZE || "31457280") // 30 MB
+    maxFileSize: parseInt(process.env.SERVER_MAX_FILE_SIZE || "31457280"), // 30 MB
+    enableProfile: Boolean(process.env.SERVER_ENABLE_PROFILE) || false,
   },
   solc:{
     solcBinRepo: process.env.SOLC_REPO_BIN || './solc-repo/bin',
