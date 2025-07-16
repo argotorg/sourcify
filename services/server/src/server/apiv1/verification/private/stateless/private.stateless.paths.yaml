@@ -189,10 +189,9 @@ paths:
                   description: Required if forceCompilation is true. The compiler version to use for recompilation
                   example: "0.8.19+commit.7dd6d404"
                 compilationTarget:
-                  type: object
+                  type: string
                   description: Required if forceCompilation is true. The compilation target to use for recompilation
-                  example:
-                    { name: "Storage", path: "project:/contracts/Storage.sol" }
+                  example: "project:/contracts/Storage.sol:Storage"
       responses:
         "200":
           description: The contract has been successfully replaced.

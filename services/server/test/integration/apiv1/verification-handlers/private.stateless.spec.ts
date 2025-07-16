@@ -83,10 +83,7 @@ describe("/private/replace-contract", function () {
         forceRPCRequest: false,
         jsonInput: jsonInput,
         compilerVersion: "0.8.4+commit.c7e474f2",
-        compilationTarget: {
-          name: "Storage",
-          path: "project:/contracts/Storage.sol",
-        },
+        compilationTarget: "project:/contracts/Storage.sol:Storage",
       });
 
     chai.expect(replaceRes.status).to.equal(StatusCodes.OK);
@@ -479,10 +476,7 @@ describe("/private/replace-contract", function () {
         forceRPCRequest: false,
         jsonInput: vyperJsonInput,
         compilerVersion: "0.3.10+commit.91361694",
-        compilationTarget: {
-          name: "test",
-          path: "test.vy",
-        },
+        compilationTarget: "test.vy:test",
       });
 
     chai.expect(replaceRes.status).to.equal(StatusCodes.OK);

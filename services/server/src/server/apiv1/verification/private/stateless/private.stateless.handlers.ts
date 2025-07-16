@@ -13,6 +13,7 @@ import {
   VyperJsonInput,
   IVyperCompiler,
   VyperCompilation,
+  splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError, NotFoundError } from "../../../../../common/errors";
 import { StatusCodes } from "http-status-codes";
@@ -169,7 +170,13 @@ export async function replaceContract(
   if (forceCompilation) {
     jsonInput = req.body.jsonInput;
     compilerVersion = req.body.compilerVersion;
-    compilationTarget = req.body.compilationTarget;
+    const { contractPath, contractName } = splitFullyQualifiedName(
+      req.body.compilationTarget,
+    );
+    compilationTarget = {
+      name: contractName,
+      path: contractPath,
+    };
   }
 
   const forceRPCRequest = req.body.forceRPCRequest;
