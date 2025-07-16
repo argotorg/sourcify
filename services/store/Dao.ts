@@ -184,8 +184,9 @@ export class Dao {
     runtime_match,
     creation_match,
     metadata,
-    licenseType,
+    license_type,
   }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
+    console.log(`insertSourcifyMatch ===\n licenseType`, license_type)
     const metadataStr = JSON.stringify(metadata)
     const now = new Date()
     await this.database.query(
@@ -197,11 +198,11 @@ export class Dao {
         metadata,
         license_type,                              
         created_at                              
-        ) VALUES (?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `,
       {
         type: QueryTypes.INSERT,
-        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, licenseType, now],
+        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, license_type, now],
       }
     )
   }
@@ -215,18 +216,20 @@ export class Dao {
       runtime_match,
       creation_match,
       metadata,
-      licenseType,
+      license_type,
     }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: number,
   ) {
+    console.log(`updateSourcifyMatch ===\n licenseType`, license_type)
+    const metadataStr = JSON.stringify(metadata)
     await this.database.query(
       `
         UPDATE sourcify_matches SET 
         verified_contract_id = ?,
         creation_match=?,
         runtime_match=?,
-        metadata=?,
-        license_type=?
+        license_type=?,
+        metadata=?
       WHERE  verified_contract_id = ?
       `,
       {
@@ -235,10 +238,11 @@ export class Dao {
           verified_contract_id,
           creation_match,
           runtime_match,
-          metadata,
-          licenseType,
+          metadataStr,
+          license_type,
           oldVerifiedContractId,
         ],
+        logging: sql => console.log(`sql`, sql)
       }
     );
   }

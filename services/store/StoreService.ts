@@ -531,6 +531,7 @@ export class StoreService
       "creationMatch",
       "runtimeMatch",
       "verifiedAt",
+      "licenseType"
     ];
     defaultFields.forEach((field) => requestedFields.add(field));
 
@@ -774,6 +775,7 @@ export class StoreService
     },
     licenseType?: number,
   ): Promise<void> {
+    console.log(`_storeVerification ===\n licenseType`, licenseType)
     const { type, verifiedContractId, oldVerifiedContractId } =
       await super.insertOrUpdateVerification(verification);
 
@@ -788,7 +790,7 @@ export class StoreService
         creation_match: verification.status.creationMatch,
         runtime_match: verification.status.runtimeMatch,
         metadata: verification.compilation.metadata as any,
-        licenseType,
+        license_type: licenseType,
       });
       console.info("Stored to SourcifyDatabase", {
         address: verification.address,
@@ -809,7 +811,7 @@ export class StoreService
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
-          licenseType,
+          license_type: licenseType,
         },
         oldVerifiedContractId,
       );
@@ -848,6 +850,7 @@ export class StoreService
     },
     licenseType?: number
   ) {
+    console.log(`storeVerification ===\n licenseType`, licenseType)
     const existingMatch = await this.checkAllByChainAndAddress(verification.address, verification.chainId)
     if (existingMatch.length > 0 && !isBetterVerification(verification, existingMatch[0])) {
       throw new ConflictError(

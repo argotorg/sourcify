@@ -297,7 +297,7 @@ export namespace Tables {
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
     metadata: Metadata;
-    licenseType: number;
+    license_type: number;
     created_at: Date;
   }
   export class SourcifyMatch extends Model<ISourcifyMatch> implements ISourcifyMatch {
@@ -306,7 +306,7 @@ export namespace Tables {
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
     metadata: Metadata;
-    licenseType: number;
+    license_type: number;
     created_at: Date;
     static register(sequelize) {
       SourcifyMatch.init({
@@ -315,7 +315,7 @@ export namespace Tables {
         runtime_match: {type: DataTypes.CHAR(20)},
         creation_match: {type: DataTypes.CHAR(20)},
         metadata: {type: DataTypes.JSON, allowNull: false},
-        licenseType: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 1},
+        license_type: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 1},
         created_at: {type: DataTypes.DATE, allowNull: false},
       }, {
         tableName: 'sourcify_matches',
@@ -578,6 +578,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   runtime_match: "sourcify_matches.runtime_match",
   verified_at:
     'DATE_FORMAT(sourcify_matches.created_at, \'%Y-%m-%dT%H:%i:%sT\') as verified_at',
+  license_type: "sourcify_matches.license_type",
   address:
     "nullif(contract_deployments.address, '0x') as address",
   onchain_creation_code:
@@ -709,6 +710,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
   creationMatch: "creation_match",
   runtimeMatch: "runtime_match",
   verifiedAt: "verified_at",
+  licenseType: "license_type",
   creationBytecode: {
     onchainBytecode: "onchain_creation_code",
     recompiledBytecode: "recompiled_creation_code",
