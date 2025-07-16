@@ -253,7 +253,7 @@ export async function replaceContract(
       let transactionHashFromDatabase = (sourcifyChain as SourcifyChainMock)
         .contractDeployment?.transaction_hash;
       if (transactionHashFromDatabase) {
-        transactionHash = `0x${transactionHashFromDatabase.toString("hex")}`;
+        transactionHash = `0x${transactionHashFromDatabase}`;
       }
     } else {
       // Use the chainRepository to get the sourcifyChain object and fetch the contract's information from the RPC
@@ -299,7 +299,6 @@ export async function replaceContract(
             transactionPoolClient,
             chainId,
             address,
-            transactionHash,
           );
 
           // Insert the new verification information into the database

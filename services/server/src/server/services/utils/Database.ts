@@ -8,8 +8,6 @@ import {
   GetVerificationJobByIdResult,
   GetVerifiedContractByChainAndAddressResult,
   GetVerificationJobsByChainAndAddressResult,
-  GetVerifiedContractFromDeploymentResult,
-  GetContractDeploymentInfoResult,
   SourceInformation,
   STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
@@ -256,64 +254,6 @@ ${
           AND contract_deployments.address = $2
       `,
       [chain, address],
-    );
-  }
-
-  async getVerifiedContractFromDeployment(
-    chainId: number,
-    address: Bytes,
-  ): Promise<QueryResult<GetVerifiedContractFromDeploymentResult>> {
-    return await this.pool.query(
-      `SELECT 
-          verified_contracts.*,
-          sourcify_matches.metadata,
-          compiled_contracts.compiler,
-          compiled_contracts.version,
-          compiled_contracts.language,
-          compiled_contracts.name,
-          compiled_contracts.fully_qualified_name,
-          compiled_contracts.compiler_settings,
-          compiled_contracts.compilation_artifacts,
-          compiled_contracts.creation_code_artifacts,
-          compiled_contracts.runtime_code_artifacts,
-          compiled_creation_code.code as compiled_creation_code,
-          compiled_runtime_code.code as compiled_runtime_code
-        FROM verified_contracts
-        JOIN compiled_contracts ON compiled_contracts.id = verified_contracts.compilation_id
-        JOIN sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-        JOIN code compiled_creation_code ON compiled_contracts.creation_code_hash = compiled_creation_code.code_hash 
-        JOIN code compiled_runtime_code ON compiled_contracts.runtime_code_hash = compiled_runtime_code.code_hash
-        JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
-        WHERE 1=1
-        AND contract_deployments.chain_id = $1
-        AND contract_deployments.address = $2`,
-      [chainId, address],
-    );
-  }
-
-  async getContractDeploymentInfo(
-    chainId: number,
-    address: Bytes,
-  ): Promise<QueryResult<GetContractDeploymentInfoResult>> {
-    return await this.pool.query(
-      `SELECT 
-          verified_contracts.id as verified_contract_id,
-          contract_deployments.address,
-          contract_deployments.transaction_hash,
-          contract_deployments.chain_id,
-          contract_deployments.block_number,
-          contract_deployments.transaction_index,
-          encode(contract_deployments.deployer, 'hex') as deployer,
-          onchain_creation_code.code as onchain_creation_code,
-          onchain_runtime_code.code as onchain_runtime_code
-        FROM ${this.schema}.contract_deployments
-        JOIN ${this.schema}.verified_contracts ON verified_contracts.deployment_id = contract_deployments.id
-        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-        JOIN ${this.schema}.contracts ON contracts.id = contract_deployments.contract_id
-        JOIN ${this.schema}.code onchain_creation_code ON onchain_creation_code.code_hash = contracts.creation_code_hash
-        JOIN ${this.schema}.code onchain_runtime_code ON onchain_runtime_code.code_hash = contracts.runtime_code_hash
-        WHERE contract_deployments.address = $1 AND contract_deployments.chain_id = $2`,
-      [address, chainId],
     );
   }
 
@@ -996,14 +936,12 @@ ${
     poolClient: PoolClient,
     chainId: number | string,
     address: string,
-    transactionHash: string,
   ): Promise<void> {
     // Safely deletes an existing sourcify match together with all dangling linked rows.
     // If any of the rows are still referenced elsewhere, the FK constraints will abort the
     // transaction and propagate an error, allowing the caller to handle it.
 
     const addressBytes = bytesFromString(address)!;
-    const txHashBytes = bytesFromString(transactionHash)!;
 
     // 1. Fetch all ids / hashes we may need later in the cleanup
     const { rows } = await poolClient.query(
@@ -1024,10 +962,9 @@ ${
         JOIN ${this.schema}.compiled_contracts cc  ON cc.id = vc.compilation_id
         WHERE cd.chain_id = $1
           AND cd.address   = $2
-          AND cd.transaction_hash = $3
         LIMIT 1;
         `,
-      [chainId, addressBytes, txHashBytes],
+      [chainId, addressBytes],
     );
 
     if (rows.length === 0) {

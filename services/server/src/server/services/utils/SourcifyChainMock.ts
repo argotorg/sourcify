@@ -2,14 +2,14 @@ import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { TransactionReceipt, TransactionResponse } from "ethers";
 import {
   bytesFromString,
-  GetContractDeploymentInfoResult,
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
 } from "./database-util";
 import { Database } from "./Database";
 import logger from "../../../common/logger";
 
 export default class SourcifyChainMock extends SourcifyChain {
   constructor(
-    public contractDeployment: GetContractDeploymentInfoResult,
+    public contractDeployment: GetSourcifyMatchByChainAddressWithPropertiesResult,
     public readonly chainId: number,
     private readonly address: string,
   ) {
@@ -30,15 +30,26 @@ export default class SourcifyChainMock extends SourcifyChain {
       logger.error("SourcifyChainMock: database pool not initialized");
       throw new Error("SourcifyChainMock: database pool not initialized");
     }
-    const deploymentResult = await database.getContractDeploymentInfo(
-      chainId,
-      bytesFromString(address),
-    );
-    if (deploymentResult.rows.length === 0) {
+    const contractDeployment =
+      await database.getSourcifyMatchByChainAddressWithProperties(
+        chainId,
+        bytesFromString(address),
+        [
+          "address",
+          "transaction_hash",
+          "block_number",
+          "transaction_index",
+          "deployer",
+          "onchain_creation_code",
+          "onchain_runtime_code",
+        ],
+      );
+
+    if (contractDeployment.rows.length === 0) {
       throw new Error("Contract not found");
     }
     const sourcifyChainMock = new SourcifyChainMock(
-      deploymentResult.rows[0],
+      contractDeployment.rows[0],
       chainId,
       address,
     );
@@ -49,7 +60,7 @@ export default class SourcifyChainMock extends SourcifyChain {
     if (!this.contractDeployment) {
       throw new Error("SourcifyChainMock not initialized yet");
     }
-    return `0x${this.contractDeployment.onchain_runtime_code.toString("hex")}`;
+    return this.contractDeployment.onchain_runtime_code || "";
   };
 
   getTx = async () => {
@@ -58,7 +69,7 @@ export default class SourcifyChainMock extends SourcifyChain {
     }
     return {
       blockNumber: this.contractDeployment.block_number,
-      from: `0x${this.contractDeployment.deployer?.toString("hex")}`,
+      from: this.contractDeployment.deployer,
     } as TransactionResponse;
   };
 
@@ -67,9 +78,9 @@ export default class SourcifyChainMock extends SourcifyChain {
       throw new Error("SourcifyChainMock not initialized yet");
     }
     return {
-      creationBytecode: `0x${this.contractDeployment.onchain_creation_code.toString("hex")}`,
+      creationBytecode: this.contractDeployment.onchain_creation_code || "",
       txReceipt: {
-        index: this.contractDeployment.transaction_index,
+        index: this.contractDeployment.transaction_index || 0,
       } as TransactionReceipt,
     };
   };

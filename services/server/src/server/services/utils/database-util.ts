@@ -288,34 +288,6 @@ export type GetVerificationJobsByChainAndAddressResult = {
   completed_at: Nullable<string>;
 };
 
-export type GetVerifiedContractFromDeploymentResult =
-  Tables.VerifiedContract & {
-    metadata: Tables.SourcifyMatch["metadata"];
-    compiler: Tables.CompiledContract["compiler"];
-    version: Tables.CompiledContract["version"];
-    language: Tables.CompiledContract["language"];
-    name: Tables.CompiledContract["name"];
-    fully_qualified_name: Tables.CompiledContract["fully_qualified_name"];
-    compiler_settings: Tables.CompiledContract["compiler_settings"];
-    compilation_artifacts: Tables.CompiledContract["compilation_artifacts"];
-    creation_code_artifacts: Tables.CompiledContract["creation_code_artifacts"];
-    runtime_code_artifacts: Tables.CompiledContract["runtime_code_artifacts"];
-    compiled_creation_code: Buffer;
-    compiled_runtime_code: Buffer;
-  };
-
-export type GetContractDeploymentInfoResult = {
-  verified_contract_id: number;
-  address: Tables.ContractDeployment["address"];
-  transaction_hash: Tables.ContractDeployment["transaction_hash"];
-  chain_id: Tables.ContractDeployment["chain_id"];
-  block_number: Tables.ContractDeployment["block_number"];
-  transaction_index: Tables.ContractDeployment["transaction_index"];
-  deployer: Tables.ContractDeployment["deployer"];
-  onchain_creation_code: Buffer;
-  onchain_runtime_code: Buffer;
-};
-
 const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
 
