@@ -517,11 +517,21 @@ export const verifyContractsInSession = async (
       // Verify the contract using the new verification flow
       let verification: Verification;
 
+      if (!chainId) {
+        throw new BadRequestError(
+          `Missing chainId for contract ${contract.name}`,
+        );
+      }
+      if (!address) {
+        throw new BadRequestError(
+          `Missing address for contract ${contract.name}`,
+        );
+      }
       try {
         verification = await verificationService.verifyFromCompilation(
           compilation,
-          chainRepository.sourcifyChainMap[chainId as string],
-          address as string,
+          chainRepository.sourcifyChainMap[chainId],
+          address,
           creatorTxHash,
         );
       } catch (error: any) {
