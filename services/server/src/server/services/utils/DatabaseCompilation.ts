@@ -162,7 +162,6 @@ export class DatabaseCompilation {
 
     const compilation = new PreRunCompilation(
       this.compiler,
-      this.language,
       this.compilerVersion,
       this.jsonInput,
       this.jsonOutput,

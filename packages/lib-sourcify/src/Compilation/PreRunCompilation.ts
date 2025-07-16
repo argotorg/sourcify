@@ -30,7 +30,6 @@ export class PreRunCompilation extends AbstractCompilation {
 
   public constructor(
     public compiler: ISolidityCompiler | IVyperCompiler,
-    language: 'solidity' | 'vyper',
     public compilerVersion: string,
     jsonInput: SolidityJsonInput | VyperJsonInput,
     jsonOutput: SolidityOutput | VyperOutput,
@@ -40,9 +39,9 @@ export class PreRunCompilation extends AbstractCompilation {
   ) {
     super(jsonInput);
     this.compilerOutput = jsonOutput;
-    switch (language) {
-      case 'solidity': {
-        this.language = 'Solidity';
+    this.language = jsonInput.language as CompilationLanguage;
+    switch (this.language) {
+      case 'Solidity': {
         this.auxdataStyle = AuxdataStyle.SOLIDITY;
         const contractOutput = jsonOutput.contracts[
           this.compilationTarget.path
@@ -50,8 +49,7 @@ export class PreRunCompilation extends AbstractCompilation {
         this._metadata = JSON.parse(contractOutput.metadata.trim());
         break;
       }
-      case 'vyper': {
-        this.language = 'Vyper';
+      case 'Vyper': {
         if (semver.valid(this.compilerVersion)) {
           this.compilerVersionCompatibleWithSemver = this.compilerVersion;
         } else {
@@ -81,7 +79,7 @@ export class PreRunCompilation extends AbstractCompilation {
         break;
       }
       default:
-        throw new Error(`Unsupported language: ${language}`);
+        throw new Error(`Unsupported language: ${this.language}`);
     }
   }
 
