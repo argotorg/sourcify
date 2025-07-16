@@ -39,7 +39,7 @@ export class PreRunCompilation extends AbstractCompilation {
     public _runtimeBytecodeCborAuxdata: CompiledContractCborAuxdata,
   ) {
     super(jsonInput);
-    this.compilerOutput = jsonOutput as SolidityOutput;
+    this.compilerOutput = jsonOutput;
     switch (language) {
       case 'solidity': {
         this.language = 'Solidity';
