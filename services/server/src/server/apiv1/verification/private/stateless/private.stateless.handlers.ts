@@ -15,7 +15,11 @@ import {
   VyperCompilation,
   splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
-import { BadRequestError, NotFoundError } from "../../../../../common/errors";
+import {
+  BadRequestError,
+  NotFoundError,
+  InternalServerError,
+} from "../../../../../common/errors";
 import { StatusCodes } from "http-status-codes";
 import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
@@ -138,9 +142,7 @@ export async function verifyDeprecated(
       result: [getApiV1ResponseFromVerification(verification)],
     });
   } catch (error: any) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ error: error.message });
+    throw new InternalServerError(error.message);
   }
 }
 
@@ -191,9 +193,9 @@ export async function replaceContract(
     "SourcifyDatabase"
   ] as SourcifyDatabaseService;
   if (!sourcifyDatabaseService) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ error: "Database service not available" });
+    throw new InternalServerError(
+      "SourcifyDatabaseService is not available in the services",
+    );
   }
 
   try {
@@ -317,8 +319,6 @@ export async function replaceContract(
       newStatus: verificationStatus,
     });
   } catch (error: any) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .send({ error: error.message });
+    throw new InternalServerError(error.message);
   }
 }
