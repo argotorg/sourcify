@@ -8,6 +8,8 @@ import {
   GetVerificationJobByIdResult,
   GetVerifiedContractByChainAndAddressResult,
   GetVerificationJobsByChainAndAddressResult,
+  GetVerifiedContractFromDeploymentResult,
+  GetContractDeploymentInfoResult,
   SourceInformation,
   STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
@@ -261,7 +263,7 @@ ${
     chainId: number,
     address: Bytes,
     transactionHash: Bytes,
-  ) {
+  ): Promise<QueryResult<GetVerifiedContractFromDeploymentResult>> {
     return await this.pool.query(
       `SELECT 
           verified_contracts.*,
@@ -295,7 +297,7 @@ ${
     chainId: number,
     address: Bytes,
     transactionHash: Bytes,
-  ) {
+  ): Promise<QueryResult<GetContractDeploymentInfoResult>> {
     return await this.pool.query(
       `SELECT 
           verified_contracts.id as verified_contract_id,

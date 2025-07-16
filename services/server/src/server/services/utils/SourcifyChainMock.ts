@@ -1,23 +1,14 @@
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { TransactionReceipt, TransactionResponse } from "ethers";
-import { bytesFromString } from "./database-util";
+import {
+  bytesFromString,
+  GetContractDeploymentInfoResult,
+} from "./database-util";
 import { Database } from "./Database";
 import logger from "../../../common/logger";
 
-interface ContractDeployment {
-  verified_contract_id: number;
-  address: Buffer;
-  transaction_hash: Buffer;
-  chain_id: number;
-  block_number: number;
-  transaction_index: number;
-  deployer: Buffer;
-  onchain_creation_code: Buffer;
-  onchain_runtime_code: Buffer;
-}
-
 export default class SourcifyChainMock extends SourcifyChain {
-  public contractDeployment?: ContractDeployment;
+  public contractDeployment?: GetContractDeploymentInfoResult;
   constructor(
     public database: Database,
     public readonly chainId: number,
@@ -61,7 +52,7 @@ export default class SourcifyChainMock extends SourcifyChain {
     }
     return {
       blockNumber: this.contractDeployment.block_number,
-      from: `0x${this.contractDeployment.deployer.toString("hex")}`,
+      from: `0x${this.contractDeployment.deployer?.toString("hex")}`,
     } as TransactionResponse;
   };
 

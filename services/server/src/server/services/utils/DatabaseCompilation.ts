@@ -63,9 +63,9 @@ export class DatabaseCompilation {
       this.compilerVersion = verifiedContract.version;
 
       this.creationCodeCborAuxdata =
-        verifiedContract.creation_code_artifacts.cborAuxdata;
+        verifiedContract.creation_code_artifacts.cborAuxdata || undefined;
       this.runtimeCodeCborAuxdata =
-        verifiedContract.runtime_code_artifacts.cborAuxdata;
+        verifiedContract.runtime_code_artifacts.cborAuxdata || undefined;
 
       // Fetch sources
       const sourcesResult = await this.database.getCompiledContractSources(
@@ -81,13 +81,6 @@ export class DatabaseCompilation {
       // Create settings from compiler_settings JSON field
       const settings = verifiedContract.compiler_settings;
 
-      // Initialize jsonInput with the required fields
-      this.jsonInput = {
-        language: this.language === "solidity" ? "Solidity" : "Vyper",
-        sources: sources,
-        settings: settings,
-      };
-
       // Get the file path and contract name from fully_qualified_name
       const metadataCompilationTarget = (verifiedContract.metadata as Metadata)
         .settings.compilationTarget;
@@ -96,36 +89,80 @@ export class DatabaseCompilation {
         path: Object.keys(metadataCompilationTarget)[0],
       };
 
-      this.jsonOutput = {
-        sources: verifiedContract.compilation_artifacts.sources || {},
-        contracts: {
-          [this.compilationTarget.path]: {
-            [this.compilationTarget.name]: {
-              abi: verifiedContract.compilation_artifacts.abi,
-              userdoc: verifiedContract.compilation_artifacts.userdoc,
-              devdoc: verifiedContract.compilation_artifacts.devdoc,
-              metadata: JSON.stringify(verifiedContract.metadata),
-              storageLayout:
-                verifiedContract.compilation_artifacts.storageLayout,
-              ir: verifiedContract.compilation_artifacts.ir,
-              evm: {
-                bytecode: {
-                  ...verifiedContract.creation_code_artifacts,
-                  object:
-                    verifiedContract.compiled_creation_code.toString("hex"),
+      if (this.language === "solidity") {
+        // Initialize jsonInput and jsonOutput with the required fields
+        this.jsonInput = {
+          language: "Solidity",
+          sources: sources,
+          settings: settings,
+        } as SolidityJsonInput;
+        this.jsonOutput = {
+          sources:
+            verifiedContract.compilation_artifacts.sources || ({} as any), // we need to cast as any because we don't store ast/astLegacy
+          contracts: {
+            [this.compilationTarget.path]: {
+              [this.compilationTarget.name]: {
+                abi: verifiedContract.compilation_artifacts.abi,
+                userdoc: verifiedContract.compilation_artifacts.userdoc,
+                devdoc: verifiedContract.compilation_artifacts.devdoc,
+                metadata: JSON.stringify(verifiedContract.metadata),
+                storageLayout:
+                  verifiedContract.compilation_artifacts.storageLayout,
+                evm: {
+                  bytecode: {
+                    ...verifiedContract.creation_code_artifacts,
+                    object:
+                      verifiedContract.compiled_creation_code.toString("hex"),
+                  },
+                  deployedBytecode: {
+                    ...verifiedContract.runtime_code_artifacts,
+                    object:
+                      verifiedContract.compiled_runtime_code.toString("hex"),
+                  },
                 },
-                deployedBytecode: {
-                  ...verifiedContract.runtime_code_artifacts,
-                  object:
-                    verifiedContract.compiled_runtime_code.toString("hex"),
-                },
-                methodIdentifiers:
-                  verifiedContract.compilation_artifacts.methodIdentifiers,
               },
             },
           },
-        },
-      };
+        } as SolidityOutput;
+      } else if (this.language === "vyper") {
+        this.jsonInput = {
+          language: "Vyper",
+          sources: sources,
+          settings: settings,
+        } as VyperJsonInput;
+        this.jsonOutput = {
+          compiler: "",
+          sources:
+            verifiedContract.compilation_artifacts.sources || ({} as any), // we need to cast as any because we don't store ast/astLegacy
+          contracts: {
+            [this.compilationTarget.path]: {
+              [this.compilationTarget.name]: {
+                abi: verifiedContract.compilation_artifacts.abi,
+                userdoc: verifiedContract.compilation_artifacts.userdoc,
+                devdoc: verifiedContract.compilation_artifacts.devdoc,
+                ir: verifiedContract.compilation_artifacts.ir,
+                evm: {
+                  bytecode: {
+                    ...verifiedContract.creation_code_artifacts,
+                    object:
+                      verifiedContract.compiled_creation_code.toString("hex"),
+                    opcodes: undefined as any, //  we need to cast as any because opcodes are not stored in the database
+                  },
+                  deployedBytecode: {
+                    ...verifiedContract.runtime_code_artifacts,
+                    object:
+                      verifiedContract.compiled_runtime_code.toString("hex"),
+                    opcodes: undefined as any, //  we need to cast as any because opcodes are not stored in the database
+                  },
+                  methodIdentifiers:
+                    verifiedContract.compilation_artifacts.methodIdentifiers,
+                },
+              },
+            },
+          },
+        } as VyperOutput;
+      }
+      this.jsonOutput;
     } catch (error) {
       logger.error(
         "DatabaseCompilation: error extracting compilation properties",
