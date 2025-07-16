@@ -12,7 +12,6 @@ import {
   Field,
   FIELDS_TO_STORED_PROPERTIES,
   StoredProperties,
-  withTransaction,
 } from "../utils/database-util";
 import {
   ContractData,
@@ -961,8 +960,7 @@ export class SourcifyDatabaseService
     alternativePoolClient?: PoolClient,
   ): Promise<void> {
     if (!alternativePoolClient) {
-      await withTransaction(
-        this.database,
+      await this.withTransaction(
         async (transactionPoolClient) => {
           await this.storeVerificationWithPoolClient(
             transactionPoolClient,

@@ -28,7 +28,6 @@ import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 import { DatabaseCompilation } from "../../../../services/utils/DatabaseCompilation";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
-import { withTransaction } from "../../../../services/utils/database-util";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,
@@ -285,8 +284,7 @@ export async function replaceContract(
       );
     }
 
-    await withTransaction(
-      sourcifyDatabaseService.database,
+    await sourcifyDatabaseService.withTransaction(
       async (transactionPoolClient) => {
         // Delete the old verification information from the database
         await sourcifyDatabaseService.database.deleteMatch(
