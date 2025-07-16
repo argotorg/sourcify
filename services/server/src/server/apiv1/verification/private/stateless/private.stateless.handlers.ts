@@ -25,7 +25,7 @@ import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import logger from "../../../../../common/logger";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
-import { DatabaseCompilation } from "../../../../services/utils/DatabaseCompilation";
+import { extractCompilationFromDatabase } from "../../../../services/utils/DatabaseCompilation";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
 import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
@@ -201,14 +201,17 @@ export async function replaceContract(
   try {
     let compilation: AbstractCompilation;
     if (!forceCompilation) {
-      // Create a DatabaseCompilation object to create a PreRunCompilation object
-      const databaseCompilation = new DatabaseCompilation(
-        jsonInput?.language === "Solidity" ? solc : vyper,
+      // Extract compilation data from database to create a PreRunCompilation object
+      const compilers = {
+        solc,
+        vyper,
+      };
+      compilation = await extractCompilationFromDatabase(
         sourcifyDatabaseService.database,
+        compilers,
         address,
         chainId,
       );
-      compilation = await databaseCompilation.createCompilation();
     } else {
       // Create a SolidityCompilation object and compile it if forceCompilation is true
       if (
