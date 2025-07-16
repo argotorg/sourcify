@@ -284,30 +284,32 @@ export async function replaceContract(
       );
     }
 
-    await sourcifyDatabaseService.withTransaction(
-      async (transactionPoolClient) => {
-        // Delete the old verification information from the database
-        await sourcifyDatabaseService.database.deleteMatch(
-          transactionPoolClient,
-          chainId,
-          address,
-          transactionHash,
-        );
+    try {
+      await sourcifyDatabaseService.withTransaction(
+        async (transactionPoolClient) => {
+          // Delete the old verification information from the database
+          await sourcifyDatabaseService.database.deleteMatch(
+            transactionPoolClient,
+            chainId,
+            address,
+            transactionHash,
+          );
 
-        // Insert the new verification information into the database
-        await sourcifyDatabaseService.storeVerification(
-          verification.export(),
-          undefined, // jobData
-          transactionPoolClient,
-        );
-      },
-      (error) => {
-        logger.error("Error replacing contract", {
-          error: error,
-          verification: verification.export(),
-        });
-      },
-    );
+          // Insert the new verification information into the database
+          await sourcifyDatabaseService.storeVerification(
+            verification.export(),
+            undefined, // jobData
+            transactionPoolClient,
+          );
+        },
+      );
+    } catch (error: any) {
+      logger.error("Error replacing contract", {
+        error: error,
+        verification: verification.export(),
+      });
+      throw error;
+    }
 
     res.send({
       replaced: true,

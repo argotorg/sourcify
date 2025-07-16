@@ -14,19 +14,19 @@ export class AllianceDatabaseService
     if (!verification.status.creationMatch) {
       throw new Error("Can't store to AllianceDatabase without creationMatch");
     }
-    await this.withTransaction(
-      async (transactionPoolClient) => {
+    try {
+      await this.withTransaction(async (transactionPoolClient) => {
         await super.insertOrUpdateVerification(
           verification,
           transactionPoolClient,
         );
-      },
-      (error) => {
-        logger.error("Error storing verification", {
-          error: error,
-        });
-      },
-    );
+      });
+    } catch (error) {
+      logger.error("Error storing verification", {
+        error: error,
+      });
+      throw error;
+    }
     logger.info("Stored to AllianceDatabase", {
       name: verification.compilation.compilationTarget.name,
       address: verification.address,

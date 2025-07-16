@@ -960,20 +960,20 @@ export class SourcifyDatabaseService
     alternativePoolClient?: PoolClient,
   ): Promise<void> {
     if (!alternativePoolClient) {
-      await this.withTransaction(
-        async (transactionPoolClient) => {
+      try {
+        await this.withTransaction(async (transactionPoolClient) => {
           await this.storeVerificationWithPoolClient(
             transactionPoolClient,
             verification,
             jobData,
           );
-        },
-        (error) => {
-          logger.error("Error storing verification", {
-            error: error,
-          });
-        },
-      );
+        });
+      } catch (error: any) {
+        logger.error("Error storing verification", {
+          error: error,
+        });
+        throw error;
+      }
     } else {
       await this.storeVerificationWithPoolClient(
         alternativePoolClient,

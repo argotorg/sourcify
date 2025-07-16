@@ -264,7 +264,6 @@ export default abstract class AbstractDatabaseService {
 
   async withTransaction<T>(
     callback: (client: PoolClient) => Promise<T>,
-    errorCallback?: (error: unknown) => void,
   ): Promise<T> {
     const client = await this.database.pool.connect();
     try {
@@ -274,9 +273,6 @@ export default abstract class AbstractDatabaseService {
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
-      if (errorCallback) {
-        errorCallback(error);
-      }
       throw error;
     } finally {
       client.release();
