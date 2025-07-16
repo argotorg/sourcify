@@ -16,7 +16,6 @@ import {
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { NotFoundError } from "../../../common/errors";
 
 export interface DatabaseOptions {
   googleCloudSql?: {
@@ -1032,7 +1031,7 @@ ${
     );
 
     if (rows.length === 0) {
-      throw new NotFoundError("No existing verified contract found to delete");
+      throw new Error("No existing verified contract found to delete");
     }
 
     const info = rows[0];

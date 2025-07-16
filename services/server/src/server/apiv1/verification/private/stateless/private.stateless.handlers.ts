@@ -152,15 +152,6 @@ export async function verifyDeprecated(
  * This new endpoint optimizes performance by optionally skipping recompilation and on-chain RPC calls,
  * using data already stored in the database. This endpoint is private and should only be callable by the
  * Sourcify instance maintainer.
- *
- * @param {string|number} req.body.chainId - The chain ID of the contract.
- * @param {string} req.body.address - The contract address.
- * @param {string} req.body.transactionHash - The creation transaction hash.
- * @param {boolean} req.body.forceCompilation - If true, recompiles the contract using the provided jsonInput, compilerVersion and compilationTarget.
- * @param {boolean} req.body.forceRPCRequest - If true, fetches the contract's information from the RPC.
- * @param {object} [req.body.jsonInput] - If forceCompilation is true, provide jsonInput to use for recompilation.
- * @param {string} [req.body.compilerVersion] - If forceCompilation is true, provide the compiler version to use for recompilation.
- * @param {object} [req.body.compilationTarget] - If forceCompilation is true, provide the compilation target to use for recompilation.
  */
 export async function replaceContract(
   req: LegacyVerifyRequest,
