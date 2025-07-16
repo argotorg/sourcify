@@ -22,6 +22,66 @@ import {
   IVyperCompiler,
 } from './CompilationTypes';
 
+export function returnFixedVyperVersion(compilerVersion: string): string {
+  if (semver.valid(compilerVersion)) {
+    return compilerVersion;
+  } else {
+    // Check for beta or release candidate versions
+    if (compilerVersion.match(/\d+\.\d+\.\d+(b\d+|rc\d+)/)) {
+      return `${compilerVersion.split('+')[0].replace(/(b\d+|rc\d+)$/, '')}+${
+        compilerVersion.split('+')[1]
+      }`;
+    } else {
+      throw new CompilationError({ code: 'invalid_compiler_version' });
+    }
+  }
+}
+
+export function returnAuxdataStyle(
+  compilerVersion: string,
+):
+  | AuxdataStyle.VYPER_LT_0_3_5
+  | AuxdataStyle.VYPER_LT_0_3_10
+  | AuxdataStyle.VYPER {
+  // Vyper version support for auxdata is different for each version
+  if (semver.lt(compilerVersion, '0.3.5')) {
+    return AuxdataStyle.VYPER_LT_0_3_5;
+  } else if (semver.lt(compilerVersion, '0.3.10')) {
+    return AuxdataStyle.VYPER_LT_0_3_10;
+  } else {
+    return AuxdataStyle.VYPER;
+  }
+}
+
+export function returnImmutableReferences(
+  compilerVersion: string,
+  creationBytecode: string,
+  runtimeBytecode: string,
+  auxdataStyle: AuxdataStyle,
+): ImmutableReferences {
+  let immutableReferences = {};
+  if (gte(compilerVersion, '0.3.10')) {
+    try {
+      const { immutableSize } = decode(creationBytecode, auxdataStyle);
+      if (immutableSize) {
+        immutableReferences = {
+          '0': [
+            {
+              length: immutableSize,
+              start: runtimeBytecode.substring(2).length / 2,
+            },
+          ],
+        };
+      }
+    } catch (e) {
+      logWarn('Cannot decode vyper contract bytecode', {
+        creationBytecode: creationBytecode,
+      });
+    }
+  }
+  return immutableReferences;
+}
+
 /**
  * Abstraction of a vyper compilation
  */
@@ -109,55 +169,24 @@ export class VyperCompilation extends AbstractCompilation {
     super(jsonInput);
 
     // Vyper beta and rc versions are not semver compliant, so we need to handle them differently
-    if (semver.valid(this.compilerVersion)) {
-      this.compilerVersionCompatibleWithSemver = this.compilerVersion;
-    } else {
-      // Check for beta or release candidate versions
-      if (this.compilerVersion.match(/\d+\.\d+\.\d+(b\d+|rc\d+)/)) {
-        this.compilerVersionCompatibleWithSemver = `${this.compilerVersion
-          .split('+')[0]
-          .replace(/(b\d+|rc\d+)$/, '')}+${this.compilerVersion.split('+')[1]}`;
-      } else {
-        throw new CompilationError({ code: 'invalid_compiler_version' });
-      }
-    }
+    this.compilerVersionCompatibleWithSemver = returnFixedVyperVersion(
+      this.compilerVersion,
+    );
 
-    // Vyper version support for auxdata is different for each version
-    if (semver.lt(this.compilerVersionCompatibleWithSemver, '0.3.5')) {
-      this.auxdataStyle = AuxdataStyle.VYPER_LT_0_3_5;
-    } else if (semver.lt(this.compilerVersionCompatibleWithSemver, '0.3.10')) {
-      this.auxdataStyle = AuxdataStyle.VYPER_LT_0_3_10;
-    } else {
-      this.auxdataStyle = AuxdataStyle.VYPER;
-    }
+    this.auxdataStyle = returnAuxdataStyle(
+      this.compilerVersionCompatibleWithSemver,
+    );
+
     this.initVyperJsonInput();
   }
 
   get immutableReferences(): ImmutableReferences {
-    let immutableReferences = {};
-    if (gte(this.compilerVersionCompatibleWithSemver, '0.3.10')) {
-      try {
-        const { immutableSize } = decode(
-          this.creationBytecode,
-          this.auxdataStyle,
-        );
-        if (immutableSize) {
-          immutableReferences = {
-            '0': [
-              {
-                length: immutableSize,
-                start: this.runtimeBytecode.substring(2).length / 2,
-              },
-            ],
-          };
-        }
-      } catch (e) {
-        logWarn('Cannot decode vyper contract bytecode', {
-          creationBytecode: this.creationBytecode,
-        });
-      }
-    }
-    return immutableReferences;
+    return returnImmutableReferences(
+      this.compilerVersionCompatibleWithSemver,
+      this.creationBytecode,
+      this.runtimeBytecode,
+      this.auxdataStyle,
+    );
   }
 
   get runtimeLinkReferences(): LinkReferences {
