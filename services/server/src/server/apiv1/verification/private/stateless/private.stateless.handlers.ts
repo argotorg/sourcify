@@ -296,10 +296,9 @@ export async function replaceContract(
           );
 
           // Insert the new verification information into the database
-          await sourcifyDatabaseService.storeVerification(
-            verification.export(),
-            undefined, // jobData
+          await sourcifyDatabaseService.storeVerificationWithPoolClient(
             transactionPoolClient,
+            verification.export(),
           );
         },
       );
