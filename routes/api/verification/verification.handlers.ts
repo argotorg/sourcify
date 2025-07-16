@@ -19,6 +19,7 @@ interface VerifyFromJsonInputRequest extends Request {
     compilerVersion: string;
     contractIdentifier: string;
     creationTransactionHash?: string;
+    licenseType?: number;
   };
 }
 
@@ -37,6 +38,7 @@ export async function verifyFromJsonInputEndpoint(
     compilerVersion: req.body.compilerVersion,
     contractIdentifier: req.body.contractIdentifier,
     creationTransactionHash: req.body.creationTransactionHash,
+    licenseType: req.body.licenseType,
   });
 
   // The contract path can include a colon itself. Therefore,
@@ -59,6 +61,7 @@ export async function verifyFromJsonInputEndpoint(
       req.body.compilerVersion,
       compilationTarget,
       req.body.creationTransactionHash,
+      req.body.licenseType,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });

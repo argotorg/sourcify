@@ -770,7 +770,9 @@ export class StoreService
     jobData?: {
       verificationId: VerificationJobId;
       finishTime: Date;
+      licenseType?: number;
     },
+    licenseType?: number,
   ): Promise<void> {
     const { type, verifiedContractId, oldVerifiedContractId } =
       await super.insertOrUpdateVerification(verification);
@@ -786,12 +788,14 @@ export class StoreService
         creation_match: verification.status.creationMatch,
         runtime_match: verification.status.runtimeMatch,
         metadata: verification.compilation.metadata as any,
+        licenseType,
       });
       console.info("Stored to SourcifyDatabase", {
         address: verification.address,
         chainId: verification.chainId,
         runtimeMatch: verification.status.runtimeMatch,
         creationMatch: verification.status.creationMatch,
+        licenseType,
       });
     } else if (type === "update") {
       if (!oldVerifiedContractId) {
@@ -805,6 +809,7 @@ export class StoreService
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
+          licenseType,
         },
         oldVerifiedContractId,
       );
@@ -813,6 +818,7 @@ export class StoreService
         chainId: verification.chainId,
         runtimeMatch: verification.status.runtimeMatch,
         creationMatch: verification.status.creationMatch,
+        licenseType,
       });
     } else {
       throw new Error(
@@ -840,6 +846,7 @@ export class StoreService
       verificationId: VerificationJobId;
       finishTime: Date;
     },
+    licenseType?: number
   ) {
     const existingMatch = await this.checkAllByChainAndAddress(verification.address, verification.chainId)
     if (existingMatch.length > 0 && !isBetterVerification(verification, existingMatch[0])) {
@@ -847,7 +854,7 @@ export class StoreService
         `The contract ${verification.address} on chainId ${verification.chainId} is already partially verified. The provided new source code also yielded a partial match and will not be stored unless it's a full match`,
       );
     }
-    await this._storeVerification(verification, jobData).catch((e: any) => {
+    await this._storeVerification(verification, jobData, licenseType).catch((e: any) => {
       throw e;
     })
   }

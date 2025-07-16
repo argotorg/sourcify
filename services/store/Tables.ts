@@ -297,6 +297,7 @@ export namespace Tables {
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
     metadata: Metadata;
+    licenseType: number;
     created_at: Date;
   }
   export class SourcifyMatch extends Model<ISourcifyMatch> implements ISourcifyMatch {
@@ -305,6 +306,7 @@ export namespace Tables {
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
     metadata: Metadata;
+    licenseType: number;
     created_at: Date;
     static register(sequelize) {
       SourcifyMatch.init({
@@ -313,6 +315,7 @@ export namespace Tables {
         runtime_match: {type: DataTypes.CHAR(20)},
         creation_match: {type: DataTypes.CHAR(20)},
         metadata: {type: DataTypes.JSON, allowNull: false},
+        licenseType: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 1},
         created_at: {type: DataTypes.DATE, allowNull: false},
       }, {
         tableName: 'sourcify_matches',

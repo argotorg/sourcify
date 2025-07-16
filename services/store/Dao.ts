@@ -184,6 +184,7 @@ export class Dao {
     runtime_match,
     creation_match,
     metadata,
+    licenseType,
   }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
     const metadataStr = JSON.stringify(metadata)
     const now = new Date()
@@ -194,12 +195,13 @@ export class Dao {
         creation_match,
         runtime_match,
         metadata,
+        license_type,                              
         created_at                              
         ) VALUES (?, ?, ?, ?, ?)
       `,
       {
         type: QueryTypes.INSERT,
-        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, now],
+        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, licenseType, now],
       }
     )
   }
@@ -213,6 +215,7 @@ export class Dao {
       runtime_match,
       creation_match,
       metadata,
+      licenseType,
     }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: number,
   ) {
@@ -222,7 +225,8 @@ export class Dao {
         verified_contract_id = ?,
         creation_match=?,
         runtime_match=?,
-        metadata=?
+        metadata=?,
+        license_type=?
       WHERE  verified_contract_id = ?
       `,
       {
@@ -232,6 +236,7 @@ export class Dao {
           creation_match,
           runtime_match,
           metadata,
+          licenseType,
           oldVerifiedContractId,
         ],
       }

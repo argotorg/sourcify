@@ -82,6 +82,7 @@ export class VerificationService {
     compilerVersion: string,
     compilationTarget: CompilationTarget,
     creationTransactionHash?: string,
+    licenseType?: number,
   ): Promise<VerificationJobId> {
     const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
 
@@ -98,7 +99,7 @@ export class VerificationService {
     const task = this.workerPool
       .run(input, { name: "verifyFromJsonInput" })
       .then((output: VerifyOutput) => {
-        return this.handleWorkerResponse(verificationId, output);
+        return this.handleWorkerResponse(verificationId, output, licenseType);
       })
       .finally(() => {
         const suc = this.runningTasks.delete(task);
@@ -175,6 +176,7 @@ export class VerificationService {
   private async handleWorkerResponse(
     verificationId: VerificationJobId,
     output: VerifyOutput,
+    licenseType?: number,
   ): Promise<void> {
     return Promise.resolve(output)
       .then((output: VerifyOutput) => {
@@ -190,8 +192,8 @@ export class VerificationService {
       .then((verification: VerificationExport) => {
         return this.store.storeVerification(verification, {
           verificationId,
-          finishTime: new Date(),
-        });
+          finishTime: new Date()
+        }, licenseType);
       })
       .catch((error) => {
         let errorExport: VerifyErrorExport;
