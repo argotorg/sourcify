@@ -28,6 +28,7 @@ import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 import { DatabaseCompilation } from "../../../../services/utils/DatabaseCompilation";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
+import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,
@@ -161,7 +162,6 @@ export async function replaceContract(
 ): Promise<any> {
   // Extract the request body parameters
   const address = req.body.address;
-  const transactionHash = req.body.transactionHash;
   const chainId = req.body.chainId;
 
   const forceCompilation = req.body.forceCompilation;
@@ -181,6 +181,7 @@ export async function replaceContract(
   }
 
   const forceRPCRequest = req.body.forceRPCRequest;
+  let transactionHash = req.body.transactionHash;
 
   // Get the solc compiler and services
   const solc = req.app.get("solc") as ISolidityCompiler;
@@ -206,7 +207,6 @@ export async function replaceContract(
         sourcifyDatabaseService.database,
         address,
         chainId,
-        transactionHash,
       );
       compilation = await databaseCompilation.createCompilation();
     } else {
@@ -245,17 +245,24 @@ export async function replaceContract(
     let sourcifyChain: SourcifyChain;
     if (!forceRPCRequest) {
       // Create a SourcifyChainMock object filled with data from the database
-      sourcifyChain = new SourcifyChainMock(
+      sourcifyChain = await SourcifyChainMock.create(
         sourcifyDatabaseService.database,
         chainId,
         address,
-        transactionHash,
       );
-      await (sourcifyChain as SourcifyChainMock).init();
+      let transactionHashFromDatabase = (sourcifyChain as SourcifyChainMock)
+        .contractDeployment?.transaction_hash;
+      if (transactionHashFromDatabase) {
+        transactionHash = `0x${transactionHashFromDatabase.toString("hex")}`;
+      }
     } else {
       // Use the chainRepository to get the sourcifyChain object and fetch the contract's information from the RPC
       const chainRepository = req.app.get("chainRepository") as ChainRepository;
       sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+      transactionHash =
+        transactionHash ||
+        (await getCreatorTx(sourcifyChain, address)) ||
+        undefined;
     }
 
     const verification = new Verification(
@@ -278,9 +285,9 @@ export async function replaceContract(
       verificationStatus.runtimeMatch === "partial";
 
     // If the new verification leads to a non-match, we can't replace the contract
-    if (!runtimeMatch || !creationMatch) {
+    if (!runtimeMatch && !creationMatch) {
       throw new BadRequestError(
-        "The contract is not verified or the verification is not perfect",
+        "Failed to match the contract with the new verification",
       );
     }
 
@@ -316,6 +323,8 @@ export async function replaceContract(
       chainId: chainId,
       transactionHash: transactionHash,
       newStatus: verificationStatus,
+      rpcFailedFetchingCreationBytecode:
+        verification.onchainCreationBytecode === undefined,
     });
   } catch (error: any) {
     throw new InternalServerError(error.message);

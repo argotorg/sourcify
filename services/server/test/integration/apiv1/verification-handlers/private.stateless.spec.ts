@@ -3,7 +3,10 @@ import path from "path";
 import fs from "fs";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
-import { deployFromAbiAndBytecodeForCreatorTxHash } from "../../../helpers/helpers";
+import {
+  deployFromAbiAndBytecodeForCreatorTxHash,
+  verifyContract,
+} from "../../../helpers/helpers";
 import { assertVerification } from "../../../helpers/assertions";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
@@ -15,40 +18,13 @@ describe("/private/replace-contract", function () {
   const serverFixture = new ServerFixture();
 
   it("should replace a partial match contract with perfect match using forceCompilation and remove old data", async () => {
-    // First, create a partial match by verifying with modified metadata
-    const partialMetadata = (
-      await import("../../../testcontracts/Storage/metadataModified.json")
-    ).default;
-    const partialMetadataBuffer = Buffer.from(JSON.stringify(partialMetadata));
-    const partialSourcePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "..",
-      "testcontracts",
-      "Storage",
-      "StorageModified.sol",
-    );
-    const partialSourceBuffer = fs.readFileSync(partialSourcePath);
-
-    // Deploy and verify with partial match
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .field("address", chainFixture.defaultContractAddress)
-      .field("chain", chainFixture.chainId)
-      .field("creatorTxHash", chainFixture.defaultContractCreatorTx)
-      .attach("files", partialMetadataBuffer, "metadata.json")
-      .attach("files", partialSourceBuffer);
-
-    await assertVerification(
+    // First, create a partial match
+    await verifyContract(
       serverFixture,
-      null,
-      res,
-      null,
-      chainFixture.defaultContractAddress,
-      chainFixture.chainId,
-      "partial",
+      chainFixture,
+      undefined,
+      undefined,
+      true,
     );
 
     // Get the initial state before replacement
@@ -164,24 +140,7 @@ describe("/private/replace-contract", function () {
 
   it("should replace contract using existing database compilation (forceCompilation: false) and restore creation_match", async () => {
     // First, verify with perfect match
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .field("address", chainFixture.defaultContractAddress)
-      .field("chain", chainFixture.chainId)
-      .field("creatorTxHash", chainFixture.defaultContractCreatorTx)
-      .attach("files", chainFixture.defaultContractMetadata, "metadata.json")
-      .attach("files", chainFixture.defaultContractSource);
-
-    await assertVerification(
-      serverFixture,
-      null,
-      res,
-      null,
-      chainFixture.defaultContractAddress,
-      chainFixture.chainId,
-      "perfect",
-    );
+    await verifyContract(serverFixture, chainFixture);
 
     // Store the original creation_match value
     const originalMatchResult = await serverFixture.sourcifyDatabase.query(
@@ -227,24 +186,7 @@ describe("/private/replace-contract", function () {
 
   it("should replace contract with forceRPCRequest: true and fix corrupted runtime bytecode", async () => {
     // First, verify with perfect match
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .field("address", chainFixture.defaultContractAddress)
-      .field("chain", chainFixture.chainId)
-      .field("creatorTxHash", chainFixture.defaultContractCreatorTx)
-      .attach("files", chainFixture.defaultContractMetadata, "metadata.json")
-      .attach("files", chainFixture.defaultContractSource);
-
-    await assertVerification(
-      serverFixture,
-      null,
-      res,
-      null,
-      chainFixture.defaultContractAddress,
-      chainFixture.chainId,
-      "perfect",
-    );
+    await verifyContract(serverFixture, chainFixture);
 
     // Get the original runtime bytecode
     const originalBytecodeResult = await serverFixture.sourcifyDatabase.query(
@@ -305,24 +247,7 @@ describe("/private/replace-contract", function () {
 
   it("should replace contract with forceRPCRequest: false using database data and restore creation_match", async () => {
     // First, verify with perfect match
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .field("address", chainFixture.defaultContractAddress)
-      .field("chain", chainFixture.chainId)
-      .field("creatorTxHash", chainFixture.defaultContractCreatorTx)
-      .attach("files", chainFixture.defaultContractMetadata, "metadata.json")
-      .attach("files", chainFixture.defaultContractSource);
-
-    await assertVerification(
-      serverFixture,
-      null,
-      res,
-      null,
-      chainFixture.defaultContractAddress,
-      chainFixture.chainId,
-      "perfect",
-    );
+    await verifyContract(serverFixture, chainFixture);
 
     // Store the original creation_match value
     const originalMatchResult = await serverFixture.sourcifyDatabase.query(

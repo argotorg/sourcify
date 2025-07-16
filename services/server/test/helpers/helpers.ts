@@ -94,7 +94,7 @@ export async function verifyContract(
   creatorTxHash?: string,
   partial: boolean = false,
 ) {
-  await chai
+  return await chai
     .request(serverFixture.server.app)
     .post("/")
     .field("address", contractAddress || chainFixture.defaultContractAddress)

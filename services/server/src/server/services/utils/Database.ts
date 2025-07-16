@@ -262,7 +262,6 @@ ${
   async getVerifiedContractFromDeployment(
     chainId: number,
     address: Bytes,
-    transactionHash: Bytes,
   ): Promise<QueryResult<GetVerifiedContractFromDeploymentResult>> {
     return await this.pool.query(
       `SELECT 
@@ -287,16 +286,14 @@ ${
         JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
         WHERE 1=1
         AND contract_deployments.chain_id = $1
-        AND contract_deployments.address = $2
-        AND contract_deployments.transaction_hash = $3`,
-      [chainId, address, transactionHash],
+        AND contract_deployments.address = $2`,
+      [chainId, address],
     );
   }
 
   async getContractDeploymentInfo(
     chainId: number,
     address: Bytes,
-    transactionHash: Bytes,
   ): Promise<QueryResult<GetContractDeploymentInfoResult>> {
     return await this.pool.query(
       `SELECT 
@@ -315,8 +312,8 @@ ${
         JOIN ${this.schema}.contracts ON contracts.id = contract_deployments.contract_id
         JOIN ${this.schema}.code onchain_creation_code ON onchain_creation_code.code_hash = contracts.creation_code_hash
         JOIN ${this.schema}.code onchain_runtime_code ON onchain_runtime_code.code_hash = contracts.runtime_code_hash
-        WHERE contract_deployments.address = $1 AND contract_deployments.transaction_hash = $2 AND contract_deployments.chain_id = $3`,
-      [address, transactionHash, chainId],
+        WHERE contract_deployments.address = $1 AND contract_deployments.chain_id = $2`,
+      [address, chainId],
     );
   }
 
@@ -1021,6 +1018,7 @@ ${
           cc.creation_code_hash   AS compilation_creation_code_hash,
           cc.runtime_code_hash    AS compilation_runtime_code_hash
         FROM ${this.schema}.verified_contracts vc
+        JOIN ${this.schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
         JOIN ${this.schema}.contract_deployments cd ON cd.id = vc.deployment_id
         JOIN ${this.schema}.contracts ctr          ON ctr.id = cd.contract_id
         JOIN ${this.schema}.compiled_contracts cc  ON cc.id = vc.compilation_id
@@ -1044,7 +1042,7 @@ ${
       [info.verified_contract_id],
     );
     await poolClient.query(
-      `DELETE FROM ${this.schema}.verification_jobs WHERE verified_contract_id = $1`,
+      `UPDATE ${this.schema}.verification_jobs SET verified_contract_id=NULL WHERE verified_contract_id = $1`,
       [info.verified_contract_id],
     );
     await poolClient.query(
@@ -1068,10 +1066,7 @@ ${
     for (const { source_hash } of sourceRows) {
       await poolClient.query(
         `DELETE FROM ${this.schema}.sources
-           WHERE source_hash = $1
-             AND NOT EXISTS (
-               SELECT 1 FROM ${this.schema}.compiled_contracts_sources WHERE source_hash = $1
-             )`,
+           WHERE source_hash = $1`,
         [source_hash],
       );
     }
@@ -1096,14 +1091,7 @@ ${
 
     for (const hash of codeHashes) {
       await poolClient.query(
-        `DELETE FROM ${this.schema}.code
-           WHERE code_hash = $1
-             AND NOT EXISTS (
-               SELECT 1 FROM ${this.schema}.contracts WHERE creation_code_hash = $1 OR runtime_code_hash = $1
-             )
-             AND NOT EXISTS (
-               SELECT 1 FROM ${this.schema}.compiled_contracts WHERE creation_code_hash = $1 OR runtime_code_hash = $1
-             )`,
+        `DELETE FROM ${this.schema}.code WHERE code_hash = $1`,
         [hash],
       );
     }

@@ -8,12 +8,10 @@ import { Database } from "./Database";
 import logger from "../../../common/logger";
 
 export default class SourcifyChainMock extends SourcifyChain {
-  public contractDeployment?: GetContractDeploymentInfoResult;
   constructor(
-    public database: Database,
+    public contractDeployment: GetContractDeploymentInfoResult,
     public readonly chainId: number,
     private readonly address: string,
-    private readonly transactionHash: string,
   ) {
     super({
       name: "SourcifyChainMock",
@@ -21,22 +19,30 @@ export default class SourcifyChainMock extends SourcifyChain {
       rpc: ["http://mock"],
       supported: true,
     });
-    if (!this.database.isPoolInitialized()) {
+  }
+
+  static async create(
+    database: Database,
+    chainId: number,
+    address: string,
+  ): Promise<SourcifyChainMock> {
+    if (!database.isPoolInitialized()) {
       logger.error("SourcifyChainMock: database pool not initialized");
       throw new Error("SourcifyChainMock: database pool not initialized");
     }
-  }
-
-  async init() {
-    const deploymentResult = await this.database.getContractDeploymentInfo(
-      this.chainId,
-      bytesFromString(this.address),
-      bytesFromString(this.transactionHash),
+    const deploymentResult = await database.getContractDeploymentInfo(
+      chainId,
+      bytesFromString(address),
     );
     if (deploymentResult.rows.length === 0) {
       throw new Error("Contract not found");
     }
-    this.contractDeployment = deploymentResult.rows[0];
+    const sourcifyChainMock = new SourcifyChainMock(
+      deploymentResult.rows[0],
+      chainId,
+      address,
+    );
+    return sourcifyChainMock;
   }
 
   getBytecode = async () => {

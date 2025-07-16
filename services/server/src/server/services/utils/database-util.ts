@@ -396,12 +396,12 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
           'storageLayout', compiled_contracts.compilation_artifacts->'storageLayout',
           'evm', json_build_object(
             'bytecode', json_build_object(
-              'object', nullif(concat('0x', encode(recompiled_creation_code.code, 'hex')), '0x'),
+              'object', nullif(encode(recompiled_creation_code.code, 'hex'), ''),
               'sourceMap', compiled_contracts.creation_code_artifacts->'sourceMap',
               'linkReferences', compiled_contracts.creation_code_artifacts->'linkReferences'
             ),
             'deployedBytecode', json_build_object(
-              'object', nullif(concat('0x', encode(recompiled_runtime_code.code, 'hex')), '0x'),
+              'object', nullif(encode(recompiled_runtime_code.code, 'hex'), ''),
               'sourceMap', compiled_contracts.runtime_code_artifacts->'sourceMap',
               'linkReferences', compiled_contracts.runtime_code_artifacts->'linkReferences',
               'immutableReferences', compiled_contracts.runtime_code_artifacts->'immutableReferences'
