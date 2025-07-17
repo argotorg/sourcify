@@ -566,6 +566,7 @@ export type GetVerificationJobByIdResult = Pick<
 };
 
 export type GetVerificationJobsByChainAndAddressResult = {
+  id: string;
   completed_at: Nullable<string>;
 };
 

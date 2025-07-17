@@ -703,12 +703,13 @@ export class StoreService
   getVerificationJobsByChainAndAddress = async (
     chainId: number,
     address: string,
-  ): Promise<Pick<VerificationJob, "isJobCompleted">[]> => {
+  ): Promise<Pick<VerificationJob, "isJobCompleted" | "verificationId">[]> => {
     const result = await this.database.getVerificationJobsByChainAndAddress(
       chainId,
       address,
     );
     return result.map((row) => ({
+      verificationId: row.id,
       isJobCompleted: !!row.completed_at,
     }));
   };

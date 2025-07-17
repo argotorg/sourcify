@@ -860,6 +860,7 @@ export class Dao {
     const records = await this.database.query(
       `
       SELECT
+        id,
         DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%dT%H:%i:%sT') AS completed_at
       FROM verification_jobs
       WHERE verification_jobs.chain_id = ?

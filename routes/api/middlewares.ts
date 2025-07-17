@@ -209,7 +209,8 @@ export async function checkIfJobIsAlreadyRunning(
   const chain = getChainId(chainId)
   const services = req.app.get("services") as Services;
   const jobs = await services.store.getVerificationJobsByChainAndAddress(chain, address)
-  if (jobs.length > 0 && jobs.some((job) => !job.isJobCompleted)) {
+  if (jobs.length > 0 &&
+    jobs.some(job => (!job.isJobCompleted) && services.verification.isRunning(job.verificationId))) {
     console.warn("Contract already being verified", { chainId, address });
     throw new DuplicateVerificationRequestError(
       `Contract ${address} on chain ${chainId} is already being verified`,

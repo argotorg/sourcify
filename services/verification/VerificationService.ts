@@ -35,6 +35,7 @@ export class VerificationService {
   private store: StoreService;
   private workerPool: Piscina;
   private runningTasks: Set<Promise<void>> = new Set();
+  public runningTaskIds: Set<string> = new Set();
 
   constructor(
     options: VerificationOptions,
@@ -103,12 +104,10 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output, licenseType);
       })
       .finally(() => {
-        const suc = this.runningTasks.delete(task);
-        console.log(`debug runningTasks after del ==\n`, {
-          size: this.runningTasks.size,
-          del: suc
-        })
+        this.runningTaskIds.delete(verificationId)
+        this.runningTasks.delete(task);
       });
+    this.runningTaskIds.add(verificationId);
     this.runningTasks.add(task);
 
     return verificationId;
@@ -225,5 +224,9 @@ export class VerificationService {
 
         return this.store.setJobError(verificationId, new Date(), errorExport)
       });
+  }
+
+  public isRunning(verificationId): boolean {
+    return this.runningTaskIds.has(verificationId)
   }
 }
