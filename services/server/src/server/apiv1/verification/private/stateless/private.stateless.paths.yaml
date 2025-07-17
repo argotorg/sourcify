@@ -218,6 +218,9 @@ paths:
                         type: string
                       runtimeMatch:
                         type: string
+                  rpcFailedFetchingCreationBytecode:
+                    type: boolean
+                    description: Indicates if the RPC call to fetch the creation bytecode failed
               examples:
                 Success:
                   value:
@@ -228,6 +231,7 @@ paths:
                     newStatus:
                       creationMatch: "perfect"
                       runtimeMatch: "perfect"
+                    rpcFailedFetchingCreationBytecode: false
         "400":
           description: Bad Request
           content:
