@@ -25,10 +25,10 @@ import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import logger from "../../../../../common/logger";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
-import { extractCompilationFromDatabase } from "../../../../services/utils/DatabaseCompilation";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
 import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
+import { extractCompilationFromDatabase } from "../../../../services/utils/database-util";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,
