@@ -958,19 +958,12 @@ export class SourcifyDatabaseService
       finishTime: Date;
     },
   ): Promise<void> {
-    try {
-      await this.withTransaction(async (transactionPoolClient) => {
-        await this.storeVerificationWithPoolClient(
-          transactionPoolClient,
-          verification,
-          jobData,
-        );
-      });
-    } catch (error: any) {
-      logger.error("Error storing verification", {
-        error: error,
-      });
-      throw error;
-    }
+    await this.withTransaction(async (transactionPoolClient) => {
+      await this.storeVerificationWithPoolClient(
+        transactionPoolClient,
+        verification,
+        jobData,
+      );
+    });
   }
 }
