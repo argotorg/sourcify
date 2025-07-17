@@ -19,6 +19,7 @@ import {
   ISolidityCompiler,
   IVyperCompiler,
   PreRunCompilation,
+  splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Abi } from "abitype";
 import {
@@ -826,7 +827,7 @@ export async function extractCompilationFromDatabase(
           "std_json_output",
           "runtime_cbor_auxdata",
           "creation_cbor_auxdata",
-          "metadata",
+          "fully_qualified_name",
           "version",
         ],
       );
@@ -852,11 +853,12 @@ export async function extractCompilationFromDatabase(
       verifiedContract.runtime_cbor_auxdata || undefined;
 
     // Get the file path and contract name from fully_qualified_name
-    const metadataCompilationTarget = (verifiedContract.metadata as Metadata)
-      .settings.compilationTarget;
+    const { contractPath, contractName } = splitFullyQualifiedName(
+      verifiedContract.fully_qualified_name!,
+    );
     const compilationTarget = {
-      name: Object.values(metadataCompilationTarget)[0],
-      path: Object.keys(metadataCompilationTarget)[0],
+      name: contractName,
+      path: contractPath,
     };
 
     // Set the JSON input and output
