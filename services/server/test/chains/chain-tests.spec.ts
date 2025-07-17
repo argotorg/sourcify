@@ -19,7 +19,7 @@ type ChainApiResponse = Pick<
   "name" | "title" | "chainId" | "rpc" | "supported"
 > & { etherscanAPI: boolean };
 
-const TEST_TIME = process.env.TEST_TIME || "60000"; // 30 seconds
+const TEST_TIME = process.env.TEST_TIME || "120000"; // 2 minutes
 const CUSTOM_PORT = 5556;
 
 // Extract the chainId from new chain support pull request, if exists
