@@ -253,7 +253,7 @@ export async function replaceContract(
         chainId,
         address,
       );
-      let transactionHashFromDatabase = (sourcifyChain as SourcifyChainMock)
+      const transactionHashFromDatabase = (sourcifyChain as SourcifyChainMock)
         .contractDeployment?.transaction_hash;
       if (transactionHashFromDatabase) {
         transactionHash = `0x${transactionHashFromDatabase}`;

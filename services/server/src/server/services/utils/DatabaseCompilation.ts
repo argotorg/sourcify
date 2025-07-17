@@ -36,7 +36,7 @@ export async function extractCompilationFromDatabase(
           "runtime_cbor_auxdata",
           "creation_cbor_auxdata",
           "metadata",
-          "compiler",
+          "version",
         ],
       );
 
@@ -54,7 +54,7 @@ export async function extractCompilationFromDatabase(
     const verifiedContract = verifiedContractResult.rows[0];
 
     // Extract properties from the verified contract
-    const compilerVersion = verifiedContract.compiler;
+    const compilerVersion = verifiedContract.version;
     const creationCodeCborAuxdata: CompiledContractCborAuxdata | undefined =
       verifiedContract.creation_cbor_auxdata || undefined;
     const runtimeCodeCborAuxdata: CompiledContractCborAuxdata | undefined =
