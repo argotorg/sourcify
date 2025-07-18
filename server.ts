@@ -7,7 +7,7 @@ import { VerificationOptions } from "./services/verification/VerificationService
 import { ISolidityCompiler } from "@ethereum-sourcify/lib-sourcify";
 import { errorHandler as v2ErrorHandler } from "./routes/api/errors";
 import { DatabaseOptions, loadConfig } from "./config/Loader";
-import { Solc } from "./services/compiler/Solc";
+import { SolcLocal } from "./services/compiler/SolcLocal";
 import { Chain } from "./services/chain/Chain";
 import { heapDump } from "./services/utils/profile-util";
 import path from "path";
@@ -57,7 +57,7 @@ export class Server {
 }
 
 const config = loadConfig()
-const solc = new Solc(config.solc.solcBinRepo, config.solc.solcJsRepo)
+const solc = new SolcLocal(config.solc.solcBinRepo, config.solc.solcJsRepo)
 const chainMap: ChainMap  = {}
 for (const [_, chainObj] of Object.entries(config.chains)) {
   chainMap[chainObj.chainId.toString()]= new Chain(chainObj)
@@ -76,6 +76,7 @@ const server = new Server(
     chains: chainMap,
     solcRepoPath: config.solc.solcBinRepo,
     solJsonRepoPath: config.solc.solcJsRepo,
+    vyperRepoPath: config.vyper.vyperRepo,
     workerIdleTimeout: 3000,
     concurrentVerificationsPerWorker: 1
   },

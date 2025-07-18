@@ -1,13 +1,16 @@
 import Piscina from "piscina";
 import {SolidityJsonInput,
+  VyperJsonInput,
   SolidityCompilation,
+  VyperCompilation,
   Verification,
   SourcifyLibError,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
-import { Solc } from "../compiler/Solc";
+import { SolcLocal } from "../compiler/SolcLocal";
+import { VyperLocal } from "../compiler/VyperLocal";
 import { v4 as uuidv4 } from "uuid";
 import { getCreatorTx } from "../utils/contract-creation-util";
 import type {
@@ -30,10 +33,11 @@ import { ChainMap } from "../../server";
 export const filename = resolve(__filename);
 
 let chainMap: { [chainId: string]: Chain };
-let solc: Solc;
+let solc: SolcLocal;
+let vyper: VyperLocal;
 
 const initWorker = () => {
-  if(solc) {
+  if(chainMap && solc && vyper) {
     return;
   }
 
@@ -47,10 +51,12 @@ const initWorker = () => {
     {} as ChainMap,
   );
 
-  solc = new Solc(
+  solc = new SolcLocal(
     Piscina.workerData.solcRepoPath,
     Piscina.workerData.solJsonRepoPath,
   );
+
+  vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
 };
 
 async function runWorkerFunctionWithContext<T extends VerificationWorkerInput>(
@@ -89,7 +95,7 @@ async function _verifyFromJsonInput({
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
-  let compilation: SolidityCompilation | undefined;
+  let compilation: SolidityCompilation | VyperCompilation | undefined;
   try {
     if (jsonInput.language === "Solidity") {
       compilation = new SolidityCompilation(
@@ -98,7 +104,14 @@ async function _verifyFromJsonInput({
         jsonInput as SolidityJsonInput,
         compilationTarget,
       );
-    } else {
+    } else if (jsonInput.language === "Vyper") {
+      compilation = new VyperCompilation(
+        vyper,
+        compilerVersion,
+        jsonInput as VyperJsonInput,
+        compilationTarget,
+      );
+    }else {
       throw new Error(`No compiler for ${jsonInput.language} found`)
     }
   } catch (error: any) {

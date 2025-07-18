@@ -10,7 +10,7 @@ import { getAddress } from "ethers";
 import { FIELDS_TO_STORED_PROPERTIES } from "../../services/store/Tables";
 import { reduceAccessorStringToProperty } from "../../services/utils/util";
 import { Services } from "../../services/services";
-import type { Metadata, SolidityJsonInput} from "@ethereum-sourcify/lib-sourcify";
+import type { Metadata, SolidityJsonInput, VyperJsonInput} from "@ethereum-sourcify/lib-sourcify";
 import { ChainMap } from "../../server";
 
 export function validateChainId(
@@ -104,7 +104,9 @@ export function validateStandardJsonInput(
     throw new InvalidParametersError("Standard JSON input is required.");
   }
 
-  const stdJsonInput = req.body.stdJsonInput as SolidityJsonInput
+  const stdJsonInput = req.body.stdJsonInput as
+    | SolidityJsonInput
+    | VyperJsonInput;
   if (!stdJsonInput.language) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a language field.",

@@ -11,6 +11,7 @@ export interface Config {
     server: ServerOptions
     chains: {[chainId: number]: ChainInstance}
     solc: SolcOptions
+    vyper: VyperOptions
     mysql: DatabaseOptions
 }
 
@@ -70,6 +71,10 @@ export interface ServerOptions{
 export interface SolcOptions{
     solcBinRepo: string
     solcJsRepo: string
+}
+
+export interface VyperOptions{
+    vyperRepo: string
 }
 
 export interface DatabaseOptions extends Options{

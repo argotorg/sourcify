@@ -10,6 +10,7 @@ services:
       - ./:/verification
       - ./solc-repo/bin:/verification/solc-repo/bin
       - ./solc-repo/js:/verification/solc-repo/js
+      - ./vyper-repo:/verification/vyper-repo
     env_file:
       - path: .env
     healthcheck:

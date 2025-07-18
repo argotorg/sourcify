@@ -27,6 +27,7 @@ export interface VerificationOptions {
   chains: ChainMap;
   solcRepoPath: string;
   solJsonRepoPath: string;
+  vyperRepoPath: string;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
 }
@@ -59,6 +60,7 @@ export class VerificationService {
         fullpath: verificationWorkerFilename,
         solcRepoPath: options.solcRepoPath,
         solJsonRepoPath: options.solJsonRepoPath,
+        vyperRepoPath: options.vyperRepoPath,
         chains,
       },
       minThreads: os.availableParallelism() * 0.5,

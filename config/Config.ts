@@ -12,6 +12,9 @@ export default {
     solcBinRepo: process.env.SOLC_REPO_BIN || './solc-repo/bin',
     solcJsRepo: process.env.SOLC_REPO_JS || './solc-repo/js',
   },
+  vyper:{
+    vyperRepo: process.env.VYPER_REPO || './vyper-repo',
+  },
   mysql: {
     host: process.env.MYSQL_HOST || '127.0.0.1',
     port: parseInt(process.env.MYSQL_PORT || "3306"),
