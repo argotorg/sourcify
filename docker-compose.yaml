@@ -1,7 +1,8 @@
 services:
   verification:
     image: node:20.11.1
-    mem_limit: 4g
+    mem_limit: 1536m
+    memswap_limit: 1536m
     command: node /verification/server.js
     restart: unless-stopped
     network_mode: host
@@ -11,3 +12,8 @@ services:
       - ./solc-repo/js:/verification/solc-repo/js
     env_file:
       - path: .env
+    healthcheck:
+      test: [ "CMD-SHELL", "free -m | awk '/Mem:/ {exit ($3 > 1500 ? 1 : 0)}'" ]
+      interval: 10s
+      retries: 3
+      start_period: 30s
