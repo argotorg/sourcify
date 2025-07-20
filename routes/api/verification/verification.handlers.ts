@@ -20,6 +20,7 @@ interface VerifyFromJsonInputRequest extends Request {
     contractIdentifier: string;
     creationTransactionHash?: string;
     licenseType?: number;
+    contractLabel?: string;
   };
 }
 
@@ -39,6 +40,7 @@ export async function verifyFromJsonInputEndpoint(
     contractIdentifier: req.body.contractIdentifier,
     creationTransactionHash: req.body.creationTransactionHash,
     licenseType: req.body.licenseType,
+    contractLabel: req.body.contractLabel,
   });
 
   // The contract path can include a colon itself. Therefore,
@@ -62,6 +64,7 @@ export async function verifyFromJsonInputEndpoint(
       compilationTarget,
       req.body.creationTransactionHash,
       req.body.licenseType,
+      req.body.contractLabel,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });

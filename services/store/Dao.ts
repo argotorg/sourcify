@@ -167,8 +167,8 @@ export class Dao {
           contract_deployments.contract_id
         FROM verified_contracts
         JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
-        WHERE contract_deployments.chain_id = ?
-          AND contract_deployments.address = ?
+        WHERE contract_deployments.chain_id = 71
+          AND contract_deployments.address = '0xAfd61fFCd95F5477B67C002d1F227080bF88F7C6'
       `,
       {
         type: QueryTypes.SELECT,
@@ -185,8 +185,9 @@ export class Dao {
     creation_match,
     metadata,
     license_type,
+    contract_label,
   }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
-    console.log(`insertSourcifyMatch ===\n licenseType`, license_type)
+    console.log(`insertSourcifyMatch ===\n`, {license_type, contract_label})
     const metadataStr = JSON.stringify(metadata)
     const now = new Date()
     await this.database.query(
@@ -196,13 +197,14 @@ export class Dao {
         creation_match,
         runtime_match,
         metadata,
-        license_type,                              
+        license_type,
+        contract_label,
         created_at                              
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       {
         type: QueryTypes.INSERT,
-        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, license_type, now],
+        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, license_type, contract_label, now],
       }
     )
   }
@@ -217,10 +219,11 @@ export class Dao {
       creation_match,
       metadata,
       license_type,
+      contract_label,
     }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: number,
   ) {
-    console.log(`updateSourcifyMatch ===\n licenseType`, license_type)
+    console.log(`updateSourcifyMatch ===\n`, {license_type, contract_label})
     const metadataStr = JSON.stringify(metadata)
     await this.database.query(
       `
@@ -229,6 +232,7 @@ export class Dao {
         creation_match=?,
         runtime_match=?,
         license_type=?,
+        contract_label=?,
         metadata=?
       WHERE  verified_contract_id = ?
       `,
@@ -238,8 +242,9 @@ export class Dao {
           verified_contract_id,
           creation_match,
           runtime_match,
-          metadataStr,
           license_type,
+          contract_label,
+          metadataStr,
           oldVerifiedContractId,
         ],
         logging: sql => console.log(`sql`, sql)
@@ -482,6 +487,10 @@ export class Dao {
         createdAt,
         updatedAt
       ) VALUES (?,?,?,?,?,?,?,?,?)
+      ON DUPLICATE KEY UPDATE
+         chain_id = values(chain_id),
+         address = values(address),
+         transaction_hash = values(transaction_hash)
       `, {
         type: QueryTypes.INSERT,
         transaction: dbTx,

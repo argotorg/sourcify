@@ -32,6 +32,7 @@ export interface VerifiedContractMinimal {
   verifiedAt?: string;
   matchId?: string;
   licenseType?: number,
+  contractLabel?: string,
 }
 
 // For displaying contracts in API v2

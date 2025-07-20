@@ -531,7 +531,8 @@ export class StoreService
       "creationMatch",
       "runtimeMatch",
       "verifiedAt",
-      "licenseType"
+      "licenseType",
+      "contractLabel",
     ];
     defaultFields.forEach((field) => requestedFields.add(field));
 
@@ -772,11 +773,11 @@ export class StoreService
     jobData?: {
       verificationId: VerificationJobId;
       finishTime: Date;
-      licenseType?: number;
     },
     licenseType?: number,
+    contractLabel?: string,
   ): Promise<void> {
-    console.log(`_storeVerification ===\n licenseType`, licenseType)
+    console.log(`_storeVerification ===\n`, {licenseType, contractLabel})
     const { type, verifiedContractId, oldVerifiedContractId } =
       await super.insertOrUpdateVerification(verification);
 
@@ -792,6 +793,7 @@ export class StoreService
         runtime_match: verification.status.runtimeMatch,
         metadata: verification.compilation.metadata as any,
         license_type: licenseType,
+        contract_label: contractLabel,
       });
       console.info("Stored to SourcifyDatabase", {
         address: verification.address,
@@ -799,6 +801,7 @@ export class StoreService
         runtimeMatch: verification.status.runtimeMatch,
         creationMatch: verification.status.creationMatch,
         licenseType,
+        contractLabel,
       });
     } else if (type === "update") {
       if (!oldVerifiedContractId) {
@@ -813,6 +816,7 @@ export class StoreService
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
           license_type: licenseType,
+          contract_label: contractLabel,
         },
         oldVerifiedContractId,
       );
@@ -822,6 +826,7 @@ export class StoreService
         runtimeMatch: verification.status.runtimeMatch,
         creationMatch: verification.status.creationMatch,
         licenseType,
+        contractLabel,
       });
     } else {
       throw new Error(
@@ -849,16 +854,17 @@ export class StoreService
       verificationId: VerificationJobId;
       finishTime: Date;
     },
-    licenseType?: number
+    licenseType?: number,
+    contractLabel?: string,
   ) {
-    console.log(`storeVerification ===\n licenseType`, licenseType)
+    console.log(`storeVerification ===\n`, {licenseType, contractLabel})
     const existingMatch = await this.checkAllByChainAndAddress(verification.address, verification.chainId)
     if (existingMatch.length > 0 && !isBetterVerification(verification, existingMatch[0])) {
       throw new ConflictError(
         `The contract ${verification.address} on chainId ${verification.chainId} is already partially verified. The provided new source code also yielded a partial match and will not be stored unless it's a full match`,
       );
     }
-    await this._storeVerification(verification, jobData, licenseType).catch((e: any) => {
+    await this._storeVerification(verification, jobData, licenseType, contractLabel).catch((e: any) => {
       throw e;
     })
   }
