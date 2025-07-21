@@ -200,15 +200,17 @@ export const fetchFromEtherscan = async (
       : new BadRequestError(errorMessage);
   }
 
-  const url = `https://api.etherscan.io/v2/api?chainid=${sourcifyChain.chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
+  let url = `https://api.etherscan.io/v2/api?chainid=${sourcifyChain.chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const apiKey =
     userApiKey ||
     process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""] ||
     process.env.ETHERSCAN_API_KEY ||
     "";
   const secretUrl = url + apiKey;
+
+  url = url + apiKey.slice(0, 6) + "...";
   let response;
-  logger.debug("Fetching from Etherscan", {
+  logger.info("Fetching from Etherscan", {
     url,
     chainId: sourcifyChain.chainId,
     address,

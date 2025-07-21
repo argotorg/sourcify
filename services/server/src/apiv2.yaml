@@ -8,7 +8,9 @@ paths:
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) or [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description).
 
-        There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these. 
+        There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
+        
+        **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated. 
       operationId: verify
       parameters:
         - $ref: '#/components/parameters/chainId'
@@ -308,7 +310,7 @@ components:
                 description: |
                   Full [standard JSON object](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) to pass to the compiler. 
 
-                  Must include the language of the sources. Currently supports Solidity and Vyper. 
+                  Must include the `language` field inside the stdJsonInput object. Currently supports Solidity and Vyper. 
               compilerVersion:
                 $ref: '#/components/schemas/SolidityCompilerVersion'
               contractIdentifier:
@@ -322,6 +324,64 @@ components:
               - stdJsonInput
               - compilerVersion
               - contractIdentifier
+          examples:
+            Solidity Contract:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+
+                            function getNumber() public view returns (uint256) {
+                                return number;
+                            }
+                        }
+                  settings:
+                    optimizer:
+                      enabled: false
+                      runs: 200
+                compilerVersion: "0.8.7+commit.e28d00a7"
+                contractIdentifier: "contracts/Storage.sol:Storage"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
+            Vyper Contract:
+              value:
+                stdJsonInput:
+                  language: Vyper
+                  sources:
+                    "MyVyperContract.vy":
+                      content: |
+                        # @version ^0.3.10
+                        
+                        number: public(uint256)
+                        
+                        @external
+                        def __init__():
+                            self.number = 0
+                        
+                        @external
+                        def setNumber(newNumber: uint256):
+                            self.number = newNumber
+                        
+                        @view
+                        @external
+                        def getNumber() -> uint256:
+                            return self.number
+                  settings:
+                    optimize: "gas"
+                    evmVersion: "cancun"
+                compilerVersion: "0.3.10+commit.91361694"
+                contractIdentifier: "MyVyperContract.vy:MyVyperContract"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
     MetadataVerificationRequest:
       description: ''
       content:
