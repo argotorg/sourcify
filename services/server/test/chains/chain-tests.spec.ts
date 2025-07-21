@@ -1941,6 +1941,19 @@ describe("Test Supported Chains", function () {
       const files = {};
       readFilesRecursively(fullDir, files);
 
+      // Check if the chain is supported using the /chains endpoint data
+      const isChainSupported = supportedChains.some(
+        (chain) => chain.chainId.toString() === chainId,
+      );
+
+      if (!isChainSupported) {
+        console.log(
+          `Skipping test for unsupported chain: ${chainName} (${chainId})`,
+        );
+        this.skip();
+        return;
+      }
+
       chai
         .request(serverFixture.server.app)
         .post("/")
@@ -1950,22 +1963,6 @@ describe("Test Supported Chains", function () {
           files: files,
         })
         .end(async (err, res) => {
-          // Check if the chain is not supported
-          if (
-            res &&
-            res.body &&
-            res.body.error &&
-            res.body.error.includes(
-              `Chain ${chainId} not supported for verification!`,
-            )
-          ) {
-            console.log(
-              `Skipping test for unsupported chain: ${chainName} (${chainId})`,
-            );
-            this.skip();
-            return;
-          }
-
           await assertVerification(
             null,
             err,
