@@ -215,7 +215,7 @@ export const fetchFromEtherscan = async (
 
   url = url + apiKey.slice(0, 6) + "...";
   let response;
-  logger.debug("Fetching from Etherscan", {
+  logger.info("Fetching from Etherscan", {
     url,
     chainId: sourcifyChain.chainId,
     address,
