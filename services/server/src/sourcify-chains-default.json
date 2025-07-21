@@ -2331,5 +2331,20 @@
         "url": "https://scout.peaq.xyz/"
       }
     }
+  },
+  "31612": {
+    "sourcifyName": "Mezo",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.mezo.org/"
+      }
+    },
+    "rpc": [
+      "https://jsonrpc-mezo.boar.network",
+      "https://mainnet.mezo.public.validationcloud.io",
+      "https://rpc-internal.mezo.org",
+      "https://rpc_evm-mezo.imperator.co"
+    ]
   }
 }

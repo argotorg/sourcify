@@ -149,6 +149,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Mezo Mainnet
+  verifyContract(
+    "0xc9Cbb09AA24abDb47574828D0Bb6bB218B550f39",
+    "31612",
+    "Mezo",
+    "shared/",
+  );
+
   verifyContract(
     "0x247a8A599c99336dF37af1975661b32f7A26a88E",
     "560048",
