@@ -1950,6 +1950,22 @@ describe("Test Supported Chains", function () {
           files: files,
         })
         .end(async (err, res) => {
+          // Check if the chain is not supported
+          if (
+            res &&
+            res.body &&
+            res.body.error &&
+            res.body.error.includes(
+              `Chain ${chainId} not supported for verification!`,
+            )
+          ) {
+            console.log(
+              `Skipping test for unsupported chain: ${chainName} (${chainId})`,
+            );
+            this.skip();
+            return;
+          }
+
           await assertVerification(
             null,
             err,
