@@ -39,7 +39,7 @@
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.57.1",
-    "eslint-config-prettier": "9.1.0",
+    "eslint-config-prettier": "9.1.2",
     "lerna": "8.2.3",
     "prettier": "3.6.2",
     "ts-node": "10.9.2",
