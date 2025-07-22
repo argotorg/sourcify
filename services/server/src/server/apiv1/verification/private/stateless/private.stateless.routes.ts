@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   verifyDeprecated,
-  upgradeContract,
+  replaceContract,
 } from "./private.stateless.handlers";
 import { checkPerfectMatch } from "../../../controllers.common";
 
@@ -21,17 +21,17 @@ router.route("/private/verify-deprecated").post(
   verifyDeprecated,
 );
 
-router.route("/private/upgrade-contract").post(
-  // Middleware to check if upgradeContract is enabled
+router.route("/private/replace-contract").post(
+  // Middleware to check if replaceContract is enabled
   (req, res, next) => {
-    const upgradeContractEnabled = req.app.get("upgradeContract") as boolean;
-    if (upgradeContractEnabled) {
+    const replaceContractEnabled = req.app.get("replaceContract") as boolean;
+    if (replaceContractEnabled) {
       next();
     } else {
       res.status(400).send("Not found");
     }
   },
-  upgradeContract,
+  replaceContract,
 );
 
 export default router;

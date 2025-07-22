@@ -133,11 +133,13 @@ paths:
                 Deployed and recompiled mismatch:
                   value:
                     error: "The deployed and recompiled bytecode don't match."
-  /private/upgrade-contract:
+  /private/replace-contract:
     post:
       deprecated: false
       description: |
-        Upgrades an existing contract verification by re-verifying it with the provided data.
+        Replaces an existing contract in the database, addressing issues with misaligned or incorrect contract data.
+        This endpoint provides a generic, maintainable solution and optimizes performance by optionally skipping 
+        recompilation and on-chain RPC calls, using data already stored in the database.
       tags:
         - Private
       security:
@@ -149,33 +151,87 @@ paths:
             schema:
               type: object
               required:
-                - sourcifyMatchId
+                - chainId
+                - address
+                - transactionHash
+                - forceCompilation
+                - forceRPCRequest
               properties:
-                sourcifyMatchId:
-                  type: number
-                  description: The ID of the Sourcify match to upgrade.
-                  example: 1
+                chainId:
+                  oneOf:
+                    - type: string
+                      format: supported-chainId
+                    - type: number
+                  description: The chain ID of the contract
+                  example: "1"
+                address:
+                  type: string
+                  format: address
+                  description: The contract address
+                  example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                transactionHash:
+                  type: string
+                  description: The creation transaction hash
+                  example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                forceCompilation:
+                  type: boolean
+                  description: If true, recompiles the contract using the provided jsonInput, compilerVersion and compilationTarget
+                  example: false
+                forceRPCRequest:
+                  type: boolean
+                  description: If true, fetches the contract's information from the RPC
+                  example: false
+                jsonInput:
+                  type: object
+                  description: Required if forceCompilation is true. The JSON input to use for recompilation
+                compilerVersion:
+                  type: string
+                  description: Required if forceCompilation is true. The compiler version to use for recompilation
+                  example: "0.8.19+commit.7dd6d404"
+                compilationTarget:
+                  type: string
+                  description: Required if forceCompilation is true. The compilation target to use for recompilation
+                  example: "project:/contracts/Storage.sol:Storage"
       responses:
         "200":
-          description: The contract verification has been successfully upgraded.
+          description: The contract has been successfully replaced.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  result:
+                  replaced:
+                    type: boolean
+                  address:
+                    type: string
+                  chainId:
+                    oneOf:
+                      - type: string
+                        format: supported-chainId
+                      - type: number
+                  transactionHash:
+                    type: string
+                  newStatus:
                     type: object
                     properties:
-                      message:
+                      creationMatch:
                         type: string
-                      verifiedContractId:
+                      runtimeMatch:
                         type: string
+                  rpcFailedFetchingCreationBytecode:
+                    type: boolean
+                    description: Indicates if the RPC call to fetch the creation bytecode failed
               examples:
                 Success:
                   value:
-                    result:
-                      message: "Contract upgrade successful"
-                      verifiedContractId: 1
+                    replaced: true
+                    address: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                    chainId: "1"
+                    transactionHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                    newStatus:
+                      creationMatch: "perfect"
+                      runtimeMatch: "perfect"
+                    rpcFailedFetchingCreationBytecode: false
         "400":
           description: Bad Request
           content:
@@ -186,22 +242,12 @@ paths:
                   error:
                     type: string
               examples:
-                Missing ID:
+                Missing Parameters:
                   value:
-                    error: "sourcifyMatchId is required"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-              examples:
-                Contract Not Found:
+                    error: "jsonInput, compilerVersion and compilationTarget are required when forceCompilation is true"
+                Verification Failed:
                   value:
-                    error: "Verified contract not found"
+                    error: "The contract is not verified or the verification is not perfect"
         "500":
           description: Internal Server Error
           content:
@@ -215,6 +261,6 @@ paths:
                 Database Error:
                   value:
                     error: "Database service not available"
-                Verification Error:
+                Internal Error:
                   value:
-                    error: "Error during verification process"
+                    error: "Error during replacement process"

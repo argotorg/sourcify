@@ -56,7 +56,7 @@ export interface ServerOptions {
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
   verifyDeprecated: boolean;
-  upgradeContract: boolean;
+  replaceContract: boolean;
   sessionOptions: SessionOptions;
   sourcifyPrivateToken?: string;
   libSourcifyConfig?: LibSourcifyConfig;
@@ -132,7 +132,7 @@ export class Server {
     this.app.set("solc", options.solc);
     this.app.set("vyper", options.vyper);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
-    this.app.set("upgradeContract", options.upgradeContract);
+    this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);
 
     // Session API endpoints require non "*" origins because of the session cookies

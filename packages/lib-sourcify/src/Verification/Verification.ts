@@ -8,10 +8,9 @@ import {
   decode as decodeBytecode,
   SolidityDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
-import { SolidityCompilation } from '../Compilation/SolidityCompilation';
-import { VyperCompilation } from '../Compilation/VyperCompilation';
 import {
   CompiledContractCborAuxdata,
+  ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
 
@@ -117,14 +116,14 @@ export class Verification {
     // We cannot do an early check for creation bytecode length mismatch because
     // creation bytecode length can differ due to constructor arguments being appended at the end
     if (
-      (this.compilation instanceof SolidityCompilation &&
+      (this.compilation.language === 'Solidity' &&
         compiledRuntimeBytecode.length !==
           this.onchainRuntimeBytecode.length) ||
-      (this.compilation instanceof VyperCompilation &&
+      (this.compilation.language === 'Vyper' &&
         compiledRuntimeBytecode.length > this.onchainRuntimeBytecode.length)
     ) {
       // Before throwing the bytecode length mismatch error, check for Solidity extra file input bug
-      if (this.compilation instanceof SolidityCompilation) {
+      if (this.compilation.language === 'Solidity') {
         const solidityBugType = this.handleSolidityExtraFileInputBug();
         if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
           throw new VerificationError({
@@ -162,7 +161,7 @@ export class Verification {
     }
 
     if (
-      this.compilation instanceof SolidityCompilation &&
+      this.compilation.language === 'Solidity' &&
       this.runtimeMatch === null
     ) {
       // Handle Solidity extra file input bug
@@ -254,7 +253,7 @@ export class Verification {
         AuxdataStyle.SOLIDITY,
       );
       if (
-        this.compilation instanceof SolidityCompilation &&
+        this.compilation.language === 'Solidity' &&
         onchainAuxdata !== recompiledAuxdata
       ) {
         const solidityMetadataContract = new SolidityMetadataContract(
@@ -270,7 +269,7 @@ export class Verification {
           )
         ) {
           this.compilation = await solidityMetadataContract.createCompilation(
-            this.compilation.compiler,
+            this.compilation.compiler as ISolidityCompiler,
           );
           await this.compilation.compile(forceEmscripten);
         }

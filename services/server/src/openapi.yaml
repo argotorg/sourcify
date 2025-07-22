@@ -41,8 +41,8 @@ tags:
 paths:
   /private/verify-deprecated:
     $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
-  /private/upgrade-contract:
-    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1upgrade-contract"
+  /private/replace-contract:
+    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1replace-contract"
   /v2/verify/{chainId}/{address}:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1{chainId}~1{address}"
   /v2/verify/metadata/{chainId}/{address}:
