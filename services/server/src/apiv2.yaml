@@ -8,7 +8,9 @@ paths:
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) or [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description).
 
-        There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these. 
+        There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
+        
+        **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated. 
       operationId: verify
       parameters:
         - $ref: '#/components/parameters/chainId'
@@ -147,6 +149,71 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerErrorResponse'
       security: []
+  '/v2/contract/all-chains/{address}':
+    get:
+      tags:
+        - Contract Lookup
+      summary: Get verified contract at an address on all chains
+      description: |-
+        Returns all verified deployments at an address on all Sourcify chains (including deprecated ones).
+
+        Success returns an array of VerifiedContractMinimal objects under `results` field.
+
+        If not verified on any chain, the `results` array will be empty.
+      operationId: get-contract-all-chains
+      parameters:
+        - $ref: '#/components/parameters/address'
+      responses:
+        '200':
+          description: Returns all verified deployments at an address on all Sourcify chains
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      # Not using ref:ListVerifiedContracts because its example has different addresses in results. Here we want to have the same address in results. The definitions are the same.
+                      $ref: '#/components/schemas/VerifiedContractMinimal'
+              examples:
+                Example 1:
+                  value:
+                    results:
+                      - match: exact_match
+                        creationMatch: match
+                        runtimeMatch: exact_match
+                        chainId: '1'
+                        address: '0xDFEBAd708F803af22e81044aD228Ff77C83C935c'
+                        verifiedAt: '2024-07-24T12:00:00Z'
+                        matchId: '421'
+                      - match: match
+                        creationMatch: match
+                        runtimeMatch: match
+                        chainId: '11155111'
+                        address: '0xDFEBAd708F803af22e81044aD228Ff77C83C935c'
+                        verifiedAt: '2025-02-10T14:45:00Z'
+                        matchId: '5531'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          description: No verified contract found on any chain for the provided address
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items: {}
+              examples:
+                Example 1:
+                  value:
+                    results: []                            
+        '429':
+          $ref: '#/components/responses/TooManyRequestsResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
   '/v2/contracts/{chainId}':
     get:
       tags:
@@ -243,7 +310,7 @@ components:
                 description: |
                   Full [standard JSON object](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) to pass to the compiler. 
 
-                  Must include the language of the sources. Currently supports Solidity and Vyper. 
+                  Must include the `language` field inside the stdJsonInput object. Currently supports Solidity and Vyper. 
               compilerVersion:
                 $ref: '#/components/schemas/SolidityCompilerVersion'
               contractIdentifier:
@@ -257,6 +324,64 @@ components:
               - stdJsonInput
               - compilerVersion
               - contractIdentifier
+          examples:
+            Solidity Contract:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+
+                            function getNumber() public view returns (uint256) {
+                                return number;
+                            }
+                        }
+                  settings:
+                    optimizer:
+                      enabled: false
+                      runs: 200
+                compilerVersion: "0.8.7+commit.e28d00a7"
+                contractIdentifier: "contracts/Storage.sol:Storage"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
+            Vyper Contract:
+              value:
+                stdJsonInput:
+                  language: Vyper
+                  sources:
+                    "MyVyperContract.vy":
+                      content: |
+                        # @version ^0.3.10
+                        
+                        number: public(uint256)
+                        
+                        @external
+                        def __init__():
+                            self.number = 0
+                        
+                        @external
+                        def setNumber(newNumber: uint256):
+                            self.number = newNumber
+                        
+                        @view
+                        @external
+                        def getNumber() -> uint256:
+                            return self.number
+                  settings:
+                    optimize: "gas"
+                    evmVersion: "cancun"
+                compilerVersion: "0.3.10+commit.91361694"
+                contractIdentifier: "MyVyperContract.vy:MyVyperContract"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
     MetadataVerificationRequest:
       description: ''
       content:
@@ -884,7 +1009,10 @@ components:
                 message: You are sending too many requests
                 errorId: 1ac6b91a-0605-4459-93dc-18f210a70192
     ListVerifiedContracts:
-      description: ''
+      description: |-
+        Returns an array of VerifiedContractMinimal objects under `results` field.
+
+        If not verified on any chain, the `results` array will be empty.
       content:
         application/json:
           schema:
@@ -904,12 +1032,14 @@ components:
                     chainId: '11155111'
                     address: '0xDFEBAd708F803af22e81044aD228Ff77C83C935c'
                     verifiedAt: '2024-07-24T12:00:00Z'
+                    matchId: '421'
                   - match: match
                     creationMatch: match
                     runtimeMatch: match
                     chainId: '11155111'
                     address: '0x2738d13E81e30bC615766A0410e7cF199FD59A83'
                     verifiedAt: '2024-07-24T12:00:00Z'
+                    matchId: '5531'
     InternalServerErrorResponse:
       description: ''
       content:

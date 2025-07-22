@@ -201,13 +201,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Check Tag Prefix
-          command: |
-            if [[ "$CIRCLE_TAG" != "@ethereum-sourcify"* ]]; then
-              echo "Skipping npm-publish as tag does not start with @ethereum-sourcify"
-              circleci-agent step halt
-            fi
-      - run:
           name: install dependencies
           command: npm install
       - run:

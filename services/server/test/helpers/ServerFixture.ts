@@ -15,6 +15,7 @@ import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
+import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 
 export type ServerFixtureOptions = {
   port: number;
@@ -22,6 +23,7 @@ export type ServerFixtureOptions = {
   writeOrWarn: StorageIdentifiers[];
   writeOrErr: StorageIdentifiers[];
   skipDatabaseReset: boolean;
+  chains: SourcifyChainMap;
 };
 
 export class ServerFixture {
@@ -89,7 +91,7 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: sourcifyChainsMap,
+        chains: fixtureOptions_?.chains || sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         verifyDeprecated: true,

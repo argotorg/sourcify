@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.2.1 - 2025-07-09
+
+- Move CORS settings as the first middleware (#2204)
+- Verify via SolidityCompilation directly inside /verify/solc-json endpoint (#2216)
+- update dependencies
+
+
+## sourcify-server@3.2.0 - 2025-06-18
+
+- Add new endpoint /v2/contract/all-chains/{address} to get all verified deployments of a contract on all chains #2183
+- Handle invalid json body error, throw if unable to fetch the compiler #2179 
+- Throw an error on conflict when inserting a verified_contract #2176 
+- Add contract creation transaction fetching via VeChain Stats #2182 
+- Update README docs and quick start docker-compose files for easier setup
+- New chains:
+  - Peaq Mainnet (3338)
+
 ## sourcify-server@3.1.3 - 2025-05-20
 
 - Use Etherscan API v2 (#2158) 

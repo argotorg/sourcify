@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  version: 2.0.0
+  version: 2.1.0
   title: Sourcify APIv2
   description: |-
     Welcome to the Sourcify's APIv2.
@@ -53,6 +53,8 @@ paths:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1{verificationId}"
   /v2/contract/{chainId}/{address}:
     $ref: "apiv2.yaml#/paths/~1v2~1contract~1{chainId}~1{address}"
+  /v2/contract/all-chains/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1contract~1all-chains~1{address}"
   /v2/contracts/{chainId}:
     $ref: "apiv2.yaml#/paths/~1v2~1contracts~1{chainId}"
   /verify:

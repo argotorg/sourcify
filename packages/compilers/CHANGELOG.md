@@ -1,5 +1,13 @@
 
 
+## @ethereum-sourcify/compilers@1.0.6 - 2025-07-09
+
+- update dependencies
+
+## @ethereum-sourcify/compilers@1.0.5 - 2025-06-18
+
+- Throw when compiler binary couldn't be found/downloaded 
+
 ## @ethereum-sourcify/compilers@1.0.4 - 2025-05-20
 
 - update dependencies

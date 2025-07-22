@@ -135,6 +135,28 @@ export class Server {
     this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);
 
+    // Session API endpoints require non "*" origins because of the session cookies
+    const sessionPaths = [
+      "/session", // all paths /session/verify /session/input-files etc.
+      // legacy endpoint naming below
+      "/input-files",
+      "/restart-session",
+      "/verify-validated",
+    ];
+    this.app.use((req, res, next) => {
+      // startsWith to match /session*
+      if (sessionPaths.some((substr) => req.path.startsWith(substr))) {
+        return cors({
+          origin: options.corsAllowedOrigins,
+          credentials: true,
+        })(req, res, next);
+      }
+      // * for all non-session paths
+      return cors({
+        origin: "*",
+      })(req, res, next);
+    });
+
     this.app.use(
       bodyParser.urlencoded({
         limit: options.maxFileSize,
@@ -228,28 +250,6 @@ export class Server {
         },
       }),
     );
-
-    // Session API endpoints require non "*" origins because of the session cookies
-    const sessionPaths = [
-      "/session", // all paths /session/verify /session/input-files etc.
-      // legacy endpoint naming below
-      "/input-files",
-      "/restart-session",
-      "/verify-validated",
-    ];
-    this.app.use((req, res, next) => {
-      // startsWith to match /session*
-      if (sessionPaths.some((substr) => req.path.startsWith(substr))) {
-        return cors({
-          origin: options.corsAllowedOrigins,
-          credentials: true,
-        })(req, res, next);
-      }
-      // * for all non-session paths
-      return cors({
-        origin: "*",
-      })(req, res, next);
-    });
 
     // Need this for secure cookies to work behind a proxy. See https://expressjs.com/en/guide/behind-proxies.html
     // true means the leftmost IP in the X-Forwarded-* header is used

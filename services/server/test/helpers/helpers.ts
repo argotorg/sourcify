@@ -10,7 +10,7 @@ import {
   Contract,
 } from "ethers";
 import { assertVerificationSession, assertVerification } from "./assertions";
-import chai from "chai";
+import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
 import path from "path";
 import { promises as fs, readFileSync } from "fs";
@@ -94,7 +94,7 @@ export async function verifyContract(
   creatorTxHash?: string,
   partial: boolean = false,
 ) {
-  return await chai
+  const res = await chai
     .request(serverFixture.server.app)
     .post("/")
     .field("address", contractAddress || chainFixture.defaultContractAddress)
@@ -116,6 +116,17 @@ export async function verifyContract(
         ? chainFixture.defaultContractModifiedSource
         : chainFixture.defaultContractSource,
     );
+  expect(
+    res.status,
+    `Verification failed for ${contractAddress} on chain ${chainFixture.chainId}`,
+  ).to.equal(200);
+  expect(res.body.result.length).to.equal(1);
+  expect(res.body.result[0].status).to.equal(partial ? "partial" : "perfect");
+  expect(res.body.result[0].chainId).to.equal(chainFixture.chainId);
+  if (contractAddress) {
+    expect(res.body.result[0].address).to.equal(contractAddress);
+  }
+  return res;
 }
 
 export async function deployAndVerifyContract(

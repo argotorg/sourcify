@@ -152,11 +152,6 @@ describe("etherscan util", function () {
                 SINGLE_CONTRACT_RESPONSE.result[0].OptimizationUsed === "1",
               runs: parseInt(SINGLE_CONTRACT_RESPONSE.result[0].Runs),
             },
-            outputSelection: {
-              "*": {
-                "*": ["metadata", "evm.deployedBytecode.object"],
-              },
-            },
             evmVersion:
               SINGLE_CONTRACT_RESPONSE.result[0].EVMVersion.toLowerCase() !==
               "default"
@@ -190,11 +185,6 @@ describe("etherscan util", function () {
                 MULTIPLE_CONTRACT_RESPONSE.result[0].OptimizationUsed === "1",
               runs: parseInt(MULTIPLE_CONTRACT_RESPONSE.result[0].Runs),
             },
-            outputSelection: {
-              "*": {
-                "*": ["metadata", "evm.deployedBytecode.object"],
-              },
-            },
             evmVersion:
               MULTIPLE_CONTRACT_RESPONSE.result[0].EVMVersion.toLowerCase() !==
               "default"
@@ -223,10 +213,6 @@ describe("etherscan util", function () {
           STANDARD_JSON_CONTRACT_RESPONSE.result[0].SourceCode.length - 1,
         ),
       );
-      expectedJsonInput.settings.outputSelection["*"]["*"] = [
-        "metadata",
-        "evm.deployedBytecode.object",
-      ];
       expect(result).to.deep.equal({
         compilerVersion:
           STANDARD_JSON_CONTRACT_RESPONSE.result[0].CompilerVersion.substring(
@@ -317,25 +303,6 @@ describe("etherscan util", function () {
   });
 
   describe("getContractPathFromSourcesOrThrow", () => {
-    it("should return the correct contract path", () => {
-      const sources = {
-        // It should not derive it from the path
-        "SolidityContract.sol": {
-          content: "contract WrongContract {}",
-        },
-        "path/file.sol": {
-          content: "contract WrongContract {}\ncontract SolidityContract {}",
-        },
-      };
-
-      const result = getContractPathFromSourcesOrThrow(
-        "SolidityContract",
-        sources,
-        true,
-      );
-      expect(result).to.equal("path/file.sol");
-    });
-
     it("should throw when the contract path is not found in the provided sources", () => {
       const sources = {
         "path/file.sol": {

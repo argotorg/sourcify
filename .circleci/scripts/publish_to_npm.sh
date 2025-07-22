@@ -48,10 +48,10 @@ packages=(
 # Publish packages
 for package in "${packages[@]}"; do
   IFS=':' read -r local_path npm_package <<<"$package"
-  if [[ $CIRCLE_TAG == ${npm_package}* ]]; then # Only publish if tag starts with package name. Otherwise it will publish all at once.
+  if [[ $CIRCLE_TAG == *"${npm_package}@"* ]]; then # Only publish if tag contains exact package name followed by @.
     echo "$CIRCLE_TAG matches $npm_package, publishing $npm_package"
   else
-    echo "Skipping $npm_package as CIRCLE_TAG doesn't start with $npm_package"
+    echo "Skipping $npm_package as CIRCLE_TAG $CIRCLE_TAG doesn't start with $npm_package"
     continue
   fi
 

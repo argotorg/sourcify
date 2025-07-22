@@ -2,13 +2,15 @@ import { Response, Request } from "express";
 import { extractFiles } from "../../verification.common";
 import {
   ISolidityCompiler,
-  SolidityMetadataContract,
-  createMetadataContractsFromFiles,
+  SolidityCompilation,
+  SolidityJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
+import logger from "../../../../../common/logger";
+import { getContractPathFromSources } from "../../../../services/utils/parsing-util";
 
 export async function verifySolcJsonEndpoint(req: Request, res: Response) {
   const services = req.app.get("services") as Services;
@@ -22,7 +24,7 @@ export async function verifySolcJsonEndpoint(req: Request, res: Response) {
       "Only one Solidity JSON Input file at a time is allowed",
     );
 
-  let solcJson;
+  let solcJson: SolidityJsonInput;
   try {
     solcJson = JSON.parse(inputFiles[0].buffer.toString());
   } catch (error: any) {
@@ -34,40 +36,37 @@ export async function verifySolcJsonEndpoint(req: Request, res: Response) {
   const contractName = req.body?.contractName;
   const chain = req.body?.chain;
   const address = req.body?.address;
+  const creatorTxHash = req.body?.creatorTxHash;
 
-  // Get metadata and sources from the Solidity JSON input
-  const metadataAndSourcesPathBuffers =
-    await services.verification.getAllMetadataAndSourcesFromSolcJson(
-      solc,
-      solcJson,
-      compilerVersion,
-    );
+  logger.debug("Request to /verify/solc-json", {
+    chainId: chain,
+    address: address,
+    contractName: contractName,
+    compilerVersion: compilerVersion,
+    creatorTxHash: creatorTxHash,
+  });
 
-  // Create metadata contracts from the files
-  const metadataContracts = await createMetadataContractsFromFiles(
-    metadataAndSourcesPathBuffers,
+  const contractPath = getContractPathFromSources(
+    contractName,
+    solcJson.sources,
   );
-
-  // Find the contract to verify
-  const contractToVerify = metadataContracts.find(
-    (c: SolidityMetadataContract) => c.name === contractName,
-  );
-
-  if (!contractToVerify) {
+  if (!contractPath) {
     throw new BadRequestError(
       `Couldn't find contract ${contractName} in the provided Solidity JSON Input file.`,
     );
   }
 
-  // Create compilation from the metadata contract
-  const compilation = await contractToVerify.createCompilation(solc);
+  const compilation = new SolidityCompilation(solc, compilerVersion, solcJson, {
+    name: contractName,
+    path: contractPath,
+  });
 
   // Verify the contract using the new verification flow
   const verification = await services.verification.verifyFromCompilation(
     compilation,
     chainRepository.sourcifyChainMap[chain],
     address,
-    req.body?.creatorTxHash,
+    creatorTxHash,
   );
 
   // Store the verification result

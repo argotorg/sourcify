@@ -207,6 +207,15 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
     onchain_runtime_code: string;
   };
 
+export type GetSourcifyMatchesAllChainsResult = Pick<
+  Tables.SourcifyMatch,
+  "id" | "creation_match" | "runtime_match"
+> &
+  Pick<Tables.ContractDeployment, "chain_id"> & {
+    address: string;
+    verified_at: string;
+  };
+
 export type GetSourcifyMatchesByChainResult = Pick<
   Tables.SourcifyMatch,
   "id" | "creation_match" | "runtime_match"
@@ -237,7 +246,10 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       | "runtime_transformations"
       | "runtime_values"
     > &
-    Pick<Tables.ContractDeployment, "block_number" | "transaction_index"> & {
+    Pick<
+      Tables.ContractDeployment,
+      "block_number" | "transaction_index" | "chain_id"
+    > & {
       verified_at: string;
       address: string;
       onchain_creation_code: string;
@@ -301,6 +313,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
   creation_match: "sourcify_matches.creation_match",
   runtime_match: "sourcify_matches.runtime_match",
+  chain_id: "contract_deployments.chain_id",
   verified_at:
     'to_char(sourcify_matches.created_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as verified_at',
   address:

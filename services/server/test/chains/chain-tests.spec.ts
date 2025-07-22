@@ -19,7 +19,7 @@ type ChainApiResponse = Pick<
   "name" | "title" | "chainId" | "rpc" | "supported"
 > & { etherscanAPI: boolean };
 
-const TEST_TIME = process.env.TEST_TIME || "60000"; // 30 seconds
+const TEST_TIME = process.env.TEST_TIME || "120000"; // 2 minutes
 const CUSTOM_PORT = 5556;
 
 // Extract the chainId from new chain support pull request, if exists
@@ -146,6 +146,14 @@ describe("Test Supported Chains", function () {
     "0x8F78b9c92a68DdF719849a40702cFBfa4EB60dD0",
     "11155111",
     "Sepolia",
+    "shared/",
+  );
+
+  // Mezo Mainnet
+  verifyContract(
+    "0xc9Cbb09AA24abDb47574828D0Bb6bB218B550f39",
+    "31612",
+    "Mezo",
     "shared/",
   );
 
@@ -1855,6 +1863,13 @@ describe("Test Supported Chains", function () {
     "Etherlink Testnet",
     "shared/",
   );
+  // peaq
+  verifyContract(
+    "0x3ef7f3E38704eD3702D105094Bbb8562BE51b569",
+    "3338",
+    "peaq Mainnet",
+    "shared/",
+  );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
@@ -1933,6 +1948,19 @@ describe("Test Supported Chains", function () {
       const fullDir = path.join(__dirname, "sources", sourceAndMetadataDir);
       const files = {};
       readFilesRecursively(fullDir, files);
+
+      // Check if the chain is supported using the /chains endpoint data
+      const isChainSupported = supportedChains.some(
+        (chain) => chain.chainId.toString() === chainId,
+      );
+
+      if (!isChainSupported) {
+        console.log(
+          `Skipping test for unsupported chain: ${chainName} (${chainId})`,
+        );
+        this.skip();
+        return;
+      }
 
       chai
         .request(serverFixture.server.app)

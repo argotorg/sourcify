@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.1.5 - 2025-07-09
+
+- update dependencies
+
+## @ethereum-sourcify/lib-sourcify@2.1.4 - 2025-06-18
+
+- Add a new CompilationError code `compiler_error` and include the full compiler error output in the thrown CompilationError
+
 ## @ethereum-sourcify/lib-sourcify@2.1.3 - 2025-05-20
 
 - Remove creatorTxHash's undefined assignment when creation match fails (#2154)

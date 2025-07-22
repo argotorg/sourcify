@@ -104,6 +104,9 @@ export interface RWStorageService extends WStorageService {
     fields?: Field[],
     omit?: Field[],
   ): Promise<VerifiedContract>;
+  getContractsAllChains?(
+    address: string,
+  ): Promise<{ results: VerifiedContractMinimal[] }>;
   getVerificationJob?(verificationId: string): Promise<VerificationJob | null>;
   getVerificationJobsByChainAndAddress?(
     chainId: string,
@@ -348,7 +351,11 @@ export class StorageService {
         service.storeVerification(verification, jobData).catch((e) => {
           logger.error(`Error storing to ${service.IDENTIFIER}`, {
             error: e,
-            verification,
+            contractAddress: verification.address,
+            chainId: verification.chainId,
+            runtimeMatch: verification.status.runtimeMatch,
+            creationMatch: verification.status.creationMatch,
+            jobData,
           });
           throw e;
         }),
@@ -360,7 +367,11 @@ export class StorageService {
         service.storeVerification(verification, jobData).catch((e) => {
           logger.warn(`Error storing to ${service.IDENTIFIER}`, {
             error: e,
-            verification,
+            contractAddress: verification.address,
+            chainId: verification.chainId,
+            runtimeMatch: verification.status.runtimeMatch,
+            creationMatch: verification.status.creationMatch,
+            jobData,
           });
         }),
       );

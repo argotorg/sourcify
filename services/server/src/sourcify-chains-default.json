@@ -175,7 +175,7 @@
   },
   "50": {
     "sourcifyName": "XDC Network",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blocksScanApi": {
         "url": "https://xdcscan.io/"
@@ -920,7 +920,7 @@
   },
   "71401": {
     "sourcifyName": "Godwoken testnet v1.1",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutScrape": {
         "url": "https://gw-testnet-explorer.nervosdao.community/"
@@ -994,7 +994,7 @@
   },
   "7701": {
     "sourcifyName": "Canto Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://testnet.tuber.build/"
@@ -1395,15 +1395,15 @@
   },
   "33101": {
     "sourcifyName": "Zilliqa EVM Testnet",
-    "supported": true
+    "supported": false
   },
   "32770": {
     "sourcifyName": "Zilliqa 2 EVM proto-mainnet",
-    "supported": true
+    "supported": false
   },
   "33103": {
     "sourcifyName": "Zilliqa 2 EVM proto-testnet",
-    "supported": true
+    "supported": false
   },
   "2221": {
     "sourcifyName": "Kava EVM Testnet",
@@ -1539,7 +1539,7 @@
   },
   "10242": {
     "sourcifyName": "Arthera Mainnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://explorer.arthera.net/"
@@ -1865,7 +1865,7 @@
   },
   "2358": {
     "sourcifyName": "Kroma Sepolia",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://blockscout.sepolia.kroma.network/"
@@ -1903,7 +1903,7 @@
   },
   "13381": {
     "sourcifyName": "Phoenix Mainnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutScrape": {
         "url": "https://phoenixplorer.com/"
@@ -1921,13 +1921,12 @@
   },
   "1291": {
     "sourcifyName": "Swisstronik Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://explorer-evm.testnet.swisstronik.com/"
       }
-    },
-    "rpc": ["https://json-rpc.testnet.swisstronik.com"]
+    }
   },
   "80002": {
     "sourcifyName": "Polygon Amoy Testnet",
@@ -2228,7 +2227,7 @@
   },
   "48899": {
     "sourcifyName": "Zircuit Testnet",
-    "supported": true
+    "supported": false
   },
   "7171": {
     "sourcifyName": "Bitrock Mainnet",
@@ -2321,6 +2320,24 @@
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://testnet.explorer.etherlink.com"
+      }
+    }
+  },
+  "3338": {
+    "sourcifyName": "peaq Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scout.peaq.xyz/"
+      }
+    }
+  },
+  "31612": {
+    "sourcifyName": "Mezo",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.mezo.org/"
       }
     }
   }

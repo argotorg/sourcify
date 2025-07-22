@@ -12,6 +12,7 @@ import {
   STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
   Tables,
+  GetSourcifyMatchesAllChainsResult,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
@@ -213,6 +214,33 @@ ${
 }
         `,
       [chain, address],
+    );
+  }
+
+  /**
+   * Query for looking for all sourcify matches for a given address on all chains.
+   * This is used for the /v2/contract/allChains/{address} endpoint.
+   */
+  async getSourcifyMatchesAllChains(
+    address: Bytes,
+  ): Promise<QueryResult<GetSourcifyMatchesAllChainsResult>> {
+    const selectors = [
+      STORED_PROPERTIES_TO_SELECTORS["id"],
+      STORED_PROPERTIES_TO_SELECTORS["creation_match"],
+      STORED_PROPERTIES_TO_SELECTORS["runtime_match"],
+      STORED_PROPERTIES_TO_SELECTORS["address"],
+      STORED_PROPERTIES_TO_SELECTORS["chain_id"],
+      STORED_PROPERTIES_TO_SELECTORS["verified_at"],
+    ];
+    return await this.pool.query(
+      `SELECT 
+        ${selectors.join(", ")}
+      FROM ${this.schema}.contract_deployments
+      JOIN ${this.schema}.verified_contracts ON verified_contracts.deployment_id = contract_deployments.id
+      JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+      WHERE contract_deployments.address = $1
+      `,
+      [address],
     );
   }
 

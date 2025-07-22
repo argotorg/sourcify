@@ -42,6 +42,7 @@ const DEFAULT_CHAIN_ID = "31337";
 
 export type LocalChainFixtureOptions = {
   chainId?: string;
+  port?: number;
 };
 
 export class LocalChainFixture {
@@ -59,7 +60,8 @@ export class LocalChainFixture {
   defaultContractArtifact = storageContractArtifact;
   defaultContractJsonInput = storageJsonInput;
 
-  private _chainId?: string;
+  private _chainId: string;
+  private _port: number;
   private _localSigner?: JsonRpcSigner;
   private _defaultContractAddress?: string;
   private _defaultContractCreatorTx?: string;
@@ -114,6 +116,7 @@ export class LocalChainFixture {
    */
   constructor(options: LocalChainFixtureOptions = {}) {
     this._chainId = options.chainId ?? DEFAULT_CHAIN_ID;
+    this._port = options.port ?? HARDHAT_PORT;
 
     before(async () => {
       // Init IPFS mock with all the necessary pinned files
@@ -129,7 +132,7 @@ export class LocalChainFixture {
           });
       }
 
-      this.hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
+      this.hardhatNodeProcess = await startHardhatNetwork(this._port);
 
       const sourcifyChainHardhat = LOCAL_CHAINS[1];
       const ethersNetwork = new Network(
@@ -137,7 +140,7 @@ export class LocalChainFixture {
         sourcifyChainHardhat.chainId,
       );
       this._localSigner = await new JsonRpcProvider(
-        `http://localhost:${HARDHAT_PORT}`,
+        `http://localhost:${this._port}`,
         ethersNetwork,
         { staticNetwork: ethersNetwork },
       ).getSigner();
