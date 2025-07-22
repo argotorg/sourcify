@@ -9,7 +9,7 @@
     "migrate:reset": "db-migrate reset",
     "migrate:create": "db-migrate create ",
     "sourcify:database": "node scripts.mjs ",
-    "migrate:setup": "mkdir -p migrations-temp && ln -srf ./database-specs/migrations/* ./migrations-temp/ && ln -srf ./migrations/* ./migrations-temp/",
+    "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -srf ./database-specs/migrations/* ./migrations-temp/ && ln -srf ./migrations/* ./migrations-temp/",
     "migrate:run": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate migrate",
     "migrate:rollback": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate rollback",
     "migrate:new": "DBMATE_MIGRATIONS_DIR=./migrations dbmate new",
