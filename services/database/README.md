@@ -1,42 +1,97 @@
 # Sourcify Database
 
-`sourcify-database` contains the database migrations for the PostgreSQL using `db-migrate` to update its schema.
+`sourcify-database` contains the database migrations for the PostgreSQL using [dbmate](https://github.com/amacneil/dbmate) to update its schema.
 
-Sourcify's database is an extension of the [Verifier Alliance](https://verifieralliance.org) database with some modifications. The modifications are specified in the [20231109160023-sourcify.js](./migrations/20231109160023-sourcify.js) migration. In short, Sourcify allows contract verification without the creation bytecode and creation information such as the creation transaction hash. In addition, a table `sourcify_matches` is created to store the match type (full vs. partial) and the contract metadata in the database.
+Sourcify's database is an extension of the [Verifier Alliance](https://verifieralliance.org) database with some modifications. The initial modifications are specified in the [20250722133557_sourcify.sql](./migrations/20250722133557_sourcify.sql) migration. In short, Sourcify allows contract verification without the creation bytecode and creation information such as the creation transaction hash. In addition, a table `sourcify_matches` is created to store the match type (full vs. partial) and the contract metadata in the database.
 
 The migrations can be run to set up the Sourcify database.
+A complete dump of the Sourcify database schema can be found in `./sourcify-database.sql`.
 
 ## Running the database
 
 ### Run with Docker
 
 For convenience, you can run the Postgres container in `docker-compose.yml` with
+
 ```bash
 docker-compose up
 ```
 
 ## Database migrations
 
+The Sourcify database migrations consist of all migrations of the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs), and any Sourcify modifications added in this repository inside `./migrations`.
+The migrations should be used to update the live Sourcify production and staging databases, or any local testing database instance.
+
+Schema changes should be made depending on the type of change:
+If they are a Sourcify extension, they should be made inside this repo.
+If they concern the Verifier Alliance schema, changes should be made in the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs) repository and then be pulled into this repository by updating the git submodule.
+
+Any new migration should be capable of updating the live Sourcify staging and production databases.
+
 ### Prerequisites
 
-Please initialize the [Verifier Alliance database-specs](https://github.com/verifier-alliance/database-specs) submodule before moving on with the migrations:
+Please initialize the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs) submodule before moving on with the migrations:
 
-```
+```bash
 git submodule update --init
+```
+
+dbmate is used to manage the database migrations.
+A local installation of dbmate comes with `npm i`.
+We will use npm scripts here for running dbmate in order to automatically include the Verifier Alliance migrations when necessary.
+
+As a prerequisite for using dbmate, you should have a `.env` file configured with the database connection details.
+Copy the `.env.template` file to `.env` and replace the database connection string in `DATABASE_URL`.
+Please make sure to have the correct database configured before running any migration commands.
+
+### Creating the database
+
+If the database name configured in `DATABASE_URL` is not set up yet, you can run:
+
+```bash
+npm run migrate:create-db
+```
+
+If necessary, you can drop the database later with `npm run migrate:drop-db`.
+
+### See the status of the migrations
+
+You can check which migrations have been applied to the database configured in `.env` by running:
+
+```bash
+npm run migrate:status
 ```
 
 ### Running the migrations
 
-- Copy paste `.env.template` in `.env` and set the variables.
-- Run `npm run migrate:up` to update the database to the latest version. This will run the `dev` config in [database.json](./database.json) with `localhost`. To run the migrations in production with `POSTGRES_HOST` use `npm run migrate:up -- --env production`
+For running any pending migrations, you can execute:
 
-### Reset the database
+```bash
+npm run migrate:run
+```
 
-- Run `npm run migrate:reset` to reverse all the executed migrations
+### Roll back migrations
 
-### Creating a change to the schema with migrations
+To reverse the most recently executed migration (one per call), run:
 
-- Run `npm run migrate:create` to create a new database migration, a new file under `migrations/` will appear, use that file to alter the database.
+```bash
+npm run migrate:rollback
+```
+
+### Adding a new migration
+
+The process for making schema changes is generally the same as for the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs).
+To have the full schema dumped into `sourcify-database.sql`, we should also run any new migration against a fresh database at first.
+For using a fresh database, simply configure an unused database name in the `DATABASE_URL` environment variable.
+
+Please follow these steps:
+
+1. Create a new migration file: `npm run migrate:new <migration_name>`
+2. Add the SQL needed for the schema change in the generated migration file (e.g., `./migrations/20250717103432_<migration_name>.sql`)
+3. Create the fresh database: `npm run migrate:create-db`
+4. Run all migrations on the new database in order to generate the `sourcify-database.sql` dump: `npm run migrate:run`
+5. You can drop the database again: `npm run migrate:drop-db`
+6. Both the new migration file and the updated `sourcify-database.sql` should be committed to the repository.
 
 ## Migrating from the legacy repository (RepositoryV1) to the database
 
