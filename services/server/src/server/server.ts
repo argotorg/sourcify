@@ -203,6 +203,24 @@ export class Server {
       });
     });
 
+    // Log verify.sourcify.dev UI client identification headers if present
+    this.app.use((req, res, next) => {
+      const clientSource = req.headers["x-client-source"] as string;
+      const clientVersion = req.headers["x-client-version"] as string;
+      const clientType = req.headers["x-client-type"] as string;
+
+      if (clientSource) {
+        logger.info("verify.sourcify.dev UI client request", {
+          method: req.method,
+          path: req.path,
+          clientSource,
+          clientVersion,
+          clientType,
+        });
+      }
+      next();
+    });
+
     // Log all requests in trace mode
     this.app.use((req, res, next) => {
       const { method, path, params, headers, body } = req;
