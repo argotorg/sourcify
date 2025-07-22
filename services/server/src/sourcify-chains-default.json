@@ -2331,5 +2331,14 @@
         "url": "https://scout.peaq.xyz/"
       }
     }
+  },
+  "31612": {
+    "sourcifyName": "Mezo",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.mezo.org/"
+      }
+    }
   }
 }
