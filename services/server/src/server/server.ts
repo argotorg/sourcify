@@ -210,7 +210,7 @@ export class Server {
       const clientType = req.headers["x-client-type"] as string;
 
       if (clientSource) {
-        logger.info("verify.sourcify.dev UI client request", {
+        logger.info("Client request via header", {
           method: req.method,
           path: req.path,
           clientSource,
