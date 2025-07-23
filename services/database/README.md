@@ -44,16 +44,6 @@ As a prerequisite for using dbmate, you should have a `.env` file configured wit
 Copy the `.env.template` file to `.env` and replace the database connection string in `DATABASE_URL`.
 Please make sure to have the correct database configured before running any migration commands.
 
-### Creating the database
-
-If the database name configured in `DATABASE_URL` is not set up yet, you can run:
-
-```bash
-npm run migrate:create-db
-```
-
-If necessary, you can drop the database later with `npm run migrate:drop-db`.
-
 ### See the status of the migrations
 
 You can check which migrations have been applied to the database configured in `.env` by running:
@@ -67,8 +57,10 @@ npm run migrate:status
 For running any pending migrations, you can execute:
 
 ```bash
-npm run migrate:run
+npm run migrate:up
 ```
+
+Note that this will also create the database configured in the `DATABASE_URL` if it does not exist yet.
 
 ### Roll back migrations
 
@@ -80,18 +72,15 @@ npm run migrate:rollback
 
 ### Adding a new migration
 
-The process for making schema changes is generally the same as for the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs).
-To have the full schema dumped into `sourcify-database.sql`, we should also run any new migration against a fresh database at first.
-For using a fresh database, simply configure an unused database name in the `DATABASE_URL` environment variable.
-
 Please follow these steps:
 
 1. Create a new migration file: `npm run migrate:new <migration_name>`
-2. Add the SQL needed for the schema change in the generated migration file (e.g., `./migrations/20250717103432_<migration_name>.sql`)
-3. Create the fresh database: `npm run migrate:create-db`
-4. Run all migrations on the new database in order to generate the `sourcify-database.sql` dump: `npm run migrate:run`
-5. You can drop the database again: `npm run migrate:drop-db`
-6. Both the new migration file and the updated `sourcify-database.sql` should be committed to the repository.
+2. Add the required SQL for the schema change to the generated migration file (e.g., `./migrations/20250717103432_<migration_name>.sql`).
+3. Apply the new migration to a local database to generate the updated `sourcify-database.sql` dump: `npm run migrate:up`
+4. Commit both the new migration file and the updated `sourcify-database.sql` to the repository.
+
+Important: Since the schema dump should be committed, ensure that the connected database does not contain any custom schema changes that are not part of the migrations.
+If you are unsure whether your local database has custom schema changes, run the process against a fresh database.
 
 ## Migrating from the legacy repository (RepositoryV1) to the database
 
