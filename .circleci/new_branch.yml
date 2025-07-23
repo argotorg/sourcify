@@ -142,3 +142,23 @@ jobs:
               echo "  git add sourcify-database.sql && git commit -m 'Update schema'"
               exit 1
             fi
+      - run:
+          name: Test that down migrations work
+          command: |
+            cd services/database
+            # Drop db from previous test
+            npm run migrate:drop-db
+            # Apply migrations
+            npm run migrate:up
+
+            for i in ./migrations-temp/*
+            do
+              if test -f "$i"
+              then
+                # The command will fail if something is wrong
+                npm run migrate:rollback
+              fi
+            done;
+
+            # Check if migrations can be run again
+            npm run migrate:up
