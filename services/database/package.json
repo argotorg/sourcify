@@ -5,12 +5,9 @@
   "description": "The Sourcify database",
   "main": "index.js",
   "scripts": {
-    "migrate:up": "db-migrate up",
-    "migrate:reset": "db-migrate reset",
-    "migrate:create": "db-migrate create ",
     "sourcify:database": "node scripts.mjs ",
     "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -srf ./database-specs/migrations/* ./migrations-temp/ && ln -srf ./migrations/* ./migrations-temp/",
-    "migrate:run": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate migrate",
+    "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate up",
     "migrate:rollback": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate rollback",
     "migrate:new": "DBMATE_MIGRATIONS_DIR=./migrations dbmate new",
     "migrate:create-db": "dbmate create",
@@ -22,8 +19,6 @@
   "license": "MIT",
   "dependencies": {
     "commander": "12.1.0",
-    "db-migrate": "0.11.14",
-    "db-migrate-pg": "1.5.2",
     "dbmate": "^2.27.0",
     "dotenv": "16.6.1",
     "ethers": "6.15.0",
