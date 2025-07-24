@@ -566,10 +566,10 @@ export class StoreService
       );
 
     if (!sourcifyMatchResult) {
-      console.debug("No sourcify match found for contract", {
+      /*console.debug("No sourcify match found for contract", {
         chainId,
         address,
-      });
+      });*/
       return {
         match: null,
         creationMatch: null,
@@ -777,9 +777,13 @@ export class StoreService
     licenseType?: number,
     contractLabel?: string,
   ): Promise<void> {
-    console.log(`_storeVerification ===\n`, {licenseType, contractLabel})
-    const { type, verifiedContractId, oldVerifiedContractId } =
-      await super.insertOrUpdateVerification(verification);
+    const { type, verifiedContractId, oldVerifiedContractId } = await super.insertOrUpdateVerification(verification)
+    const matchInfo = {
+      address: verification.address,
+      chainId: verification.chainId,
+      runtimeMatch: verification.status.runtimeMatch,
+      creationMatch: verification.status.creationMatch,
+    }
 
     if (type === "insert") {
       if (!verifiedContractId) {
@@ -795,21 +799,14 @@ export class StoreService
         license_type: licenseType,
         contract_label: contractLabel,
       });
-      console.info("Stored to SourcifyDatabase", {
-        address: verification.address,
-        chainId: verification.chainId,
-        runtimeMatch: verification.status.runtimeMatch,
-        creationMatch: verification.status.creationMatch,
-        licenseType,
-        contractLabel,
-      });
+      console.info("Stored to SourcifyDatabase", matchInfo);
     } else if (type === "update") {
       if (!oldVerifiedContractId) {
         throw new Error(
           "oldVerifiedContractId undefined before updating sourcify match",
         );
       }
-      await this.database.updateSourcifyMatch(
+      const [,effectRows] = await this.database.updateSourcifyMatch(
         {
           verified_contract_id: verifiedContractId,
           creation_match: verification.status.creationMatch,
@@ -820,14 +817,19 @@ export class StoreService
         },
         oldVerifiedContractId,
       );
-      console.info("Updated in SourcifyDatabase", {
-        address: verification.address,
-        chainId: verification.chainId,
-        runtimeMatch: verification.status.runtimeMatch,
-        creationMatch: verification.status.creationMatch,
-        licenseType,
-        contractLabel,
-      });
+      if(effectRows) {
+        console.info("Updated in SourcifyDatabase", matchInfo);
+      } else {
+        await this.database.insertSourcifyMatch({
+          verified_contract_id: verifiedContractId,
+          creation_match: verification.status.creationMatch,
+          runtime_match: verification.status.runtimeMatch,
+          metadata: verification.compilation.metadata as any,
+          license_type: licenseType,
+          contract_label: contractLabel,
+        });
+        console.info("Stored to SourcifyDatabase", matchInfo);
+      }
     } else {
       throw new Error(
         "insertOrUpdateVerifiedContract returned a type that doesn't exist",

@@ -37,13 +37,13 @@ export async function listContractsEndpoint(
   req: ListContractsRequest,
   res: ListContractsResponse,
 ) {
-  console.debug("listContractsEndpoint", {
+  /*console.debug("listContractsEndpoint", {
     chainId: req.params.chainId,
     limit: req.query.limit,
     sort: req.query.sort,
     afterMatchId: req.query.afterMatchId,
     addresses: req.query.addresses,
-  });
+  });*/
   const services = req.app.get("services") as Services;
   const chain = getChainId(req.params.chainId)
   const addresses = req.query?.addresses?.split(",");
@@ -75,12 +75,12 @@ export async function getContractEndpoint(
   req: GetContractRequest,
   res: GetContractResponse,
 ) {
-  console.debug("getContractEndpoint", {
+  /*console.debug("getContractEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
     fields: req.query.fields,
     omit: req.query.omit,
-  });
+  });*/
   const services = req.app.get("services") as Services;
   const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap
 

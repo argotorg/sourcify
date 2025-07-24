@@ -88,7 +88,6 @@ export class VerificationService {
     licenseType?: number,
     contractLabel?: string,
   ): Promise<VerificationJobId> {
-    console.log(`verifyFromJsonInputViaWorker ===\n`, {licenseType, contractLabel})
     const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
 
     const input: VerifyFromJsonInput = {
@@ -182,7 +181,6 @@ export class VerificationService {
     licenseType?: number,
     contractLabel?: string,
   ): Promise<void> {
-    console.log(`handleWorkerResponse ===\n`, {licenseType, contractLabel})
     return Promise.resolve(output)
       .then((output: VerifyOutput) => {
         if (output.verificationExport) {
