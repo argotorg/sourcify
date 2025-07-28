@@ -25,6 +25,7 @@ The migrations should be used to update the live Sourcify production and staging
 Schema changes should be made depending on the type of change:
 If they are a Sourcify extension, they should be made inside this repo.
 If they concern the Verifier Alliance schema, changes should be made in the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs) repository and then be pulled into this repository by updating the git submodule.
+After updating the submodule, the schema dump `sourcify-database.sql` should be updated by running the migrations from this repository.
 
 Any new migration should be capable of updating the live Sourcify staging and production databases.
 

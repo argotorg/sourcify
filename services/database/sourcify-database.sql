@@ -1382,6 +1382,13 @@ CREATE INDEX compiled_contracts_sources_source_hash ON public.compiled_contracts
 
 
 --
+-- Name: contract_deployments_address; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_deployments_address ON public.contract_deployments USING btree (address);
+
+
+--
 -- Name: contract_deployments_contract_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1887,4 +1894,5 @@ ALTER TABLE ONLY public.verified_contracts
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
-    ('20250722133557');
+    ('20250722133557'),
+    ('20250723145429');
