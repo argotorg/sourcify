@@ -29,6 +29,7 @@ import { SourcifyDatabaseService } from "../../../../services/storageServices/So
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
 import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
 import { extractCompilationFromDatabase } from "../../../../services/utils/database-util";
+import { replaceCreationInformation } from "./customReplaceMethods";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,
@@ -183,6 +184,17 @@ export async function replaceContract(
   const forceRPCRequest = req.body.forceRPCRequest;
   let transactionHash = req.body.transactionHash;
 
+  let customReplaceMethod;
+  switch (req.body.customReplaceMethod) {
+    case "replace-creation-information":
+      customReplaceMethod = replaceCreationInformation;
+      break;
+    default:
+      throw new BadRequestError(
+        `Unknown customReplaceMethod: ${req.body.customReplaceMethod}`,
+      );
+  }
+
   // Get the solc compiler and services
   const solc = req.app.get("solc") as ISolidityCompiler;
   const vyper = req.app.get("vyper") as IVyperCompiler;
@@ -295,22 +307,36 @@ export async function replaceContract(
     }
 
     try {
-      await sourcifyDatabaseService.withTransaction(
-        async (transactionPoolClient) => {
-          // Delete the old verification information from the database
-          await sourcifyDatabaseService.database.deleteMatch(
-            transactionPoolClient,
-            chainId,
-            address,
-          );
+      const verificationExport = verification.export();
 
-          // Insert the new verification information into the database
-          await sourcifyDatabaseService.storeVerificationWithPoolClient(
-            transactionPoolClient,
-            verification.export(),
-          );
-        },
-      );
+      if (customReplaceMethod) {
+        await sourcifyDatabaseService.withTransaction(
+          async (transactionPoolClient) => {
+            await customReplaceMethod(
+              transactionPoolClient,
+              verificationExport,
+            );
+          },
+        );
+      } else {
+        await sourcifyDatabaseService.withTransaction(
+          async (transactionPoolClient) => {
+            // Delete the old verification information from the database.
+            // If there are non-dangling references to the contract, throw an error
+            await sourcifyDatabaseService.database.deleteMatch(
+              transactionPoolClient,
+              chainId,
+              address,
+            );
+
+            // Insert the new verification information into the database
+            await sourcifyDatabaseService.storeVerificationWithPoolClient(
+              transactionPoolClient,
+              verificationExport,
+            );
+          },
+        );
+      }
     } catch (error: any) {
       logger.error("Error replacing contract", {
         error: error,
