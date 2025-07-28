@@ -214,7 +214,7 @@ export default abstract class AbstractDatabaseService {
       return verifiedContractInsertResult.rows[0].id;
     } catch (e) {
       throw new Error(
-        `cannot update verified_contract address=${databaseColumns.contractDeployment.address} chainId=${databaseColumns.contractDeployment.chain_id}\n${e}`,
+        `cannot update verified_contract address=${databaseColumns.contractDeployment.address.toString()} chainId=${databaseColumns.contractDeployment.chain_id}\n${e}`,
       );
     }
   }

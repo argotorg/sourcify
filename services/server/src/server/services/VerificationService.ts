@@ -421,14 +421,15 @@ export class VerificationService {
             errorId: uuidv4(),
           };
         } else {
-          logger.error("Unexpected verification error", {
-            verificationId,
-            error,
-          });
           errorExport = {
             customCode: "internal_error",
             errorId: uuidv4(),
           };
+          logger.error("Unexpected verification error", {
+            verificationId,
+            error,
+            errorId: errorExport.errorId,
+          });
         }
 
         return this.storageService.performServiceOperation("setJobError", [
