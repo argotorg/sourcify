@@ -193,7 +193,7 @@ paths:
                   example: "project:/contracts/Storage.sol:Storage"
                 customReplaceMethod:
                   type: string
-                  description: Optional. The custom upgrade method to use for the contract replacement
+                  description: Optional. The custom replace method to use for the contract replacement
                   example: "replace-creation-information"
       responses:
         "200":
