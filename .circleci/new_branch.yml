@@ -113,6 +113,18 @@ jobs:
     steps:
       - checkout
       - run:
+          # Needed to make pg_dump available for dbmate
+          name: Install PostgreSQL client tools
+          command: |
+            sudo apt-get update
+            # Add PostgreSQL official APT repository for version 16
+            sudo apt-get install -y wget ca-certificates
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+            sudo apt-get update
+            # Install PostgreSQL 16 client tools
+            sudo apt-get install -y postgresql-client-16
+      - run:
           name: Install Node.js dependencies
           command: |
             cd services/database
@@ -125,6 +137,8 @@ jobs:
             git submodule update --init
             # Apply migrations using npm script
             npm run migrate:up
+            # Force dump in case problems were ignored
+            npx dbmate dump
             
             # Check if the schema file has changed
             if git diff --exit-code sourcify-database.sql; then
