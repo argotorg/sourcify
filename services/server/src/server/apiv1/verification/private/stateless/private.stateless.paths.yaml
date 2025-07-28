@@ -153,7 +153,6 @@ paths:
               required:
                 - chainId
                 - address
-                - transactionHash
                 - forceCompilation
                 - forceRPCRequest
               properties:
