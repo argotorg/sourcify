@@ -189,6 +189,8 @@ export async function replaceContract(
     case "replace-creation-information":
       customReplaceMethod = replaceCreationInformation;
       break;
+    case undefined: // Default to the standard replacement method
+      break;
     default:
       throw new BadRequestError(
         `Unknown customReplaceMethod: ${req.body.customReplaceMethod}`,
