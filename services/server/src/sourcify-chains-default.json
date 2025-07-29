@@ -2340,5 +2340,23 @@
         "url": "https://explorer.mezo.org/"
       }
     }
+  },
+  "210425": {
+    "sourcifyName": "PlatON Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scan.platon.network"
+      }
+    }
+  },
+  "2206132": {
+    "sourcifyName": "PlatON Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://devnet2scan.platon.network"
+      }
+    }
   }
 }
