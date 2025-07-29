@@ -20,7 +20,9 @@ services:
     image: node:22.5.1-bullseye-slim
     volumes:
       - ../database:/home/app/services/database
-    command: /bin/bash -c "cd /home/app/services/database && npm run migrate:up -- --env local-docker"
+    environment:
+      DATABASE_URL: "postgres://sourcify:sourcify@db:5432/sourcify?sslmode=disable"
+    command: /bin/bash -c "cd /home/app/services/database && npm install && npm run migrate:up"
     restart: "no"
     deploy:
       restart_policy:

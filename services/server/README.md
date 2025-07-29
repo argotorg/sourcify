@@ -92,10 +92,12 @@ Go to the `services/database` if you haven't already.
 cd services/database
 ```
 
-Run the migrations. Migrations with `--env dev` will write the database schema for your instance using the credentials from the `serivces/database/.env` file. See `database.json` for other environments.
+Configure the `DATABASE_URL` in the `.env` file to match your Postgres instance. The default value for the docker compose setup is `DATABASE_URL=postgres://sourcify:sourcify@127.0.0.1:5432/sourcify?sslmode=disable`.
+
+Run the migrations:
 
 ```bash
-npm run migrate:up -- --env dev
+npm run migrate:up
 ```
 
 If you get a DB authentication error, double check you don't have an existing Postgres instance. If so either stop or change the values in the `.env` file. If you were using docker, make sure the container and the container's volume is deleted for a fresh new instance.
@@ -341,12 +343,12 @@ cd ../database
 cp .env.template .env
 ```
 
-Fill in the `POSTGRES_XXXXX` environment variables with the credentials for your database.
+Adapt the `DATABASE_URL` variable to match your Postgres instance.
 
-The migrations have different setups for different environments in the `database.json` file. Run the migrations to create the schema:
+Run the migrations to create the schema:
 
 ```bash
-npm run migrate:up -- --env production
+npm run migrate:up
 ```
 
 Additionally you need to set up the credentials in the server's `.env` file. See [Server Config](#server-config) for more details.
