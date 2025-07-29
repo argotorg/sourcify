@@ -4,7 +4,7 @@ version: 2.1
 
 orbs:
   codecov: codecov/codecov@4.2.0
-  gcp-cli: circleci/gcp-cli@3.3.1
+  gcp-cli: circleci/gcp-cli@3.3.2
 
 ## Commands via the gcp-cli orb to authenticate with GCP
 # From https://github.com/jtreutel/circleci-gcp-oidc-test/blob/master/.circleci/config.yml
