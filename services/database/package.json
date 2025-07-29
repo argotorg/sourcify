@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "sourcify:database": "node scripts.mjs ",
-    "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -srf ./database-specs/migrations/* ./migrations-temp/ && ln -srf ./migrations/* ./migrations-temp/",
+    "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -sf $PWD/database-specs/migrations/* $PWD/migrations-temp/ && ln -sf $PWD/migrations/* $PWD/migrations-temp/",
     "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate up",
     "migrate:rollback": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate rollback",
     "migrate:new": "DBMATE_MIGRATIONS_DIR=./migrations dbmate new",
