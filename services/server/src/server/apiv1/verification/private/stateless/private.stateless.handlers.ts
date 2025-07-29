@@ -306,12 +306,7 @@ export async function replaceContract(
 
     try {
       const verificationExport = verification.export();
-
-      await sourcifyDatabaseService.withTransaction(
-        async (transactionPoolClient) => {
-          await customReplaceMethod(transactionPoolClient, verificationExport);
-        },
-      );
+      await customReplaceMethod(sourcifyDatabaseService, verificationExport);
     } catch (error: any) {
       logger.error("Error replacing contract", {
         error: error,
