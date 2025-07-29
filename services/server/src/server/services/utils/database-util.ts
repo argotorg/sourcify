@@ -842,6 +842,7 @@ export async function extractCompilationFromDatabase(
           "creation_cbor_auxdata",
           "fully_qualified_name",
           "version",
+          "metadata",
         ],
       );
 
@@ -905,6 +906,10 @@ export async function extractCompilationFromDatabase(
       creationCodeCborAuxdata,
       runtimeCodeCborAuxdata,
     );
+    // Vyper compiler output doesn't contain the metadata field, so we override it with the metadata from sourcify_matches
+    if (jsonInput.language === "Vyper" && verifiedContract.metadata) {
+      compilation.setMetadata(verifiedContract.metadata);
+    }
     return compilation;
   } catch (error) {
     logger.error(

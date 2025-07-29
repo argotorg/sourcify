@@ -3,6 +3,7 @@ import { AbstractCompilation } from './AbstractCompilation';
 import {
   ImmutableReferences,
   LinkReferences,
+  Metadata,
   SolidityJsonInput,
   SolidityOutput,
   SolidityOutputContract,
@@ -116,5 +117,9 @@ export class PreRunCompilation extends AbstractCompilation {
       case 'Vyper':
         return {};
     }
+  }
+
+  setMetadata(metadata: Metadata) {
+    this._metadata = metadata;
   }
 }

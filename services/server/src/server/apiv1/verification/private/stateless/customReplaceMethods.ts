@@ -5,10 +5,24 @@ import {
   getDatabaseColumnsFromVerification,
 } from "../../../../services/utils/database-util";
 
-export async function replaceCreationInformation(
+export type CustomReplaceMethod = (
   poolClient: PoolClient,
   verification: VerificationExport,
-) {
+) => Promise<void>;
+
+export const replaceCreationInformation: CustomReplaceMethod = async (
+  poolClient: PoolClient,
+  verification: VerificationExport,
+) => {
+  if (
+    verification.status.creationMatch !== "perfect" &&
+    verification.status.creationMatch !== "partial"
+  ) {
+    throw new Error(
+      "Creation match is null, cannot replace creation information",
+    );
+  }
+
   // Get database columns from verification
   const databaseColumns =
     await getDatabaseColumnsFromVerification(verification);
@@ -143,4 +157,8 @@ export async function replaceCreationInformation(
      WHERE verified_contract_id = $1`,
     [existingVerifiedContract.id, creationMatchStatus],
   );
-}
+};
+
+export const REPLACE_METHODS: Record<string, CustomReplaceMethod> = {
+  "replace-creation-information": replaceCreationInformation,
+};
