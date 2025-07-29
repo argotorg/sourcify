@@ -280,7 +280,7 @@ jobs:
           command: npx lerna run build
       - run:
           name: lint
-          command: npx lerna run lint
+          command: npx lerna run check
       - run:
           name: test
           command: npx lerna run test --stream
