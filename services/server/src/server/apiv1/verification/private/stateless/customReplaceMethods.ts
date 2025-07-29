@@ -55,7 +55,7 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
           databaseColumns.onchainCreationCode?.bytecode_hash_keccak,
       });
     // Insert new creation code if it exists
-    let newCreationCodeHash =
+    const newCreationCodeHash =
       recompiledCreationCodeInsertResult.rows[0].bytecode_hash;
 
     // Get current contract's runtime code hash
@@ -107,7 +107,8 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
         databaseColumns.verifiedContract.creation_match,
         databaseColumns.verifiedContract.creation_values,
         databaseColumns.verifiedContract.creation_transformations
-          ? JSON.stringify(
+          ? // eslint-disable-next-line indent
+            JSON.stringify(
               databaseColumns.verifiedContract.creation_transformations,
             )
           : null,
