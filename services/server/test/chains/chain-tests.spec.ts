@@ -1871,6 +1871,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // PlatON Testnet
+  verifyContract(
+    "0x1c850623b1581A8aA01d6B9AfC14D90990F2a54f",
+    "2206132",
+    "PlatON Testnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains
