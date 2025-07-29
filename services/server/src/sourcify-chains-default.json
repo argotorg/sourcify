@@ -2341,15 +2341,6 @@
       }
     }
   },
-  "210425": {
-    "sourcifyName": "PlatON Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutApi": {
-        "url": "https://scan.platon.network"
-      }
-    }
-  },
   "2206132": {
     "sourcifyName": "PlatON Testnet",
     "supported": true,
