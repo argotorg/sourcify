@@ -103,9 +103,12 @@ workflows:
           - not:
               equal: [ staging, << pipeline.git.branch >> ]
     jobs:
-      - continuation/continue:
-          name: continue-new-branch
-          configuration_path: .circleci/new_branch.yml
+      - path-filtering/filter:
+          name: check-updated-modules-new-branch
+          mapping: |
+            services/database/.* run-validate-database-schema true
+          base-revision: staging  
+          config-path: .circleci/new_branch.yml
 
   nightly:
     when: << pipeline.parameters.run-nightly >>
