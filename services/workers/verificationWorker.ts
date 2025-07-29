@@ -29,6 +29,7 @@ import { asyncLocalStorage } from "../../common/async-context";
 import { Chain } from "../chain/Chain";
 import { ChainInstance } from "../../config/Loader";
 import { ChainMap } from "../../server";
+import { ExtendedVerification } from "./ExtendedVerification";
 
 export const filename = resolve(__filename);
 
@@ -135,7 +136,7 @@ async function _verifyFromJsonInput({
     (await getCreatorTx(chain, address)) ||
     undefined;
 
-  const verification = new Verification(
+  const verification = new ExtendedVerification(
     compilation,
     chain,
     address,
@@ -255,7 +256,7 @@ async function _verifyFromConfluxscan({
 
 function createErrorExport(
   error: Error,
-  verification?: Verification,
+  verification?: Verification | ExtendedVerification,
 ): VerifyErrorExport {
   if (!(error instanceof SourcifyLibError)) {
     // If the error is not a SourcifyLibError, the server reached an unexpected state.
