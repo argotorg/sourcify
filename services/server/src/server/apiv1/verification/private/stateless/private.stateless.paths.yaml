@@ -191,6 +191,17 @@ paths:
                   type: string
                   description: Required if forceCompilation is true. The compilation target to use for recompilation
                   example: "project:/contracts/Storage.sol:Storage"
+                customReplaceMethod:
+                  type: string
+                  description: |
+                    Specifies the custom database update strategy to use when replacing contract data. 
+                    Available methods:
+                    - "replace-creation-information": Updates an existing verified contract's creation bytecode, 
+                      deployment transaction details (hash, block number, transaction index, deployer), and 
+                      creation match status while preserving the runtime verification data. This method is 
+                      useful for correcting incomplete or missing creation data on contracts that were 
+                      previously verified only against runtime bytecode.
+                  example: "replace-creation-information"
       responses:
         "200":
           description: The contract has been successfully replaced.
