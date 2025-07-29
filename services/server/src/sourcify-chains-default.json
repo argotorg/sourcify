@@ -2349,5 +2349,14 @@
         "url": "https://devnet2scan.platon.network"
       }
     }
+  },
+  "210425": {
+    "sourcifyName": "PlatON Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scan.platon.network"
+      }
+    }
   }
 }
