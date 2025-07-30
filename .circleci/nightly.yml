@@ -104,7 +104,7 @@ jobs:
           command: npx lerna run build
       - run:
           name: test
-          command: cd ./services/server && npm run postgres-test:migrate && npm run test:etherscan-instances
+          command: cd ./services/server && npm run test:etherscan-instances
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "localhost"
