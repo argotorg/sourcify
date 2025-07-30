@@ -10,6 +10,20 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -113,11 +127,11 @@ $$;
 CREATE FUNCTION public.trigger_reuse_created_at() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.created_at = OLD.created_at;
-    RETURN NEW;
-END;
-$$;
+      BEGIN
+          NEW.created_at = OLD.created_at;
+          RETURN NEW;
+      END;
+      $$;
 
 
 --
@@ -127,11 +141,11 @@ $$;
 CREATE FUNCTION public.trigger_reuse_created_by() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.created_by = OLD.created_by;
-    RETURN NEW;
-END;
-$$;
+      BEGIN
+          NEW.created_by = OLD.created_by;
+          RETURN NEW;
+      END;
+      $$;
 
 
 --
@@ -141,11 +155,11 @@ $$;
 CREATE FUNCTION public.trigger_set_created_at() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.created_at = NOW();
-    RETURN NEW;
-END;
-$$;
+      BEGIN
+          NEW.created_at = NOW();
+          RETURN NEW;
+      END;
+      $$;
 
 
 --
@@ -155,11 +169,11 @@ $$;
 CREATE FUNCTION public.trigger_set_created_by() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.created_by = current_user;
-    RETURN NEW;
-END;
-$$;
+      BEGIN
+          NEW.created_by = current_user;
+          RETURN NEW;
+      END;
+      $$;
 
 
 --
@@ -169,11 +183,11 @@ $$;
 CREATE FUNCTION public.trigger_set_updated_at() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
+        BEGIN
+            NEW.updated_at = NOW();
+            RETURN NEW;
+        END;
+        $$;
 
 
 --
@@ -183,11 +197,11 @@ $$;
 CREATE FUNCTION public.trigger_set_updated_by() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-BEGIN
-    NEW.updated_by = current_user;
-    RETURN NEW;
-END;
-$$;
+      BEGIN
+          NEW.updated_by = current_user;
+          RETURN NEW;
+      END;
+      $$;
 
 
 --
@@ -862,12 +876,12 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.code (
     code_hash bytea NOT NULL,
+    code bytea,
+    code_hash_keccak bytea DEFAULT '\x'::bytea NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     created_by character varying DEFAULT CURRENT_USER NOT NULL,
     updated_by character varying DEFAULT CURRENT_USER NOT NULL,
-    code_hash_keccak bytea NOT NULL,
-    code bytea,
     CONSTRAINT code_hash_check CHECK ((((code IS NOT NULL) AND (code_hash = public.digest(code, 'sha256'::text))) OR ((code IS NULL) AND (code_hash = '\x'::bytea))))
 );
 
@@ -889,8 +903,8 @@ CREATE TABLE public.compiled_contracts (
     fully_qualified_name character varying NOT NULL,
     compiler_settings jsonb NOT NULL,
     compilation_artifacts jsonb NOT NULL,
-    creation_code_hash bytea,
-    creation_code_artifacts jsonb,
+    creation_code_hash bytea NOT NULL,
+    creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
@@ -917,17 +931,17 @@ CREATE TABLE public.compiled_contracts_sources (
 
 CREATE TABLE public.contract_deployments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    created_by character varying DEFAULT CURRENT_USER NOT NULL,
-    updated_by character varying DEFAULT CURRENT_USER NOT NULL,
     chain_id bigint NOT NULL,
     address bytea NOT NULL,
     transaction_hash bytea,
     block_number numeric,
     transaction_index numeric,
     deployer bytea,
-    contract_id uuid NOT NULL
+    contract_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by character varying DEFAULT CURRENT_USER NOT NULL,
+    updated_by character varying DEFAULT CURRENT_USER NOT NULL
 );
 
 
@@ -937,13 +951,47 @@ CREATE TABLE public.contract_deployments (
 
 CREATE TABLE public.contracts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    creation_code_hash bytea,
+    runtime_code_hash bytea NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     created_by character varying DEFAULT CURRENT_USER NOT NULL,
-    updated_by character varying DEFAULT CURRENT_USER NOT NULL,
-    creation_code_hash bytea,
-    runtime_code_hash bytea NOT NULL
+    updated_by character varying DEFAULT CURRENT_USER NOT NULL
 );
+
+
+--
+-- Name: missing_transaction_hash; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.missing_transaction_hash (
+    id integer NOT NULL,
+    chain_id numeric NOT NULL,
+    address bytea NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    reverified boolean DEFAULT false
+);
+
+
+--
+-- Name: missing_transaction_hash_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.missing_transaction_hash_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: missing_transaction_hash_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.missing_transaction_hash_id_seq OWNED BY public.missing_transaction_hash.id;
 
 
 --
@@ -951,7 +999,7 @@ CREATE TABLE public.contracts (
 --
 
 CREATE TABLE public.schema_migrations (
-    version character varying NOT NULL
+    version character varying(255) NOT NULL
 );
 
 
@@ -992,8 +1040,8 @@ CREATE TABLE public.sourcify_matches (
     creation_match character varying,
     runtime_match character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json NOT NULL
+    metadata json NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1081,10 +1129,10 @@ CREATE TABLE public.verification_jobs (
     verified_contract_id bigint,
     error_code character varying,
     error_id uuid,
-    error_data json,
     verification_endpoint character varying NOT NULL,
     hardware character varying,
-    compilation_time bigint
+    compilation_time bigint,
+    error_data json
 );
 
 
@@ -1117,18 +1165,22 @@ CREATE TABLE public.verified_contracts (
     creation_match boolean NOT NULL,
     creation_values jsonb,
     creation_transformations jsonb,
-    creation_metadata_match boolean,
     runtime_match boolean NOT NULL,
     runtime_values jsonb,
     runtime_transformations jsonb,
     runtime_metadata_match boolean,
+    creation_metadata_match boolean,
     CONSTRAINT creation_transformations_json_schema CHECK (((creation_transformations IS NULL) OR public.validate_creation_transformations(creation_transformations))),
     CONSTRAINT creation_values_json_schema CHECK (((creation_values IS NULL) OR public.validate_creation_values(creation_values))),
     CONSTRAINT runtime_transformations_json_schema CHECK (((runtime_transformations IS NULL) OR public.validate_runtime_transformations(runtime_transformations))),
     CONSTRAINT runtime_values_json_schema CHECK (((runtime_values IS NULL) OR public.validate_runtime_values(runtime_values))),
     CONSTRAINT verified_contracts_creation_match_integrity CHECK ((((creation_match = false) AND (creation_values IS NULL) AND (creation_transformations IS NULL) AND (creation_metadata_match IS NULL)) OR ((creation_match = true) AND (creation_values IS NOT NULL) AND (creation_transformations IS NOT NULL) AND (creation_metadata_match IS NOT NULL)))),
+    CONSTRAINT verified_contracts_creation_transformations_is_array CHECK (((creation_transformations IS NULL) OR (jsonb_typeof(creation_transformations) = 'array'::text))),
+    CONSTRAINT verified_contracts_creation_values_is_object CHECK (((creation_values IS NULL) OR (jsonb_typeof(creation_values) = 'object'::text))),
     CONSTRAINT verified_contracts_match_exists CHECK (((creation_match = true) OR (runtime_match = true))),
-    CONSTRAINT verified_contracts_runtime_match_integrity CHECK ((((runtime_match = false) AND (runtime_values IS NULL) AND (runtime_transformations IS NULL) AND (runtime_metadata_match IS NULL)) OR ((runtime_match = true) AND (runtime_values IS NOT NULL) AND (runtime_transformations IS NOT NULL) AND (runtime_metadata_match IS NOT NULL))))
+    CONSTRAINT verified_contracts_runtime_match_integrity CHECK ((((runtime_match = false) AND (runtime_values IS NULL) AND (runtime_transformations IS NULL) AND (runtime_metadata_match IS NULL)) OR ((runtime_match = true) AND (runtime_values IS NOT NULL) AND (runtime_transformations IS NOT NULL) AND (runtime_metadata_match IS NOT NULL)))),
+    CONSTRAINT verified_contracts_runtime_transformations_is_array CHECK (((runtime_transformations IS NULL) OR (jsonb_typeof(runtime_transformations) = 'array'::text))),
+    CONSTRAINT verified_contracts_runtime_values_is_object CHECK (((runtime_values IS NULL) OR (jsonb_typeof(runtime_values) = 'object'::text)))
 );
 
 
@@ -1149,6 +1201,13 @@ CREATE SEQUENCE public.verified_contracts_id_seq
 --
 
 ALTER SEQUENCE public.verified_contracts_id_seq OWNED BY public.verified_contracts.id;
+
+
+--
+-- Name: missing_transaction_hash id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.missing_transaction_hash ALTER COLUMN id SET DEFAULT nextval('public.missing_transaction_hash_id_seq'::regclass);
 
 
 --
@@ -1200,7 +1259,7 @@ ALTER TABLE ONLY public.compiled_contracts
 --
 
 ALTER TABLE ONLY public.compiled_contracts
-    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE NULLS NOT DISTINCT (compiler, language, creation_code_hash, runtime_code_hash);
+    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, language, creation_code_hash, runtime_code_hash);
 
 
 --
@@ -1249,6 +1308,22 @@ ALTER TABLE ONLY public.contracts
 
 ALTER TABLE ONLY public.contracts
     ADD CONSTRAINT contracts_pseudo_pkey UNIQUE (creation_code_hash, runtime_code_hash);
+
+
+--
+-- Name: missing_transaction_hash missing_transaction_hash_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.missing_transaction_hash
+    ADD CONSTRAINT missing_transaction_hash_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: missing_transaction_hash missing_transaction_hash_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.missing_transaction_hash
+    ADD CONSTRAINT missing_transaction_hash_unique UNIQUE (chain_id, address);
 
 
 --
@@ -1417,6 +1492,20 @@ CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtim
 
 
 --
+-- Name: idx_missing_tx_hash_chain_filter; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_missing_tx_hash_chain_filter ON public.missing_transaction_hash USING btree (chain_id, reverified) WHERE (reverified = false);
+
+
+--
+-- Name: missing_transaction_hash_chain_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX missing_transaction_hash_chain_id_idx ON public.missing_transaction_hash USING btree (chain_id);
+
+
+--
 -- Name: sourcify_matches_verified_contract_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1473,13 +1562,6 @@ CREATE TRIGGER insert_set_created_at BEFORE INSERT ON public.contracts FOR EACH 
 
 
 --
--- Name: sources insert_set_created_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_set_created_at BEFORE INSERT ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_created_at();
-
-
---
 -- Name: verified_contracts insert_set_created_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1512,13 +1594,6 @@ CREATE TRIGGER insert_set_created_by BEFORE INSERT ON public.contract_deployment
 --
 
 CREATE TRIGGER insert_set_created_by BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_set_created_by();
-
-
---
--- Name: sources insert_set_created_by; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_set_created_by BEFORE INSERT ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_created_by();
 
 
 --
@@ -1557,13 +1632,6 @@ CREATE TRIGGER insert_set_updated_at BEFORE INSERT ON public.contracts FOR EACH 
 
 
 --
--- Name: sources insert_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_set_updated_at BEFORE INSERT ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
-
-
---
 -- Name: verified_contracts insert_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1596,13 +1664,6 @@ CREATE TRIGGER insert_set_updated_by BEFORE INSERT ON public.contract_deployment
 --
 
 CREATE TRIGGER insert_set_updated_by BEFORE INSERT ON public.contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_by();
-
-
---
--- Name: sources insert_set_updated_by; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER insert_set_updated_by BEFORE INSERT ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_by();
 
 
 --
@@ -1641,13 +1702,6 @@ CREATE TRIGGER update_reuse_created_at BEFORE UPDATE ON public.contracts FOR EAC
 
 
 --
--- Name: sources update_reuse_created_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_reuse_created_at BEFORE UPDATE ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_reuse_created_at();
-
-
---
 -- Name: verified_contracts update_reuse_created_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1683,13 +1737,6 @@ CREATE TRIGGER update_reuse_created_by BEFORE UPDATE ON public.contracts FOR EAC
 
 
 --
--- Name: sources update_reuse_created_by; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_reuse_created_by BEFORE UPDATE ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_reuse_created_by();
-
-
---
 -- Name: verified_contracts update_reuse_created_by; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1722,13 +1769,6 @@ CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.contract_deployment
 --
 
 CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
-
-
---
--- Name: sources update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
 
 
 --
@@ -1771,13 +1811,6 @@ CREATE TRIGGER update_set_updated_by BEFORE UPDATE ON public.contract_deployment
 --
 
 CREATE TRIGGER update_set_updated_by BEFORE UPDATE ON public.contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_by();
-
-
---
--- Name: sources update_set_updated_by; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_set_updated_by BEFORE UPDATE ON public.sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_by();
 
 
 --
