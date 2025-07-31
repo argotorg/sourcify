@@ -17,7 +17,7 @@ module.exports = {
           sm.runtime_match as sourcify_runtime_match,
           sm.creation_match as sourcify_creation_match,
           cd.created_at,
-          vc.id as verified_contract_id
+          sm.id as verified_contract_id
       FROM ${sourcifySchema}.contract_deployments cd
       JOIN ${sourcifySchema}.contracts c ON cd.contract_id = c.id
       JOIN ${sourcifySchema}.verified_contracts vc ON vc.deployment_id = cd.id
@@ -26,7 +26,7 @@ module.exports = {
           AND c.creation_code_hash IS NOT NULL
           AND c.runtime_code_hash IS NOT NULL
           AND sm.id >= $1
-      ORDER BY vc.id ASC
+      ORDER BY sm.id ASC
       LIMIT $2
     `,
       [currentVerifiedContract, n],
