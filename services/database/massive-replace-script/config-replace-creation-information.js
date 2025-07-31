@@ -21,11 +21,11 @@ module.exports = {
       FROM ${sourcifySchema}.contract_deployments cd
       JOIN ${sourcifySchema}.contracts c ON cd.contract_id = c.id
       JOIN ${sourcifySchema}.verified_contracts vc ON vc.deployment_id = cd.id
-      LEFT JOIN ${sourcifySchema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
+      INNER JOIN ${sourcifySchema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
       WHERE c.creation_code_hash = c.runtime_code_hash
           AND c.creation_code_hash IS NOT NULL
           AND c.runtime_code_hash IS NOT NULL
-          AND vc.id >= $1
+          AND sm.id >= $1
       ORDER BY vc.id ASC
       LIMIT $2
     `,

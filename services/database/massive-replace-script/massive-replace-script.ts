@@ -36,15 +36,15 @@ if (fs.existsSync(COUNTER_FILE)) {
 
 const N = 200; // Number of contracts to process at a time
 
-const SOURCIFY_SCHEMA = process.env.SOURCIFY_SCHEMA || "public";
+const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
 
 const SOURCE_DB_CONFIG = {
-  host: process.env.SOURCIFY_HOST,
-  database: process.env.SOURCIFY_DB,
-  user: process.env.SOURCIFY_USER,
-  password: process.env.SOURCIFY_PASSWORD,
-  port: process.env.SOURCIFY_PORT
-    ? parseInt(process.env.SOURCIFY_PORT, 10)
+  host: process.env.POSTGRES_HOST,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  port: process.env.POSTGRES_PORT
+    ? parseInt(process.env.POSTGRES_PORT, 10)
     : undefined,
 };
 
@@ -148,7 +148,7 @@ async function processContract(
       // Use the query from configuration
       const { rows: verifiedContracts, rowCount } = await config.query(
         sourcePool,
-        SOURCIFY_SCHEMA,
+        POSTGRES_SCHEMA,
         CURRENT_VERIFIED_CONTRACT,
         N,
       );

@@ -8,12 +8,12 @@ Create a `.env` file or set the following environment variables:
 
 ```bash
 # Database connection
-SOURCIFY_HOST=localhost
-SOURCIFY_DB=sourcify
-SOURCIFY_USER=sourcify
-SOURCIFY_PASSWORD=password
-SOURCIFY_PORT=5432
-SOURCIFY_SCHEMA=public
+POSTGRES_HOST=localhost
+POSTGRES_DB=sourcify
+POSTGRES_USER=sourcify
+POSTGRES_PASSWORD=password
+POSTGRES_PORT=5432
+POSTGRES_SCHEMA=public
 
 # API configuration
 API_BASE_URL=http://localhost:5000
