@@ -26,7 +26,6 @@ module.exports = {
           AND c.creation_code_hash IS NOT NULL
           AND c.runtime_code_hash IS NOT NULL
           AND vc.id >= $1
-          AND vc.id IN (678564, 678714)
       ORDER BY vc.id ASC
       LIMIT $2
     `,
