@@ -13,7 +13,8 @@
     "migrate:create-db": "dbmate create",
     "migrate:drop-db": "dbmate drop",
     "migrate:load-schema": "dbmate load",
-    "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate status"
+    "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate status",
+    "massive-replace": "ts-node massive-replace-script/massive-replace-script.ts"
   },
   "author": "",
   "license": "MIT",
