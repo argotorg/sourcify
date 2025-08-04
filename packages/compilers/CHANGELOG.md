@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers@1.0.7 - 2025-08-04
+
+- update dependencies
+
 ## @ethereum-sourcify/compilers@1.0.6 - 2025-07-09
 
 - update dependencies

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.2.0 - 2025-08-04
+
+- Add PreRunCompilation class to handle compilations for already compiled contracts
+- update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@2.1.5 - 2025-07-09
 
 - update dependencies

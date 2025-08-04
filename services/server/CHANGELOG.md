@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.3.0 - 2025-08-04
+
+- Remove json input from API v1 verify/solc-json log (#2225)
+- Do not log full bytecodes on worker errors in log.debug()
+- Throw for missing chainId
+- Disable failing chains, update chains.json (#2237)
+- Log client identification headers for verify.sourcify.dev UI requests (#2246)
+- Remove transactionHash requirement from replace-contract request body
+- Add massive replace script with configuration and API integration (#2268)
+- update Node.js engine version to >=22.0.0 in package.json files (#2269)
+- update dependencies
+- New chains:
+  - Add PlatON Testnet (2206132)
+
 ## sourcify-server@3.2.1 - 2025-07-09
 
 - Move CORS settings as the first middleware (#2204)
