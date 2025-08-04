@@ -11,7 +11,6 @@ All notable changes to this project will be documented in this file.
 - Log client identification headers for verify.sourcify.dev UI requests (#2246)
 - Remove transactionHash requirement from replace-contract request body
 - Add massive replace script with configuration and API integration (#2268)
-- update Node.js engine version to >=22.0.0 in package.json files (#2269)
 - update dependencies
 - New chains:
   - Add PlatON Testnet (2206132)
@@ -22,20 +21,19 @@ All notable changes to this project will be documented in this file.
 - Verify via SolidityCompilation directly inside /verify/solc-json endpoint (#2216)
 - update dependencies
 
-
 ## sourcify-server@3.2.0 - 2025-06-18
 
 - Add new endpoint /v2/contract/all-chains/{address} to get all verified deployments of a contract on all chains #2183
-- Handle invalid json body error, throw if unable to fetch the compiler #2179 
-- Throw an error on conflict when inserting a verified_contract #2176 
-- Add contract creation transaction fetching via VeChain Stats #2182 
+- Handle invalid json body error, throw if unable to fetch the compiler #2179
+- Throw an error on conflict when inserting a verified_contract #2176
+- Add contract creation transaction fetching via VeChain Stats #2182
 - Update README docs and quick start docker-compose files for easier setup
 - New chains:
   - Peaq Mainnet (3338)
 
 ## sourcify-server@3.1.3 - 2025-05-20
 
-- Use Etherscan API v2 (#2158) 
+- Use Etherscan API v2 (#2158)
 
 ## sourcify-server@3.1.2 - 2025-05-12
 
@@ -73,11 +71,11 @@ All notable changes to this project will be documented in this file.
 
 ## sourcify-server@3.0.0 - 2025-04-09
 
-- Integrate new lib-sourcify classes in server (#1960) 
+- Integrate new lib-sourcify classes in server (#1960)
 - Use VerificationExport for storeVerification methods of storage services (#1995)
 - Improve express error handler (#2027)
 - Add upgrade contract private endpoint (#2042)
-- Add updated_at column and trigger to sourcify_matches (#2047) 
+- Add updated_at column and trigger to sourcify_matches (#2047)
 - Remove rate limiter (#2046)
 - Update sourcify-chains-default.json to set multiple chains as unsupported
 - Add sourceIds field to v2 lookup (#2060)
@@ -85,6 +83,7 @@ All notable changes to this project will be documented in this file.
 - Update dependencies
 
 New Chains:
+
 - Added Zircuit Garfield Testnet (#2016)
 
 ## sourcify-server@2.7.1 - 2025-03-20

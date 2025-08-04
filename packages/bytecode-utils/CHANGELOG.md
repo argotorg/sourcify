@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## @ethereum-sourcify/bytecode-utils@1.3.10 - 2025-08-04
 
+- update Node.js engine version to >=22.0.0 in package.json files (#2269)
 - update dependencies
 
 ## @ethereum-sourcify/bytecode-utils@1.3.9 - 2025-07-09

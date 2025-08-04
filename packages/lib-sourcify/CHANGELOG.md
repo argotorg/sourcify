@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## @ethereum-sourcify/lib-sourcify@2.2.0 - 2025-08-04
 
 - Add PreRunCompilation class to handle compilations for already compiled contracts
+- update Node.js engine version to >=22.0.0 in package.json files (#2269)
 - update dependencies
 
 ## @ethereum-sourcify/lib-sourcify@2.1.5 - 2025-07-09
@@ -24,7 +25,6 @@ All notable changes to this project will be documented in this file.
 
 - Add support for zeroed-out placeholders to accept bytecodes from the database (#2150)
 - Handle : characters in contract paths correctly (#2143)
-
 
 ## @ethereum-sourcify/lib-sourcify@2.1.1 - 2025-05-06
 
@@ -68,7 +68,7 @@ All notable changes to this project will be documented in this file.
 
 ## @ethereum-sourcify/lib-sourcify@1.10.1 - 2024-12-11
 
-- Add SourcifyChain.getStorageAt 
+- Add SourcifyChain.getStorageAt
 - Update dependencies
 
 ## @ethereum-sourcify/lib-sourcify@1.10.0 - 2024-10-29
