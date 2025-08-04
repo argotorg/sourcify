@@ -35,7 +35,7 @@
     "cov:check": "c8 report && c8 check-coverage --lines 100 --functions 100 --branches 100"
   },
   "engines": {
-    "node": "22.5.1"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@ethersproject/bytes": "5.8.0",
