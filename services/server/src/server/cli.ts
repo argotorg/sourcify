@@ -85,7 +85,7 @@ const server = new Server(
     vyper,
     chains: sourcifyChainsMap,
     verifyDeprecated: config.get("verifyDeprecated"),
-    upgradeContract: config.get("upgradeContract"),
+    replaceContract: config.get("replaceContract"),
     sessionOptions: getSessionOptions(),
     sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
     logLevel,

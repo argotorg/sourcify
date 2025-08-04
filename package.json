@@ -8,7 +8,7 @@
     "services/*"
   ],
   "scripts": {
-    "build:clean": "rm -rf node_modules services/monitor/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
+    "build:clean": "rm -rf node_modules services/monitor/node_modules services/database/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
     "build:lerna": "lerna run build",
     "server:start": "cd services/server && node ./dist/server/cli.js",
     "monitor:start": "node ./services/monitor/dist/index.js",
@@ -39,7 +39,7 @@
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.57.1",
-    "eslint-config-prettier": "9.1.0",
+    "eslint-config-prettier": "9.1.2",
     "lerna": "8.2.3",
     "prettier": "3.6.2",
     "ts-node": "10.9.2",

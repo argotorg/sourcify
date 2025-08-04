@@ -40,6 +40,7 @@ describe("SourcifyDatabaseService", function () {
     const nonePerfectVerification = structuredClone(MockVerificationExport);
     nonePerfectVerification.status.creationMatch = "partial";
 
+    await databaseService.init();
     await databaseService.storeVerification(nonePerfectVerification);
 
     await expect(databaseService.storeVerification(MockVerificationExport)).to

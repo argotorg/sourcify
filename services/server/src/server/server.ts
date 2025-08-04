@@ -56,7 +56,7 @@ export interface ServerOptions {
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
   verifyDeprecated: boolean;
-  upgradeContract: boolean;
+  replaceContract: boolean;
   sessionOptions: SessionOptions;
   sourcifyPrivateToken?: string;
   libSourcifyConfig?: LibSourcifyConfig;
@@ -132,7 +132,7 @@ export class Server {
     this.app.set("solc", options.solc);
     this.app.set("vyper", options.vyper);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
-    this.app.set("upgradeContract", options.upgradeContract);
+    this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);
 
     // Session API endpoints require non "*" origins because of the session cookies
@@ -201,6 +201,24 @@ export class Server {
       asyncLocalStorage.run(context, () => {
         next();
       });
+    });
+
+    // Log verify.sourcify.dev UI client identification headers if present
+    this.app.use((req, res, next) => {
+      const clientSource = req.headers["x-client-source"] as string;
+      const clientVersion = req.headers["x-client-version"] as string;
+      const clientType = req.headers["x-client-type"] as string;
+
+      if (clientSource) {
+        logger.info("Client request via header", {
+          method: req.method,
+          path: req.path,
+          clientSource,
+          clientVersion,
+          clientType,
+        });
+      }
+      next();
     });
 
     // Log all requests in trace mode

@@ -226,14 +226,21 @@ describe("GET /v2/contract/:chainId/:address", function () {
                     chainFixture.defaultContractArtifact.storageLayout,
                   evm: {
                     bytecode: {
-                      object: chainFixture.defaultContractArtifact.bytecode,
+                      object:
+                        chainFixture.defaultContractArtifact.bytecode.replace(
+                          /^0x/,
+                          "",
+                        ),
                       sourceMap: chainFixture.defaultContractArtifact.sourceMap,
                       linkReferences:
                         chainFixture.defaultContractArtifact.linkReferences,
                     },
                     deployedBytecode: {
                       object:
-                        chainFixture.defaultContractArtifact.deployedBytecode,
+                        chainFixture.defaultContractArtifact.deployedBytecode.replace(
+                          /^0x/,
+                          "",
+                        ),
                       sourceMap:
                         chainFixture.defaultContractArtifact.deployedSourceMap,
                       linkReferences:

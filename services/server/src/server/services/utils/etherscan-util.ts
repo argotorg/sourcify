@@ -127,11 +127,6 @@ export const getSolcJsonInputFromEtherscanResult = (
       enabled: etherscanResult.OptimizationUsed === "1",
       runs: parseInt(etherscanResult.Runs),
     },
-    outputSelection: {
-      "*": {
-        "*": ["metadata", "evm.deployedBytecode.object"],
-      },
-    },
     evmVersion:
       etherscanResult.EVMVersion.toLowerCase() !== "default"
         ? etherscanResult.EVMVersion
@@ -205,15 +200,17 @@ export const fetchFromEtherscan = async (
       : new BadRequestError(errorMessage);
   }
 
-  const url = `https://api.etherscan.io/v2/api?chainid=${sourcifyChain.chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
+  let url = `https://api.etherscan.io/v2/api?chainid=${sourcifyChain.chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const apiKey =
     userApiKey ||
     process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""] ||
     process.env.ETHERSCAN_API_KEY ||
     "";
   const secretUrl = url + apiKey;
+
+  url = url + apiKey.slice(0, 6) + "...";
   let response;
-  logger.debug("Fetching from Etherscan", {
+  logger.info("Fetching from Etherscan", {
     url,
     chainId: sourcifyChain.chainId,
     address,
@@ -312,14 +309,6 @@ export const processSolidityResultFromEtherscan = (
   if (isEtherscanJsonInput(sourceCodeObject)) {
     logger.debug("Etherscan solcJsonInput contract found");
     solcJsonInput = parseEtherscanJsonInput(sourceCodeObject);
-
-    if (solcJsonInput?.settings) {
-      // Tell compiler to output metadata and bytecode
-      solcJsonInput.settings.outputSelection["*"]["*"] = [
-        "metadata",
-        "evm.deployedBytecode.object",
-      ];
-    }
 
     contractPath = getContractPathFromSourcesOrThrow(
       contractName,

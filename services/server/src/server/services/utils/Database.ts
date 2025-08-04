@@ -68,6 +68,10 @@ export class Database {
     return this._pool;
   }
 
+  isPoolInitialized(): boolean {
+    return this._pool != undefined;
+  }
+
   async initDatabasePool(identifier: string): Promise<boolean> {
     // if the database is already initialized
     if (this._pool != undefined) {
@@ -263,8 +267,9 @@ ${
   async getVerifiedContractByChainAndAddress(
     chain: number,
     address: Bytes,
+    poolClient?: PoolClient,
   ): Promise<QueryResult<GetVerifiedContractByChainAndAddressResult>> {
-    return await this.pool.query(
+    return await (poolClient || this.pool).query(
       `
         SELECT
           verified_contracts.*,
@@ -280,13 +285,16 @@ ${
     );
   }
 
-  async insertSourcifyMatch({
-    verified_contract_id,
-    runtime_match,
-    creation_match,
-    metadata,
-  }: Omit<Tables.SourcifyMatch, "created_at" | "id">) {
-    await this.pool.query(
+  async insertSourcifyMatch(
+    {
+      verified_contract_id,
+      runtime_match,
+      creation_match,
+      metadata,
+    }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
+    poolClient?: PoolClient,
+  ) {
+    await (poolClient || this.pool).query(
       `INSERT INTO ${this.schema}.sourcify_matches (
         verified_contract_id,
         creation_match,
@@ -308,8 +316,9 @@ ${
       metadata,
     }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: string,
+    poolClient?: PoolClient,
   ) {
-    await this.pool.query(
+    await (poolClient || this.pool).query(
       `UPDATE ${this.schema}.sourcify_matches SET 
       verified_contract_id = $1,
       creation_match=$2,
@@ -880,25 +889,28 @@ ${
     );
   }
 
-  async updateVerificationJob({
-    id,
-    completed_at,
-    verified_contract_id,
-    compilation_time,
-    error_code,
-    error_id,
-    error_data,
-  }: Pick<
-    Tables.VerificationJob,
-    | "id"
-    | "completed_at"
-    | "verified_contract_id"
-    | "compilation_time"
-    | "error_code"
-    | "error_id"
-    | "error_data"
-  >): Promise<void> {
-    await this.pool.query(
+  async updateVerificationJob(
+    {
+      id,
+      completed_at,
+      verified_contract_id,
+      compilation_time,
+      error_code,
+      error_id,
+      error_data,
+    }: Pick<
+      Tables.VerificationJob,
+      | "id"
+      | "completed_at"
+      | "verified_contract_id"
+      | "compilation_time"
+      | "error_code"
+      | "error_id"
+      | "error_data"
+    >,
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    await (poolClient || this.pool).query(
       `UPDATE ${this.schema}.verification_jobs 
       SET 
         completed_at = $2,
@@ -946,5 +958,107 @@ ${
         creation_transaction_hash,
       ],
     );
+  }
+
+  async deleteMatch(
+    poolClient: PoolClient,
+    chainId: number | string,
+    address: string,
+  ): Promise<void> {
+    // Safely deletes an existing sourcify match together with all dangling linked rows.
+    // If any of the rows are still referenced elsewhere, the FK constraints will abort the
+    // transaction and propagate an error, allowing the caller to handle it.
+
+    const addressBytes = bytesFromString(address)!;
+
+    // 1. Fetch all ids / hashes we may need later in the cleanup
+    const { rows } = await poolClient.query(
+      `
+        SELECT
+          vc.id  AS verified_contract_id,
+          vc.compilation_id,
+          vc.deployment_id,
+          cd.contract_id,
+          ctr.creation_code_hash  AS contract_creation_code_hash,
+          ctr.runtime_code_hash   AS contract_runtime_code_hash,
+          cc.creation_code_hash   AS compilation_creation_code_hash,
+          cc.runtime_code_hash    AS compilation_runtime_code_hash
+        FROM ${this.schema}.verified_contracts vc
+        JOIN ${this.schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
+        JOIN ${this.schema}.contract_deployments cd ON cd.id = vc.deployment_id
+        JOIN ${this.schema}.contracts ctr          ON ctr.id = cd.contract_id
+        JOIN ${this.schema}.compiled_contracts cc  ON cc.id = vc.compilation_id
+        WHERE cd.chain_id = $1
+          AND cd.address   = $2
+        LIMIT 1;
+        `,
+      [chainId, addressBytes],
+    );
+
+    if (rows.length === 0) {
+      throw new Error("No existing verified contract found to delete");
+    }
+
+    const info = rows[0];
+
+    // 2. Child-first deletions relying on FK safety
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.sourcify_matches WHERE verified_contract_id = $1`,
+      [info.verified_contract_id],
+    );
+    await poolClient.query(
+      `UPDATE ${this.schema}.verification_jobs SET verified_contract_id=NULL WHERE verified_contract_id = $1`,
+      [info.verified_contract_id],
+    );
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.verified_contracts WHERE id = $1`,
+      [info.verified_contract_id],
+    );
+
+    // 3. Compilation side clean-up
+    const { rows: sourceRows } = await poolClient.query(
+      `SELECT source_hash FROM ${this.schema}.compiled_contracts_sources WHERE compilation_id = $1`,
+      [info.compilation_id],
+    );
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.compiled_contracts_sources WHERE compilation_id = $1`,
+      [info.compilation_id],
+    );
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.compiled_contracts WHERE id = $1`,
+      [info.compilation_id],
+    );
+    for (const { source_hash } of sourceRows) {
+      await poolClient.query(
+        `DELETE FROM ${this.schema}.sources
+           WHERE source_hash = $1`,
+        [source_hash],
+      );
+    }
+
+    // 4. Deployment side clean-up
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.contract_deployments WHERE id = $1`,
+      [info.deployment_id],
+    );
+    await poolClient.query(
+      `DELETE FROM ${this.schema}.contracts WHERE id = $1`,
+      [info.contract_id],
+    );
+
+    // 5. Remove now-dangling code rows
+    const codeHashes: Buffer[] = [
+      info.contract_creation_code_hash,
+      info.contract_runtime_code_hash,
+      info.compilation_creation_code_hash,
+      info.compilation_runtime_code_hash,
+    ].filter(Boolean);
+
+    for (const hash of codeHashes) {
+      await poolClient.query(
+        `DELETE FROM ${this.schema}.code WHERE code_hash = $1`,
+        [hash],
+      );
+    }
   }
 }

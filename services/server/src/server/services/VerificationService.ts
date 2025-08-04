@@ -396,7 +396,22 @@ export class VerificationService {
           // error comes from the verification worker
           logger.debug("Received verification error from worker", {
             verificationId,
-            errorExport: error.errorExport,
+            errorExport: {
+              ...error.errorExport,
+              // Don't log the full bytecodes because it's too long
+              onchainRuntimeCode: error.errorExport?.onchainRuntimeCode
+                ? error.errorExport.onchainRuntimeCode.slice(0, 200) + "..."
+                : error.errorExport?.onchainRuntimeCode,
+              recompiledRuntimeCode: error.errorExport?.recompiledRuntimeCode
+                ? error.errorExport.recompiledRuntimeCode.slice(0, 200) + "..."
+                : error.errorExport?.recompiledRuntimeCode,
+              onchainCreationCode: error.errorExport?.onchainCreationCode
+                ? error.errorExport.onchainCreationCode.slice(0, 200) + "..."
+                : error.errorExport?.onchainCreationCode,
+              recompiledCreationCode: error.errorExport?.recompiledCreationCode
+                ? error.errorExport.recompiledCreationCode.slice(0, 200) + "..."
+                : error.errorExport?.recompiledCreationCode,
+            },
           });
           errorExport = error.errorExport;
         } else if (error instanceof ConflictError) {
@@ -406,14 +421,15 @@ export class VerificationService {
             errorId: uuidv4(),
           };
         } else {
-          logger.error("Unexpected verification error", {
-            verificationId,
-            error,
-          });
           errorExport = {
             customCode: "internal_error",
             errorId: uuidv4(),
           };
+          logger.error("Unexpected verification error", {
+            verificationId,
+            error,
+            errorId: errorExport.errorId,
+          });
         }
 
         return this.storageService.performServiceOperation("setJobError", [

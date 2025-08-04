@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers-types@1.0.5 - 2025-08-04
+
+- update dependencies
+
 ## @ethereum-sourcify/compilers-types@1.0.4 - 2025-06-18
 
 - Add a shared output error type for Solidity and Vyper

@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.6.0 - 2025-08-04
+
+- Implement new migration system based on dbmate, compatible with VerA
+- Implement new massive-replace script to easily execute fixes on misaligned data on Sourcify database
+
 ## sourcify-database@2.5.4 - 2025-07-09
 
 - update dependencies

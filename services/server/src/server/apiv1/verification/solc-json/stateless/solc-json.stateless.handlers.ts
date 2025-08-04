@@ -44,7 +44,6 @@ export async function verifySolcJsonEndpoint(req: Request, res: Response) {
     contractName: contractName,
     compilerVersion: compilerVersion,
     creatorTxHash: creatorTxHash,
-    solcJson: solcJson,
   });
 
   const contractPath = getContractPathFromSources(

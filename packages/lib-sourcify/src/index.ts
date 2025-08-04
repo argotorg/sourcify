@@ -9,6 +9,7 @@ export type ILibSourcifyLogger = ILogger;
 export * from './Compilation/AbstractCompilation';
 export * from './Compilation/SolidityCompilation';
 export * from './Compilation/VyperCompilation';
+export * from './Compilation/PreRunCompilation';
 export * from './Compilation/CompilationTypes';
 
 // Verification exports

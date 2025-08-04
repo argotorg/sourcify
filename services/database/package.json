@@ -1,21 +1,26 @@
 {
   "name": "sourcify-database",
-  "version": "2.5.4",
+  "version": "2.6.0",
   "private": true,
   "description": "The Sourcify database",
   "main": "index.js",
   "scripts": {
-    "migrate:up": "db-migrate up",
-    "migrate:reset": "db-migrate reset",
-    "migrate:create": "db-migrate create ",
-    "sourcify:database": "node scripts.mjs "
+    "sourcify:database": "node scripts.mjs ",
+    "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -sf $PWD/database-specs/migrations/* $PWD/migrations-temp/ && ln -sf $PWD/migrations/* $PWD/migrations-temp/",
+    "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate up",
+    "migrate:rollback": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate rollback",
+    "migrate:new": "DBMATE_MIGRATIONS_DIR=./migrations dbmate new",
+    "migrate:create-db": "dbmate create",
+    "migrate:drop-db": "dbmate drop",
+    "migrate:load-schema": "dbmate load",
+    "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate status",
+    "massive-replace": "ts-node massive-replace-script/massive-replace-script.ts"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "commander": "12.1.0",
-    "db-migrate": "0.11.14",
-    "db-migrate-pg": "1.5.2",
+    "dbmate": "^2.27.0",
     "dotenv": "16.6.1",
     "ethers": "6.15.0",
     "pg": "8.16.3",

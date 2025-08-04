@@ -2,14 +2,23 @@ version: 2.1
 
 orbs:
   codecov: codecov/codecov@4.2.0
+
+parameters:
+  run-validate-database-schema:
+    type: boolean
+    default: false
   
 workflows:
   # Always run
   node-build:
     jobs:
       - node-v22
+  database-schema-validation:
+    when: << pipeline.parameters.run-validate-database-schema >>
+    jobs:
+      - validate-database-schema
   # Has to run always. Can't regex filter on add-chain-{chainId} branch names see: https://stackoverflow.com/questions/55839004/circleci-regex-filtering-match-within-string
-  test-new-chain:
+  new-chain-tests:
     jobs:
       - test-new-chain
 
@@ -41,7 +50,7 @@ jobs:
           command: npx lerna run build
       - run:
           name: lint
-          command: npx lerna run lint
+          command: npx lerna run check
       - run:
           name: test
           command: npx lerna run test --stream
@@ -90,3 +99,80 @@ jobs:
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
             SOURCIFY_POSTGRES_PORT: 5432
+  validate-database-schema:
+    docker:
+      - image: cimg/node:22.5.1
+      - image: postgres:16-alpine
+        environment:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+    environment:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/test_db?sslmode=disable
+      DBMATE_SCHEMA_FILE: ./sourcify-database.sql
+    steps:
+      - checkout
+      - run:
+          # Needed to make pg_dump available for dbmate
+          name: Install PostgreSQL client tools
+          command: |
+            sudo apt-get update
+            # Add PostgreSQL official APT repository for version 16
+            sudo apt-get install -y wget ca-certificates
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+            sudo apt-get update
+            # Install PostgreSQL 16 client tools
+            sudo apt-get install -y postgresql-client-16
+      - run:
+          name: Install Node.js dependencies
+          command: |
+            cd services/database
+            npm install
+      - run:
+          name: Validate schema is in sync with migrations
+          command: |
+            cd services/database
+            # Initialize git submodules
+            git submodule update --init
+            # Apply migrations using npm script
+            npm run migrate:up
+            # Force dump in case problems were ignored
+            npx dbmate dump
+            
+            # Check if the schema file has changed
+            if git diff --exit-code sourcify-database.sql; then
+              echo "✅ Schema validation passed - sourcify-database.sql is in sync with migrations"
+            else
+              echo "❌ Schema file is out of sync with migrations!"
+              echo ""
+              echo "The sourcify-database.sql file does not match what the migrations produce."
+              echo ""
+              echo "To fix this, run a postgres instance locally."
+              echo "Then apply the migrations to a clean database:"
+              echo "  cd services/database && npm run migrate:up"
+              echo ""
+              echo "Then include the updated schema in your commit:"
+              echo "  git add sourcify-database.sql && git commit -m 'Update schema'"
+              exit 1
+            fi
+      - run:
+          name: Test that down migrations work
+          command: |
+            cd services/database
+            # Drop db from previous test
+            npm run migrate:drop-db
+            # Apply migrations
+            npm run migrate:up
+
+            for i in ./migrations-temp/*
+            do
+              if test -f "$i"
+              then
+                # The command will fail if something is wrong
+                npm run migrate:rollback
+              fi
+            done;
+
+            # Check if migrations can be run again
+            npm run migrate:up

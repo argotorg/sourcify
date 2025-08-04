@@ -126,6 +126,7 @@ export async function verifyContract(
   if (contractAddress) {
     expect(res.body.result[0].address).to.equal(contractAddress);
   }
+  return res;
 }
 
 export async function deployAndVerifyContract(

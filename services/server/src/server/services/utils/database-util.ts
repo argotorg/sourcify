@@ -16,6 +16,10 @@ import {
   SoliditySettings,
   VyperSettings,
   SourcifyLibErrorData,
+  ISolidityCompiler,
+  IVyperCompiler,
+  PreRunCompilation,
+  splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Abi } from "abitype";
 import {
@@ -27,6 +31,8 @@ import {
   Nullable,
 } from "../../types";
 import { keccak256 } from "ethers";
+import { Database } from "./Database";
+import logger from "../../../common/logger";
 
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
@@ -66,6 +72,8 @@ export namespace Tables {
       devdoc: Nullable<any>;
       storageLayout: Nullable<StorageLayout>;
       sources: Nullable<CompilationArtifactsSources>;
+      methodIdentifiers?: Nullable<any>;
+      ir?: any;
     };
     compiler_settings: Omit<
       SoliditySettings | VyperSettings,
@@ -379,12 +387,12 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
           'storageLayout', compiled_contracts.compilation_artifacts->'storageLayout',
           'evm', json_build_object(
             'bytecode', json_build_object(
-              'object', nullif(concat('0x', encode(recompiled_creation_code.code, 'hex')), '0x'),
+              'object', nullif(encode(recompiled_creation_code.code, 'hex'), ''),
               'sourceMap', compiled_contracts.creation_code_artifacts->'sourceMap',
               'linkReferences', compiled_contracts.creation_code_artifacts->'linkReferences'
             ),
             'deployedBytecode', json_build_object(
-              'object', nullif(concat('0x', encode(recompiled_runtime_code.code, 'hex')), '0x'),
+              'object', nullif(encode(recompiled_runtime_code.code, 'hex'), ''),
               'sourceMap', compiled_contracts.runtime_code_artifacts->'sourceMap',
               'linkReferences', compiled_contracts.runtime_code_artifacts->'linkReferences',
               'immutableReferences', compiled_contracts.runtime_code_artifacts->'immutableReferences'
@@ -804,4 +812,114 @@ export function prepareCompilerSettingsFromVerification(
   const { outputSelection, ...restSettings } =
     verification.compilation.jsonInput.settings;
   return restSettings;
+}
+
+export async function extractCompilationFromDatabase(
+  database: Database,
+  { solc, vyper }: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+  address: string,
+  chainId: number,
+): Promise<PreRunCompilation> {
+  if (!database.isPoolInitialized()) {
+    logger.error(
+      "extractCompilationFromDatabase: database pool not initialized",
+    );
+    throw new Error(
+      "extractCompilationFromDatabase: database pool not initialized",
+    );
+  }
+
+  try {
+    // Fetch compilation data from the database
+    const verifiedContractResult =
+      await database.getSourcifyMatchByChainAddressWithProperties(
+        chainId,
+        bytesFromString(address),
+        [
+          "std_json_input",
+          "std_json_output",
+          "runtime_cbor_auxdata",
+          "creation_cbor_auxdata",
+          "fully_qualified_name",
+          "version",
+          "metadata",
+        ],
+      );
+
+    if (verifiedContractResult.rows.length === 0) {
+      logger.error(
+        "extractCompilationFromDatabase: verified contract not found",
+        {
+          chainId,
+          address,
+        },
+      );
+      throw new Error("Verified contract not found");
+    }
+
+    const verifiedContract = verifiedContractResult.rows[0];
+
+    // Extract properties from the verified contract
+    const compilerVersion = verifiedContract.version;
+    const creationCodeCborAuxdata: CompiledContractCborAuxdata | undefined =
+      verifiedContract.creation_cbor_auxdata || undefined;
+    const runtimeCodeCborAuxdata: CompiledContractCborAuxdata | undefined =
+      verifiedContract.runtime_cbor_auxdata || undefined;
+
+    // Get the file path and contract name from fully_qualified_name
+    const { contractPath, contractName } = splitFullyQualifiedName(
+      verifiedContract.fully_qualified_name!,
+    );
+    const compilationTarget = {
+      name: contractName,
+      path: contractPath,
+    };
+
+    // Set the JSON input and output
+    const jsonInput = verifiedContract.std_json_input;
+    const jsonOutput = verifiedContract.std_json_output;
+
+    if (
+      !compilerVersion ||
+      !jsonInput ||
+      !jsonOutput ||
+      !compilationTarget ||
+      !creationCodeCborAuxdata ||
+      !runtimeCodeCborAuxdata
+    ) {
+      logger.error(
+        "extractCompilationFromDatabase: compilation properties not found",
+        {
+          chainId,
+          address,
+        },
+      );
+      throw new Error("Compilation properties not found");
+    }
+
+    const compilation = new PreRunCompilation(
+      jsonInput?.language === "Solidity" ? solc : vyper,
+      compilerVersion,
+      jsonInput,
+      jsonOutput,
+      compilationTarget,
+      creationCodeCborAuxdata,
+      runtimeCodeCborAuxdata,
+    );
+    // Vyper compiler output doesn't contain the metadata field, so we override it with the metadata from sourcify_matches
+    if (jsonInput.language === "Vyper" && verifiedContract.metadata) {
+      compilation.setMetadata(verifiedContract.metadata);
+    }
+    return compilation;
+  } catch (error) {
+    logger.error(
+      "extractCompilationFromDatabase: error extracting compilation properties",
+      {
+        error: error,
+        chainId,
+        address,
+      },
+    );
+    throw error;
+  }
 }
