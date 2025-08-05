@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/ethereum/sourcify/tree/main/packages/compilers-types#readme",
   "devDependencies": {
-    "typescript": "5.8.3"
+    "typescript": "5.9.2"
   },
   "publishConfig": {
     "access": "public"
