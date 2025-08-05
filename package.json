@@ -37,6 +37,7 @@
     "piscina": "5.0.0",
     "semver": "^7.7.1",
     "sequelize": "^6.37.7",
+    "undici": "^7.13.0",
     "uuid": "10.0.0",
     "winston": "3.17.0"
   },

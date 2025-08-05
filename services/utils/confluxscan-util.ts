@@ -1,6 +1,6 @@
 import {
   SolidityJsonInput,
-  Sources,
+  Sources, VyperJsonInput
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   ChainNotFoundError,
@@ -11,6 +11,68 @@ import {
 } from "../../routes/api/errors";
 import SolidityParser from "@solidity-parser/parser";
 import { Chain } from "../chain/Chain";
+import { ProxyAgent } from 'undici';
+
+interface VyperVersion {
+  compiler_version: string;
+  tag: string;
+}
+
+interface VyperVersionCache {
+  versions: VyperVersion[];
+  lastFetch: number;
+}
+
+let vyperVersionCache: VyperVersionCache | null = null;
+const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour default
+
+export const getVyperCompilerVersion = async (
+  compilerString: string,
+  cacheDurationMs: number = CACHE_DURATION_MS,
+): Promise<string | undefined> => {
+  const now = Date.now();
+
+  // Check if cache needs refresh
+  if (
+    !vyperVersionCache ||
+    now - vyperVersionCache.lastFetch > cacheDurationMs
+  ) {
+    try {
+      const response = await fetch(
+        "https://vyper-releases-mirror.hardhat.org/list.json",
+      );
+      const versions: any = await response.json();
+      vyperVersionCache = {
+        versions: versions.map((version: any) => ({
+          compiler_version: version.assets[0]?.name
+            .replace("vyper.", "")
+            .replace(".darwin", "")
+            .replace(".linux", "")
+            .replace(".windows.exe", ""),
+          tag: version.tag_name.substring(1),
+        })),
+        lastFetch: now,
+      };
+    } catch (error) {
+      console.error("Failed to fetch Vyper versions", { error });
+      // If cache exists but is stale, use it rather than failing
+      if (vyperVersionCache) {
+        console.warn("Using stale Vyper versions cache");
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!vyperVersionCache) {
+    return undefined;
+  }
+
+  const versionNumber = compilerString.split(":")[1];
+  return vyperVersionCache.versions.find(
+    (version) => version.tag === versionNumber,
+  )?.compiler_version;
+};
 
 export type ConfluxscanResult = {
   SourceCode: string;
@@ -109,6 +171,27 @@ export const getContractPathFromSourcesOrThrow = (
   return contractPath;
 };
 
+export const getVyperJsonInputFromSingleFileResult = (
+  confluxscanResult: ConfluxscanResult,
+  sources: VyperJsonInput["sources"],
+): VyperJsonInput => {
+  const generatedSettings = {
+    outputSelection: {
+      "*": ["evm.deployedBytecode.object"],
+    },
+    evmVersion:
+      confluxscanResult.EVMVersion !== "Default"
+        ? (confluxscanResult.EVMVersion as any)
+        : undefined,
+    search_paths: ["."],
+  };
+  return {
+    language: "Vyper",
+    sources,
+    settings: generatedSettings,
+  };
+};
+
 export interface ProcessedConfluxscanResult {
   compilerVersion: string;
   jsonInput: SolidityJsonInput;
@@ -137,7 +220,11 @@ export const fetchFromConfluxscan = async (
   });
   let response;
   try {
-    response = await fetch(`${url}&apikey=${usedApiKey || ""}`);
+    const opt: any = {}
+    if(process.env.HTTP_PROXY) {
+      opt.dispatcher = new ProxyAgent(process.env.HTTP_PROXY)
+    }
+    response = await fetch(`${url}&apikey=${usedApiKey || ""}`, opt);
   } catch (error) {
     throw new ConfluxscanRequestFailedError(`Request to ${url}&apiKey=XXX failed.`)
   }
@@ -240,6 +327,89 @@ export const processSolidityResultFromConfluxscan = (
     contractPath,
     contractName,
   };
+};
+
+export const processVyperResultFromConfluxscan = async (
+  contractResultJson: ConfluxscanResult,
+): Promise<ProcessedConfluxscanResult> => {
+  const sourceCodeProperty = contractResultJson.SourceCode
+
+  const compilerVersion = await getVyperCompilerVersion(contractResultJson.CompilerVersion)
+  if (!compilerVersion) {
+    const errorMessage = "Could not map the Vyper version from Confluxscan to a valid compiler version."
+    throw new MalformedConfluxscanResponseError(errorMessage)
+  }
+
+  let contractName: string
+  let contractPath: string
+  let vyperJsonInput: VyperJsonInput
+  if (isConfluxscanJsonInput(sourceCodeProperty)) {
+    console.debug("Confluxscan vyperJsonInput contract found")
+
+    const parsedJsonInput = parseConfluxscanJsonInput(sourceCodeProperty)
+
+    // Confluxscan derives the ContractName from the @title natspec. Therefore, we cannot use the ContractName to find the contract path.
+    contractPath = Object.keys(parsedJsonInput.settings.outputSelection)[0]
+
+    // contractPath can be also be "*" or "<unknown>", in the case of "<unknown>" both contractPath and contractName will be "<unknown>"
+    if (contractPath === "*") {
+      // in the case of "*", we extract the contract path from the sources using `ContractName`
+      contractPath = Object.keys(parsedJsonInput.sources).find((source) =>
+        source.includes(contractResultJson.ContractName),
+      )!;
+      if (!contractPath) {
+        const errorMessage =
+          "The json input sources in the response from Confluxscan don't include the expected contract.";
+        throw new MalformedConfluxscanResponseError(errorMessage)
+      }
+    }
+
+    // We need to use the name from the contractPath, because VyperCheckedContract uses it for selecting the compiler output.
+    contractName = contractPath.split("/").pop()!.split(".")[0];
+
+    vyperJsonInput = {
+      language: "Vyper",
+      sources: parsedJsonInput.sources,
+      settings: parsedJsonInput.settings,
+    };
+  } else {
+    console.debug("Confluxscan Vyper single file contract found");
+
+    // Since the ContractName from Confluxscan is derived from the @title natspec, it can contain spaces.
+    // To be safe we also remove \n and \r characters
+    contractName = contractResultJson.ContractName.replace(/\s+/g, "")
+      .replace(/\n/g, "")
+      .replace(/\r/g, "");
+    contractPath = contractName + ".vy";
+
+    // The Vyper compiler has a bug where it throws if there are \r characters in the source code:
+    // https://github.com/vyperlang/vyper/issues/4297
+    const sourceCode = sourceCodeProperty.replace(/\r/g, "");
+    const sources = {
+      [contractPath]: { content: sourceCode },
+    }
+
+    vyperJsonInput = getVyperJsonInputFromSingleFileResult(
+      contractResultJson,
+      sources,
+    )
+  }
+
+  if (!vyperJsonInput.settings) {
+    const errorMessage = "Couldn't get Vyper compiler settings from Confluxscan.";
+    throw new MalformedConfluxscanResponseError(errorMessage)
+  }
+
+  return {
+    compilerVersion,
+    jsonInput: vyperJsonInput,
+    contractPath,
+    contractName,
+  };
+};
+
+export const isVyperResult = (confluxscanResult: ConfluxscanResult): boolean => {
+  return confluxscanResult.CompilerVersion.startsWith("vyper");
 };
 
 function toEspaceResult(json: any, corespace: boolean) {

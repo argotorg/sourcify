@@ -796,8 +796,8 @@ export class StoreService
         creation_match: verification.status.creationMatch,
         runtime_match: verification.status.runtimeMatch,
         metadata: verification.compilation.metadata as any,
-        license_type: licenseType,
-        contract_label: contractLabel,
+        license_type: licenseType || null,
+        contract_label: contractLabel || null,
       });
       console.info("Stored to SourcifyDatabase", matchInfo);
     } else if (type === "update") {
@@ -812,8 +812,8 @@ export class StoreService
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
-          license_type: licenseType,
-          contract_label: contractLabel,
+          license_type: licenseType || null,
+          contract_label: contractLabel || null,
         },
         oldVerifiedContractId,
       );
@@ -825,8 +825,8 @@ export class StoreService
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
-          license_type: licenseType,
-          contract_label: contractLabel,
+          license_type: licenseType || null,
+          contract_label: contractLabel || null,
         });
         console.info("Stored to SourcifyDatabase", matchInfo);
       }

@@ -98,5 +98,36 @@ export default {
         }
       ],
     },
+    /*1: {
+      name: "Ethereum Mainnet",
+      chainId: 1,
+      supported: true,
+      corespace: false,
+      confluxscanApi: {
+        apiURL: "https://api.etherscan.io",
+        apiKeyEnvName: "ETHERSCAN_API_KEY",
+      },
+      rpc: [
+        'https://eth.drpc.org'
+      ],
+      traceSupportedRPCs: [
+        {
+          type: 'trace_transaction',
+          index: 0,
+        }
+      ],
+    },*/
+    16601: {
+      name: "0G Galileo Testnet",
+      chainId: 16601,
+      supported: true,
+      corespace: false,
+      confluxscanApi: {
+        apiURL: "https://chainscan-test.0g.ai/open",
+      },
+      rpc: [
+        'http://127.0.0.1:32537'
+      ],
+    },
   },
 };

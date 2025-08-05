@@ -22,8 +22,9 @@ import type {
   VerificationWorkerInput,
 } from "./workerTypes";
 import {
+  isVyperResult,
   ProcessedConfluxscanResult,
-  processSolidityResultFromConfluxscan,
+  processSolidityResultFromConfluxscan, processVyperResultFromConfluxscan
 } from "../utils/confluxscan-util";
 import { asyncLocalStorage } from "../../common/async-context";
 import { Chain } from "../chain/Chain";
@@ -240,7 +241,12 @@ async function _verifyFromConfluxscan({
   address,
   confluxscanResult,
 }: VerifyFromConfluxscanInput): Promise<VerifyOutput> {
-  const processedResult: ProcessedConfluxscanResult = processSolidityResultFromConfluxscan(confluxscanResult);
+  let processedResult: ProcessedConfluxscanResult
+  if(isVyperResult(confluxscanResult)) {
+    processedResult = await processVyperResultFromConfluxscan(confluxscanResult)
+  } else {
+    processedResult = processSolidityResultFromConfluxscan(confluxscanResult)
+  }
 
   return _verifyFromJsonInput({
     chainId,
@@ -251,7 +257,7 @@ async function _verifyFromConfluxscan({
       name: processedResult.contractName,
       path: processedResult.contractPath,
     },
-  });
+  })
 }
 
 function createErrorExport(
