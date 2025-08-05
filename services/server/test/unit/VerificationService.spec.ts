@@ -8,8 +8,12 @@ import config from "config";
 import rimraf from "rimraf";
 import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
+import sinon from "sinon";
+import { EtherscanResult } from "../../src/server/services/utils/etherscan-util";
 
 describe("VerificationService", function () {
+  const sandbox = sinon.createSandbox();
+
   beforeEach(function () {
     // Clear any previously nocked interceptors
     nock.cleanAll();
@@ -18,6 +22,7 @@ describe("VerificationService", function () {
   afterEach(function () {
     // Ensure that all nock interceptors have been used
     nock.isDone();
+    sandbox.restore();
   });
 
   it("should initialize compilers", async function () {
@@ -96,5 +101,81 @@ describe("VerificationService", function () {
     Object.values(releases).forEach((release) => {
       expect(fs.existsSync(path.join(downloadDir, release))).to.be.true;
     });
+  });
+
+  it("should handle workerPool.run errors and set job error as internal_error", async function () {
+    const mockStorageService = {
+      performServiceOperation: sandbox.stub(),
+    } as any;
+
+    // Mock the storage service calls
+    const verificationId = "test-verification-id";
+    mockStorageService.performServiceOperation
+      .withArgs("storeVerificationJob")
+      .resolves(verificationId);
+
+    mockStorageService.performServiceOperation
+      .withArgs("setJobError")
+      .resolves();
+
+    const verificationService = new VerificationService(
+      {
+        initCompilers: false,
+        sourcifyChainMap: {},
+        solcRepoPath: config.get("solcRepo"),
+        solJsonRepoPath: config.get("solJsonRepo"),
+        vyperRepoPath: config.get("vyperRepo"),
+      },
+      mockStorageService,
+    );
+
+    // Mock the workerPool.run to throw an error
+    const workerPoolStub = sandbox.stub(
+      verificationService["workerPool"],
+      "run",
+    );
+    workerPoolStub.rejects(new Error("Worker pool error"));
+
+    const mockEtherscanResult: EtherscanResult = {
+      ContractName: "TestContract",
+      SourceCode: "contract TestContract {}",
+      ABI: "[]",
+      CompilerVersion: "v0.8.26+commit.8a97fa7a",
+      OptimizationUsed: "0",
+      Runs: "200",
+      ConstructorArguments: "",
+      EVMVersion: "default",
+      Library: "",
+      LicenseType: "",
+      Proxy: "0",
+      Implementation: "",
+      SwarmSource: "",
+    };
+
+    // Call the method that should handle worker errors
+    verificationService.verifyFromEtherscanViaWorker(
+      "test-endpoint",
+      "1",
+      "0x1234567890123456789012345678901234567890",
+      mockEtherscanResult,
+    );
+
+    // Wait for the async task to complete
+    await new Promise((resolve) => setTimeout(resolve, 1));
+
+    // Verify the job error was set with internal_error
+    const setJobErrorCall = mockStorageService.performServiceOperation
+      .getCalls()
+      .find((call: any) => call.args[0] === "setJobError");
+    expect(setJobErrorCall).to.not.be.undefined;
+
+    // The setJobError call has args: ["setJobError", [verificationId, Date, errorExport]]
+    const setJobErrorArgs = setJobErrorCall.args[1];
+    expect(setJobErrorArgs[0]).to.equal(verificationId);
+    expect(setJobErrorArgs[1]).to.be.instanceOf(Date);
+    expect(setJobErrorArgs[2]).to.deep.include({
+      customCode: "internal_error",
+    });
+    expect(setJobErrorArgs[2].errorId).to.be.a("string");
   });
 });

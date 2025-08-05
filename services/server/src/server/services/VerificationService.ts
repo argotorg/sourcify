@@ -290,15 +290,7 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    const task = this.workerPool
-      .run(input, { name: "verifyFromJsonInput" })
-      .then((output: VerifyOutput) => {
-        return this.handleWorkerResponse(verificationId, output);
-      })
-      .finally(() => {
-        this.runningTasks.delete(task);
-      });
-    this.runningTasks.add(task);
+    this.verifyViaWorker(verificationId, "verifyFromJsonInput", input);
 
     return verificationId;
   }
@@ -325,15 +317,7 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    const task = this.workerPool
-      .run(input, { name: "verifyFromMetadata" })
-      .then((output: VerifyOutput) => {
-        return this.handleWorkerResponse(verificationId, output);
-      })
-      .finally(() => {
-        this.runningTasks.delete(task);
-      });
-    this.runningTasks.add(task);
+    this.verifyViaWorker(verificationId, "verifyFromMetadata", input);
 
     return verificationId;
   }
@@ -356,24 +340,21 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    const task = this.workerPool
-      .run(input, { name: "verifyFromEtherscan" })
-      .then((output: VerifyOutput) => {
-        return this.handleWorkerResponse(verificationId, output);
-      })
-      .finally(() => {
-        this.runningTasks.delete(task);
-      });
-    this.runningTasks.add(task);
+    this.verifyViaWorker(verificationId, "verifyFromEtherscan", input);
 
     return verificationId;
   }
 
-  private async handleWorkerResponse(
+  private async verifyViaWorker(
     verificationId: VerificationJobId,
-    output: VerifyOutput,
+    functionName: string,
+    input:
+      | VerifyFromJsonInput
+      | VerifyFromMetadataInput
+      | VerifyFromEtherscanInput,
   ): Promise<void> {
-    return Promise.resolve(output)
+    const task = this.workerPool
+      .run(input, { name: functionName })
       .then((output: VerifyOutput) => {
         if (output.verificationExport) {
           return output.verificationExport;
@@ -437,6 +418,10 @@ export class VerificationService {
           new Date(),
           errorExport,
         ]);
+      })
+      .finally(() => {
+        this.runningTasks.delete(task);
       });
+    this.runningTasks.add(task);
   }
 }
