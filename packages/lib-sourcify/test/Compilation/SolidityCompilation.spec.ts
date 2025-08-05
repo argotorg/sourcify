@@ -325,4 +325,119 @@ describe('SolidityCompilation', () => {
     const immutableRefs = compilation.immutableReferences;
     expect(immutableRefs).to.deep.equal({ '3': [{ length: 32, start: 608 }] });
   });
+
+  // Contracts before 0.4.12 don't have `auxdata` in `legacyAssembly`
+  // https://github.com/ethereum/sourcify/issues/2217
+  it('should handle legacy Solidity 0.4.11 contracts with auxdata correctly', async () => {
+    const contractPath = path.join(__dirname, '..', 'sources', 'pre-0.4.11');
+    const sources = {
+      'Multidrop.sol': {
+        content: fs.readFileSync(
+          path.join(contractPath, 'Multidrop.sol'),
+          'utf8',
+        ),
+      },
+    };
+
+    const solcJsonInput: SolidityJsonInput = {
+      language: 'Solidity',
+      sources,
+      settings: {
+        optimizer: {
+          enabled: false,
+          runs: 200,
+        },
+        outputSelection: {
+          '*': {
+            '*': ['*'],
+          },
+        },
+      },
+    };
+
+    const compilation = new SolidityCompilation(
+      solc,
+      '0.4.11+commit.68ef5810', // Solidity 0.4.11
+      solcJsonInput,
+      {
+        name: 'Multidrop',
+        path: 'Multidrop.sol',
+      },
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    // For Solidity 0.4.11, auxdata should be extracted from bytecode directly
+    // The auxdata positions should be calculated correctly even though legacyAssembly doesn't have .auxdata field
+    expect(compilation.runtimeBytecodeCborAuxdata).to.not.deep.equal({});
+    expect(compilation.creationBytecodeCborAuxdata).to.not.deep.equal({});
+
+    // Verify that auxdata positions are properly structured
+    if (Object.keys(compilation.runtimeBytecodeCborAuxdata).length > 0) {
+      expect(compilation.runtimeBytecodeCborAuxdata['1']).to.have.property(
+        'offset',
+      );
+      expect(compilation.runtimeBytecodeCborAuxdata['1']).to.have.property(
+        'value',
+      );
+      expect(compilation.runtimeBytecodeCborAuxdata['1'].value).to.match(
+        /^0x[a-fA-F0-9]+$/,
+      );
+    }
+
+    if (Object.keys(compilation.creationBytecodeCborAuxdata).length > 0) {
+      expect(compilation.creationBytecodeCborAuxdata['1']).to.have.property(
+        'offset',
+      );
+      expect(compilation.creationBytecodeCborAuxdata['1']).to.have.property(
+        'value',
+      );
+      expect(compilation.creationBytecodeCborAuxdata['1'].value).to.match(
+        /^0x[a-fA-F0-9]+$/,
+      );
+    }
+  });
+
+  it('should handle very old Solidity versions (< 0.4.7) with no auxdata', async () => {
+    const contractPath = path.join(__dirname, '..', 'sources', 'pre-0.4.11');
+    const sources = {
+      'Simple.sol': {
+        content: fs.readFileSync(path.join(contractPath, 'Simple.sol'), 'utf8'),
+      },
+    };
+
+    const solcJsonInput: SolidityJsonInput = {
+      language: 'Solidity',
+      sources,
+      settings: {
+        optimizer: {
+          enabled: false,
+          runs: 200,
+        },
+        outputSelection: {
+          '*': {
+            '*': ['*'],
+          },
+        },
+      },
+    };
+
+    const compilation = new SolidityCompilation(
+      solc,
+      '0.4.0+commit.acd334c9',
+      solcJsonInput,
+      {
+        name: 'Simple',
+        path: 'Simple.sol',
+      },
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    // For versions < 0.4.7, no auxdata should exist
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({});
+    expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
+  });
 });
