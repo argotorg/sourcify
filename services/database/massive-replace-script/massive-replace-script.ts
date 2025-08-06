@@ -34,7 +34,7 @@ if (fs.existsSync(COUNTER_FILE)) {
   );
 }
 
-const N = 200; // Number of contracts to process at a time
+const N = 5; // Number of contracts to process at a time
 
 const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
 
@@ -117,7 +117,10 @@ async function processContract(
 
     console.log(`✅ Successfully processed contract ${address}:`, result);
   } catch (error) {
-    console.error(`❌ Failed to process contract ${address}:`, error);
+    console.error(
+      `❌ Failed to process contract ${address} at chain ${contract.chain_id}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -155,36 +158,39 @@ async function processContract(
 
       verifiedContractCount = rowCount || 0;
 
+      let secondToWait = 2;
       // Process the batch in parallel
       try {
         const processingPromises = verifiedContracts.map((contract) =>
           processContract(contract, config),
         );
         await Promise.all(processingPromises);
-
-        // Update the counter file only after the batch successfully completes
-        if (verifiedContracts.length > 0) {
-          const lastProcessedId =
-            verifiedContracts[verifiedContracts.length - 1]
-              .verified_contract_id ||
-            verifiedContracts[verifiedContracts.length - 1].id;
-          CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
-
-          // Use async write to avoid blocking
-          fs.writeFile(
-            COUNTER_FILE,
-            CURRENT_VERIFIED_CONTRACT.toString(),
-            "utf8",
-            (err) => {
-              if (err) {
-                console.error("Error writing counter file:", err);
-              }
-            },
-          );
-        }
       } catch (batchError) {
+        secondToWait = 5; // Increase wait time on error
         console.error("Error processing batch:", batchError);
       }
+
+      // Update the counter file only after the batch successfully completes
+
+      const lastProcessedId =
+        verifiedContracts[verifiedContracts.length - 1].verified_contract_id ||
+        verifiedContracts[verifiedContracts.length - 1].id;
+      CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
+
+      // Use async write to avoid blocking
+      fs.writeFile(
+        COUNTER_FILE,
+        CURRENT_VERIFIED_CONTRACT.toString(),
+        "utf8",
+        (err) => {
+          if (err) {
+            console.error("Error writing counter file:", err);
+          }
+        },
+      );
+
+      console.log(`waiting ${secondToWait} seconds`);
+      await new Promise((resolve) => setTimeout(resolve, secondToWait * 1000));
 
       const endIterationTime = performance.now();
       const iterationTimeTaken = endIterationTime - startIterationTime;
