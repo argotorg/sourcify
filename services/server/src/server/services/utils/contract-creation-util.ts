@@ -243,6 +243,7 @@ async function getCreatorTxUsingFetcher(
     }
   } catch (e: any) {
     logger.warn("Error while getting creation transaction", {
+      url: fetcher?.url,
       error: e.message,
     });
     return null;
