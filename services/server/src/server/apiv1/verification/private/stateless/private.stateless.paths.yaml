@@ -201,6 +201,7 @@ paths:
                       creation match status while preserving the runtime verification data. This method is 
                       useful for correcting incomplete or missing creation data on contracts that were 
                       previously verified only against runtime bytecode.
+                    - "replace-metadata": Updates only the metadata of an existing verified contract.
                   example: "replace-creation-information"
       responses:
         "200":
