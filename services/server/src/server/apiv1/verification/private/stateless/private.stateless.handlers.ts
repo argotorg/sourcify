@@ -266,7 +266,7 @@ export async function replaceContract(
       const transactionHashFromDatabase = (sourcifyChain as SourcifyChainMock)
         .contractDeployment?.transaction_hash;
       if (transactionHashFromDatabase) {
-        transactionHash = `0x${transactionHashFromDatabase}`;
+        transactionHash = transactionHashFromDatabase;
       }
     } else {
       // Use the chainRepository to get the sourcifyChain object and fetch the contract's information from the RPC
