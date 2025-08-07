@@ -80,7 +80,7 @@ export default {
         }
       ],
     },
-    1: {
+    /*1: {
       name: "Conflux coreSpace testnet",
       chainId: 1,
       supported: true,
@@ -97,8 +97,8 @@ export default {
           index: 0,
         }
       ],
-    },
-    /*1: {
+    },*/
+    1: {
       name: "Ethereum Mainnet",
       chainId: 1,
       supported: true,
@@ -116,7 +116,7 @@ export default {
           index: 0,
         }
       ],
-    },*/
+    },
     16601: {
       name: "0G Galileo Testnet",
       chainId: 16601,
@@ -127,6 +127,15 @@ export default {
       },
       rpc: [
         'http://127.0.0.1:32537'
+      ],
+    },
+    31337: {
+      name: "Hardhat Network Localhost",
+      chainId: 31337,
+      supported: true,
+      corespace: false,
+      rpc: [
+        `http://localhost:8545`
       ],
     },
   },

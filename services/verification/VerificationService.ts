@@ -140,8 +140,10 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output);
       })
       .finally(() => {
+        this.runningTaskIds.delete(verificationId)
         this.runningTasks.delete(task);
       });
+    this.runningTaskIds.add(verificationId)
     this.runningTasks.add(task);
 
     return verificationId;
@@ -168,8 +170,10 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output);
       })
       .finally(() => {
+        this.runningTaskIds.delete(verificationId)
         this.runningTasks.delete(task);
       });
+    this.runningTaskIds.add(verificationId)
     this.runningTasks.add(task);
 
     return verificationId;

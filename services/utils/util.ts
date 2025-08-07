@@ -162,6 +162,30 @@ export function getTotalMatchLevel(
   return "match";
 }
 
+export function getMatchStatus(
+  verificationStatus: {
+    runtimeMatch: string,
+    creationMatch: string,
+  },
+): VerificationStatus {
+  if (
+    verificationStatus.runtimeMatch === "perfect" ||
+    verificationStatus.creationMatch === "perfect"
+  ) {
+    return "perfect";
+  }
+  if (
+    verificationStatus.runtimeMatch === "partial" ||
+    verificationStatus.creationMatch === "partial"
+  ) {
+    return "partial";
+  }
+  if (verificationStatus.runtimeMatch === "extra-file-input-bug") {
+    return "extra-file-input-bug";
+  }
+  return null;
+}
+
 export function reduceAccessorStringToProperty(
   accessorString: string, // for example "deployment.blockNumber"
   obj: Record<string, any>,

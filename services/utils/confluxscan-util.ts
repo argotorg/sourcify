@@ -204,8 +204,8 @@ export const fetchFromConfluxscan = async (
   address: string,
   apiKey?: string,
 ): Promise<ConfluxscanResult> => {
-  if (!chain.confluxscanApi) {
-    const errorMessage = `Requested chain ${chain.chainId} is not supported for importing from Confluxscan.`;
+  if (!chain?.confluxscanApi) {
+    const errorMessage = `Requested chain ${chain?.chainId} is not supported for importing from Confluxscan.`;
     throw new ChainNotFoundError(errorMessage)
   }
 

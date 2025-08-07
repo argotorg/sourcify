@@ -18,17 +18,21 @@ import { v4 as uuidv4 } from "uuid";
 
 export class Dao {
   private readonly options: DatabaseOptions
-  private database: Sequelize;
+  private _database: Sequelize;
 
   constructor(options: DatabaseOptions) {
     this.options = options
   }
 
+  get pool(): Sequelize {
+    return this._database
+  }
+
   async init(): Promise<boolean> {
-    this.database = new Sequelize(this.options)
-    await Tables.initModel(this.database)
+    this._database = new Sequelize(this.options)
+    await Tables.initModel(this._database)
     if(this.options.syncSchema) {
-      await this.database.sync();
+      await this._database.sync();
     }
     return true;
   }
@@ -38,7 +42,7 @@ export class Dao {
     address: string,
     onlyPerfectMatches: boolean = false,
   ): Promise<GetSourcifyMatchByChainAddressResult> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           sourcify_matches.created_at,
@@ -93,7 +97,7 @@ export class Dao {
       (property) => STORED_PROPERTIES_TO_SELECTORS[property],
     );
 
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           ${selectors.join(", ")}
@@ -137,7 +141,7 @@ export class Dao {
   async getCompiledContractSources(
     compilation_id: number,
   ): Promise<CompiledContractSource[]> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           compiled_contracts_sources.*,
@@ -159,7 +163,7 @@ export class Dao {
     chain: number,
     address: string,
   ): Promise<GetVerifiedContractByChainAndAddressResult> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           verified_contracts.*,
@@ -189,7 +193,7 @@ export class Dao {
   }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
     const metadataStr = JSON.stringify(metadata)
     const now = new Date()
-    await this.database.query(
+    await this.pool.query(
       `
         INSERT INTO sourcify_matches (
         verified_contract_id,
@@ -223,7 +227,7 @@ export class Dao {
     oldVerifiedContractId: number,
   ) {
     const metadataStr = JSON.stringify(metadata)
-    return this.database.query(
+    return this.pool.query(
       `
         UPDATE sourcify_matches SET 
         verified_contract_id = ?,
@@ -250,7 +254,7 @@ export class Dao {
   }
 
   async countSourcifyMatchAddresses(chain: number): Promise<CountSourcifyMatchAddresses> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
         contract_deployments.chain_id,
@@ -310,7 +314,7 @@ export class Dao {
       STORED_PROPERTIES_TO_SELECTORS["address"],
       STORED_PROPERTIES_TO_SELECTORS["verified_at"],
     ];
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           ${selectors.join(", ")}
@@ -364,7 +368,7 @@ export class Dao {
       ? "ORDER BY verified_contracts.id DESC"
       : "ORDER BY verified_contracts.id ASC";
 
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           contract_deployments.address as address
@@ -389,7 +393,7 @@ export class Dao {
   async insertCode({ bytecode_hash_keccak, bytecode }: Omit<Tables.ICode, "bytecode_hash">, dbTx?: Transaction)
     : Promise<Pick<Tables.ICode, "bytecode_hash">> {
     const now = new Date()
-    const [_, effectRows] = await this.database.query(`
+    const [_, effectRows] = await this.pool.query(`
       INSERT INTO code 
           (code_hash, code, code_hash_keccak, createdAt, updatedAt) 
       VALUES (?, ?, ?, ?, ?)
@@ -405,7 +409,7 @@ export class Dao {
       return { bytecode_hash: bytecode_hash_keccak } as any
     }
 
-    const records = await this.database.query(`
+    const records = await this.pool.query(`
         SELECT
           code_hash AS bytecode_hash
         FROM code
@@ -428,7 +432,7 @@ export class Dao {
     dbTx?: Transaction)
     : Promise<Pick<Tables.IContract, "id">> {
     const now = new Date()
-    const [id, effectRows] = await this.database.query(`
+    const [id, effectRows] = await this.pool.query(`
       INSERT INTO contracts 
           (creation_code_hash, runtime_code_hash, createdAt, updatedAt) 
       VALUES (?,?,?,?)
@@ -445,7 +449,7 @@ export class Dao {
       return {id} as any
     }
 
-    const records = await this.database.query(`
+    const records = await this.pool.query(`
       SELECT
         id
       FROM contracts
@@ -472,7 +476,7 @@ export class Dao {
     dbTx?: Transaction,
   ): Promise<Pick<Tables.IContractDeployment, "id">> {
     const now = new Date()
-    const [id, effectRows] =  await this.database.query(`
+    const [id, effectRows] =  await this.pool.query(`
       INSERT INTO contract_deployments (
         chain_id,
         address,
@@ -509,7 +513,7 @@ export class Dao {
       return {id} as any
     }
 
-    const records = await this.database.query(`
+    const records = await this.pool.query(`
       SELECT
         id
       FROM contract_deployments
@@ -548,7 +552,7 @@ export class Dao {
     const creationCodeArtifacts = JSON.stringify(creation_code_artifacts) // to json
     const runtimeCodeArtifacts = JSON.stringify(runtime_code_artifacts) // to json
     const now = new Date()
-    const [id, effectRows] = await this.database.query(`
+    const [id, effectRows] = await this.pool.query(`
       INSERT INTO compiled_contracts (
         compiler,
         version,
@@ -593,7 +597,7 @@ export class Dao {
       return {id} as any
     }
 
-    const records = await this.database.query(`
+    const records = await this.pool.query(`
       SELECT
         id
       FROM compiled_contracts
@@ -635,7 +639,7 @@ export class Dao {
         source_hash_keccak: sourceCode.source_hash_keccak,
       })
     })
-    let [_, effectRows] = await this.database.query(`
+    let [_, effectRows] = await this.pool.query(`
       INSERT INTO sources (
         source_hash,
         content,
@@ -651,7 +655,7 @@ export class Dao {
     })
     // Fetch existing sources
     if (effectRows < sourcesInformation.length) {
-      sourcesResult = await this.database.query(`
+      sourcesResult = await this.pool.query(`
         SELECT * FROM sources WHERE source_hash in (?)
         `,{
         type: QueryTypes.SELECT,
@@ -673,7 +677,7 @@ export class Dao {
         compiledContractsSourcesQueryValues.push(...[compilation_id,source.source_hash_keccak,compiledContractsSource.path,now,now]);
       },
     );
-    await this.database.query(`
+    await this.pool.query(`
       INSERT INTO compiled_contracts_sources (
         compilation_id,
         source_hash,
@@ -713,7 +717,7 @@ export class Dao {
     const runtimeMetadataMatch = !!runtime_metadata_match
     const creationMetadataMatch = !!creation_metadata_match
     const now = new Date()
-    const [id, effectRows]= await this.database.query(`
+    const [id, effectRows]= await this.pool.query(`
       INSERT INTO verified_contracts (
         compilation_id,
         deployment_id,
@@ -757,7 +761,7 @@ export class Dao {
       return {id} as any
     }
 
-    const records = await this.database.query(`
+    const records = await this.pool.query(`
       SELECT
         id
       FROM verified_contracts
@@ -783,7 +787,7 @@ export class Dao {
       contract_id,
     }: Omit<Tables.IContractDeployment, "chain_id" | "address">,
   ) {
-    const [_, effectRows] = await this.database.query(
+    const [_, effectRows] = await this.pool.query(
       `
         UPDATE contract_deployments 
          SET 
@@ -822,7 +826,7 @@ export class Dao {
   async getVerificationJobById(
     verificationId: string,
   ): Promise<GetVerificationJobByIdResult> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
         SELECT
           DATE_FORMAT(verification_jobs.started_at, '%Y-%m-%dT%H:%i:%sT') AS started_at,
@@ -863,7 +867,7 @@ export class Dao {
     chainId: number,
     address: string,
   ): Promise<GetVerificationJobsByChainAndAddressResult[]> {
-    const records = await this.database.query(
+    const records = await this.pool.query(
       `
       SELECT
         id,
@@ -896,7 +900,7 @@ export class Dao {
   >): Promise<Pick<Tables.IVerificationJob, "id">> {
     const id = uuidv4()
     const now = new Date()
-    await this.database.query(`
+    await this.pool.query(`
       INSERT INTO verification_jobs (
         id,                       
         started_at,
@@ -933,7 +937,7 @@ export class Dao {
     | "error_id"
     | "error_data"
   >): Promise<void> {
-    await this.database.query(
+    await this.pool.query(
       `
         UPDATE verification_jobs 
         SET 
@@ -969,7 +973,7 @@ export class Dao {
     creation_transaction_hash,
   }: Tables.IVerificationJobEphemeral): Promise<void> {
     const now = new Date();
-    await this.database.query(
+    await this.pool.query(
       `
         INSERT INTO verification_jobs_ephemeral (
         id,
