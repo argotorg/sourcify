@@ -66,7 +66,7 @@ module.exports = {
 
 ```bash
 cd services/database
-CONFIG_FILE_PATH=./massive-replace-script/config-replace-creation-information.js npm run massive-replace
+CONFIG_FILE_PATH=./config-replace-creation-information.js npm run massive-replace
 ```
 
 ## How It Works
