@@ -34,6 +34,35 @@ if (fs.existsSync(COUNTER_FILE)) {
   );
 }
 
+// Optional failed contracts storage
+const STORE_FAILED_CONTRACT_IDS =
+  process.env.STORE_FAILED_CONTRACT_IDS === "true";
+const FAILED_CONTRACTS_FILE = path.join(
+  CURRENT_VERIFIED_CONTRACT_PATH,
+  "FAILED_CONTRACTS",
+);
+
+function storeFailedContract(contract: any, error: any): void {
+  if (!STORE_FAILED_CONTRACT_IDS) return;
+
+  const address = `0x${contract.address.toString("hex")}`;
+  const failedContractInfo = {
+    timestamp: new Date().toISOString(),
+    verifiedContractId: contract.verified_contract_id,
+    chainId: contract.chain_id,
+    address: address,
+    error: error.message || error.toString(),
+  };
+
+  const logEntry = JSON.stringify(failedContractInfo) + "\n";
+
+  try {
+    fs.appendFileSync(FAILED_CONTRACTS_FILE, logEntry, "utf8");
+  } catch (writeError) {
+    console.error("Error writing to failed contracts file:", writeError);
+  }
+}
+
 const N = 5; // Number of contracts to process at a time
 
 const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
@@ -109,7 +138,7 @@ async function processContract(
   const address = `0x${contract.address.toString("hex")}`;
   try {
     console.log(
-      `Processing contract: chainId=${contract.chain_id}, address=0x${address}, verifiedContractId=${contract.verified_contract_id || contract.id}`,
+      `Processing contract: chainId=${contract.chain_id}, address=${address}, verifiedContractId=${contract.verified_contract_id}`,
     );
 
     const requestBody = config.buildRequestBody(contract);
@@ -121,6 +150,7 @@ async function processContract(
       `❌ Failed to process contract ${address} at chain ${contract.chain_id}:`,
       error,
     );
+    storeFailedContract(contract, error);
     throw error;
   }
 }
@@ -131,6 +161,10 @@ async function processContract(
   console.log(
     `Using configuration: ${config.description || "Custom replacement"}`,
   );
+
+  if (STORE_FAILED_CONTRACT_IDS) {
+    console.log(`Failed contracts will be stored in: ${FAILED_CONTRACTS_FILE}`);
+  }
 
   // Connect to source DB using a Pool
   const sourcePool = new Pool(SOURCE_DB_CONFIG);
@@ -166,7 +200,6 @@ async function processContract(
       const results = await Promise.allSettled(processingPromises);
       for (const result of results) {
         if (result.status === "rejected") {
-          console.error("Error processing contract:", result.reason);
           secondToWait = 5; // Increase wait time on error
         }
       }
@@ -174,8 +207,7 @@ async function processContract(
       // Update the counter file only after the batch successfully completes
 
       const lastProcessedId =
-        verifiedContracts[verifiedContracts.length - 1].verified_contract_id ||
-        verifiedContracts[verifiedContracts.length - 1].id;
+        verifiedContracts[verifiedContracts.length - 1].verified_contract_id;
       CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
 
       // Use async write to avoid blocking
