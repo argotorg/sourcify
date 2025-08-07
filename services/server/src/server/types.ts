@@ -18,7 +18,7 @@ import {
   SolidityOutputSource,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Response } from "express";
-import { Abi } from "abitype";
+import { JsonFragment } from "ethers";
 import { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
 import { GenericErrorResponse, MatchingErrorResponse } from "./apiv2/errors";
 
@@ -83,7 +83,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
     name: string;
     fullyQualifiedName: string;
   };
-  abi?: Nullable<Abi>;
+  abi?: Nullable<JsonFragment[]>;
   metadata?: Nullable<Metadata>;
   storageLayout?: Nullable<StorageLayout>;
   userdoc?: Nullable<Userdoc>;

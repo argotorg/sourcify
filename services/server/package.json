@@ -56,7 +56,6 @@
     "@google-cloud/cloud-sql-connector": "1.8.2",
     "@shazow/whatsabi": "0.22.2",
     "@solidity-parser/parser": "0.20.2",
-    "abitype": "1.0.8",
     "bunyan": "1.8.15",
     "chalk": "4.1.2",
     "config": "3.3.12",

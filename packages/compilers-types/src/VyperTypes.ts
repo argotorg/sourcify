@@ -1,4 +1,4 @@
-import { Abi } from "abitype";
+import { JsonFragment } from "ethers";
 import { Devdoc } from "./CompilationTypes";
 import { Userdoc } from "./CompilationTypes";
 
@@ -63,7 +63,7 @@ export interface VyperOutputSources {
 }
 
 export interface VyperOutputContract {
-  abi: Abi;
+  abi: JsonFragment[];
   userdoc: Userdoc;
   devdoc: Devdoc;
   ir: string;
