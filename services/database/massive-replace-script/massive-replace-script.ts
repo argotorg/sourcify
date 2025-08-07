@@ -160,14 +160,15 @@ async function processContract(
 
       let secondToWait = 2;
       // Process the batch in parallel
-      try {
-        const processingPromises = verifiedContracts.map((contract) =>
-          processContract(contract, config),
-        );
-        await Promise.all(processingPromises);
-      } catch (batchError) {
-        secondToWait = 5; // Increase wait time on error
-        console.error("Error processing batch:", batchError);
+      const processingPromises = verifiedContracts.map((contract) =>
+        processContract(contract, config),
+      );
+      const results = await Promise.allSettled(processingPromises);
+      for (const result of results) {
+        if (result.status === "rejected") {
+          console.error("Error processing contract:", result.reason);
+          secondToWait = 5; // Increase wait time on error
+        }
       }
 
       // Update the counter file only after the batch successfully completes
