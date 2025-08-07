@@ -13,6 +13,7 @@ interface ReplaceConfig {
     n: number,
   ) => Promise<pg.QueryResult>;
   buildRequestBody: (contract: any) => any;
+  excludeContract?: (contract: any) => boolean;
   description?: string;
 }
 
@@ -136,6 +137,13 @@ async function processContract(
   config: ReplaceConfig,
 ): Promise<void> {
   const address = `0x${contract.address.toString("hex")}`;
+  if (config.excludeContract && config.excludeContract(contract)) {
+    console.log(
+      `Skipping contract: chainId=${contract.chain_id}, address=${address}, verifiedContractId=${contract.verified_contract_id}`,
+    );
+    return;
+  }
+
   try {
     console.log(
       `Processing contract: chainId=${contract.chain_id}, address=${address}, verifiedContractId=${contract.verified_contract_id}`,
