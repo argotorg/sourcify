@@ -21,7 +21,7 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
   await sourcifyDatabaseService.withTransaction(async (poolClient) => {
     if (!databaseColumns.onchainCreationCode) {
       throw new Error(
-        "Creation match is null, cannot replace creation information",
+        "No onchain creation code, cannot replace creation information",
       );
     }
     // Get existing verified contract to find deployment_id
