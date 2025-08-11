@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.3.1 - 2025-08-11
+
+- Fix transaction hash assignment in replaceContract and fix error message in replaceCreationInformation
+- Add error handling for on-chain creation bytecode fetching in replaceContract
+- Add configuration for replacing metadata in sourcify_matches table via massive replace script
+- Fix RPC index of others when an RPC is skipped (#2275)
+- Fix VerificationService to handle errors thrown by workerPool.run (#2279)
+
 ## sourcify-server@3.3.0 - 2025-08-04
 
 - Remove json input from API v1 verify/solc-json log (#2225)

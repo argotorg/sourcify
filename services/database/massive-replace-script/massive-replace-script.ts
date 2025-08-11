@@ -13,6 +13,7 @@ interface ReplaceConfig {
     n: number,
   ) => Promise<pg.QueryResult>;
   buildRequestBody: (contract: any) => any;
+  excludeContract?: (contract: any) => boolean;
   description?: string;
 }
 
@@ -34,7 +35,36 @@ if (fs.existsSync(COUNTER_FILE)) {
   );
 }
 
-const N = 200; // Number of contracts to process at a time
+// Optional failed contracts storage
+const STORE_FAILED_CONTRACT_IDS =
+  process.env.STORE_FAILED_CONTRACT_IDS === "true";
+const FAILED_CONTRACTS_FILE = path.join(
+  CURRENT_VERIFIED_CONTRACT_PATH,
+  "FAILED_CONTRACTS",
+);
+
+function storeFailedContract(contract: any, error: any): void {
+  if (!STORE_FAILED_CONTRACT_IDS) return;
+
+  const address = `0x${contract.address.toString("hex")}`;
+  const failedContractInfo = {
+    timestamp: new Date().toISOString(),
+    verifiedContractId: contract.verified_contract_id,
+    chainId: contract.chain_id,
+    address: address,
+    error: error.message || error.toString(),
+  };
+
+  const logEntry = JSON.stringify(failedContractInfo) + "\n";
+
+  try {
+    fs.appendFileSync(FAILED_CONTRACTS_FILE, logEntry, "utf8");
+  } catch (writeError) {
+    console.error("Error writing to failed contracts file:", writeError);
+  }
+}
+
+const N = 5; // Number of contracts to process at a time
 
 const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
 
@@ -107,9 +137,16 @@ async function processContract(
   config: ReplaceConfig,
 ): Promise<void> {
   const address = `0x${contract.address.toString("hex")}`;
+  if (config.excludeContract && config.excludeContract(contract)) {
+    console.log(
+      `Skipping contract: chainId=${contract.chain_id}, address=${address}, verifiedContractId=${contract.verified_contract_id}`,
+    );
+    return;
+  }
+
   try {
     console.log(
-      `Processing contract: chainId=${contract.chain_id}, address=0x${address}, verifiedContractId=${contract.verified_contract_id || contract.id}`,
+      `Processing contract: chainId=${contract.chain_id}, address=${address}, verifiedContractId=${contract.verified_contract_id}`,
     );
 
     const requestBody = config.buildRequestBody(contract);
@@ -117,7 +154,11 @@ async function processContract(
 
     console.log(`✅ Successfully processed contract ${address}:`, result);
   } catch (error) {
-    console.error(`❌ Failed to process contract ${address}:`, error);
+    console.error(
+      `❌ Failed to process contract ${address} at chain ${contract.chain_id}:`,
+      error,
+    );
+    storeFailedContract(contract, error);
     throw error;
   }
 }
@@ -128,6 +169,10 @@ async function processContract(
   console.log(
     `Using configuration: ${config.description || "Custom replacement"}`,
   );
+
+  if (STORE_FAILED_CONTRACT_IDS) {
+    console.log(`Failed contracts will be stored in: ${FAILED_CONTRACTS_FILE}`);
+  }
 
   // Connect to source DB using a Pool
   const sourcePool = new Pool(SOURCE_DB_CONFIG);
@@ -155,36 +200,42 @@ async function processContract(
 
       verifiedContractCount = rowCount || 0;
 
+      let secondToWait = 2;
       // Process the batch in parallel
-      try {
-        const processingPromises = verifiedContracts.map((contract) =>
-          processContract(contract, config),
-        );
-        await Promise.all(processingPromises);
-
-        // Update the counter file only after the batch successfully completes
-        if (verifiedContracts.length > 0) {
-          const lastProcessedId =
-            verifiedContracts[verifiedContracts.length - 1]
-              .verified_contract_id ||
-            verifiedContracts[verifiedContracts.length - 1].id;
-          CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
-
-          // Use async write to avoid blocking
-          fs.writeFile(
-            COUNTER_FILE,
-            CURRENT_VERIFIED_CONTRACT.toString(),
-            "utf8",
-            (err) => {
-              if (err) {
-                console.error("Error writing counter file:", err);
-              }
-            },
-          );
+      const processingPromises = verifiedContracts.map((contract) =>
+        processContract(contract, config),
+      );
+      const results = await Promise.allSettled(processingPromises);
+      for (const result of results) {
+        if (result.status === "rejected") {
+          secondToWait = 5; // Increase wait time on error
         }
-      } catch (batchError) {
-        console.error("Error processing batch:", batchError);
       }
+
+      // Update the counter file only after the batch successfully completes
+
+      if (verifiedContractCount === 0) {
+        console.log("No more contracts to process.");
+        break;
+      }
+      const lastProcessedId =
+        verifiedContracts[verifiedContracts.length - 1].verified_contract_id;
+      CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
+
+      // Use async write to avoid blocking
+      fs.writeFile(
+        COUNTER_FILE,
+        CURRENT_VERIFIED_CONTRACT.toString(),
+        "utf8",
+        (err) => {
+          if (err) {
+            console.error("Error writing counter file:", err);
+          }
+        },
+      );
+
+      console.log(`waiting ${secondToWait} seconds`);
+      await new Promise((resolve) => setTimeout(resolve, secondToWait * 1000));
 
       const endIterationTime = performance.now();
       const iterationTimeTaken = endIterationTime - startIterationTime;

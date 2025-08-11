@@ -1,3 +1,9 @@
+
+
+## @ethereum-sourcify/compilers@1.0.8 - 2025-08-11
+
+- update dependencies
+
 ## @ethereum-sourcify/compilers@1.0.7 - 2025-08-04
 
 - update Node.js engine version to >=22.0.0 in package.json files (#2269)

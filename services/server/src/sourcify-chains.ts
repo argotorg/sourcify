@@ -101,6 +101,7 @@ function buildCustomRpcs(
   const traceSupportedRPCs: TraceSupportedRPC[] = [];
   const rpc: (string | FetchRequestRPCWithHeaderEnvName)[] = [];
   const rpcWithoutApiKeys: string[] = [];
+  const skippedRPCs: any[] = [];
   sourcifyRpcs.forEach((sourcifyRpc, index) => {
     // simple url, can't have traceSupport
     if (typeof sourcifyRpc === "string") {
@@ -112,7 +113,7 @@ function buildCustomRpcs(
     if (sourcifyRpc.traceSupport) {
       traceSupportedRPCs.push({
         type: sourcifyRpc.traceSupport,
-        index,
+        index: index - skippedRPCs.length,
       });
     }
 
@@ -134,6 +135,7 @@ function buildCustomRpcs(
           logger.warn(
             `API key not found for ${sourcifyRpc.apiKeyEnvName} on ${sourcifyRpc.url}, skipping on CI or development`,
           );
+          skippedRPCs.push(index);
           return;
         } else {
           throw new Error(`API key not found for ${sourcifyRpc.apiKeyEnvName}`);
