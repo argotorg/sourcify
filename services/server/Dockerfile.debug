@@ -5,7 +5,7 @@
 # Assuming server is running on port 5555
 # Run with: docker run -it -p 9229:9229 -p 5555:5555 --volume /path/to/local/sourcify/git/repo:/home/app sourcify-server-debug
 # Finally run "Docker: Attach to Server" in VSCode debugger
-FROM node:22.5.1-bullseye
+FROM node:22.5.1-bookworm
 WORKDIR /home/app/services/server
 
 CMD ["node", "--inspect=0.0.0.0:9229", "./dist/server/cli.js"]
