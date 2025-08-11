@@ -1,5 +1,13 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.7.0 - 2025-08-11
+
+- Fix processing logic in massive-replace-script to handle errors and update contract counter correctly (#2280)
+- Replace script config for fixing missing constructor args transformations (#2282)
+- Replace script config for fixing mismatched metadata (#2285)
+- Add support for storing failed contracts in massive replace script
+- Add excludeContract option to ReplaceConfig and implement contract skipping logic
+
 ## sourcify-database@2.6.0 - 2025-08-04
 
 - Implement new migration system based on dbmate, compatible with VerA
