@@ -206,6 +206,10 @@ async function processContract(
 
       // Update the counter file only after the batch successfully completes
 
+      if (verifiedContractCount === 0) {
+        console.log("No more contracts to process.");
+        break;
+      }
       const lastProcessedId =
         verifiedContracts[verifiedContracts.length - 1].verified_contract_id;
       CURRENT_VERIFIED_CONTRACT = parseInt(lastProcessedId) + 1;
