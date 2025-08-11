@@ -127,6 +127,34 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
   });
 };
 
+export const replaceMetadata: CustomReplaceMethod = async (
+  sourcifyDatabaseService: SourcifyDatabaseService,
+  verification: VerificationExport,
+) => {
+  const existingSourcifyMatch =
+    await sourcifyDatabaseService.database.getSourcifyMatchByChainAddressWithProperties(
+      verification.chainId,
+      bytesFromString(verification.address),
+      ["id"],
+    );
+  if (existingSourcifyMatch.rows.length === 0) {
+    throw new Error(
+      `No existing verified contract found for address ${verification.address} on chain ${verification.chainId}`,
+    );
+  }
+
+  const matchId = existingSourcifyMatch.rows[0].id;
+
+  await sourcifyDatabaseService.database.pool.query(
+    `UPDATE sourcify_matches 
+       SET 
+         metadata = $2
+       WHERE id = $1`,
+    [matchId, verification.compilation.metadata],
+  );
+};
+
 export const REPLACE_METHODS: Record<string, CustomReplaceMethod> = {
   "replace-creation-information": replaceCreationInformation,
+  "replace-metadata": replaceMetadata,
 };

@@ -315,14 +315,22 @@ export async function replaceContract(
       throw error;
     }
 
+    let rpcFailedFetchingCreationBytecode = false;
+    try {
+      rpcFailedFetchingCreationBytecode =
+        verification.onchainCreationBytecode === undefined;
+    } catch (error) {
+      // verification.onchainCreationBytecode throws if not available
+      rpcFailedFetchingCreationBytecode = true;
+    }
+
     res.send({
       replaced: true,
       address: address,
       chainId: chainId,
       transactionHash: transactionHash,
       newStatus: verificationStatus,
-      rpcFailedFetchingCreationBytecode:
-        verification.onchainCreationBytecode === undefined,
+      rpcFailedFetchingCreationBytecode,
     });
   } catch (error: any) {
     throw new InternalServerError(error.message);
