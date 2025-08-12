@@ -21,12 +21,17 @@ import {
 } from '@ethereum-sourcify/compilers-types';
 import { logInfo, logSilly, logWarn } from '../logger';
 
+function cleanCompilerVersion(version: string): string {
+  // Remove non-numerical characters from the beginning of the version string
+  return version.replace(/^[^\d]*/, '');
+}
+
 export abstract class AbstractCompilation {
   /**
    * Constructor parameters
    */
   abstract compiler: ISolidityCompiler | IVyperCompiler;
-  abstract compilerVersion: string;
+  compilerVersion: string;
   abstract compilationTarget: CompilationTarget;
   jsonInput: SolidityJsonInput | VyperJsonInput;
 
@@ -50,7 +55,11 @@ export abstract class AbstractCompilation {
     forceEmscripten?: boolean,
   ): Promise<void>;
 
-  constructor(jsonInput: SolidityJsonInput | VyperJsonInput) {
+  constructor(
+    compilerVersion: string,
+    jsonInput: SolidityJsonInput | VyperJsonInput,
+  ) {
+    this.compilerVersion = cleanCompilerVersion(compilerVersion);
     this.jsonInput = structuredClone(jsonInput);
   }
 
