@@ -2,10 +2,6 @@ import {
   SolidityJsonInput,
   VyperJsonInput,
 } from '@ethereum-sourcify/compilers-types';
-import {
-  SourcifyLibErrorParameters,
-  SourcifyLibError,
-} from '../../SourcifyLibError';
 
 export type EtherscanImportErrorCode =
   | 'etherscan_network_error'
@@ -18,12 +14,72 @@ export type EtherscanImportErrorCode =
   | 'etherscan_missing_contract_in_json'
   | 'etherscan_missing_vyper_settings';
 
-export class EtherscanImportError extends SourcifyLibError {
+export interface EtherscanImportErrorDataRequired {
+  url: string;
+  status: number;
+  apiErrorMessage: string;
+  contractName: string;
+  compilerVersion: string;
+}
+
+export type EtherscanImportErrorParameters =
+  | ({
+      code:
+        | 'etherscan_network_error'
+        | 'etherscan_rate_limit'
+        | 'etherscan_not_verified';
+    } & Pick<EtherscanImportErrorDataRequired, 'url'>)
+  | ({
+      code: 'etherscan_http_error';
+    } & Pick<EtherscanImportErrorDataRequired, 'url' | 'status'>)
+  | ({
+      code: 'etherscan_api_error';
+    } & Pick<EtherscanImportErrorDataRequired, 'url' | 'apiErrorMessage'>)
+  | ({
+      code:
+        | 'etherscan_missing_contract_definition'
+        | 'etherscan_missing_contract_in_json';
+    } & Pick<EtherscanImportErrorDataRequired, 'contractName'>)
+  | ({
+      code: 'etherscan_vyper_version_mapping_failed';
+    } & Pick<EtherscanImportErrorDataRequired, 'compilerVersion'>)
+  | {
+      code: 'etherscan_missing_vyper_settings';
+    };
+
+function getErrorMessageFromCode(params: EtherscanImportErrorParameters) {
+  switch (params.code) {
+    case 'etherscan_network_error':
+      return `Network error while connecting to Etherscan API at ${params.url}.`;
+    case 'etherscan_http_error':
+      return `Etherscan API returned HTTP ${params.status} error at ${params.url}.`;
+    case 'etherscan_rate_limit':
+      return `Etherscan API rate limit exceeded at ${params.url}.`;
+    case 'etherscan_api_error':
+      return `Etherscan API returned an error response at ${params.url}: ${params.apiErrorMessage}`;
+    case 'etherscan_not_verified':
+      return `Contract is not verified on Etherscan at ${params.url}.`;
+    case 'etherscan_missing_contract_definition':
+      return `Contract definition for "${params.contractName}" not found in Etherscan response sources.`;
+    case 'etherscan_vyper_version_mapping_failed':
+      return `Failed to map Vyper version "${params.compilerVersion}" from Etherscan to valid compiler version.`;
+    case 'etherscan_missing_contract_in_json':
+      return `Expected contract "${params.contractName}" not found in Etherscan JSON input sources.`;
+    case 'etherscan_missing_vyper_settings':
+      return 'Vyper compiler settings missing from Etherscan response.';
+    // Unknown error
+    default:
+      return 'Unknown error.';
+  }
+}
+
+export class EtherscanImportError extends Error {
   declare code: EtherscanImportErrorCode;
   constructor(
-    params: SourcifyLibErrorParameters & { code: EtherscanImportErrorCode },
+    params: { code: EtherscanImportErrorCode } & EtherscanImportErrorParameters,
   ) {
-    super(params);
+    super(getErrorMessageFromCode(params));
+    this.code = params.code;
   }
 }
 

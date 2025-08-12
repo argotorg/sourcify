@@ -18,11 +18,6 @@ interface SourcifyLibErrorDataRequired {
   compilationTargets: string[];
   compilerErrorMessage?: string;
   compilerErrors?: OutputError[];
-  url: string;
-  status: number;
-  apiErrorMessage: string;
-  contractName: string;
-  compilerVersion: string;
 }
 
 export type SourcifyLibErrorData = Partial<SourcifyLibErrorDataRequired>;
@@ -38,14 +33,6 @@ export type SourcifyLibErrorParameters =
         | 'cannot_fetch_bytecode'
         | 'contract_not_deployed'
         | 'compiler_error'
-        | 'etherscan_network_error'
-        | 'etherscan_http_error'
-        | 'etherscan_rate_limit'
-        | 'etherscan_api_error'
-        | 'etherscan_not_verified'
-        | 'etherscan_missing_contract_definition'
-        | 'etherscan_vyper_version_mapping_failed'
-        | 'etherscan_missing_contract_in_json'
       >;
     }
   | ({
@@ -65,36 +52,7 @@ export type SourcifyLibErrorParameters =
     } & Pick<
       SourcifyLibErrorDataRequired,
       'compilerErrorMessage' | 'compilerErrors'
-    >)
-  | ({
-      code:
-        | 'etherscan_network_error'
-        | 'etherscan_rate_limit'
-        | 'etherscan_not_verified';
-    } & Pick<SourcifyLibErrorDataRequired, 'url' | 'chainId' | 'address'>)
-  | ({
-      code: 'etherscan_http_error';
-    } & Pick<
-      SourcifyLibErrorDataRequired,
-      'url' | 'chainId' | 'address' | 'status'
-    >)
-  | ({
-      code: 'etherscan_api_error';
-    } & Pick<
-      SourcifyLibErrorDataRequired,
-      'url' | 'chainId' | 'address' | 'apiErrorMessage'
-    >)
-  | ({
-      code:
-        | 'etherscan_missing_contract_definition'
-        | 'etherscan_missing_contract_in_json';
-    } & Pick<SourcifyLibErrorDataRequired, 'contractName'>)
-  | ({
-      code: 'etherscan_vyper_version_mapping_failed';
-    } & Pick<SourcifyLibErrorDataRequired, 'compilerVersion'>)
-  | {
-      code: 'etherscan_missing_vyper_settings';
-    };
+    >);
 
 export class SourcifyLibError extends Error {
   public code: SourcifyLibErrorCode;

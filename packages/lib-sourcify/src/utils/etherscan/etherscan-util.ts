@@ -194,8 +194,6 @@ export const fetchFromEtherscan = async (
     throw new EtherscanImportError({
       code: 'etherscan_network_error',
       url,
-      chainId,
-      address,
     });
   }
   logDebug('Fetched from Etherscan', {
@@ -215,8 +213,6 @@ export const fetchFromEtherscan = async (
     throw new EtherscanImportError({
       code: 'etherscan_http_error',
       url,
-      chainId,
-      address,
       status: (response as any).status,
     });
   }
@@ -236,8 +232,6 @@ export const fetchFromEtherscan = async (
     throw new EtherscanImportError({
       code: 'etherscan_rate_limit',
       url,
-      chainId,
-      address,
     });
   }
 
@@ -251,8 +245,6 @@ export const fetchFromEtherscan = async (
     throw new EtherscanImportError({
       code: 'etherscan_api_error',
       url,
-      chainId,
-      address,
       apiErrorMessage: resultJson.result,
     });
   }
@@ -266,8 +258,6 @@ export const fetchFromEtherscan = async (
     throw new EtherscanImportError({
       code: 'etherscan_not_verified',
       url,
-      chainId,
-      address,
     });
   }
 
