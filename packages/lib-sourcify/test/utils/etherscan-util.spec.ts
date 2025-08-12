@@ -52,6 +52,7 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         UNVERIFIED_CONTRACT_RESPONSE,
+        '',
       );
 
       const error = await expect(
@@ -66,6 +67,7 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         INVALID_API_KEY_RESPONSE,
+        '',
       );
 
       const error = await expect(
@@ -80,6 +82,7 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         RATE_LIMIT_REACHED_RESPONSE,
+        '',
       );
 
       const error = await expect(
@@ -97,7 +100,12 @@ describe('etherscan util (lib)', function () {
       ['vyper standard json contract', VYPER_STANDARD_JSON_CONTRACT_RESPONSE],
     ].forEach(([description, response]) => {
       it(`should return a ${description} response from etherscan`, async () => {
-        const scope = mockEtherscanApi(sourcifyChain, testAddress, response);
+        const scope = mockEtherscanApi(
+          sourcifyChain,
+          testAddress,
+          response,
+          '',
+        );
         const result = await EtherscanUtils.fetchFromEtherscan(
           testChainId,
           testAddress,
