@@ -43,6 +43,8 @@ const FAILED_CONTRACTS_FILE = path.join(
   "FAILED_CONTRACTS",
 );
 
+let totalReplacedContracts = 0;
+
 function storeFailedContract(contract: any, error: any): void {
   if (!STORE_FAILED_CONTRACT_IDS) return;
 
@@ -153,6 +155,7 @@ async function processContract(
     const result = await callReplaceContractAPI(requestBody);
 
     console.log(`✅ Successfully processed contract ${address}:`, result);
+    totalReplacedContracts++;
   } catch (error) {
     console.error(
       `❌ Failed to process contract ${address} at chain ${contract.chain_id}:`,
@@ -242,7 +245,7 @@ async function processContract(
       console.log(
         `Rate: processing ${
           N / (iterationTimeTaken / 1000)
-        } contracts per second`,
+        } contracts per second. Total replaced contracts: ${totalReplacedContracts}`,
       );
     }
     console.log("Contracts processed successfully.");
