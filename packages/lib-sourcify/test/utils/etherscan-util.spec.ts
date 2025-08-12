@@ -46,7 +46,7 @@ describe('etherscan util (lib)', function () {
     nock.cleanAll();
   });
 
-  describe('fetchFromEtherscan', () => {
+  describe.only('fetchFromEtherscan', () => {
     it('should throw when fetching a non verified contract from etherscan', async () => {
       const scope = mockEtherscanApi(
         sourcifyChain,

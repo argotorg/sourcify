@@ -190,7 +190,10 @@ export const fetchFromEtherscan = async (
   });
   try {
     response = await fetch(secretUrl);
-  } catch {
+  } catch (e: any) {
+    logWarn('Etherscan network error', {
+      error: e.message,
+    });
     throw new EtherscanImportError({
       code: 'etherscan_network_error',
     });
