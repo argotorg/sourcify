@@ -9,9 +9,7 @@ export const mockEtherscanApi = (
   userApiKey?: string,
 ): nock.Scope => {
   if (!sourcifyChain.etherscanApi?.supported) {
-    assert.fail(
-      `Etherscan for chain ${sourcifyChain.chainId} not configured`,
-    );
+    assert.fail(`Etherscan for chain ${sourcifyChain.chainId} not configured`);
   }
   const apiKey =
     userApiKey ||
