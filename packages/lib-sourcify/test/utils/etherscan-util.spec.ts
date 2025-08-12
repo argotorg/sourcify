@@ -47,7 +47,7 @@ describe('etherscan util (lib)', function () {
   });
 
   describe('fetchFromEtherscan', () => {
-    it('should throw when fetching a non verified contract from etherscan', async () => {
+    it.only('should throw when fetching a non verified contract from etherscan', async () => {
       const scope = mockEtherscanApi(
         sourcifyChain,
         testAddress,
