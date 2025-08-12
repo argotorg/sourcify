@@ -22,8 +22,10 @@ import {
   mockEtherscanApi,
 } from '../../../../services/server/test/helpers/etherscanResponseMocks';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
+import chaiHttp from 'chai-http';
 
 use(chaiAsPromised);
+use(chaiHttp);
 
 function makeChain(chainId: number): SourcifyChain {
   return new SourcifyChain({
