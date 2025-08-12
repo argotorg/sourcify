@@ -325,4 +325,32 @@ describe('SolidityCompilation', () => {
     const immutableRefs = compilation.immutableReferences;
     expect(immutableRefs).to.deep.equal({ '3': [{ length: 32, start: 608 }] });
   });
+
+  it('should clean compiler version with v prefix', () => {
+    const contractPath = path.join(__dirname, '..', 'sources', 'Storage');
+    const metadata = JSON.parse(
+      fs.readFileSync(path.join(contractPath, 'metadata.json'), 'utf8'),
+    );
+    const sources = {
+      'project:/contracts/Storage.sol': {
+        content: fs.readFileSync(
+          path.join(contractPath, 'sources', 'Storage.sol'),
+          'utf8',
+        ),
+      },
+    };
+
+    const compilation = new SolidityCompilation(
+      solc,
+      'v0.8.4+commit.c7e474f2',
+      {
+        language: 'Solidity',
+        sources,
+        settings: getSolcSettingsFromMetadata(metadata),
+      },
+      getCompilationTargetFromMetadata(metadata),
+    );
+
+    expect(compilation.compilerVersion).to.equal('0.8.4+commit.c7e474f2');
+  });
 });

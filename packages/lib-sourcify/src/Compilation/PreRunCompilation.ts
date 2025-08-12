@@ -33,14 +33,14 @@ export class PreRunCompilation extends AbstractCompilation {
 
   public constructor(
     public compiler: ISolidityCompiler | IVyperCompiler,
-    public compilerVersion: string,
+    compilerVersion: string,
     jsonInput: SolidityJsonInput | VyperJsonInput,
     jsonOutput: SolidityOutput | VyperOutput,
     public compilationTarget: CompilationTarget,
     public _creationBytecodeCborAuxdata: CompiledContractCborAuxdata,
     public _runtimeBytecodeCborAuxdata: CompiledContractCborAuxdata,
   ) {
-    super(jsonInput);
+    super(compilerVersion, jsonInput);
     this.compilerOutput = jsonOutput;
     this.language = jsonInput.language as CompilationLanguage;
     switch (this.language) {

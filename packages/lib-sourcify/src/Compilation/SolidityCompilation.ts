@@ -36,11 +36,11 @@ export class SolidityCompilation extends AbstractCompilation {
 
   public constructor(
     public compiler: ISolidityCompiler,
-    public compilerVersion: string,
+    compilerVersion: string,
     jsonInput: SolidityJsonInput,
     public compilationTarget: CompilationTarget,
   ) {
-    super(jsonInput);
+    super(compilerVersion, jsonInput);
     this.initSolidityJsonInput();
   }
 
