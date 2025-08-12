@@ -2,7 +2,7 @@ import { OutputError } from '@ethereum-sourcify/compilers-types';
 import { CompilationErrorCode } from './Compilation/CompilationTypes';
 import { ValidationErrorCode } from './Validation/ValidationTypes';
 import { VerificationErrorCode } from './Verification/VerificationTypes';
-import { EtherscanImportErrorCode } from './utils/etherscan/EtherscanImportErrors';
+import { EtherscanImportErrorCode } from './utils/etherscan/EtherscanTypes';
 
 export type SourcifyLibErrorCode =
   | ValidationErrorCode

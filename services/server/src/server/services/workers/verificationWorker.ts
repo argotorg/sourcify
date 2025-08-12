@@ -12,7 +12,7 @@ import {
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
   ProcessedEtherscanResult,
-  isVyperResult,
+  EtherscanUtils,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -247,7 +247,7 @@ async function _verifyFromEtherscan({
   etherscanResult,
 }: VerifyFromEtherscanInput): Promise<VerifyOutput> {
   let processedResult: ProcessedEtherscanResult;
-  if (isVyperResult(etherscanResult)) {
+  if (EtherscanUtils.isVyperResult(etherscanResult)) {
     processedResult = await processVyperResultFromEtherscan(
       etherscanResult,
       true,

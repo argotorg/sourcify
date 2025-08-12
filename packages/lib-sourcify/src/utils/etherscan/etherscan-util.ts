@@ -9,7 +9,11 @@ import {
 } from '../..';
 import { getContractPathFromSources } from '../..';
 import { logInfo, logDebug, logWarn, logError } from '../../logger';
-import { EtherscanImportError } from './EtherscanImportErrors';
+import {
+  EtherscanImportError,
+  EtherscanResult,
+  ProcessedEtherscanResult,
+} from './EtherscanTypes';
 
 interface VyperVersion {
   compiler_version: string;
@@ -95,22 +99,6 @@ export const getVyperCompilerVersion = async (
   return found;
 };
 
-export type EtherscanResult = {
-  SourceCode: string;
-  ABI: string;
-  ContractName: string;
-  CompilerVersion: string;
-  OptimizationUsed: string;
-  Runs: string;
-  ConstructorArguments: string;
-  EVMVersion: string;
-  Library: string;
-  LicenseType: string;
-  Proxy: string;
-  Implementation: string;
-  SwarmSource: string;
-};
-
 export const parseEtherscanJsonInput = (sourceCodeObject: string) => {
   // Etherscan wraps the json object: {{ ... }}
   return JSON.parse(sourceCodeObject.slice(1, -1));
@@ -184,13 +172,6 @@ export const getVyperJsonInputFromSingleFileResult = (
     settings: generatedSettings,
   };
 };
-
-export interface ProcessedEtherscanResult {
-  compilerVersion: string;
-  jsonInput: VyperJsonInput | SolidityJsonInput;
-  contractPath: string;
-  contractName: string;
-}
 
 export const fetchFromEtherscan = async (
   chainId: number | string,

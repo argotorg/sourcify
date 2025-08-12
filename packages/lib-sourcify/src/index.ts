@@ -15,8 +15,13 @@ export * from './Compilation/CompilationTypes';
 // Verification exports
 export * from './Verification/Verification';
 export * from './Verification/VerificationTypes';
-export * from './utils/etherscan/etherscan-util';
-export * from './utils/etherscan/EtherscanImportErrors';
+
+// Etherscan utils exports
+export * from './utils/etherscan/EtherscanTypes';
+import * as etherscanUtils from './utils/etherscan/etherscan-util';
+export const EtherscanUtils = {
+  ...etherscanUtils,
+};
 
 // Validation exports
 export * from './Validation/SolidityMetadataContract';

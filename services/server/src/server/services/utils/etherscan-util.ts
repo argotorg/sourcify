@@ -17,13 +17,10 @@ import {
   MalformedEtherscanResponseError,
   NotEtherscanVerifiedError,
 } from "../../apiv2/errors";
-
 import {
-  isVyperResult,
+  EtherscanUtils,
   EtherscanImportError,
 } from "@ethereum-sourcify/lib-sourcify";
-
-import * as LibSourcify from "@ethereum-sourcify/lib-sourcify";
 
 function mapLibError(err: any, throwV2Errors: boolean): never {
   const message = err?.message || "Etherscan import error";
@@ -89,7 +86,7 @@ export const fetchFromEtherscan = async (
       process.env.ETHERSCAN_API_KEY ||
       "";
 
-    return await LibSourcify.fetchFromEtherscan(
+    return await EtherscanUtils.fetchFromEtherscan(
       sourcifyChain.chainId,
       address,
       apiKey,
@@ -104,7 +101,9 @@ export const processSolidityResultFromEtherscan = (
   throwV2Errors: boolean,
 ) => {
   try {
-    return LibSourcify.processSolidityResultFromEtherscan(contractResultJson);
+    return EtherscanUtils.processSolidityResultFromEtherscan(
+      contractResultJson,
+    );
   } catch (err) {
     return mapLibError(err, throwV2Errors);
   }
@@ -115,7 +114,7 @@ export const processVyperResultFromEtherscan = async (
   throwV2Errors: boolean,
 ) => {
   try {
-    return await LibSourcify.processVyperResultFromEtherscan(
+    return await EtherscanUtils.processVyperResultFromEtherscan(
       contractResultJson,
     );
   } catch (err) {
@@ -129,7 +128,7 @@ export async function getCompilationFromEtherscanResult(
   vyperCompiler: IVyperCompiler,
   throwV2Errors = false,
 ) {
-  if (isVyperResult(etherscanResult)) {
+  if (EtherscanUtils.isVyperResult(etherscanResult)) {
     const processedResult = await processVyperResultFromEtherscan(
       etherscanResult,
       throwV2Errors,
