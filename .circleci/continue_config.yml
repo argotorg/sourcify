@@ -283,7 +283,7 @@ jobs:
           command: npx lerna run check
       - run:
           name: test
-          command: npx lerna run test --stream
+          command: npx lerna run test --stream --concurrency=1
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "localhost"
