@@ -1,4 +1,5 @@
 import { expect, use } from 'chai';
+import chaiHttp from 'chai-http';
 import nock from 'nock';
 import chaiAsPromised from 'chai-as-promised';
 import {
@@ -22,10 +23,9 @@ import {
   mockEtherscanApi,
 } from '../../../../services/server/test/helpers/etherscanResponseMocks';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
-import chaiHttp from 'chai-http';
 
-use(chaiAsPromised);
 use(chaiHttp);
+use(chaiAsPromised);
 
 function makeChain(chainId: number): SourcifyChain {
   return new SourcifyChain({
