@@ -9,10 +9,10 @@ import {
   ISolidityCompiler,
   IVyperCompiler,
   PathContent,
+  stringToBase64,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import {
-  stringToBase64,
   getCompilationFromEtherscanResult,
   fetchFromEtherscan,
 } from "../../../../services/utils/etherscan-util";

@@ -15,6 +15,8 @@ export * from './Compilation/CompilationTypes';
 // Verification exports
 export * from './Verification/Verification';
 export * from './Verification/VerificationTypes';
+export * from './utils/etherscan/etherscan-util';
+export * from './utils/etherscan/EtherscanImportErrors';
 
 // Validation exports
 export * from './Validation/SolidityMetadataContract';
@@ -32,7 +34,7 @@ export * from './SourcifyChain/SourcifyChainTypes';
 export * from './SourcifyLibError';
 
 // Utils exports
-export * from './utils';
+export * from './utils/utils';
 
 // Export all compilers types
 export * from '@ethereum-sourcify/compilers-types';

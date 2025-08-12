@@ -12,6 +12,7 @@ import {
   SourcifyChainInstance,
   CompilationTarget,
   Metadata,
+  EtherscanResult,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
 import { ContractIsAlreadyBeingVerifiedError } from "../../common/errors/ContractIsAlreadyBeingVerifiedError";
@@ -37,7 +38,6 @@ import {
   type VerifyFromMetadataInput,
   type VerifyOutput,
 } from "./workers/workerTypes";
-import { EtherscanResult } from "./utils/etherscan-util";
 import { asyncLocalStorage } from "../../common/async-context";
 
 export interface VerificationServiceOptions {

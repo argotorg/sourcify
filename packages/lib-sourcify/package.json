@@ -47,7 +47,8 @@
     "bs58": "5.0.0",
     "ethers": "6.15.0",
     "jszip": "3.10.1",
-    "semver": "7.7.2"
+    "semver": "7.7.2",
+    "@solidity-parser/parser": "0.20.2"
   },
   "devDependencies": {
     "@ethereum-sourcify/compilers": "^1.0.8",

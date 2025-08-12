@@ -11,6 +11,8 @@ import {
   SourcifyChainMap,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
+  ProcessedEtherscanResult,
+  isVyperResult,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -28,8 +30,6 @@ import type {
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
 import {
-  ProcessedEtherscanResult,
-  isVyperResult,
   processSolidityResultFromEtherscan,
   processVyperResultFromEtherscan,
 } from "../utils/etherscan-util";
