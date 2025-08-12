@@ -410,9 +410,6 @@ export const processVyperResultFromEtherscan = async (
   };
 };
 
-export const stringToBase64 = (str: string): string =>
-  Buffer.from(str, 'utf8').toString('base64');
-
 export const isVyperResult = (etherscanResult: EtherscanResult): boolean =>
   etherscanResult.CompilerVersion.startsWith('vyper');
 

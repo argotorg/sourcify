@@ -9,7 +9,6 @@ import {
   ISolidityCompiler,
   IVyperCompiler,
   PathContent,
-  stringToBase64,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import {
@@ -19,6 +18,9 @@ import {
 import logger from "../../../../../common/logger";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import { Services } from "../../../../services/services";
+
+export const stringToBase64 = (str: string): string =>
+  Buffer.from(str, "utf8").toString("base64");
 
 export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
   const services = req.app.get("services") as Services;
