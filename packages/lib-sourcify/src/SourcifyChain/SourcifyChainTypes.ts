@@ -25,6 +25,7 @@ export type SourcifyChainInstance = Omit<Chain, 'rpc'> &
   Omit<SourcifyChainExtension, 'rpc' | 'sourcifyName'> & {
     rpc: Array<string | FetchRequestRPC>;
     rpcWithoutApiKeys?: Array<string>;
+    rpcWithApiKeyMasked?: Array<string>;
     traceSupportedRPCs?: TraceSupportedRPC[];
   };
 
@@ -115,6 +116,7 @@ type Currency = {
 export interface ContractCreationFetcher {
   type: 'scrape' | 'api';
   url: string;
+  maskedUrl?: string;
   responseParser?: Function;
   scrapeRegex?: string[];
 }

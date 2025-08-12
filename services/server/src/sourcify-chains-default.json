@@ -202,18 +202,7 @@
       "etherscanApi": true
     },
     "rpc": [
-      "https://bsc-dataseed1.bnbchain.org",
-      "https://bsc-dataseed2.bnbchain.org",
-      "https://bsc-dataseed3.bnbchain.org",
-      "https://bsc-dataseed4.bnbchain.org",
-      "https://bsc-dataseed1.defibit.io",
-      "https://bsc-dataseed2.defibit.io",
-      "https://bsc-dataseed3.defibit.io",
-      "https://bsc-dataseed4.defibit.io",
-      "https://bsc-dataseed1.ninicoin.io",
-      "https://bsc-dataseed2.ninicoin.io",
-      "https://bsc-dataseed3.ninicoin.io",
-      "https://bsc-dataseed4.ninicoin.io",
+      "https://bsc-rpc.publicnode.com",
       {
         "type": "APIKeyRPC",
         "url": "https://{SUBDOMAIN}.bsc.quiknode.pro/{API_KEY}",
@@ -265,12 +254,6 @@
       "etherscanApi": true
     },
     "rpc": [
-      "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
-      "https://data-seed-prebsc-2-s1.bnbchain.org:8545",
-      "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
-      "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
-      "https://data-seed-prebsc-1-s3.bnbchain.org:8545",
-      "https://data-seed-prebsc-2-s3.bnbchain.org:8545",
       "https://bsc-testnet-rpc.publicnode.com",
       {
         "type": "APIKeyRPC",
@@ -305,12 +288,7 @@
     },
     "rpc": [
       "https://rpc.gnosischain.com",
-      "https://rpc.gnosis.gateway.fm",
-      "https://rpc.ankr.com/gnosis",
-      "https://gnosischain-rpc.gateway.pokt.network",
       "https://gnosis-mainnet.public.blastapi.io",
-      "https://gnosis.api.onfinality.io/public",
-      "https://gnosis.blockpi.network/v1/rpc/public",
       {
         "type": "APIKeyRPC",
         "url": "https://{SUBDOMAIN}.xdai.quiknode.pro/{API_KEY}",
