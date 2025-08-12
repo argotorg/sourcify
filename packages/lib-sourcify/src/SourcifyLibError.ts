@@ -108,25 +108,6 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
       return 'Onchain runtime bytecode not available.';
     case 'onchain_creation_bytecode_not_available':
       return 'Onchain creation bytecode not available.';
-    // Etherscan import errors
-    case 'etherscan_network_error':
-      return 'Network error while connecting to Etherscan API.';
-    case 'etherscan_http_error':
-      return 'Etherscan API returned an HTTP error.';
-    case 'etherscan_rate_limit':
-      return 'Etherscan API rate limit exceeded.';
-    case 'etherscan_api_error':
-      return 'Etherscan API returned an error response.';
-    case 'etherscan_not_verified':
-      return 'Contract is not verified on Etherscan.';
-    case 'etherscan_missing_contract_definition':
-      return 'Contract definition not found in Etherscan response sources.';
-    case 'etherscan_vyper_version_mapping_failed':
-      return 'Failed to map Vyper version from Etherscan to valid compiler version.';
-    case 'etherscan_missing_contract_in_json':
-      return 'Expected contract not found in Etherscan JSON input sources.';
-    case 'etherscan_missing_vyper_settings':
-      return 'Vyper compiler settings missing from Etherscan response.';
     // Unknown error
     default:
       return 'Unknown error.';

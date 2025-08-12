@@ -15,7 +15,6 @@ export type EtherscanImportErrorCode =
   | 'etherscan_missing_vyper_settings';
 
 export interface EtherscanImportErrorDataRequired {
-  url: string;
   status: number;
   apiErrorMessage: string;
   contractName: string;
@@ -23,18 +22,18 @@ export interface EtherscanImportErrorDataRequired {
 }
 
 export type EtherscanImportErrorParameters =
-  | ({
+  | {
       code:
         | 'etherscan_network_error'
         | 'etherscan_rate_limit'
         | 'etherscan_not_verified';
-    } & Pick<EtherscanImportErrorDataRequired, 'url'>)
+    }
   | ({
       code: 'etherscan_http_error';
-    } & Pick<EtherscanImportErrorDataRequired, 'url' | 'status'>)
+    } & Pick<EtherscanImportErrorDataRequired, 'status'>)
   | ({
       code: 'etherscan_api_error';
-    } & Pick<EtherscanImportErrorDataRequired, 'url' | 'apiErrorMessage'>)
+    } & Pick<EtherscanImportErrorDataRequired, 'apiErrorMessage'>)
   | ({
       code:
         | 'etherscan_missing_contract_definition'
@@ -50,15 +49,15 @@ export type EtherscanImportErrorParameters =
 function getErrorMessageFromCode(params: EtherscanImportErrorParameters) {
   switch (params.code) {
     case 'etherscan_network_error':
-      return `Network error while connecting to Etherscan API at ${params.url}.`;
+      return `Network error while connecting to Etherscan API.`;
     case 'etherscan_http_error':
-      return `Etherscan API returned HTTP ${params.status} error at ${params.url}.`;
+      return `Etherscan API returned HTTP ${params.status} error.`;
     case 'etherscan_rate_limit':
-      return `Etherscan API rate limit exceeded at ${params.url}.`;
+      return `Etherscan API rate limit reached, try later.`;
     case 'etherscan_api_error':
-      return `Etherscan API returned an error response at ${params.url}: ${params.apiErrorMessage}`;
+      return `Error in Etherscan API response. Result message: Invalid API Key`;
     case 'etherscan_not_verified':
-      return `Contract is not verified on Etherscan at ${params.url}.`;
+      return `This contract is not verified on Etherscan.`;
     case 'etherscan_missing_contract_definition':
       return `Contract definition for "${params.contractName}" not found in Etherscan response sources.`;
     case 'etherscan_vyper_version_mapping_failed':

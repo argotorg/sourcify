@@ -193,7 +193,6 @@ export const fetchFromEtherscan = async (
   } catch {
     throw new EtherscanImportError({
       code: 'etherscan_network_error',
-      url,
     });
   }
   logDebug('Fetched from Etherscan', {
@@ -212,7 +211,6 @@ export const fetchFromEtherscan = async (
     });
     throw new EtherscanImportError({
       code: 'etherscan_http_error',
-      url,
       status: (response as any).status,
     });
   }
@@ -231,7 +229,6 @@ export const fetchFromEtherscan = async (
     });
     throw new EtherscanImportError({
       code: 'etherscan_rate_limit',
-      url,
     });
   }
 
@@ -244,7 +241,6 @@ export const fetchFromEtherscan = async (
     });
     throw new EtherscanImportError({
       code: 'etherscan_api_error',
-      url,
       apiErrorMessage: resultJson.result,
     });
   }
@@ -257,7 +253,6 @@ export const fetchFromEtherscan = async (
     });
     throw new EtherscanImportError({
       code: 'etherscan_not_verified',
-      url,
     });
   }
 
