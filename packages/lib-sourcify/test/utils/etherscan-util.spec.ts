@@ -21,7 +21,7 @@ import {
   VYPER_SINGLE_CONTRACT_RESPONSE,
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
   mockEtherscanApi,
-} from '../../../../services/server/test/helpers/etherscanResponseMocks';
+} from './etherscanResponseMocks';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
 
 use(chaiHttp);
@@ -47,7 +47,7 @@ describe('etherscan util (lib)', function () {
   });
 
   describe('fetchFromEtherscan', () => {
-    it.only('should throw when fetching a non verified contract from etherscan', async () => {
+    it('should throw when fetching a non verified contract from etherscan', async () => {
       const scope = mockEtherscanApi(
         sourcifyChain,
         testAddress,
