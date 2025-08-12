@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.7.1 - 2025-08-12
+
+- Track total replaced contracts in the massive replace script (#2293)
+- Fixes to massive replace for contracts from verifyDepracted (#2299)
+
 ## sourcify-database@2.7.0 - 2025-08-11
 
 - Fix processing logic in massive-replace-script to handle errors and update contract counter correctly (#2280)

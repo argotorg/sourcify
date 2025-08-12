@@ -101,12 +101,14 @@ function buildCustomRpcs(
   const traceSupportedRPCs: TraceSupportedRPC[] = [];
   const rpc: (string | FetchRequestRPCWithHeaderEnvName)[] = [];
   const rpcWithoutApiKeys: string[] = [];
+  const rpcWithApiKeyMasked: string[] = [];
   const skippedRPCs: any[] = [];
   sourcifyRpcs.forEach((sourcifyRpc, index) => {
     // simple url, can't have traceSupport
     if (typeof sourcifyRpc === "string") {
       rpc.push(sourcifyRpc);
       rpcWithoutApiKeys.push(sourcifyRpc);
+      rpcWithApiKeyMasked.push(sourcifyRpc);
       return;
     }
 
@@ -120,6 +122,7 @@ function buildCustomRpcs(
     if (sourcifyRpc.type === "BaseRPC") {
       rpc.push(sourcifyRpc.url);
       rpcWithoutApiKeys.push(sourcifyRpc.url);
+      rpcWithApiKeyMasked.push(sourcifyRpc.url);
       return;
     }
     // Fill in the api keys
@@ -141,19 +144,31 @@ function buildCustomRpcs(
           throw new Error(`API key not found for ${sourcifyRpc.apiKeyEnvName}`);
         }
       }
-      let url = sourcifyRpc.url.replace("{API_KEY}", apiKey);
+      let secretUrl = sourcifyRpc.url.replace("{API_KEY}", apiKey);
+      const maskedApiKey =
+        apiKey.length > 4
+          ? apiKey.slice(0, 4) + "*".repeat(apiKey.length - 4)
+          : "*".repeat(apiKey.length);
+      let maskedUrl = sourcifyRpc.url.replace("{API_KEY}", maskedApiKey);
 
       const subDomain = process.env[sourcifyRpc.subDomainEnvName || ""];
       if (subDomain) {
         // subDomain is optional
-        url = url.replace("{SUBDOMAIN}", subDomain);
+        secretUrl = secretUrl.replace("{SUBDOMAIN}", subDomain);
+        const maskedSubDomain =
+          subDomain.length > 4
+            ? subDomain.slice(0, 4) + "*".repeat(subDomain.length - 4)
+            : "*".repeat(subDomain.length);
+        maskedUrl = maskedUrl.replace("{SUBDOMAIN}", maskedSubDomain);
       }
-      rpc.push(url);
+      rpc.push(secretUrl);
       rpcWithoutApiKeys.push(sourcifyRpc.url);
+      rpcWithApiKeyMasked.push(maskedUrl);
       return;
     } else if (sourcifyRpc.type === "FetchRequest") {
       rpc.push(sourcifyRpc);
       rpcWithoutApiKeys.push(sourcifyRpc.url);
+      rpcWithApiKeyMasked.push(sourcifyRpc.url);
       return;
     }
     throw new Error(`Invalid rpc type: ${JSON.stringify(sourcifyRpc)}`);
@@ -161,6 +176,7 @@ function buildCustomRpcs(
   return {
     rpc,
     rpcWithoutApiKeys,
+    rpcWithApiKeyMasked,
     traceSupportedRPCs:
       traceSupportedRPCs.length > 0 ? traceSupportedRPCs : undefined,
   };
@@ -198,17 +214,16 @@ for (const chain of allChains) {
 
     let rpc: (string | FetchRequestRPCWithHeaderEnvName)[] = [];
     let rpcWithoutApiKeys: string[] = [];
+    let rpcWithApiKeyMasked: string[] = [];
     let traceSupportedRPCs: TraceSupportedRPC[] | undefined = undefined;
     if (sourcifyExtension.rpc) {
-      ({ rpc, rpcWithoutApiKeys, traceSupportedRPCs } = buildCustomRpcs(
-        sourcifyExtension.rpc,
-      ));
+      ({ rpc, rpcWithoutApiKeys, rpcWithApiKeyMasked, traceSupportedRPCs } =
+        buildCustomRpcs(sourcifyExtension.rpc));
     }
     // Fallback to rpcs of chains.json
     if (!rpc.length) {
-      ({ rpc, rpcWithoutApiKeys, traceSupportedRPCs } = buildCustomRpcs(
-        chain.rpc,
-      ));
+      ({ rpc, rpcWithoutApiKeys, rpcWithApiKeyMasked, traceSupportedRPCs } =
+        buildCustomRpcs(chain.rpc));
     }
 
     // Replace headerEnvName with headerValue in rpc
@@ -229,6 +244,7 @@ for (const chain of allChains) {
       ...sourcifyExtension,
       rpc: rpc as FetchRequestRPC[],
       rpcWithoutApiKeys,
+      rpcWithApiKeyMasked,
       traceSupportedRPCs,
     });
     sourcifyChainsMap[chainId] = sourcifyChain;

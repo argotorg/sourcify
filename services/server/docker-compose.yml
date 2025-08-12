@@ -19,7 +19,7 @@ services:
 
   # Needed to separate the migration because node must have PID 1 in service server
   run-migrations:
-    image: node:22.5.1-bullseye-slim
+    image: node:22.5.1-bookworm-slim
     volumes:
       - ../database:/home/app/services/database
     environment:

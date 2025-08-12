@@ -28,10 +28,12 @@ const VECHAIN_API_URL =
 function getApiContractCreationFetcher(
   url: string,
   responseParser: Function,
+  maskedUrl?: string,
 ): ContractCreationFetcher {
   return {
     type: "api",
     url,
+    maskedUrl: maskedUrl || url,
     responseParser,
   };
 }
@@ -84,6 +86,7 @@ function getEtherscanApiContractCreatorFetcher(
       if (response?.result?.[0]?.txHash)
         return response?.result?.[0]?.txHash as string;
     },
+    ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()),
   );
 }
 
@@ -180,6 +183,7 @@ function getVeChainApiContractCreatorFetcher(
       if (response?.data?.creation_txid)
         return response.data.creation_txid as string;
     },
+    VECHAIN_API_URL,
   );
 }
 
@@ -197,7 +201,7 @@ async function getCreatorTxUsingFetcher(
   );
 
   logger.debug("Fetching Creator Tx", {
-    fetcher,
+    fetcherUrl: fetcher?.maskedUrl,
     contractFetchAddressFilled,
     contractAddress,
   });
@@ -214,7 +218,7 @@ async function getCreatorTxUsingFetcher(
           );
           if (creatorTx) {
             logger.debug("Fetched and found creator Tx", {
-              fetcher,
+              fetcherUrl: fetcher?.maskedUrl,
               contractFetchAddressFilled,
               contractAddress,
               creatorTx,
@@ -229,7 +233,7 @@ async function getCreatorTxUsingFetcher(
           const response = await fetchFromApi(contractFetchAddressFilled);
           const creatorTx = fetcher?.responseParser(response);
           logger.debug("Fetched Creator Tx", {
-            fetcher,
+            fetcherUrl: fetcher?.maskedUrl,
             contractFetchAddressFilled,
             contractAddress,
             creatorTx,
@@ -243,6 +247,7 @@ async function getCreatorTxUsingFetcher(
     }
   } catch (e: any) {
     logger.warn("Error while getting creation transaction", {
+      fetcherUrl: fetcher?.maskedUrl,
       error: e.message,
     });
     return null;

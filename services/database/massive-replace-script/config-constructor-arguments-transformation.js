@@ -21,6 +21,7 @@ module.exports = {
       WHERE c.creation_code_hash IS NOT NULL 
           AND position(substring(recompiled_creation_code.code for 200) in creation_code.code) != 0
           AND (vc.creation_match is null or vc.creation_match = false)
+          AND c.runtime_code_hash <> decode('F2915DCA011E27647A7C8A50F7062915FDB4D4A1DE05D7333605DB231E5FC1F2', 'hex')
           AND sm.id >= $1
       ORDER BY sm.id ASC
       LIMIT $2

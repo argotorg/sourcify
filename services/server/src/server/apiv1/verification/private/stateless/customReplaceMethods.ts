@@ -4,6 +4,7 @@ import {
   getDatabaseColumnsFromVerification,
 } from "../../../../services/utils/database-util";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
+import { BadRequestError } from "../../../../../common/errors";
 
 export type CustomReplaceMethod = (
   sourcifyDatabaseService: SourcifyDatabaseService,
@@ -14,6 +15,22 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
   sourcifyDatabaseService: SourcifyDatabaseService,
   verification: VerificationExport,
 ) => {
+  const verificationStatus = verification.status;
+  const creationMatch =
+    verificationStatus.creationMatch === "perfect" ||
+    verificationStatus.creationMatch === "partial";
+
+  const runtimeMatch =
+    verificationStatus.runtimeMatch === "perfect" ||
+    verificationStatus.runtimeMatch === "partial";
+
+  // If the new verification leads to a non-match, we can't replace the contract
+  if (!runtimeMatch && !creationMatch) {
+    throw new BadRequestError(
+      "Failed to match the contract with the new verification",
+    );
+  }
+
   // Get database columns from verification
   const databaseColumns =
     await getDatabaseColumnsFromVerification(verification);
