@@ -285,23 +285,11 @@ export async function replaceContract(
       transactionHash,
     );
 
-    await verification.verify();
-
-    // Get the verification status
-    const verificationStatus = verification.status;
-    const creationMatch =
-      verificationStatus.creationMatch === "perfect" ||
-      verificationStatus.creationMatch === "partial";
-
-    const runtimeMatch =
-      verificationStatus.runtimeMatch === "perfect" ||
-      verificationStatus.runtimeMatch === "partial";
-
-    // If the new verification leads to a non-match, we can't replace the contract
-    if (!runtimeMatch && !creationMatch) {
-      throw new BadRequestError(
-        "Failed to match the contract with the new verification",
-      );
+    try {
+      await verification.verify();
+    } catch {
+      // Some methods do not require verification, so we ignore errors here.
+      // This is imported to fix contracts that were added via verifyDeprecated, because they will never have a match.
     }
 
     try {
@@ -329,7 +317,7 @@ export async function replaceContract(
       address: address,
       chainId: chainId,
       transactionHash: transactionHash,
-      newStatus: verificationStatus,
+      newStatus: verification.status,
       rpcFailedFetchingCreationBytecode,
     });
   } catch (error: any) {
