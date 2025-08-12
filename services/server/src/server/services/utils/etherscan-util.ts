@@ -20,42 +20,49 @@ import {
 
 import {
   isVyperResult,
-  EtherscanChainNotSupportedLibError,
-  EtherscanRequestFailedLibError,
-  EtherscanLimitLibError,
-  NotEtherscanVerifiedLibError,
-  MalformedEtherscanResponseLibError,
+  EtherscanImportError,
 } from "@ethereum-sourcify/lib-sourcify";
 
 import * as LibSourcify from "@ethereum-sourcify/lib-sourcify";
 
 function mapLibError(err: any, throwV2Errors: boolean): never {
   const message = err?.message || "Etherscan import error";
-  if (err instanceof EtherscanChainNotSupportedLibError) {
-    throw throwV2Errors
-      ? new ChainNotFoundError(message)
-      : new BadRequestError(message);
+
+  if (err instanceof EtherscanImportError) {
+    switch (err.code) {
+      case "etherscan_rate_limit":
+        throw throwV2Errors
+          ? new EtherscanLimitError(message)
+          : new TooManyRequests(message);
+
+      case "etherscan_not_verified":
+        throw throwV2Errors
+          ? new NotEtherscanVerifiedError(message)
+          : new NotFoundError(message);
+
+      case "etherscan_network_error":
+      case "etherscan_http_error":
+      case "etherscan_api_error":
+        throw throwV2Errors
+          ? new EtherscanRequestFailedError(message)
+          : new BadGatewayError(message);
+
+      case "etherscan_missing_contract_definition":
+      case "etherscan_vyper_version_mapping_failed":
+      case "etherscan_missing_contract_in_json":
+      case "etherscan_missing_vyper_settings":
+        throw throwV2Errors
+          ? new MalformedEtherscanResponseError(message)
+          : new BadRequestError(message);
+
+      default:
+        // Fallback for any new error codes not yet handled
+        throw throwV2Errors
+          ? new EtherscanRequestFailedError(message)
+          : new BadGatewayError(message);
+    }
   }
-  if (err instanceof EtherscanRequestFailedLibError) {
-    throw throwV2Errors
-      ? new EtherscanRequestFailedError(message)
-      : new BadGatewayError(message);
-  }
-  if (err instanceof EtherscanLimitLibError) {
-    throw throwV2Errors
-      ? new EtherscanLimitError(message)
-      : new TooManyRequests(message);
-  }
-  if (err instanceof NotEtherscanVerifiedLibError) {
-    throw throwV2Errors
-      ? new NotEtherscanVerifiedError(message)
-      : new NotFoundError(message);
-  }
-  if (err instanceof MalformedEtherscanResponseLibError) {
-    throw throwV2Errors
-      ? new MalformedEtherscanResponseError(message)
-      : new BadRequestError(message);
-  }
+
   // Unknown error from lib
   throw err;
 }
@@ -70,7 +77,9 @@ export const fetchFromEtherscan = async (
     // Enforce server-side support check previously done in lib
     if (!sourcifyChain.etherscanApi?.supported) {
       const errorMessage = `Requested chain ${sourcifyChain.chainId} is not supported for importing from Etherscan.`;
-      throw new EtherscanChainNotSupportedLibError(errorMessage);
+      throw throwV2Errors
+        ? new ChainNotFoundError(errorMessage)
+        : new BadRequestError(errorMessage);
     }
 
     // Derive API key precedence: user -> chain-specific env -> global -> ''

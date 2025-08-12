@@ -1,40 +1,24 @@
-export class EtherscanChainNotSupportedLibError extends Error {
-  code = 'etherscan_chain_not_supported' as const;
-  constructor(message: string) {
-    super(message);
-    this.name = 'EtherscanChainNotSupportedLibError';
+import {
+  SourcifyLibErrorParameters,
+  SourcifyLibError,
+} from '../../SourcifyLibError';
+
+export type EtherscanImportErrorCode =
+  | 'etherscan_network_error'
+  | 'etherscan_http_error'
+  | 'etherscan_rate_limit'
+  | 'etherscan_api_error'
+  | 'etherscan_not_verified'
+  | 'etherscan_missing_contract_definition'
+  | 'etherscan_vyper_version_mapping_failed'
+  | 'etherscan_missing_contract_in_json'
+  | 'etherscan_missing_vyper_settings';
+
+export class EtherscanImportError extends SourcifyLibError {
+  declare code: EtherscanImportErrorCode;
+  constructor(
+    params: SourcifyLibErrorParameters & { code: EtherscanImportErrorCode },
+  ) {
+    super(params);
   }
 }
-
-export class EtherscanRequestFailedLibError extends Error {
-  code = 'etherscan_request_failed' as const;
-  constructor(message: string) {
-    super(message);
-    this.name = 'EtherscanRequestFailedLibError';
-  }
-}
-
-export class EtherscanLimitLibError extends Error {
-  code = 'etherscan_limit' as const;
-  constructor(message: string) {
-    super(message);
-    this.name = 'EtherscanLimitLibError';
-  }
-}
-
-export class NotEtherscanVerifiedLibError extends Error {
-  code = 'not_etherscan_verified' as const;
-  constructor(message: string) {
-    super(message);
-    this.name = 'NotEtherscanVerifiedLibError';
-  }
-}
-
-export class MalformedEtherscanResponseLibError extends Error {
-  code = 'malformed_etherscan_response' as const;
-  constructor(message: string) {
-    super(message);
-    this.name = 'MalformedEtherscanResponseLibError';
-  }
-}
-

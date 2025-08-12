@@ -26,12 +26,7 @@ import {
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
   mockEtherscanApi,
 } from '../../../../services/server/test/helpers/etherscanResponseMocks';
-import {
-  EtherscanLimitLibError,
-  EtherscanRequestFailedLibError,
-  MalformedEtherscanResponseLibError,
-  NotEtherscanVerifiedLibError,
-} from '../../src/utils/etherscan/EtherscanImportErrors';
+import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanImportErrors';
 
 use(chaiAsPromised);
 
@@ -62,9 +57,10 @@ describe('etherscan util (lib)', function () {
         UNVERIFIED_CONTRACT_RESPONSE,
       );
 
-      await expect(
+      const error = await expect(
         fetchFromEtherscan(testChainId, testAddress),
-      ).to.be.rejectedWith(NotEtherscanVerifiedLibError);
+      ).to.be.rejectedWith(EtherscanImportError);
+      expect((error as any).code).to.equal('etherscan_not_verified');
       expect(scope.isDone()).to.equal(true);
     });
 
@@ -75,9 +71,10 @@ describe('etherscan util (lib)', function () {
         INVALID_API_KEY_RESPONSE,
       );
 
-      await expect(
+      const error = await expect(
         fetchFromEtherscan(testChainId, testAddress),
-      ).to.be.rejectedWith(EtherscanRequestFailedLibError);
+      ).to.be.rejectedWith(EtherscanImportError);
+      expect((error as any).code).to.equal('etherscan_api_error');
       expect(scope.isDone()).to.equal(true);
     });
 
@@ -88,9 +85,10 @@ describe('etherscan util (lib)', function () {
         RATE_LIMIT_REACHED_RESPONSE,
       );
 
-      await expect(
+      const error = await expect(
         fetchFromEtherscan(testChainId, testAddress),
-      ).to.be.rejectedWith(EtherscanLimitLibError);
+      ).to.be.rejectedWith(EtherscanImportError);
+      expect((error as any).code).to.equal('etherscan_rate_limit');
       expect(scope.isDone()).to.equal(true);
     });
 
@@ -321,8 +319,8 @@ describe('etherscan util (lib)', function () {
       expect(() =>
         getContractPathFromSourcesOrThrow('AnotherSolidityContract', sources),
       )
-        .to.throw()
-        .and.be.instanceOf(MalformedEtherscanResponseLibError);
+        .to.throw(EtherscanImportError)
+        .with.property('code', 'etherscan_missing_contract_definition');
     });
   });
 

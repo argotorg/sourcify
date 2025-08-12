@@ -9,12 +9,7 @@ import {
 } from '../..';
 import { getContractPathFromSources } from '../..';
 import { logInfo, logDebug, logWarn, logError } from '../../logger';
-import {
-  EtherscanLimitLibError,
-  EtherscanRequestFailedLibError,
-  MalformedEtherscanResponseLibError,
-  NotEtherscanVerifiedLibError,
-} from './EtherscanImportErrors';
+import { EtherscanImportError } from './EtherscanImportErrors';
 
 interface VyperVersion {
   compiler_version: string;
@@ -161,9 +156,10 @@ export const getContractPathFromSourcesOrThrow = (
 ): string => {
   const contractPath = getContractPathFromSources(contractName, sources);
   if (contractPath === undefined) {
-    const errorMessage =
-      "The sources returned by Etherscan don't include the expected contract definition.";
-    throw new MalformedEtherscanResponseLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_missing_contract_definition',
+      contractName,
+    });
   }
   return contractPath;
 };
@@ -214,8 +210,12 @@ export const fetchFromEtherscan = async (
   try {
     response = await fetch(secretUrl);
   } catch {
-    const errorMessage = `Request to ${url}[hidden] failed.`;
-    throw new EtherscanRequestFailedLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_network_error',
+      url,
+      chainId,
+      address,
+    });
   }
   logDebug('Fetched from Etherscan', {
     url,
@@ -231,8 +231,13 @@ export const fetchFromEtherscan = async (
       status: (response as any).status,
       response: JSON.stringify(response),
     });
-    const errorMessage = `Etherscan API responded with an error. Status code: ${(response as any).status}.`;
-    throw new EtherscanRequestFailedLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_http_error',
+      url,
+      chainId,
+      address,
+      status: (response as any).status,
+    });
   }
 
   const resultJson: any = await (response as any).json();
@@ -247,8 +252,12 @@ export const fetchFromEtherscan = async (
       address,
       resultJson,
     });
-    const errorMessage = 'Etherscan API rate limit reached, try later.';
-    throw new EtherscanLimitLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_rate_limit',
+      url,
+      chainId,
+      address,
+    });
   }
 
   if (resultJson.message === 'NOTOK') {
@@ -258,9 +267,13 @@ export const fetchFromEtherscan = async (
       address,
       resultJson,
     });
-    const errorMessage =
-      'Error in Etherscan API response. Result message: ' + resultJson.result;
-    throw new EtherscanRequestFailedLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_api_error',
+      url,
+      chainId,
+      address,
+      apiErrorMessage: resultJson.result,
+    });
   }
 
   if (resultJson.result[0].SourceCode === '') {
@@ -269,8 +282,12 @@ export const fetchFromEtherscan = async (
       chainId,
       address,
     });
-    const errorMessage = 'This contract is not verified on Etherscan.';
-    throw new NotEtherscanVerifiedLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_not_verified',
+      url,
+      chainId,
+      address,
+    });
   }
 
   const contractResultJson = resultJson.result[0] as EtherscanResult;
@@ -334,9 +351,10 @@ export const processVyperResultFromEtherscan = async (
     contractResultJson.CompilerVersion,
   );
   if (!compilerVersion) {
-    const errorMessage =
-      'Could not map the Vyper version from Etherscan to a valid compiler version.';
-    throw new MalformedEtherscanResponseLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_vyper_version_mapping_failed',
+      compilerVersion: contractResultJson.CompilerVersion,
+    });
   }
 
   let contractName: string;
@@ -352,9 +370,10 @@ export const processVyperResultFromEtherscan = async (
         source.includes(contractResultJson.ContractName),
       )!;
       if (!contractPath) {
-        const errorMessage =
-          "The json input sources in the response from Etherscan don't include the expected contract.";
-        throw new MalformedEtherscanResponseLibError(errorMessage);
+        throw new EtherscanImportError({
+          code: 'etherscan_missing_contract_in_json',
+          contractName: contractResultJson.ContractName,
+        });
       }
     }
     contractName = contractPath.split('/').pop()!.split('.')[0];
@@ -378,8 +397,9 @@ export const processVyperResultFromEtherscan = async (
   }
 
   if (!vyperJsonInput.settings) {
-    const errorMessage = "Couldn't get Vyper compiler settings from Etherscan.";
-    throw new MalformedEtherscanResponseLibError(errorMessage);
+    throw new EtherscanImportError({
+      code: 'etherscan_missing_vyper_settings',
+    });
   }
 
   return {

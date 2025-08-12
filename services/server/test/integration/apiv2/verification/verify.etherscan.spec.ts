@@ -31,7 +31,7 @@ import {
 
 use(chaiHttp);
 
-describe.only("POST /v2/verify/etherscan/:chainId/:address", function () {
+describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   // Don't run if it's an external PR. Etherscan tests need API keys that can't be exposed to external PRs.
   if (process.env.CIRCLE_PR_REPONAME !== undefined) {
     return;

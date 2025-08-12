@@ -17,8 +17,10 @@ describe('getContractPathFromSources (lib)', () => {
     const sources = {
       'path/file.sol': { content: 'contract SolidityContract {}' },
     } as any;
-    const result = getContractPathFromSources('AnotherSolidityContract', sources);
+    const result = getContractPathFromSources(
+      'AnotherSolidityContract',
+      sources,
+    );
     expect(result).to.be.undefined;
   });
 });
-
