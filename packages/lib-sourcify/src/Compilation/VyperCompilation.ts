@@ -162,11 +162,11 @@ export class VyperCompilation extends AbstractCompilation {
 
   public constructor(
     public compiler: IVyperCompiler,
-    public compilerVersion: string,
+    compilerVersion: string,
     jsonInput: VyperJsonInput,
     public compilationTarget: CompilationTarget,
   ) {
-    super(jsonInput);
+    super(compilerVersion, jsonInput);
 
     // Vyper beta and rc versions are not semver compliant, so we need to handle them differently
     this.compilerVersionCompatibleWithSemver = returnFixedVyperVersion(

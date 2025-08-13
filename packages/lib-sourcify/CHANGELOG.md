@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.2.2 - 2025-08-12
+
+- Clean compiler version in compilation classes (#2295)
+- Rpcs housekeeping and removing URL logs with API Keys (#2283)
+
+
 ## @ethereum-sourcify/lib-sourcify@2.2.1 - 2025-08-11
 
 - update dependencies

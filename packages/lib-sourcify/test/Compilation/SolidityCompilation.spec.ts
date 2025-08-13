@@ -329,6 +329,34 @@ describe('SolidityCompilation', () => {
     expect(immutableRefs).to.deep.equal({ '3': [{ length: 32, start: 608 }] });
   });
 
+  it('should clean compiler version with v prefix', () => {
+    const contractPath = path.join(__dirname, '..', 'sources', 'Storage');
+    const metadata = JSON.parse(
+      fs.readFileSync(path.join(contractPath, 'metadata.json'), 'utf8'),
+    );
+    const sources = {
+      'project:/contracts/Storage.sol': {
+        content: fs.readFileSync(
+          path.join(contractPath, 'sources', 'Storage.sol'),
+          'utf8',
+        ),
+      },
+    };
+
+    const compilation = new SolidityCompilation(
+      solc,
+      'v0.8.4+commit.c7e474f2',
+      {
+        language: 'Solidity',
+        sources,
+        settings: getSolcSettingsFromMetadata(metadata),
+      },
+      getCompilationTargetFromMetadata(metadata),
+    );
+
+    expect(compilation.compilerVersion).to.equal('0.8.4+commit.c7e474f2');
+  });
+
   // Contracts before 0.4.12 don't have `auxdata` in `legacyAssembly`
   // https://github.com/ethereum/sourcify/issues/2217
   it('should handle legacy Solidity 0.4.11 contracts with auxdata correctly', async () => {

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.3.2 - 2025-08-12
+
+- Update Dockerfiles from Bullseye to Bookworm for Vyper compiler compatibility (#2289)
+- Allow to replace contracts on unsupported chains (#2292)
+- Fixes to massive replace for contracts from verifyDepracted (#2299)
+
 ## sourcify-server@3.3.1 - 2025-08-11
 
 - Fix transaction hash assignment in replaceContract and fix error message in replaceCreationInformation

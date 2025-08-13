@@ -37,11 +37,11 @@ export class SolidityCompilation extends AbstractCompilation {
 
   public constructor(
     public compiler: ISolidityCompiler,
-    public compilerVersion: string,
+    compilerVersion: string,
     jsonInput: SolidityJsonInput,
     public compilationTarget: CompilationTarget,
   ) {
-    super(jsonInput);
+    super(compilerVersion, jsonInput);
 
     // Throw error for unsupported compiler versions
     if (semver.lt(this.compilerVersion, '0.4.11')) {
