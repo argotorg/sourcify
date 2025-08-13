@@ -1115,11 +1115,6 @@ components:
         - customCode: unsupported_chain
           message: The chain with chainId 9429413 is not supported
           errorId: 1ac6b91a-0605-4459-93dc-18f210a70192
-    SolidityCompilerVersion:
-      type: string
-      title: SolidityCompilerVersion
-      pattern: '\d+\.\d+\.\d+(-nightly\.\d{4}\.\d+\.\d+)?\+commit\.[a-f0-9]{8}'
-      example: '0.8.7+commit.e28d00a7'
     CompilerVersion:
       type: string
       title: CompilerVersion
