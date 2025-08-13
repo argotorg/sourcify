@@ -1,4 +1,4 @@
-import { Abi } from 'abitype';
+import { JsonFragment } from 'ethers';
 import {
   CompilationLanguage,
   CompilationTarget,
@@ -109,7 +109,7 @@ export interface VerificationExport {
       >;
     };
     contractCompilerOutput: {
-      abi?: Abi;
+      abi?: JsonFragment[];
       userdoc?: Userdoc;
       devdoc?: Devdoc;
       storageLayout?: StorageLayout;

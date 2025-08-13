@@ -8,10 +8,10 @@ import {
   CompiledContractCborAuxdata,
   StringMap,
 } from '../Compilation/CompilationTypes';
-import { AbiConstructor } from 'abitype';
-import { defaultAbiCoder as abiCoder, ParamType } from '@ethersproject/abi';
-import { id as keccak256Str } from 'ethers';
+import { AbiCoder, id as keccak256Str, Interface } from 'ethers';
 import { logError } from '../logger';
+
+const abiCoder = AbiCoder.defaultAbiCoder();
 
 export type Transformation = {
   type: 'insert' | 'replace';
@@ -202,11 +202,8 @@ export function extractConstructorArgumentsTransformation(
     populatedRecompiledBytecode,
     onchainCreationBytecode,
   );
-  const constructorAbiParamInputs = (
-    metadata?.output?.abi?.find(
-      (param) => param.type === 'constructor',
-    ) as AbiConstructor
-  )?.inputs as ParamType[];
+  const constructorAbiParamInputs = new Interface(metadata?.output?.abi).deploy
+    .inputs;
   if (abiEncodedConstructorArguments) {
     if (!constructorAbiParamInputs) {
       throw new Error(

@@ -17,7 +17,7 @@ import {
   rearrangeSources,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Session } from "express-session";
-import { AbiConstructor, AbiParameter } from "abitype";
+import { JsonFragmentType } from "ethers";
 import QueryString from "qs";
 import { VerificationService } from "../../services/VerificationService";
 import {
@@ -144,7 +144,7 @@ export type SendableContract = ContractMeta & {
     invalid: InvalidSources;
   };
   verificationId: string;
-  constructorArgumentsArray?: Mutable<AbiParameter[]>;
+  constructorArgumentsArray?: readonly JsonFragmentType[];
   // creationBytecode?: string; // Not needed without create2
 };
 
@@ -156,11 +156,9 @@ function getSendableContract(
 
   return {
     verificationId,
-    constructorArgumentsArray: (
-      contract?.metadata?.output?.abi?.find(
-        (abi) => abi.type === "constructor",
-      ) as AbiConstructor
-    )?.inputs as Mutable<AbiParameter[]>,
+    constructorArgumentsArray: contract?.metadata?.output?.abi?.find(
+      (abi) => abi.type === "constructor",
+    )?.inputs,
     // : contract?.creationBytecode, // Not needed without create2
     compiledPath: contract.compiledPath,
     name: contract.name,

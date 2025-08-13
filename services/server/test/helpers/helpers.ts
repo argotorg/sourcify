@@ -3,8 +3,7 @@ import {
   ContractFactory,
   Wallet,
   JsonRpcSigner,
-  Interface,
-  InterfaceAbi,
+  JsonFragment,
   JsonRpcProvider,
   BytesLike,
   Contract,
@@ -29,7 +28,7 @@ export const unsupportedChain = "3"; // Ropsten
 
 export async function deployFromAbiAndBytecode(
   signer: JsonRpcSigner,
-  abi: Interface | InterfaceAbi,
+  abi: JsonFragment[],
   bytecode: BytesLike | { object: string },
   args?: any[],
 ) {
@@ -56,7 +55,7 @@ export type DeploymentInfo = {
  */
 export async function deployFromAbiAndBytecodeForCreatorTxHash(
   signer: JsonRpcSigner,
-  abi: Interface | InterfaceAbi,
+  abi: JsonFragment[],
   bytecode: BytesLike | { object: string },
   args?: any[],
 ): Promise<DeploymentInfo> {
@@ -156,7 +155,7 @@ export async function deployAndVerifyContract(
  */
 export async function deployFromPrivateKey(
   provider: JsonRpcProvider,
-  abi: Interface | InterfaceAbi,
+  abi: JsonFragment[],
   bytecode: BytesLike | { object: string },
   privateKey: string,
   args?: any[],
@@ -184,7 +183,7 @@ export function waitSecs(secs = 0) {
 // Uses staticCall which does not send a tx i.e. change the state.
 export async function callContractMethod(
   provider: JsonRpcProvider,
-  abi: Interface | InterfaceAbi,
+  abi: JsonFragment[],
   contractAddress: string,
   methodName: string,
   args: any[],
@@ -198,7 +197,7 @@ export async function callContractMethod(
 // Sends a tx that changes the state
 export async function callContractMethodWithTx(
   signer: JsonRpcSigner,
-  abi: Interface | InterfaceAbi,
+  abi: JsonFragment[],
   contractAddress: string,
   methodName: string,
   args: any[],
