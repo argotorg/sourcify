@@ -178,13 +178,13 @@ export const fetchFromEtherscan = async (
   address: string,
   apiKey: string = '',
 ): Promise<EtherscanResult> => {
-  let url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
+  const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const secretUrl = url + apiKey;
-  url = url + (apiKey ? apiKey.slice(0, 6) + '...' : '');
+  const maskedUrl = url + (apiKey ? apiKey.slice(0, 6) + '...' : '');
 
   let response: any;
   logInfo('Fetching from Etherscan', {
-    url,
+    maskedUrl,
     chainId,
     address,
   });
@@ -199,14 +199,14 @@ export const fetchFromEtherscan = async (
     });
   }
   logDebug('Fetched from Etherscan', {
-    url,
+    maskedUrl,
     chainId,
     address,
   });
 
   if (!response.ok) {
     logWarn('Etherscan API error', {
-      url,
+      maskedUrl,
       chainId,
       address,
       status: (response as any).status,
@@ -225,7 +225,7 @@ export const fetchFromEtherscan = async (
     resultJson.result.includes('rate limit reached')
   ) {
     logInfo('Etherscan Rate Limit', {
-      url,
+      maskedUrl,
       chainId,
       address,
       resultJson,
@@ -237,7 +237,7 @@ export const fetchFromEtherscan = async (
 
   if (resultJson.message === 'NOTOK') {
     logError('Etherscan API error', {
-      url,
+      maskedUrl,
       chainId,
       address,
       resultJson,
@@ -250,7 +250,7 @@ export const fetchFromEtherscan = async (
 
   if (resultJson.result[0].SourceCode === '') {
     logInfo('Contract not found on Etherscan', {
-      url,
+      maskedUrl,
       chainId,
       address,
     });
