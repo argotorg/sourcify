@@ -1,5 +1,4 @@
 import nock from "nock";
-import { assert } from "chai";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
 export const mockEtherscanApi = (
@@ -9,7 +8,9 @@ export const mockEtherscanApi = (
   userApiKey?: string,
 ): nock.Scope => {
   if (!sourcifyChain.etherscanApi?.supported) {
-    assert.fail(`Etherscan for chain ${sourcifyChain.chainId} not configured`);
+    chai.assert.fail(
+      `Etherscan for chain ${sourcifyChain.chainId} not configured`,
+    );
   }
   const apiKey =
     userApiKey !== undefined

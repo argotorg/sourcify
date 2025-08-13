@@ -2,16 +2,14 @@ import { OutputError } from '@ethereum-sourcify/compilers-types';
 import { CompilationErrorCode } from './Compilation/CompilationTypes';
 import { ValidationErrorCode } from './Validation/ValidationTypes';
 import { VerificationErrorCode } from './Verification/VerificationTypes';
-import { EtherscanImportErrorCode } from './utils/etherscan/EtherscanTypes';
 
 export type SourcifyLibErrorCode =
   | ValidationErrorCode
   | CompilationErrorCode
-  | VerificationErrorCode
-  | EtherscanImportErrorCode;
+  | VerificationErrorCode;
 
 interface SourcifyLibErrorDataRequired {
-  chainId: string | number;
+  chainId: string;
   address: string;
   missingSources: string[];
   invalidSources: string[];
