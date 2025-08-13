@@ -20,7 +20,7 @@ export function validateChainId(
 ) {
   const chainMap = req.app.get("chains") as ChainMap
   const keys = new Set(Object.keys(chainMap))
-  if(!keys.has(req.params.chainId)) {
+  if(!keys.has(req.params.chainId) || !chainMap[req.params.chainId]) {
     console.info("Invalid chainId in params", {
       params: req.params,
     });
@@ -140,6 +140,18 @@ export function validateContractIdentifier(
     throw new InvalidParametersError(
       "The contractIdentifier must consist of the file path and the contract name separated by a ':'.",
     );
+  }
+
+  next();
+}
+
+export function validateCompilerVersion(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!req.body.compilerVersion) {
+    throw new InvalidParametersError("Compiler version is required");
   }
 
   next();

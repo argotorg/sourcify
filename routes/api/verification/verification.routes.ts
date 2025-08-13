@@ -5,7 +5,7 @@ import {
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
   validateStandardJsonInput,
-  validateMetadata
+  validateMetadata, validateCompilerVersion
 } from "../middlewares";
 import {
   verifyFromConfluxscanEndpoint,
@@ -23,6 +23,7 @@ router
     validateAddress,
     validateStandardJsonInput,
     validateContractIdentifier,
+    validateCompilerVersion,
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromJsonInputEndpoint,

@@ -7,7 +7,6 @@ import routes from "./routes/routes";
 import genericErrorHandler from "./common/errors/GenericErrorHandler";
 import { Services } from "./services/services";
 import { VerificationOptions } from "./services/verification/VerificationService";
-import { errorHandler as v2ErrorHandler } from "./routes/api/errors";
 import { DatabaseOptions, loadConfig } from "./config/Loader";
 import { SolcLocal } from "./services/compiler/SolcLocal";
 import { Chain } from "./services/chain/Chain";
@@ -61,7 +60,6 @@ export class Server {
     this.app.use(bodyParser.json({ limit: options.maxFileSize }))
     this.app.use(fileUpload({ limits: { fileSize: options.maxFileSize }, abortOnLimit: true}))
     this.app.use("/", routes)
-    this.app.use("/v2", v2ErrorHandler)
     this.app.use(genericErrorHandler)
   }
 

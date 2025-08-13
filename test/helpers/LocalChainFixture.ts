@@ -4,7 +4,10 @@ import treeKill from "tree-kill";
 import { JsonRpcProvider, JsonRpcSigner, Network } from "ethers";
 import { deployFromAbiAndBytecodeForCreatorTxHash } from "./helpers";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
+import storageContractMetadata from "../testcontracts/Storage/metadata.json";
+import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import { loadConfig } from "../../config/Loader";
+import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
 
 const HARDHAT_PORT = 8545;
 const DEFAULT_CHAIN_ID = "31337";
@@ -14,21 +17,34 @@ export type LocalChainFixtureOptions = {
 };
 
 export class LocalChainFixture {
+  defaultContractMetadataObject = storageContractMetadata as Metadata;
+  defaultContractJsonInput = storageJsonInput;
+
   private readonly _chainId?: string;
   private _localSigner?: JsonRpcSigner;
   private _defaultContractAddress?: string;
+  private _defaultContractCreatorTx?: string;
   private hardhatNodeProcess?: ChildProcess;
 
   // Getters for type safety
   // Can be safely accessed in "it" blocks
-  get chainId(): string {
+  get chainId(): number {
     if (!this._chainId) throw new Error("chainId not initialized!");
-    return this._chainId;
+    return Number(this._chainId);
+  }
+  get localSigner(): JsonRpcSigner {
+    if (!this._localSigner) throw new Error("localSigner not initialized!");
+    return this._localSigner;
   }
   get defaultContractAddress(): string {
     if (!this._defaultContractAddress)
       throw new Error("defaultContractAddress not initialized!");
     return this._defaultContractAddress;
+  }
+  get defaultContractCreatorTx(): string {
+    if (!this._defaultContractCreatorTx)
+      throw new Error("defaultContractCreatorTx not initialized!");
+    return this._defaultContractCreatorTx;
   }
 
   /**
@@ -55,13 +71,14 @@ export class LocalChainFixture {
       console.log("Initialized Provider");
 
       // Deploy the test contract
-      const { contractAddress } =
+      const { contractAddress, txHash } =
         await deployFromAbiAndBytecodeForCreatorTxHash(
           this._localSigner,
           storageContractArtifact.abi,
           storageContractArtifact.bytecode,
         );
       this._defaultContractAddress = contractAddress;
+      this._defaultContractCreatorTx = txHash;
     });
 
     after(async () => {
