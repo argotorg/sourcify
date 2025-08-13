@@ -209,16 +209,16 @@ export const fetchFromEtherscan = async (
       maskedUrl,
       chainId,
       address,
-      status: (response as any).status,
+      status: response.status,
       response: JSON.stringify(response),
     });
     throw new EtherscanImportError({
       code: 'etherscan_http_error',
-      status: (response as any).status,
+      status: response.status,
     });
   }
 
-  const resultJson: any = await (response as any).json();
+  const resultJson = await response.json();
 
   if (
     resultJson.message === 'NOTOK' &&
