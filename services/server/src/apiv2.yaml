@@ -312,7 +312,7 @@ components:
 
                   Must include the `language` field inside the stdJsonInput object. Currently supports Solidity and Vyper. 
               compilerVersion:
-                $ref: '#/components/schemas/SolidityCompilerVersion'
+                $ref: '#/components/schemas/CompilerVersion'
               contractIdentifier:
                 type: string
                 description: The fully qualified file path and contract name to indicate which contract to verify.
@@ -581,7 +581,8 @@ components:
                         type: string
                         example: 'solc'
                       compilerVersion:
-                        $ref: '#/components/schemas/SolidityCompilerVersion'
+                        $ref: '#/components/schemas/CompilerVersion'
+                        description: 'The server accepts v prefixed but should only respond without the v prefix'
                       compilerSettings:
                         type: object
                       name:
@@ -1118,6 +1119,15 @@ components:
       type: string
       title: SolidityCompilerVersion
       pattern: '\d+\.\d+\.\d+(-nightly\.\d{4}\.\d+\.\d+)?\+commit\.[a-f0-9]{8}'
+      example: '0.8.7+commit.e28d00a7'
+    CompilerVersion:
+      type: string
+      title: CompilerVersion
+      # Pattern accepts both Solidity and Vyper version formats:
+      # We need to be permissive here because Vyper versions are named inconsistently.
+      # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
+      # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
+      pattern: '^v?\d+\.\d+\.\d+.*$'
       example: '0.8.7+commit.e28d00a7'
     Keccak256:
       type: string
