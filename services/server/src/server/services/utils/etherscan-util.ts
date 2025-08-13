@@ -1,11 +1,7 @@
 import {
   ISolidityCompiler,
   IVyperCompiler,
-  SolidityJsonInput,
   SourcifyChain,
-  VyperJsonInput,
-  VyperCompilation,
-  SolidityCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError, NotFoundError } from "../../../common/errors";
 import { TooManyRequests } from "../../../common/errors/TooManyRequests";
@@ -96,65 +92,19 @@ export const fetchFromEtherscan = async (
   }
 };
 
-export const processSolidityResultFromEtherscan = (
-  contractResultJson: any,
-  throwV2Errors: boolean,
-) => {
-  try {
-    return EtherscanUtils.processSolidityResultFromEtherscan(
-      contractResultJson,
-    );
-  } catch (err) {
-    return mapLibError(err, throwV2Errors);
-  }
-};
-
-export const processVyperResultFromEtherscan = async (
-  contractResultJson: any,
-  throwV2Errors: boolean,
-) => {
-  try {
-    return await EtherscanUtils.processVyperResultFromEtherscan(
-      contractResultJson,
-    );
-  } catch (err) {
-    return mapLibError(err, throwV2Errors);
-  }
-};
-
 export async function getCompilationFromEtherscanResult(
   etherscanResult: any,
   solc: ISolidityCompiler,
   vyperCompiler: IVyperCompiler,
   throwV2Errors = false,
 ) {
-  if (EtherscanUtils.isVyperResult(etherscanResult)) {
-    const processedResult = await processVyperResultFromEtherscan(
+  try {
+    return EtherscanUtils.getCompilationFromEtherscanResult(
       etherscanResult,
-      throwV2Errors,
-    );
-    return new VyperCompilation(
-      vyperCompiler,
-      processedResult.compilerVersion,
-      processedResult.jsonInput as VyperJsonInput,
-      {
-        path: processedResult.contractPath,
-        name: processedResult.contractName,
-      },
-    );
-  } else {
-    const processedResult = processSolidityResultFromEtherscan(
-      etherscanResult,
-      throwV2Errors,
-    );
-    return new SolidityCompilation(
       solc,
-      processedResult.compilerVersion,
-      processedResult.jsonInput as SolidityJsonInput,
-      {
-        path: processedResult.contractPath,
-        name: processedResult.contractName,
-      },
+      vyperCompiler,
     );
+  } catch (err) {
+    return mapLibError(err, throwV2Errors);
   }
 }
