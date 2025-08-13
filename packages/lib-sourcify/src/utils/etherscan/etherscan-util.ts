@@ -176,13 +176,13 @@ export const getVyperJsonInputFromSingleFileResult = (
 export const fetchFromEtherscan = async (
   chainId: number | string,
   address: string,
-  apiKey: string = '',
+  apiKey: string,
 ): Promise<EtherscanResult> => {
   const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const secretUrl = url + apiKey;
   const maskedUrl = url + (apiKey ? apiKey.slice(0, 6) + '...' : '');
 
-  let response: any;
+  let response: Response;
   logInfo('Fetching from Etherscan', {
     maskedUrl,
     chainId,

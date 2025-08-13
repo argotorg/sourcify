@@ -43,6 +43,7 @@ describe('etherscan util (lib)', function () {
   const testChainId = 1;
   const testAddress = '0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2';
   const sourcifyChain = makeChain(testChainId);
+  const testApiKey = '';
 
   this.afterEach(() => {
     nock.cleanAll();
@@ -54,11 +55,11 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         UNVERIFIED_CONTRACT_RESPONSE,
-        '',
+        testApiKey,
       );
 
       const error = await expect(
-        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress),
+        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress, testApiKey),
       ).to.be.rejectedWith(EtherscanImportError);
       expect((error as any).code).to.equal('etherscan_not_verified');
       expect(scope.isDone()).to.equal(true);
@@ -69,11 +70,11 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         INVALID_API_KEY_RESPONSE,
-        '',
+        testApiKey,
       );
 
       const error = await expect(
-        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress),
+        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress, testApiKey),
       ).to.be.rejectedWith(EtherscanImportError);
       expect((error as any).code).to.equal('etherscan_api_error');
       expect(scope.isDone()).to.equal(true);
@@ -84,11 +85,11 @@ describe('etherscan util (lib)', function () {
         sourcifyChain,
         testAddress,
         RATE_LIMIT_REACHED_RESPONSE,
-        '',
+        testApiKey,
       );
 
       const error = await expect(
-        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress),
+        EtherscanUtils.fetchFromEtherscan(testChainId, testAddress, testApiKey),
       ).to.be.rejectedWith(EtherscanImportError);
       expect((error as any).code).to.equal('etherscan_rate_limit');
       expect(scope.isDone()).to.equal(true);
@@ -111,6 +112,7 @@ describe('etherscan util (lib)', function () {
         const result = await EtherscanUtils.fetchFromEtherscan(
           testChainId,
           testAddress,
+          testApiKey,
         );
         expect(result).to.deep.equal((response as any).result[0]);
         expect(scope.isDone()).to.equal(true);

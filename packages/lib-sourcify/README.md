@@ -512,7 +512,7 @@ import { EtherscanUtils } from '@ethereum-sourcify/lib-sourcify';
 const etherscanResult = await EtherscanUtils.fetchFromEtherscan(
   1, // chainId
   '0x6B175474E89094C44Da98b954EedeAC495271d0F', // contract address
-  'YOUR_API_KEY', // optional API key
+  'YOUR_API_KEY', // API key
 );
 ```
 
