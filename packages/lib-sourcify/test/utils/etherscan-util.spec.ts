@@ -11,6 +11,8 @@ import {
   EtherscanUtils,
 } from '../../src';
 import { solc, vyperCompiler } from '../utils';
+// Here we import the mock responses directly from server to avoid duplication
+// and ensure consistency across lib-sourcify and server tests.
 import {
   INVALID_API_KEY_RESPONSE,
   MULTIPLE_CONTRACT_RESPONSE,
@@ -21,7 +23,7 @@ import {
   VYPER_SINGLE_CONTRACT_RESPONSE,
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
   mockEtherscanApi,
-} from './etherscanResponseMocks';
+} from '../../../../services/server/test/helpers/etherscanResponseMocks';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
 
 use(chaiHttp);
@@ -46,7 +48,7 @@ describe('etherscan util (lib)', function () {
     nock.cleanAll();
   });
 
-  describe.only('fetchFromEtherscan', () => {
+  describe('fetchFromEtherscan', () => {
     it('should throw when fetching a non verified contract from etherscan', async () => {
       const scope = mockEtherscanApi(
         sourcifyChain,
