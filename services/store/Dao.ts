@@ -937,6 +937,7 @@ export class Dao {
     | "error_id"
     | "error_data"
   >): Promise<void> {
+    const errorDataStr = JSON.stringify(error_data);
     await this.pool.query(
       `
         UPDATE verification_jobs 
@@ -957,7 +958,7 @@ export class Dao {
           compilation_time,
           error_code,
           error_id,
-          error_data,
+          errorDataStr,
           id,
         ],
       }

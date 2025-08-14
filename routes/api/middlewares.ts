@@ -193,6 +193,18 @@ export function validateMetadata(
   next();
 }
 
+export function validateSources(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (!req.body.sources) {
+    throw new InvalidParametersError("Sources is required");
+  }
+
+  next();
+}
+
 export async function checkIfAlreadyVerified(
   req: Request,
   res: Response,

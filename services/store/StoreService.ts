@@ -684,10 +684,10 @@ export class StoreService
       job.error = {
         customCode: row.error_code as VerificationErrorCode,
         message: getVerificationErrorMessage({
-          /*chainId: row.chain_id,*/
           code: row.error_code as VerificationErrorCode,
-          /*address,
-          ...row.error_data,*/
+          chainId: String(row.chain_id),
+          address,
+          ...row.error_data,
         }),
         errorId: row.error_id,
         recompiledCreationCode: row.recompiled_creation_code || undefined,

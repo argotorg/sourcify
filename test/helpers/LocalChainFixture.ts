@@ -8,6 +8,28 @@ import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import { loadConfig } from "../../config/Loader";
 import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
+import path from "path";
+import fs from "fs";
+
+const storageContractSourcePath = path.join(
+  __dirname,
+  "..",
+  "testcontracts",
+  "Storage",
+  "Storage.sol",
+);
+const storageContractSource = fs.readFileSync(storageContractSourcePath);
+
+const storageModifiedContractSourcePath = path.join(
+  __dirname,
+  "..",
+  "testcontracts",
+  "Storage",
+  "StorageModified.sol",
+);
+const storageModifiedContractSource = fs.readFileSync(
+  storageModifiedContractSourcePath,
+);
 
 const HARDHAT_PORT = 8545;
 const DEFAULT_CHAIN_ID = "31337";
@@ -17,6 +39,8 @@ export type LocalChainFixtureOptions = {
 };
 
 export class LocalChainFixture {
+  defaultContractSource = storageContractSource;
+  defaultContractModifiedSource = storageModifiedContractSource;
   defaultContractMetadataObject = storageContractMetadata as Metadata;
   defaultContractJsonInput = storageJsonInput;
 
