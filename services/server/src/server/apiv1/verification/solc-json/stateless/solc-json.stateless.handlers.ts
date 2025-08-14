@@ -10,7 +10,7 @@ import { Services } from "../../../../services/services";
 import { ChainRepository } from "../../../../../sourcify-chain-repository";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 import logger from "../../../../../common/logger";
-import { getContractPathFromSources } from "../../../../services/utils/parsing-util";
+import { getContractPathFromSources } from "@ethereum-sourcify/lib-sourcify";
 
 export async function verifySolcJsonEndpoint(req: Request, res: Response) {
   const services = req.app.get("services") as Services;

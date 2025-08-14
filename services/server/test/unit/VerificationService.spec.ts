@@ -9,7 +9,7 @@ import rimraf from "rimraf";
 import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import sinon from "sinon";
-import { EtherscanResult } from "../../src/server/services/utils/etherscan-util";
+import { EtherscanResult } from "@ethereum-sourcify/lib-sourcify";
 
 describe("VerificationService", function () {
   const sandbox = sinon.createSandbox();

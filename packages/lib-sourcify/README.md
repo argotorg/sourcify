@@ -26,9 +26,9 @@ import {
   ISolidityCompiler,
   SolidityJsonInput,
   SolidityOutput,
-} from "@ethereum-sourcify/lib-sourcify";
-import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
-import * as fs from "fs";
+} from '@ethereum-sourcify/lib-sourcify';
+import { useSolidityCompiler } from '@ethereum-sourcify/compilers';
+import * as fs from 'fs';
 
 // Step 1: Setup your compiler
 class Solc implements ISolidityCompiler {
@@ -43,26 +43,26 @@ class Solc implements ISolidityCompiler {
   async compile(
     version: string,
     solcJsonInput: SolidityJsonInput,
-    forceEmscripten: boolean = false
+    forceEmscripten: boolean = false,
   ): Promise<SolidityOutput> {
     return await useSolidityCompiler(
       this.solcRepoPath, // useSolidityCompiler will automatically download and store solc here
       this.solJsonRepoPath, // useSolidityCompiler will automatically download and store solcjs here
       version,
       solcJsonInput,
-      forceEmscripten
+      forceEmscripten,
     );
   }
 }
 
-const solc = new Solc("/path/to/solc", "/path/to/solcjs");
+const solc = new Solc('/path/to/solc', '/path/to/solcjs');
 
 // Step 2: Prepare your standard JSON input
 const jsonInput = {
-  language: "Solidity",
+  language: 'Solidity',
   sources: {
-    "Contract.sol": {
-      content: "contract MyContract { function foo() public {} }",
+    'Contract.sol': {
+      content: 'contract MyContract { function foo() public {} }',
     },
   },
   settings: {
@@ -71,7 +71,7 @@ const jsonInput = {
       runs: 200,
     },
     outputSelection: {
-      "*": [],
+      '*': [],
     },
   },
 } as SolidityJsonInput;
@@ -79,19 +79,19 @@ const jsonInput = {
 // Step 3: Create a compilation
 const compilation = new SolidityCompilation(
   solc,
-  "0.8.20", // compiler version
+  '0.8.20', // compiler version
   jsonInput,
   {
-    path: "Contract.sol",
-    name: "MyContract", // The name of your contract
-  }
+    path: 'Contract.sol',
+    name: 'MyContract', // The name of your contract
+  },
 );
 
 // Step 4: Set up a SourcifyChain instance
 const myChain = new SourcifyChain({
-  name: "My EVM Chain",
+  name: 'My EVM Chain',
   chainId: 1337,
-  rpc: ["http://localhost:8545"],
+  rpc: ['http://localhost:8545'],
   supported: true,
 });
 
@@ -99,7 +99,7 @@ const myChain = new SourcifyChain({
 const verification = new Verification(
   compilation,
   myChain,
-  "0xc0ffee254729296a45a3885639AC7E10F9d54979"
+  '0xc0ffee254729296a45a3885639AC7E10F9d54979',
 );
 
 await verification.verify();
@@ -115,13 +115,16 @@ This example shows the complete verification flow for a Solidity contract using 
 For browser usage, we recommend using [web-solc](https://github.com/gnidan/web-solc) instead of `@ethereum-sourcify/compilers`. Here's an example of how to implement the `ISolidityCompiler` interface with `web-solc`:
 
 ```typescript
-import { ISolidityCompiler, SolidityJsonInput } from "@ethereum-sourcify/lib-sourcify";
-import { fetchSolc } from "web-solc";
+import {
+  ISolidityCompiler,
+  SolidityJsonInput,
+} from '@ethereum-sourcify/lib-sourcify';
+import { fetchSolc } from 'web-solc';
 
 class Solc implements ISolidityCompiler {
   async compile(
     version: string,
-    solcJsonInput: SolidityJsonInput
+    solcJsonInput: SolidityJsonInput,
   ): Promise<any> {
     const { compile } = await fetchSolc(version);
     return await compile(solcJsonInput);
@@ -136,12 +139,10 @@ const solc = new Solc();
 lib-sourcify v2 consists of several key components:
 
 - **Validation**: Based on a Solidity metadata.json file that describes a contract build, checks if all source files are present and valid. Fetches missing sources from IPFS if necessary.
-
   - `SolidityMetadataContract`: Represents a Solidity contract with its metadata and source files
   - `processFiles.ts`: Utility functions for creating `SolidityMetadataContract` instances from files
 
 - **Compilation**: Handles contract compilation
-
   - `AbstractCompilation`: Base class for compilation
   - `SolidityCompilation`: Handles Solidity compilation
   - `VyperCompilation`: Handles Vyper compilation
@@ -177,7 +178,7 @@ import { SolidityMetadataContract } from '@ethereum-sourcify/lib-sourcify';
 // Set a custom IPFS gateway
 SolidityMetadataContract.setGlobalIpfsGateway({
   url: 'https://my-ipfs-gateway.com/ipfs/',
-  headers: { 'Authorization': 'Bearer my-token' }
+  headers: { Authorization: 'Bearer my-token' },
 });
 
 // Get the current IPFS gateway configuration
@@ -189,7 +190,11 @@ const gateway = SolidityMetadataContract.getGlobalIpfsGateway();
 You can set the global log level and provide a custom logger:
 
 ```typescript
-import { setLibSourcifyLoggerLevel, setLibSourcifyLogger, getLibSourcifyLoggerLevel } from '@ethereum-sourcify/lib-sourcify';
+import {
+  setLibSourcifyLoggerLevel,
+  setLibSourcifyLogger,
+  getLibSourcifyLoggerLevel,
+} from '@ethereum-sourcify/lib-sourcify';
 
 // Set the log level
 setLibSourcifyLoggerLevel(5); // 0=errors, 1=warnings, 2=info, 5=debug, 6=silly
@@ -205,7 +210,7 @@ setLibSourcifyLogger({
   },
   log(level, msg) {
     // Custom logging implementation
-  }
+  },
 });
 ```
 
@@ -222,28 +227,31 @@ import {
   SolidityOutput,
   ISolidityCompiler,
   SolidityJsonInput,
-} from "@ethereum-sourcify/lib-sourcify";
-import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
+} from '@ethereum-sourcify/lib-sourcify';
+import { useSolidityCompiler } from '@ethereum-sourcify/compilers';
 
 class Solc implements ISolidityCompiler {
-  constructor(private solcRepoPath: string, private solJsonRepoPath: string) {}
+  constructor(
+    private solcRepoPath: string,
+    private solJsonRepoPath: string,
+  ) {}
 
   async compile(
     version: string,
     solcJsonInput: SolidityJsonInput,
-    forceEmscripten: boolean = false
+    forceEmscripten: boolean = false,
   ): Promise<SolidityOutput> {
     return await useSolidityCompiler(
       this.solcRepoPath,
       this.solJsonRepoPath,
       version,
       solcJsonInput,
-      forceEmscripten
+      forceEmscripten,
     );
   }
 }
 
-const solc = new Solc("/path/to/solc/repo", "/path/to/solcjs/repo");
+const solc = new Solc('/path/to/solc/repo', '/path/to/solcjs/repo');
 ```
 
 ### Vyper Compiler Example
@@ -359,7 +367,10 @@ const compilation = await metadataContract.createCompilation(solidityCompiler);
 For file-based validation:
 
 ```typescript
-import { createMetadataContractsFromFiles, PathBuffer } from '@ethereum-sourcify/lib-sourcify';
+import {
+  createMetadataContractsFromFiles,
+  PathBuffer,
+} from '@ethereum-sourcify/lib-sourcify';
 
 const pathBuffers: PathBuffer[] = [];
 pathBuffers.push({
@@ -488,6 +499,38 @@ setLibSourcifyLogger({
 });
 ```
 
+## EtherscanUtils
+
+EtherscanUtils provides utilities for importing and processing verified contracts from Etherscan APIs.
+
+### Fetching Contract Data from Etherscan
+
+```typescript
+import { EtherscanUtils } from '@ethereum-sourcify/lib-sourcify';
+
+// Fetch contract source code and metadata from Etherscan
+const etherscanResult = await EtherscanUtils.fetchFromEtherscan(
+  1, // chainId
+  '0x6B175474E89094C44Da98b954EedeAC495271d0F', // contract address
+  'YOUR_API_KEY', // API key
+);
+```
+
+### Creating Compilations from Etherscan Results
+
+```typescript
+// Create a compilation object directly from Etherscan data
+const compilation = await EtherscanUtils.getCompilationFromEtherscanResult(
+  etherscanResult,
+  solidityCompiler, // ISolidityCompiler instance
+  vyperCompiler, // IVyperCompiler instance (for Vyper contracts)
+);
+
+// Use the compilation for verification
+const verification = new Verification(compilation, chain, contractAddress);
+await verification.verify();
+```
+
 ## Migration Guide from v1 to v2
 
 Version 2 of lib-sourcify brings a significant redesign of the library's architecture. Here's how to migrate from v1 to v2:
@@ -495,7 +538,6 @@ Version 2 of lib-sourcify brings a significant redesign of the library's archite
 ### Key Changes
 
 1. **Class Structure Changes**:
-
    - `AbstractCheckedContract` is replaced by language-specific compilation classes
    - `SolidityCheckedContract` functionality is now split between `SolidityMetadataContract` and `SolidityCompilation`
    - `VyperCheckedContract` is now represented by `VyperCompilation`

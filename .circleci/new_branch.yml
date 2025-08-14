@@ -7,7 +7,7 @@ parameters:
   run-validate-database-schema:
     type: boolean
     default: false
-  
+
 workflows:
   # Always run
   node-build:
@@ -139,7 +139,7 @@ jobs:
             npm run migrate:up
             # Force dump in case problems were ignored
             npx dbmate dump
-            
+
             # Check if the schema file has changed
             if git diff --exit-code sourcify-database.sql; then
               echo "✅ Schema validation passed - sourcify-database.sql is in sync with migrations"
