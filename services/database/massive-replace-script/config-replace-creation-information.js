@@ -1,6 +1,7 @@
 // Configuration for replace-creation-information use case
 // This configuration targets contracts where creation_code_hash equals runtime_code_hash
 // and updates their creation information
+// Issue: https://github.com/ethereum/sourcify/issues/1990
 
 module.exports = {
   query: async (sourcePool, sourcifySchema, currentVerifiedContract, n) => {

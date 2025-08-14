@@ -1,6 +1,7 @@
 // Configuration for fixing missing constructorArguments transformation
 // This configuration targets contracts where creation code exists but creation_match is null/false
 // and the recompiled creation code matches the onchain creation code
+// Issue: https://github.com/ethereum/sourcify/issues/2208
 // Related to: https://github.com/ethereum/sourcify/issues/2086
 
 module.exports = {
