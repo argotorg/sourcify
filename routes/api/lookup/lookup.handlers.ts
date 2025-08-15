@@ -13,7 +13,7 @@ import {
   Implementation,
 } from "../../../services/utils/proxy-contract-util";
 import { v4 as uuidv4 } from "uuid";
-import { Field } from "../../../services/store/Tables";
+import { Field, FIELDS_TO_STORED_PROPERTIES } from "../../../services/store/Tables";
 import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
 import { getChainId } from "../errors";
 
@@ -84,7 +84,10 @@ export async function getContractEndpoint(
   const services = req.app.get("services") as Services;
   const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap
 
-  const fields = req.query.fields?.split(",") as Field[];
+  let fields = req.query.fields?.split(",") as Field[]
+  if (fields?.includes("all" as Field)) {
+    fields = Object.keys(FIELDS_TO_STORED_PROPERTIES) as Field[]
+  }
   const omit = req.query.omit?.split(",") as Field[];
   const chain = getChainId(req.params.chainId)
 

@@ -574,7 +574,7 @@ export type GetVerificationJobsByChainAndAddressResult = {
 };
 
 const sourcesAggregation =
-  "json_objectagg(compiled_contracts_sources.path, json_object('content', sources.content))";
+  "json_objectagg(compiled_contracts_sources.path, json_object('content', CONVERT(sources.content USING utf8)))";
 
 export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
@@ -593,9 +593,9 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   creation_source_map:
     "compiled_contracts.creation_code_artifacts->>'$.sourceMap' as creation_source_map",
   creation_link_references:
-    "compiled_contracts.creation_code_artifacts->>'$.linkReferences' as creation_link_references",
+    "compiled_contracts.creation_code_artifacts->'$.linkReferences' as creation_link_references",
   creation_cbor_auxdata:
-    "compiled_contracts.creation_code_artifacts->>'$.cborAuxdata' as creation_cbor_auxdata",
+    "compiled_contracts.creation_code_artifacts->'$.cborAuxdata' as creation_cbor_auxdata",
   creation_transformations: "verified_contracts.creation_transformations",
   creation_values: "verified_contracts.creation_values",
   onchain_runtime_code:
@@ -605,11 +605,11 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   runtime_source_map:
     "compiled_contracts.runtime_code_artifacts->>'$.sourceMap' as runtime_source_map",
   runtime_link_references:
-    "compiled_contracts.runtime_code_artifacts->>'$.linkReferences' as runtime_link_references",
+    "compiled_contracts.runtime_code_artifacts->'$.linkReferences' as runtime_link_references",
   runtime_cbor_auxdata:
-    "compiled_contracts.runtime_code_artifacts->>'$.cborAuxdata' as runtime_cbor_auxdata",
+    "compiled_contracts.runtime_code_artifacts->'$.cborAuxdata' as runtime_cbor_auxdata",
   runtime_immutable_references:
-    "compiled_contracts.runtime_code_artifacts->>'$.immutableReferences' as runtime_immutable_references",
+    "compiled_contracts.runtime_code_artifacts->'$.immutableReferences' as runtime_immutable_references",
   runtime_transformations: "verified_contracts.runtime_transformations",
   runtime_values: "verified_contracts.runtime_values",
   transaction_hash:
@@ -619,51 +619,51 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   deployer:
     "nullif(contract_deployments.deployer, '0x') as deployer",
   sources: `${sourcesAggregation} as sources`,
-  language: "LOWER(compiled_contracts.language) as language",
+  language: "CONCAT(UPPER(LEFT(compiled_contracts.language, 1)), LOWER(SUBSTRING(compiled_contracts.language, 2))) as language",
   compiler: "compiled_contracts.compiler",
   version: "compiled_contracts.version as version",
   compiler_settings: "compiled_contracts.compiler_settings",
   name: "compiled_contracts.name",
   fully_qualified_name: "compiled_contracts.fully_qualified_name",
-  abi: "compiled_contracts.compilation_artifacts->>'$.abi' as abi",
+  abi: "compiled_contracts.compilation_artifacts->'$.abi' as abi",
   metadata: "sourcify_matches.metadata",
   storage_layout:
-    "compiled_contracts.compilation_artifacts->>'$.storageLayout' as storage_layout",
-  userdoc: "compiled_contracts.compilation_artifacts->>'$.userdoc' as userdoc",
-  devdoc: "compiled_contracts.compilation_artifacts->>'$.devdoc' as devdoc",
+    "compiled_contracts.compilation_artifacts->'$.storageLayout' as storage_layout",
+  userdoc: "compiled_contracts.compilation_artifacts->'$.userdoc' as userdoc",
+  devdoc: "compiled_contracts.compilation_artifacts->'$.devdoc' as devdoc",
   source_ids:
-    "compiled_contracts.compilation_artifacts->>'$.sources' as source_ids",
+    "compiled_contracts.compilation_artifacts->'$.sources' as source_ids",
   std_json_input: `json_object(
-    'language', LOWER(compiled_contracts.language), 
+    'language', CONCAT(UPPER(LEFT(compiled_contracts.language, 1)), LOWER(SUBSTRING(compiled_contracts.language, 2))), 
     'sources', ${sourcesAggregation},
     'settings', compiled_contracts.compiler_settings
   ) as std_json_input`,
   std_json_output: `json_object(
-    'sources', compiled_contracts.compilation_artifacts->>'$.sources',
+    'sources', compiled_contracts.compilation_artifacts->'$.sources',
     'contracts', json_object(
       substring(
         compiled_contracts.fully_qualified_name, 
         1, 
-        length(compiled_contracts.fully_qualified_name) - length(split_part(compiled_contracts.fully_qualified_name, ':', -1)) - 1
+        length(compiled_contracts.fully_qualified_name) - length(SUBSTRING_INDEX(compiled_contracts.fully_qualified_name, ':', -1)) - 1
       ), 
       json_object(
-        split_part(compiled_contracts.fully_qualified_name, ':', -1), json_object(
-          'abi', compiled_contracts.compilation_artifacts->>'$.abi',
-          'metadata', cast(sourcify_matches.metadata as text),
-          'userdoc', compiled_contracts.compilation_artifacts->>'$.userdoc',
-          'devdoc', compiled_contracts.compilation_artifacts->>'$.devdoc',
-          'storageLayout', compiled_contracts.compilation_artifacts->>'$.storageLayout',
+        SUBSTRING_INDEX(compiled_contracts.fully_qualified_name, ':', -1), json_object(
+          'abi', compiled_contracts.compilation_artifacts->'$.abi',
+          'metadata', CAST(sourcify_matches.metadata AS CHAR),
+          'userdoc', compiled_contracts.compilation_artifacts->'$.userdoc',
+          'devdoc', compiled_contracts.compilation_artifacts->'$.devdoc',
+          'storageLayout', compiled_contracts.compilation_artifacts->'$.storageLayout',
           'evm', json_object(
             'bytecode', json_object(
               'object', nullif(CONVERT(recompiled_creation_code.code USING utf8), '0x'),
               'sourceMap', compiled_contracts.creation_code_artifacts->>'$.sourceMap',
-              'linkReferences', compiled_contracts.creation_code_artifacts->>'$.linkReferences'
+              'linkReferences', compiled_contracts.creation_code_artifacts->'$.linkReferences'
             ),
             'deployedBytecode', json_object(
               'object', nullif(CONVERT(recompiled_runtime_code.code USING utf8), '0x'),
               'sourceMap', compiled_contracts.runtime_code_artifacts->>'$.sourceMap',
-              'linkReferences', compiled_contracts.runtime_code_artifacts->>'$.linkReferences',
-              'immutableReferences', compiled_contracts.runtime_code_artifacts->>'$.immutableReferences'
+              'linkReferences', compiled_contracts.runtime_code_artifacts->'$.linkReferences',
+              'immutableReferences', compiled_contracts.runtime_code_artifacts->'$.immutableReferences'
             )
           )
         )

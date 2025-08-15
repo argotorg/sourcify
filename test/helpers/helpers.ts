@@ -4,10 +4,29 @@ import chaiHttp from "chai-http";
 import { ServerFixture } from "./ServerFixture";
 import sinon from "sinon";
 import { Sequelize } from "sequelize";
+import { LocalChainFixture } from "./LocalChainFixture";
+import type { SolidityJsonInput, VyperJsonInput } from "@ethereum-sourcify/lib-sourcify";
+import { sleep } from "js-conflux-sdk/dist/types/util";
 
 chai.use(chaiHttp);
 
 export const unusedAddress = "0xf1Df8172F308e0D47D0E5f9521a5210467408535";
+
+export async function deployFromAbiAndBytecode(
+  signer: JsonRpcSigner,
+  abi: Interface | InterfaceAbi,
+  bytecode: BytesLike | { object: string },
+  args?: any[],
+) {
+  const contractFactory = new ContractFactory(abi, bytecode, signer);
+  console.log(`Deploying contract ${args?.length ? `with args ${args}` : ""}`);
+  const deployment = await contractFactory.deploy(...(args || []));
+  await deployment.waitForDeployment();
+
+  const contractAddress = await deployment.getAddress();
+  console.log(`Deployed contract at ${contractAddress}`);
+  return contractAddress;
+}
 
 export type DeploymentInfo = {
   contractAddress: string;
@@ -51,6 +70,105 @@ export async function deployFromAbiAndBytecodeForCreatorTxHash(
     blockNumber: creationTx.blockNumber,
     txIndex: creationTx.index,
   };
+}
+
+/*export async function verifyContract(
+  serverFixture: ServerFixture,
+  chainFixture: LocalChainFixture,
+  contractAddress?: string,
+  creatorTxHash?: string,
+  partial: boolean = false,
+) {
+  await chai
+    .request(serverFixture.server.app)
+    .post("/")
+    .field("address", contractAddress || chainFixture.defaultContractAddress)
+    .field("chain", chainFixture.chainId)
+    .field(
+      "creatorTxHash",
+      creatorTxHash || chainFixture.defaultContractCreatorTx,
+    )
+    .attach(
+      "files",
+      partial
+        ? chainFixture.defaultContractModifiedMetadata
+        : chainFixture.defaultContractMetadata,
+      "metadata.json",
+    )
+    .attach(
+      "files",
+      partial
+        ? chainFixture.defaultContractModifiedSource
+        : chainFixture.defaultContractSource,
+    );
+}*/
+
+export async function verifyContract(
+  serverFixture: ServerFixture,
+  chainFixture: LocalChainFixture,
+  contractAddress?: string,
+  creatorTxHash?: string,
+) {
+  const verifyResponse = await chai
+    .request(serverFixture.server.app)
+    .post(
+      `/verify/${chainFixture.chainId}/${contractAddress || chainFixture.defaultContractAddress}`,
+    )
+    .send({
+      stdJsonInput: chainFixture.defaultContractJsonInput,
+      compilerVersion:
+      chainFixture.defaultContractMetadataObject.compiler.version,
+      contractIdentifier: Object.entries(
+        chainFixture.defaultContractMetadataObject.settings.compilationTarget,
+      )[0].join(":"),
+      creationTransactionHash: creatorTxHash || chainFixture.defaultContractCreatorTx,
+    });
+
+  chai
+    .expect(verifyResponse.status)
+    .to.equal(202, "Response body: " + JSON.stringify(verifyResponse.body));
+  chai.expect(verifyResponse.body).to.have.property("verificationId");
+  chai
+    .expect(verifyResponse.body.verificationId)
+    .to.match(
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+  );
+
+  let jobRes
+  while(!jobRes?.body?.isJobCompleted) {
+    jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/verify/${verifyResponse.body.verificationId}`);
+  }
+}
+
+export async function deployAndVerifyContract(
+  chainFixture: LocalChainFixture,
+  serverFixture: ServerFixture,
+) {
+  const { contractAddress, txHash } =
+    await deployFromAbiAndBytecodeForCreatorTxHash(
+      chainFixture.localSigner,
+      chainFixture.defaultContractArtifact.abi,
+      chainFixture.defaultContractArtifact.bytecode,
+      [],
+    );
+  await verifyContract(
+    serverFixture,
+    chainFixture,
+    contractAddress,
+    txHash,
+  );
+  return contractAddress;
+}
+
+/**
+ * Await `secs` seconds
+ * @param  {Number} secs seconds
+ * @return {Promise}
+ */
+export function waitSecs(secs = 0) {
+  return new Promise((resolve) => setTimeout(resolve, secs * 1000));
 }
 
 export async function resetDatabase(database: Sequelize) {

@@ -2,9 +2,10 @@ import { ChildProcess, spawn } from "child_process";
 import nock from "nock";
 import treeKill from "tree-kill";
 import { JsonRpcProvider, JsonRpcSigner, Network } from "ethers";
-import { deployFromAbiAndBytecodeForCreatorTxHash } from "./helpers";
+import { deployFromAbiAndBytecodeForCreatorTxHash, DeploymentInfo } from "./helpers";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
 import storageContractMetadata from "../testcontracts/Storage/metadata.json";
+import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
 import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import { loadConfig } from "../../config/Loader";
 import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
@@ -41,13 +42,22 @@ export type LocalChainFixtureOptions = {
 export class LocalChainFixture {
   defaultContractSource = storageContractSource;
   defaultContractModifiedSource = storageModifiedContractSource;
+  defaultContractMetadata = Buffer.from(
+    JSON.stringify(storageContractMetadata),
+  );
   defaultContractMetadataObject = storageContractMetadata as Metadata;
+  defaultContractModifiedMetadata = Buffer.from(
+    JSON.stringify(storageContractMetadataModified),
+  );
+  defaultContractArtifact = storageContractArtifact;
   defaultContractJsonInput = storageJsonInput;
 
   private readonly _chainId?: string;
   private _localSigner?: JsonRpcSigner;
   private _defaultContractAddress?: string;
   private _defaultContractCreatorTx?: string;
+  private _defaultContractBlockNumber?: number;
+  private _defaultContractTxIndex?: number;
   private hardhatNodeProcess?: ChildProcess;
 
   // Getters for type safety
@@ -69,6 +79,26 @@ export class LocalChainFixture {
     if (!this._defaultContractCreatorTx)
       throw new Error("defaultContractCreatorTx not initialized!");
     return this._defaultContractCreatorTx;
+  }
+
+  get defaultContractBlockNumber(): number {
+    if (this._defaultContractBlockNumber === undefined)
+      throw new Error("defaultContractBlockNumber not initialized!");
+    return this._defaultContractBlockNumber;
+  }
+  get defaultContractTxIndex(): number {
+    if (this._defaultContractTxIndex === undefined)
+      throw new Error("defaultContractTxIndex not initialized!");
+    return this._defaultContractTxIndex;
+  }
+
+  get defaultContractDeploymentInfo(): DeploymentInfo {
+    return {
+      contractAddress: this.defaultContractAddress,
+      txHash: this.defaultContractCreatorTx,
+      blockNumber: this.defaultContractBlockNumber,
+      txIndex: this.defaultContractTxIndex,
+    };
   }
 
   /**
@@ -95,7 +125,7 @@ export class LocalChainFixture {
       console.log("Initialized Provider");
 
       // Deploy the test contract
-      const { contractAddress, txHash } =
+      const { contractAddress, txHash, blockNumber, txIndex } =
         await deployFromAbiAndBytecodeForCreatorTxHash(
           this._localSigner,
           storageContractArtifact.abi,
@@ -103,6 +133,8 @@ export class LocalChainFixture {
         );
       this._defaultContractAddress = contractAddress;
       this._defaultContractCreatorTx = txHash;
+      this._defaultContractBlockNumber = blockNumber;
+      this._defaultContractTxIndex = txIndex;
     });
 
     after(async () => {
