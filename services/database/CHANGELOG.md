@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.7.2 - 2025-08-18
+
+- Add issue references in replace script configuration files (#2304)
+- Update dependencies
+
 ## sourcify-database@2.7.1 - 2025-08-12
 
 - Track total replaced contracts in the massive replace script (#2293)
@@ -64,7 +69,6 @@
 
 - Add missing creation-tx backfill scripts
 
-
 ## sourcify-database@2.0.2 - 2024-12-11
 
 - Update dependencies
@@ -96,14 +100,13 @@
 - Update dependencies
 - Update the script's import-repo command to insert the contracts read from the FS to the Database in batches instead of one-by-one
 
-
 ## sourcify-database@1.1.1 - 2024-05-14
 
 - bump version
 
 ## sourcify-database@1.1.0 - 2024-04-23
 
-- Add session table to migrations 
+- Add session table to migrations
 
 ## sourcify-database@1.0.3 - 2024-04-04
 
