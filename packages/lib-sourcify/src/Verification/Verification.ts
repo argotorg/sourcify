@@ -492,7 +492,7 @@ export class Verification {
         extractConstructorArgumentsTransformation(
           matchBytecodesResult.populatedRecompiledBytecode,
           this.onchainCreationBytecode,
-          this.compilation.metadata,
+          this.compilation.contractCompilerOutput?.abi || [],
         );
       this.creationTransformations = [
         ...matchBytecodesResult.transformations,
