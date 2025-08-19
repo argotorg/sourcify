@@ -193,10 +193,8 @@ describe('etherscan util (lib)', function () {
         },
         contractName: (MULTIPLE_CONTRACT_RESPONSE.result[0] as any)
           .ContractName,
-        contractPath: EtherscanUtils.getContractPathFromSourcesOrThrow(
-          (MULTIPLE_CONTRACT_RESPONSE.result[0] as any).ContractName,
-          expectedSources,
-        ),
+        contractPath: (MULTIPLE_CONTRACT_RESPONSE.result[0] as any)
+          .ContractFileName,
       });
     });
 
@@ -223,10 +221,8 @@ describe('etherscan util (lib)', function () {
         jsonInput: expectedJsonInput,
         contractName: (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
           .ContractName,
-        contractPath: EtherscanUtils.getContractPathFromSourcesOrThrow(
-          (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any).ContractName,
-          expectedJsonInput.sources,
-        ),
+        contractPath: (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+          .ContractFileName,
       });
     });
   });
@@ -320,22 +316,6 @@ describe('etherscan util (lib)', function () {
         contractName: expectedName,
         contractPath: expectedPath,
       });
-    });
-  });
-
-  describe('getContractPathFromSourcesOrThrow', () => {
-    it('should throw when the contract path is not found in the provided sources', () => {
-      const sources = {
-        'path/file.sol': { content: 'contract SolidityContract {}' },
-      };
-      expect(() =>
-        EtherscanUtils.getContractPathFromSourcesOrThrow(
-          'AnotherSolidityContract',
-          sources,
-        ),
-      )
-        .to.throw(EtherscanImportError)
-        .with.property('code', 'etherscan_missing_contract_definition');
     });
   });
 
