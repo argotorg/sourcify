@@ -74,13 +74,15 @@ export function asyncExec(
         if (error) {
           reject(error);
         } else if (stderr) {
-          // Vyper compiler outputs warnings to stderr, so we handle them here
+          // Vyper compilers <0.4.0 outputs warnings to stderr
+          // we handle this by checking if the stderr starts with "Warning:"
           if (stderr.startsWith('Warning:')) {
             resolve(stdout);
+          } else {
+            reject(
+              new Error(`Compiler process returned with errors:\n ${stderr}`),
+            );
           }
-          reject(
-            new Error(`Compiler process returned with errors:\n ${stderr}`),
-          );
         } else {
           resolve(stdout);
         }
