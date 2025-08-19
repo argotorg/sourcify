@@ -44,7 +44,7 @@ jobs:
       - checkout
       - run:
           name: install dependencies
-          command: npm install
+          command: npm ci
       - run:
           name: build
           command: npx lerna run build
@@ -91,7 +91,7 @@ jobs:
             fi
       - run:
           name: install build and test
-          command: npm install && npx lerna run build --scope=sourcify-server && cd services/server && npm run test:chains
+          command: npm ci && npx lerna run build --scope=sourcify-server && cd services/server && npm run test:chains
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "localhost"
@@ -128,7 +128,7 @@ jobs:
           name: Install Node.js dependencies
           command: |
             cd services/database
-            npm install
+            npm ci
       - run:
           name: Validate schema is in sync with migrations
           command: |
