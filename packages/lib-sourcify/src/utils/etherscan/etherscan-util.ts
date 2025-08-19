@@ -7,7 +7,6 @@ import {
   SolidityCompilation,
   Sources,
 } from '../..';
-import { getContractPathFromSources } from '../..';
 import { logInfo, logDebug, logWarn, logError } from '../../logger';
 import {
   EtherscanImportError,
@@ -138,20 +137,6 @@ export const getSolcJsonInputFromEtherscanResult = (
   };
 };
 
-export const getContractPathFromSourcesOrThrow = (
-  contractName: string,
-  sources: Sources,
-): string => {
-  const contractPath = getContractPathFromSources(contractName, sources);
-  if (contractPath === undefined) {
-    throw new EtherscanImportError({
-      code: 'etherscan_missing_contract_definition',
-      contractName,
-    });
-  }
-  return contractPath;
-};
-
 export const getVyperJsonInputFromSingleFileResult = (
   etherscanResult: EtherscanResult,
   sources: VyperJsonInput['sources'],
@@ -263,6 +248,19 @@ export const fetchFromEtherscan = async (
   return contractResultJson;
 };
 
+// We use the new Etherscan API field `ContractFileName`, see https://github.com/ethereum/sourcify/issues/2239
+export const getContractFileNameFromEtherscanResultOrThrow = (
+  contractResultJson: EtherscanResult,
+): string => {
+  if (!contractResultJson.ContractFileName) {
+    throw new EtherscanImportError({
+      code: 'etherscan_missing_contract_in_json',
+      contractName: contractResultJson.ContractName,
+    });
+  }
+  return contractResultJson.ContractFileName;
+};
+
 export const processSolidityResultFromEtherscan = (
   contractResultJson: EtherscanResult,
 ): ProcessedEtherscanResult => {
@@ -279,10 +277,8 @@ export const processSolidityResultFromEtherscan = (
   if (isEtherscanJsonInput(sourceCodeObject)) {
     logDebug('Etherscan solcJsonInput contract found');
     solcJsonInput = parseEtherscanJsonInput(sourceCodeObject);
-    contractPath = getContractPathFromSourcesOrThrow(
-      contractName,
-      solcJsonInput.sources,
-    );
+    contractPath =
+      getContractFileNameFromEtherscanResultOrThrow(contractResultJson);
   } else if (isEtherscanMultipleFilesObject(sourceCodeObject)) {
     logDebug('Etherscan Solidity multiple file contract found');
     const sources = JSON.parse(sourceCodeObject) as Sources;
@@ -290,7 +286,8 @@ export const processSolidityResultFromEtherscan = (
       contractResultJson,
       sources,
     );
-    contractPath = getContractPathFromSourcesOrThrow(contractName, sources);
+    contractPath =
+      getContractFileNameFromEtherscanResultOrThrow(contractResultJson);
   } else {
     logDebug('Etherscan Solidity single file contract found');
     contractPath = contractResultJson.ContractName + '.sol';
@@ -333,14 +330,8 @@ export const processVyperResultFromEtherscan = async (
   if (isJsonInput) {
     logDebug('Etherscan vyperJsonInput contract found');
     const parsedJsonInput = parseEtherscanJsonInput(sourceCodeProperty);
-    // We use the new Etherscan API field `ContractFileName`, see https://github.com/ethereum/sourcify/issues/2239
-    if (!contractResultJson.ContractFileName) {
-      throw new EtherscanImportError({
-        code: 'etherscan_missing_contract_in_json',
-        contractName: contractResultJson.ContractName,
-      });
-    }
-    contractPath = contractResultJson.ContractFileName;
+    contractPath =
+      getContractFileNameFromEtherscanResultOrThrow(contractResultJson);
     contractName = contractPath.split('/').pop()!.split('.')[0];
     vyperJsonInput = {
       language: 'Vyper',

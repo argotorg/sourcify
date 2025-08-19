@@ -55,6 +55,7 @@
     "@ethereum-sourcify/lib-sourcify": "^2.2.2",
     "@google-cloud/cloud-sql-connector": "1.8.2",
     "@shazow/whatsabi": "0.22.2",
+    "@solidity-parser/parser": "^0.20.2",
     "bunyan": "1.8.15",
     "chalk": "4.1.2",
     "config": "3.3.12",
