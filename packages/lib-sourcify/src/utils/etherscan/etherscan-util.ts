@@ -334,6 +334,12 @@ export const processVyperResultFromEtherscan = async (
     logDebug('Etherscan vyperJsonInput contract found');
     const parsedJsonInput = parseEtherscanJsonInput(sourceCodeProperty);
     // We use the new Etherscan API field `ContractFileName`, see https://github.com/ethereum/sourcify/issues/2239
+    if (!contractResultJson.ContractFileName) {
+      throw new EtherscanImportError({
+        code: 'etherscan_missing_contract_in_json',
+        contractName: contractResultJson.ContractName,
+      });
+    }
     contractPath = contractResultJson.ContractFileName;
     contractName = contractPath.split('/').pop()!.split('.')[0];
     vyperJsonInput = {

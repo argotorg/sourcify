@@ -86,7 +86,7 @@ export type EtherscanResult = {
   SourceCode: string;
   ABI: string;
   ContractName: string;
-  ContractFileName: string;
+  ContractFileName?: string;
   CompilerVersion: string;
   OptimizationUsed: string;
   Runs: string;
