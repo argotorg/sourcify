@@ -123,7 +123,7 @@ jobs:
             echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
             sudo apt-get update
             # Install PostgreSQL 16 client tools
-            sudo apt-get install -y postgresql-client-16.9
+            sudo apt-get install -y postgresql-client-16.9-0.pgdg22.04+1
       - run:
           name: Install Node.js dependencies
           command: |
