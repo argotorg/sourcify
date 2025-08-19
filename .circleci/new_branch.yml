@@ -26,7 +26,7 @@ jobs:
   node-v22:
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:16.9-alpine
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
@@ -69,7 +69,7 @@ jobs:
   test-new-chain:
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:16.9-alpine
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
@@ -102,7 +102,7 @@ jobs:
   validate-database-schema:
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:16.9-alpine
         environment:
           POSTGRES_PASSWORD: password
           POSTGRES_USER: postgres
@@ -123,7 +123,7 @@ jobs:
             echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
             sudo apt-get update
             # Install PostgreSQL 16 client tools
-            sudo apt-get install -y postgresql-client-16
+            sudo apt-get install -y postgresql-client-16.9
       - run:
           name: Install Node.js dependencies
           command: |

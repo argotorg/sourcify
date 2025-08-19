@@ -256,7 +256,7 @@ jobs:
   tests-node-v22:
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:16.9-alpine
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
