@@ -16,7 +16,7 @@
     "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate status",
     "massive-replace": "ts-node massive-replace-script/massive-replace-script.ts"
   },
-  "author": "",
+  "author": " ",
   "license": "MIT",
   "dependencies": {
     "commander": "12.1.0",
