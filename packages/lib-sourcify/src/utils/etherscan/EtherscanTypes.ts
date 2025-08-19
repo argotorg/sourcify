@@ -9,7 +9,6 @@ export type EtherscanImportErrorCode =
   | 'etherscan_rate_limit'
   | 'etherscan_api_error'
   | 'etherscan_not_verified'
-  | 'etherscan_missing_contract_definition'
   | 'etherscan_vyper_version_mapping_failed'
   | 'etherscan_missing_contract_in_json'
   | 'etherscan_missing_vyper_settings';
@@ -35,9 +34,7 @@ export type EtherscanImportErrorParameters =
       code: 'etherscan_api_error';
     } & Pick<EtherscanImportErrorDataRequired, 'apiErrorMessage'>)
   | ({
-      code:
-        | 'etherscan_missing_contract_definition'
-        | 'etherscan_missing_contract_in_json';
+      code: 'etherscan_missing_contract_in_json';
     } & Pick<EtherscanImportErrorDataRequired, 'contractName'>)
   | ({
       code: 'etherscan_vyper_version_mapping_failed';
@@ -58,8 +55,6 @@ function getErrorMessageFromCode(params: EtherscanImportErrorParameters) {
       return `Error in Etherscan API response. Result message: Invalid API Key`;
     case 'etherscan_not_verified':
       return `This contract is not verified on Etherscan.`;
-    case 'etherscan_missing_contract_definition':
-      return `Contract definition for "${params.contractName}" not found in Etherscan response sources.`;
     case 'etherscan_vyper_version_mapping_failed':
       return `Failed to map Vyper version "${params.compilerVersion}" from Etherscan to valid compiler version.`;
     case 'etherscan_missing_contract_in_json':
