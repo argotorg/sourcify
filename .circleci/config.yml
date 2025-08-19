@@ -28,9 +28,9 @@ workflows:
       and:
         - not: << pipeline.parameters.run-nightly >>
         - not: << pipeline.parameters.run-test-chains-regularly >>
-        - or: 
-          - equal: [ master, << pipeline.git.branch >> ]
-          - equal: [ staging, << pipeline.git.branch >> ]
+        - or:
+            - equal: [master, << pipeline.git.branch >>]
+            - equal: [staging, << pipeline.git.branch >>]
     jobs:
       # the path-filtering/filter job determines which pipeline parameters to update.
       - path-filtering/filter:
@@ -96,18 +96,18 @@ workflows:
   new-branch:
     when:
       and:
-          - not: << pipeline.parameters.run-nightly >>
-          - not: << pipeline.parameters.run-test-chains-regularly >>
-          - not:
-              equal: [ master, << pipeline.git.branch >> ]
-          - not:
-              equal: [ staging, << pipeline.git.branch >> ]
+        - not: << pipeline.parameters.run-nightly >>
+        - not: << pipeline.parameters.run-test-chains-regularly >>
+        - not:
+            equal: [master, << pipeline.git.branch >>]
+        - not:
+            equal: [staging, << pipeline.git.branch >>]
     jobs:
       - path-filtering/filter:
           name: check-updated-modules-new-branch
           mapping: |
             services/database/.* run-validate-database-schema true
-          base-revision: staging  
+          base-revision: staging
           config-path: .circleci/new_branch.yml
 
   nightly:
@@ -119,11 +119,10 @@ workflows:
 
   test-chains-regularly:
     when: << pipeline.parameters.run-test-chains-regularly >>
-    jobs: 
+    jobs:
       - continuation/continue:
           name: continue-test-chains-regularly
           configuration_path: .circleci/test-chains-regularly.yml
-
 
 # Different than the one on continue_config.yml, this one DOES NOT persist the workspace and trigger a deploy job.
 aliases:
@@ -151,8 +150,8 @@ aliases:
       - run:
           name: Build and push docker images
           command: |
-            ./.circleci/scripts/build_and_publish_docker_images.sh 
-      # If no build is needed, echo 0 to run as success 
+            ./.circleci/scripts/build_and_publish_docker_images.sh
+      # If no build is needed, echo 0 to run as success
       - run: echo 0
   - &build-base-arm64
     <<: *build-base
@@ -205,7 +204,7 @@ jobs:
       - checkout
       - run:
           name: install dependencies
-          command: npm install
+          command: npm ci
       - run:
           name: build everything
           command: npx lerna run build

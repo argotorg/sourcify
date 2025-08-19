@@ -18,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: install dependencies
-          command: npm install
+          command: npm ci
       - run:
           name: build and test
           command: npx lerna run build --scope=sourcify-server && cd services/server && npm run test:chains

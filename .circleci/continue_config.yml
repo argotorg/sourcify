@@ -274,7 +274,7 @@ jobs:
       - checkout
       - run:
           name: install dependencies
-          command: npm install
+          command: npm ci
       - run:
           name: build
           command: npx lerna run build
