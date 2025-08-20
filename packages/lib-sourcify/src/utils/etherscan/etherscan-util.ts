@@ -332,7 +332,13 @@ export const processVyperResultFromEtherscan = async (
     const parsedJsonInput = parseEtherscanJsonInput(sourceCodeProperty);
     contractPath =
       getContractFileNameFromEtherscanResultOrThrow(contractResultJson);
-    contractName = contractPath.split('/').pop()!.split('.')[0];
+    // contractName: path/to/my.weird.contract.vy should be my.weird.contract
+    contractName = contractPath
+      .split('/')
+      .pop()!
+      .split('.')
+      .slice(0, -1)
+      .join('.');
     vyperJsonInput = {
       language: 'Vyper',
       sources: parsedJsonInput.sources,
