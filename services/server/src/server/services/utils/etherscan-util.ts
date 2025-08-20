@@ -40,7 +40,6 @@ function mapLibError(err: any, throwV2Errors: boolean): never {
           ? new EtherscanRequestFailedError(message)
           : new BadGatewayError(message);
 
-      case "etherscan_missing_contract_definition":
       case "etherscan_vyper_version_mapping_failed":
       case "etherscan_missing_contract_in_json":
       case "etherscan_missing_vyper_settings":
