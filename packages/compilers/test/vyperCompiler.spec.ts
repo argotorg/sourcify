@@ -52,6 +52,39 @@ def foo(x: uint256, y: int128) -> uint256:
     expect(compiledJSON?.errors).to.be.undefined;
   });
 
+  it('Should handle vyper 0.3.10 warnings and errors', async function () {
+    try {
+      const compiledJSON = await useVyperCompiler(
+        vyperRepoPath,
+        '0.3.10+commit.91361694',
+        {
+          language: 'Vyper',
+          sources: {
+            'test.vy': {
+              content: `@exernal
+@view
+def foo(x: uint256, y: int128) -> uint256:
+    return shift(x, y)`,
+            },
+          },
+          settings: {
+            outputSelection: {
+              '*': ['*'],
+            },
+          },
+        },
+      );
+      expect(compiledJSON?.contracts?.['test.vy']?.test).to.not.equal(
+        undefined,
+      );
+    } catch (error: any) {
+      // 0.3.10 doesn't include the warnings in the standardJson output but in the errors
+      expect(error.errors?.some((e: any) => e.severity === 'warning')).to.be
+        .false;
+      expect(error.errors?.some((e: any) => e.severity === 'error')).to.be.true;
+    }
+  });
+
   it('Should handle vyper 0.4.0 warnings', async function () {
     const compiledJSON = await useVyperCompiler(
       vyperRepoPath,
