@@ -52,7 +52,7 @@ def foo(x: uint256, y: int128) -> uint256:
     expect(compiledJSON?.errors).to.be.undefined;
   });
 
-  it('Should handle vyper 0.4.1 warnings', async function () {
+  it('Should handle vyper 0.4.0 warnings', async function () {
     const compiledJSON = await useVyperCompiler(
       vyperRepoPath,
       '0.4.0+commit.e9db8d9f',
