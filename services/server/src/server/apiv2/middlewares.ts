@@ -105,6 +105,39 @@ export function validateFieldsAndOmit(
   next();
 }
 
+export function validateCompilerVersion(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  let compilerVersion = req.body.compilerVersion;
+  if (!compilerVersion) {
+    throw new InvalidParametersError("Compiler version is required.");
+  }
+
+  if (compilerVersion.startsWith("v")) {
+    compilerVersion = compilerVersion.slice(1);
+  }
+
+  // Validate based on language if available
+  const language = req.body.stdJsonInput?.language;
+  if (language === "Solidity") {
+    // Solidity version pattern: 0.8.7+commit.e28d00a7 or 0.8.31-nightly.2025.8.11+commit.635fe8f8
+    const solidityPattern =
+      /^\d+\.\d+\.\d+(-nightly\.\d{4}\.\d+\.\d+)?\+commit\.[a-f0-9]{8}$/;
+    if (!solidityPattern.test(compilerVersion)) {
+      throw new InvalidParametersError(
+        `Invalid Solidity compiler version format: ${compilerVersion}. Expected format: x.y.z+commit.xxxxxxxx or x.y.z-nightly.yyyy.m.d+commit.xxxxxxxx`,
+      );
+    }
+  }
+  // For Vyper and other languages, we can't do much validation here due to inconsistent naming.
+  // It will throw if it can't download the version.
+
+  req.body.compilerVersion = compilerVersion;
+  next();
+}
+
 export function validateStandardJsonInput(
   req: Request,
   res: Response,

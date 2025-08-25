@@ -30,7 +30,7 @@ import {
   getVariationsByContentHash,
 } from './variationsUtils';
 import { logDebug } from '../logger';
-import { splitFullyQualifiedName } from '../utils';
+import { splitFullyQualifiedName } from '../utils/utils';
 
 export class SolidityMetadataContract {
   metadata: Metadata;

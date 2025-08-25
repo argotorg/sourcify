@@ -1,0 +1,33 @@
+{
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [],
+      "name": "retrieve",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "type": "function",
+      "stateMutability": "nonpayable"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "num",
+          "type": "uint256"
+        }
+      ],
+      "name": "store",
+      "outputs": [],
+      "payable": false,
+      "type": "function",
+      "stateMutability": "nonpayable"
+    }
+  ],
+  "bytecode": "0x6060604052341561000c57fe5b5b60c68061001b6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e64cec11460445780636057361d146067575bfe5b3415604b57fe5b60516084565b6040518082815260200191505060405180910390f35b3415606e57fe5b60826004808035906020019091905050608f565b005b600060005490505b90565b806000819055505b505600a165627a7a7230582061e948a5785f0bce6470f275ac915e61c1f4f799e4a3b41bb3d7d3648da0caa80029"
+}

@@ -2,16 +2,15 @@ import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import {
   ImmutableReferences,
   LinkReferences,
-  Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import {
   CompiledContractCborAuxdata,
   StringMap,
 } from '../Compilation/CompilationTypes';
-import { AbiConstructor } from 'abitype';
-import { defaultAbiCoder as abiCoder, ParamType } from '@ethersproject/abi';
-import { id as keccak256Str } from 'ethers';
+import { AbiCoder, id as keccak256Str, Interface, InterfaceAbi } from 'ethers';
 import { logError } from '../logger';
+
+const abiCoder = AbiCoder.defaultAbiCoder();
 
 export type Transformation = {
   type: 'insert' | 'replace';
@@ -194,7 +193,7 @@ export function extractAbiEncodedConstructorArguments(
 export function extractConstructorArgumentsTransformation(
   populatedRecompiledBytecode: string,
   onchainCreationBytecode: string,
-  metadata: Metadata,
+  abi: InterfaceAbi,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
@@ -202,11 +201,7 @@ export function extractConstructorArgumentsTransformation(
     populatedRecompiledBytecode,
     onchainCreationBytecode,
   );
-  const constructorAbiParamInputs = (
-    metadata?.output?.abi?.find(
-      (param) => param.type === 'constructor',
-    ) as AbiConstructor
-  )?.inputs as ParamType[];
+  const constructorAbiParamInputs = new Interface(abi).deploy.inputs;
   if (abiEncodedConstructorArguments) {
     if (!constructorAbiParamInputs) {
       throw new Error(

@@ -1,4 +1,5 @@
 import { AuxdataStyle, splitAuxdata } from '@ethereum-sourcify/bytecode-utils';
+import semver from 'semver';
 import { AbstractCompilation } from './AbstractCompilation';
 import {
   ImmutableReferences,
@@ -41,6 +42,14 @@ export class SolidityCompilation extends AbstractCompilation {
     public compilationTarget: CompilationTarget,
   ) {
     super(compilerVersion, jsonInput);
+
+    // Throw error for unsupported compiler versions
+    if (semver.lt(this.compilerVersion, '0.4.11')) {
+      throw new CompilationError({
+        code: 'unsupported_compiler_version',
+      });
+    }
+
     this.initSolidityJsonInput();
   }
 
@@ -96,6 +105,65 @@ export class SolidityCompilation extends AbstractCompilation {
    */
   public async generateCborAuxdataPositions(forceEmscripten = false) {
     try {
+      // Handle legacy Solidity versions with different auxdata support
+      // CBOR auxdata was introduced in Solidity 0.4.7 https://github.com/ethereum/solidity/releases/tag/v0.4.7
+      if (semver.lt(this.compilerVersion, '0.4.7')) {
+        // No auxdata exists in versions before 0.4.7
+        this._creationBytecodeCborAuxdata = {};
+        this._runtimeBytecodeCborAuxdata = {};
+        return;
+      }
+
+      // For versions 0.4.7-0.4.11, auxdata exists but is not in legacyAssembly https://github.com/ethereum/sourcify/issues/2217
+      if (semver.lte(this.compilerVersion, '0.4.11')) {
+        // Extract auxdata directly from the end of bytecodes using splitAuxdata
+        // Runtime bytecode auxdata
+        const [, runtimeAuxdataCbor, runtimeCborLengthHex] = splitAuxdata(
+          this.runtimeBytecode,
+          this.auxdataStyle,
+        );
+
+        if (runtimeAuxdataCbor) {
+          const auxdataFromRawRuntimeBytecode = `${runtimeAuxdataCbor}${runtimeCborLengthHex}`;
+          this._runtimeBytecodeCborAuxdata = {
+            '1': {
+              offset:
+                this.runtimeBytecode.substring(2).length / 2 -
+                parseInt(runtimeCborLengthHex, 16) -
+                2, // bytecode has 2 bytes of cbor length prefix at the end
+              value: `0x${auxdataFromRawRuntimeBytecode}`,
+            },
+          };
+        } else {
+          this._runtimeBytecodeCborAuxdata = {};
+        }
+
+        // Creation bytecode auxdata
+        // We'll try to extract the auxdata from the end of the bytecode
+        // If it's not at the end and somewhere else, there isn't much we can do. The verification will likely fail.
+        const [, creationAuxdataCbor, creationCborLengthHex] = splitAuxdata(
+          this.creationBytecode,
+          this.auxdataStyle,
+        );
+
+        if (creationAuxdataCbor) {
+          const auxdataFromRawCreationBytecode = `${creationAuxdataCbor}${creationCborLengthHex}`;
+          this._creationBytecodeCborAuxdata = {
+            '1': {
+              offset:
+                this.creationBytecode.substring(2).length / 2 -
+                parseInt(creationCborLengthHex, 16) -
+                2, // bytecode has 2 bytes of cbor length prefix at the end
+              value: `0x${auxdataFromRawCreationBytecode}`,
+            },
+          };
+        } else {
+          this._creationBytecodeCborAuxdata = {};
+        }
+        return;
+      }
+
+      // For versions > 0.4.11, use the existing legacyAssembly-based approach
       // Auxdata array extracted from the compiler's `legacyAssembly` field
       const auxdatasFromCompilerOutput = findAuxdatasInLegacyAssembly(
         (this.contractCompilerOutput as SolidityOutputContract).evm

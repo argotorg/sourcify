@@ -13,10 +13,10 @@ commands:
   gcp-oidc-generate-cred-config-file:
     description: "Authenticate with GCP using a CircleCI OIDC token."
     parameters:
-      gcp_cred_config_file_path: 
+      gcp_cred_config_file_path:
         type: string
         default: /home/circleci/gcp_cred_config.json
-      oidc_token_file_path: 
+      oidc_token_file_path:
         type: string
         default: /home/circleci/oidc_token.json
     steps:
@@ -35,7 +35,7 @@ commands:
   gcp-oidc-authenticate:
     description: "Authenticate with GCP using a GCP credentials file."
     parameters:
-      gcp_cred_config_file_path: 
+      gcp_cred_config_file_path:
         type: string
         default: /home/circleci/gcp_cred_config.json
     steps:
@@ -248,7 +248,7 @@ jobs:
       - gcp-cli/install
       - gcp-oidc-generate-cred-config-file
       - gcp-oidc-authenticate
-      - run: 
+      - run:
           name: Deploy to GCP
           no_output_timeout: 10m
           command: |

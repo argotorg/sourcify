@@ -10,7 +10,7 @@ set -e
 # Define the list of services
 services=("server" "monitor")
 
-ARTIFACT_REGISTRY_URL="europe-west1-docker.pkg.dev/sourcify-project/ghcr-proxy/ethereum/sourcify/"
+ARTIFACT_REGISTRY_URL="europe-west1-docker.pkg.dev/sourcify-project/ghcr-proxy/argotorg/sourcify/"
 
 if [ "$CIRCLE_BRANCH" == "staging" ]; then
     ENVIRONMENT='staging'

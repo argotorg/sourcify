@@ -2,10 +2,10 @@
 set -e
 
 # Based on: https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/
-# Images are built for each architecture (amd64, arm64) and pushed to Github Container Registry under their arch e.g. ghcr.io/ethereum/sourcify/server:staging-amd64
-# Here we pull and retag the images with the arch suffix removed e.g. ghcr.io/ethereum/sourcify/server:staging
+# Images are built for each architecture (amd64, arm64) and pushed to Github Container Registry under their arch e.g. ghcr.io/argotorg/sourcify/server:staging-amd64
+# Here we pull and retag the images with the arch suffix removed e.g. ghcr.io/argotorg/sourcify/server:staging
 
-NAMESPACE="ghcr.io/ethereum/sourcify"
+NAMESPACE="ghcr.io/argotorg/sourcify"
 # Define the list of services
 services=("server" "monitor")
 

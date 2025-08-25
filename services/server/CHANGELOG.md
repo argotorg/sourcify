@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.3.3 - 2025-08-25
+
+- Move Etherscan utils to lib-sourcify (#2297)
+- Compiler version validation (#2303)
+- Add server integration tests for 0.4.11 (pass) and 0.4.10 (fail)
+- Update dependencies
+
 ## sourcify-server@3.3.2 - 2025-08-12
 
 - Update Dockerfiles from Bullseye to Bookworm for Vyper compiler compatibility (#2289)

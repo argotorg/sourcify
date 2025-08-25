@@ -27,12 +27,7 @@ import type {
   VerificationWorkerInput,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
-import {
-  ProcessedEtherscanResult,
-  isVyperResult,
-  processSolidityResultFromEtherscan,
-  processVyperResultFromEtherscan,
-} from "../utils/etherscan-util";
+import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 
 export const filename = resolve(__filename);
@@ -246,25 +241,18 @@ async function _verifyFromEtherscan({
   address,
   etherscanResult,
 }: VerifyFromEtherscanInput): Promise<VerifyOutput> {
-  let processedResult: ProcessedEtherscanResult;
-  if (isVyperResult(etherscanResult)) {
-    processedResult = await processVyperResultFromEtherscan(
-      etherscanResult,
-      true,
-    );
-  } else {
-    processedResult = processSolidityResultFromEtherscan(etherscanResult, true);
-  }
+  const compilation = await getCompilationFromEtherscanResult(
+    etherscanResult,
+    solc,
+    vyper,
+  );
 
   return _verifyFromJsonInput({
     chainId,
     address,
-    jsonInput: processedResult.jsonInput,
-    compilerVersion: processedResult.compilerVersion,
-    compilationTarget: {
-      name: processedResult.contractName,
-      path: processedResult.contractPath,
-    },
+    jsonInput: compilation.jsonInput,
+    compilerVersion: compilation.compilerVersion,
+    compilationTarget: compilation.compilationTarget,
   });
 }
 

@@ -15,7 +15,7 @@ else
     exit 1 # Exit with a non-zero status to indicate an error.
 fi
 
-NAMESPACE="ghcr.io/ethereum/sourcify"
+NAMESPACE="ghcr.io/argotorg/sourcify"
 IMAGE_NAME="$NAMESPACE/$SERVICE"
 # Login to Github Container Registry
 echo $GITHUB_CR_PAT | docker login ghcr.io --username kuzdogan --password-stdin

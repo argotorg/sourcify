@@ -2,6 +2,7 @@
 // This configuration targets contracts with partial runtime matches where metadata needs to be updated
 // because it does not match the sources in the database.
 // Only processes contracts where source hashes don't match the existing metadata
+// Issue: https://github.com/ethereum/sourcify/issues/2227
 
 const { id: keccak256str } = require("ethers");
 

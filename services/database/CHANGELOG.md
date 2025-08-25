@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.7.2 - 2025-08-25
+
+- Add issue references in replace script configuration files (#2304)
+- Update dependencies
+
 ## sourcify-database@2.7.1 - 2025-08-12
 
 - Track total replaced contracts in the massive replace script (#2293)

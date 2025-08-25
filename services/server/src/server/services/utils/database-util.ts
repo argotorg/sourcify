@@ -21,7 +21,6 @@ import {
   PreRunCompilation,
   splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Abi } from "abitype";
 import {
   VerifiedContract as VerifiedContractApiObject,
   Bytes,
@@ -30,7 +29,7 @@ import {
   BytesTypes,
   Nullable,
 } from "../../types";
-import { keccak256 } from "ethers";
+import { keccak256, JsonFragment } from "ethers";
 import { Database } from "./Database";
 import logger from "../../../common/logger";
 
@@ -67,7 +66,7 @@ export namespace Tables {
     name: string;
     fully_qualified_name: string;
     compilation_artifacts: {
-      abi: Nullable<Abi>;
+      abi: Nullable<JsonFragment[]>;
       userdoc: Nullable<any>;
       devdoc: Nullable<any>;
       storageLayout: Nullable<StorageLayout>;

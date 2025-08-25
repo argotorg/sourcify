@@ -1,6 +1,6 @@
+import SolidityParser from "@solidity-parser/parser";
 import { Sources } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
-import SolidityParser from "@solidity-parser/parser";
 
 /**
  * Returns undefined if the contract is not found in the sources
@@ -18,13 +18,15 @@ export const getContractPathFromSources = (
     try {
       const ast = SolidityParser.parse(content);
       SolidityParser.visit(ast, {
-        ContractDefinition: (node) => {
+        ContractDefinition: (node: any): any => {
           if (node.name === contractName) {
             contractPath = path;
             return false; // Stop visiting
           }
+          return undefined;
         },
       });
+      if (contractPath) break;
     } catch (error) {
       // Just continue, because the relevant contract might be in a different source file.
       logger.warn(
