@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.3.0 - 2025-08-25
+
+- Move Etherscan utils to lib-sourcify (#2297)
+- Use consistent ethers version and JsonFragment instead of abitype
+- Handle legacyAssembly without .auxdata for solc <=0.4.11
+- Add tests for pre-0.4.11 solc cborAuxdata handling
+- Throw on pre-0.4.11 Solidity versions in lib-sourcify 
+- Pre 0.4.11 cbor auxdata (#2277)
+- Add support for `ContractFileName` in the Import From Etherscan (#2312)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@2.2.2 - 2025-08-12
 
 - Clean compiler version in compilation classes (#2295)
