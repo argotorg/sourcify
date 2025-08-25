@@ -162,6 +162,8 @@ jobs:
           name: Test that down migrations work
           command: |
             cd services/database
+            # Initialize git submodules
+            git submodule update --init
             # Drop db from previous test
             npm run migrate:drop-db
             # Apply migrations
