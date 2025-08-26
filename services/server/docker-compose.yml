@@ -36,7 +36,7 @@ services:
       - sourcify-network
 
   server:
-    image: ghcr.io/ethereum/sourcify/server:latest
+    image: ghcr.io/argotorg/sourcify/server:latest
     ports:
       - "5555:5555"
       # Pass other env vars from .env file here. Or change the POSTGRES_HOST etc. in .env file.

@@ -372,13 +372,13 @@ You can run the server using Docker and pass in a custom `sourcify-chains.json` 
 Also set up the environment variables in the `.env` file. You can see the list of required environment variables in the `.env.dev` file. Pass it with the `--env-file` flag or use the `--env` flag to pass individual environment variables.
 
 ```bash
-$ docker pull ghcr.io/ethereum/sourcify/server:latest
+$ docker pull ghcr.io/argotorg/sourcify/server:latest
 $ docker run \
   -p 5555:5555 \
   -v path/to/custom/sourcify-chains.json:/home/app/services/server/dist/sourcify-chains.json \
   -v path/to/custom/config.js:/home/app/services/server/dist/config/local.js \
   --env-file path/to/your-server/.env \
-  ghcr.io/ethereum/sourcify/server:latest
+  ghcr.io/argotorg/sourcify/server:latest
 ```
 
 Keep in mind the default host for DB in the .env is "localhost" and the default port is 5432. If you're running your server and the database in Docker, you need to establish a network connection between the two over a [Docker network](https://docs.docker.com/network/).

@@ -160,13 +160,13 @@ The recommended way to run the Sourcify Monitor is via Docker.
 You need to pass the `monitorChains.json` and `config.json` files to the container. You can do this by mounting them as volumes:
 
 ```bash
-$ docker pull ghcr.io/ethereum/sourcify/monitor:latest
+$ docker pull ghcr.io/argotorg/sourcify/monitor:latest
 $ docker run \
   -v /path/to/chains.json:/home/app/services/monitor/monitorChains.json \
   -v /path/to/config.json:/home/app/services/monitor/config.json \
   -e ALCHEMY_API_KEY=xxx \
   -e INFURA_API_KEY=xxx \
-  ghcr.io/ethereum/sourcify/monitor:latest
+  ghcr.io/argotorg/sourcify/monitor:latest
 ```
 
 ## Setting log levels dynamically
