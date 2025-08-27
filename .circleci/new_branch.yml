@@ -65,7 +65,7 @@ jobs:
           name: create lcov reports
           command: npx lerna run cov:lcov
       - codecov/upload:
-          slug: "argotorg/sourcify"
+          args: "--slug=argotorg/sourcify"
     resource_class: large
   test-new-chain:
     docker:
