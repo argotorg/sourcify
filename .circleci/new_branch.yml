@@ -65,7 +65,7 @@ jobs:
           name: create lcov reports
           command: npx lerna run cov:lcov
       - codecov/upload:
-          environment:
+          env:
             CIRCLE_PROJECT_USERNAME: argotorg
     resource_class: large
   test-new-chain:
