@@ -13,10 +13,10 @@ info:
     - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
   license:
     name: MIT
-    url: https://github.com/ethereum/sourcify/blob/master/LICENSE
+    url: https://github.com/argotorg/sourcify/blob/master/LICENSE
   contact:
     name: Sourcify
-    url: 'https://sourcify.dev'
+    url: "https://sourcify.dev"
     email: hello@sourcify.dev
 servers:
   - url: https://sourcify.dev/server
