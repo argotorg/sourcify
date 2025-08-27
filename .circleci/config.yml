@@ -40,7 +40,7 @@ workflows:
             services/server/.* run-build-server true
             packages/.* run-build-packages true
           # Compare against the last build of the branch not the default "main" branch
-          base-revision: HEAD~1
+          base-revision: << pipeline.git.base_revision >>
           config-path: .circleci/continue_config.yml
   tagged_build_and_publish: # Triggered by a tag push. Runs separately for each tag.
     jobs:
