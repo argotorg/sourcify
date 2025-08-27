@@ -5,7 +5,7 @@
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/ethereum/sourcify",
+  "repository": "https://github.com/argotorg/sourcify",
   "license": "MIT",
   "keywords": [],
   "scripts": {

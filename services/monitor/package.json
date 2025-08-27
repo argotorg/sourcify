@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ethereum/sourcify.git"
+    "url": "git+https://github.com/argotorg/sourcify.git"
   },
   "keywords": [
     "sourcify",
@@ -33,9 +33,9 @@
   "author": "sourcify",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ethereum/sourcify/issues"
+    "url": "https://github.com/argotorg/sourcify/issues"
   },
-  "homepage": "https://github.com/ethereum/sourcify#readme",
+  "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
     "@ethereum-sourcify/bytecode-utils": "^1.3.12",
     "@ethereum-sourcify/lib-sourcify": "^2.3.0",

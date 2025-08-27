@@ -97,7 +97,7 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
     case 'compiled_bytecode_is_zero':
       return 'The compiled contract bytecode is "0x". Are you trying to verify an abstract contract?';
     case 'extra_file_input_bug':
-      return "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/ethereum/sourcify/issues/618";
+      return "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/argotorg/sourcify/issues/618";
     case 'bytecode_length_mismatch':
       return "The recompiled bytecode length doesn't match the onchain bytecode length.";
     case 'no_match':

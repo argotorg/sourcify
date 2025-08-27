@@ -153,7 +153,7 @@ describe('Verify Solidity Compiler', () => {
     }
   });
 
-  // See https://github.com/ethereum/sourcify/issues/1099
+  // See https://github.com/argotorg/sourcify/issues/1099
   it(`Should should use a clean compiler context with pre 0.4.0 versions`, async () => {
     // Run compiler once to change compiler "context"
     await useSolidityCompiler(

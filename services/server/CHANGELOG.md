@@ -377,7 +377,7 @@ New Chains:
   - We'll write to the DB and FS simulatanously for a while. Still, the FS is the source of truth until full migration.
   - Scripts available to migrate the DB.
   - repository (filesystem) is now repositoryV1. We keep it for backwards compatibility but we'll remove it soon.
-  - We'll have repository V2 will be here long term and will replace V1. The main purpose is to serve files on IPFS. Here we normalize the file names with their hashes which should solve the name problems [#515](https://github.com/ethereum/sourcify/issues/515).
+  - We'll have repository V2 will be here long term and will replace V1. The main purpose is to serve files on IPFS. Here we normalize the file names with their hashes which should solve the name problems [#515](https://github.com/argotorg/sourcify/issues/515).
 - Replace the keccak256 identifier generation in the session with a lightweight hash (node crypto's sha1)
 - New chains:
   - ZetaChain Mainnet (7000)
@@ -429,8 +429,8 @@ New Chains:
 ## sourcify-server@1.4.0 - 2023-12-19
 
 - Remove `CREATE2` verification and related code as it is not used and makes the code unnecessarily complex with `AUTH0` etc.
-- Clean-up environment variables and enable passing configs in a .js file. https://github.com/ethereum/sourcify/pull/1232. Use config instead of env vars.
-- Enable passing `sourcify-chains.json` as a file instead of a built-in `sourcify-chains.ts` https://github.com/ethereum/sourcify/pull/1223
+- Clean-up environment variables and enable passing configs in a .js file. https://github.com/argotorg/sourcify/pull/1232. Use config instead of env vars.
+- Enable passing `sourcify-chains.json` as a file instead of a built-in `sourcify-chains.ts` https://github.com/argotorg/sourcify/pull/1223
 - Change the `RepositoryService` to `IpfsRepositoryService`. Create an umbrella `StorageService` to handle all storage related operations. Also a `AllianceDatabase` service under the `StorageService` which is currently not used (turned off).
 - Use multi-stage Docker builds and use bullseye-slim
 - Bring whitelists for rate limiting
@@ -512,4 +512,4 @@ New Chains:
 ## Older releases
 
 Previously, the releases were not done one separate modules of Sourcify but for the repository as a whole.
-You can find the changelog for those releases in [older releases](https://github.com/ethereum/sourcify/releases) for this repository.
+You can find the changelog for those releases in [older releases](https://github.com/argotorg/sourcify/releases) for this repository.

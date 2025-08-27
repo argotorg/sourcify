@@ -605,8 +605,8 @@ describe('Verification Class Tests', () => {
 
     // This test was introduced to test if lib-sourcify can handle multiple equal auxdatas in the creation bytecode
     // The function `findAuxdataPositions` used to fail to assign the proper offset values resulting in a null creation match
-    // Read more here: https://github.com/ethereum/sourcify/issues/1980
-    // Fixed by PR: https://github.com/ethereum/sourcify/pull/2159
+    // Read more here: https://github.com/argotorg/sourcify/issues/1980
+    // Fixed by PR: https://github.com/argotorg/sourcify/pull/2159
     it('should verify a contract with multiple equal auxdatas', async () => {
       // The files in this directory were modified to cause a partial match (see ./sources/src/PetersMain.sol:1)
       const contractFolderPath = path.join(
@@ -963,7 +963,7 @@ describe('Verification Class Tests', () => {
       });
     });
 
-    // https://github.com/ethereum/sourcify/issues/1159
+    // https://github.com/argotorg/sourcify/issues/1159
     it('should verify a contract compiled with nightly solidity', async function () {
       const contractFolderPath = path.join(
         __dirname,
@@ -1322,7 +1322,7 @@ describe('Verification Class Tests', () => {
   });
 
   describe('Creation transaction matching tests', () => {
-    // https://github.com/ethereum/sourcify/pull/1623
+    // https://github.com/argotorg/sourcify/pull/1623
     it('should verify a contract partially with the creation bytecode after transformation fields are normalized', async () => {
       const contractFolderPath = path.join(
         __dirname,

@@ -114,7 +114,7 @@ export class SolidityCompilation extends AbstractCompilation {
         return;
       }
 
-      // For versions 0.4.7-0.4.11, auxdata exists but is not in legacyAssembly https://github.com/ethereum/sourcify/issues/2217
+      // For versions 0.4.7-0.4.11, auxdata exists but is not in legacyAssembly https://github.com/argotorg/sourcify/issues/2217
       if (semver.lte(this.compilerVersion, '0.4.11')) {
         // Extract auxdata directly from the end of bytecodes using splitAuxdata
         // Runtime bytecode auxdata

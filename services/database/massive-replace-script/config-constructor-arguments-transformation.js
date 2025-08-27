@@ -1,8 +1,8 @@
 // Configuration for fixing missing constructorArguments transformation
 // This configuration targets contracts where creation code exists but creation_match is null/false
 // and the recompiled creation code matches the onchain creation code
-// Issue: https://github.com/ethereum/sourcify/issues/2208
-// Related to: https://github.com/ethereum/sourcify/issues/2086
+// Issue: https://github.com/argotorg/sourcify/issues/2208
+// Related to: https://github.com/argotorg/sourcify/issues/2086
 
 module.exports = {
   query: async (sourcePool, sourcifySchema, currentVerifiedContract, n) => {
@@ -40,5 +40,5 @@ module.exports = {
     };
   },
   description:
-    "Fixes missing constructorArguments transformation for contracts where creation code exists but creation_match is null/false. See https://github.com/ethereum/sourcify/issues/2086",
+    "Fixes missing constructorArguments transformation for contracts where creation code exists but creation_match is null/false. See https://github.com/argotorg/sourcify/issues/2086",
 };

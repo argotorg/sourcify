@@ -5,7 +5,7 @@
   <a href="https://sourcify.dev"><img src="https://raw.githubusercontent.com/sourcifyeth/assets/master/logo-assets-png/sourcify-eth-card.png" alt="sourcify logo" role="presentation" width=300></a>
 </p>
 
-[![codecov](https://codecov.io/gh/ethereum/sourcify/branch/staging/graph/badge.svg?token=eN6XDAwWfV)](https://codecov.io/gh/ethereum/sourcify)
+[![codecov](https://codecov.io/gh/argotorg/sourcify/branch/staging/graph/badge.svg?token=eN6XDAwWfV)](https://codecov.io/gh/argotorg/sourcify)
 [![Matrix Chat](https://img.shields.io/badge/Matrix%20-chat-brightgreen?style=plastic&logo=matrix)](https://matrix.to/#/#ethereum_source-verify:gitter.im)
 [![Discord](https://img.shields.io/badge/Discord%20-chat-brightgreen?style=plastic&logo=discord)](https://discord.com/invite/6aqd9cfZ9s)
 [![X Follow](https://img.shields.io/twitter/follow/SourcifyEth?style=plastic&logo=x)](https://X.com/SourcifyEth)
@@ -33,7 +33,7 @@ Sourcify mainly consists of:
 - [Sourcify UI](https://github.com/sourcifyeth/ui) - a web UI to interact with the server, lookup, and verify contracts
 - [repo.sourcify.dev](https://github.com/sourcifyeth/repo.sourcify.dev) - a web UI to browse and display verified contract information.
 
-_ℹ️ [This monorepo](https://github.com/ethereum/sourcify) contains the main modules. The [sourcifyeth Github organization](https://github.com/sourcifyeth) contains all other auxiliary services and components._
+_ℹ️ [This monorepo](https://github.com/argotorg/sourcify) contains the main modules. The [sourcifyeth Github organization](https://github.com/sourcifyeth) contains all other auxiliary services and components._
 
 ## Documentation
 

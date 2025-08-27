@@ -358,7 +358,7 @@ describe('SolidityCompilation', () => {
   });
 
   // Contracts before 0.4.12 don't have `auxdata` in `legacyAssembly`
-  // https://github.com/ethereum/sourcify/issues/2217
+  // https://github.com/argotorg/sourcify/issues/2217
   it('should handle legacy Solidity 0.4.11 contracts with auxdata correctly', async () => {
     const contractPath = path.join(__dirname, '..', 'sources', 'pre-0.4.11');
     const sources = {

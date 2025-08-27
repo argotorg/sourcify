@@ -10,7 +10,7 @@ import { StatusCodes } from "http-status-codes";
  */
 export async function findLatestChainTest(req: Request, res: Response) {
   const CIRCLE_PROJECT_ID = process.env.CIRCLE_PROJECT_ID || 183183290;
-  const WORKFLOWS_URL = `https://circleci.com/api/v2/insights/gh/ethereum/sourcify/workflows/test-chains-regularly?branch=master`;
+  const WORKFLOWS_URL = `https://circleci.com/api/v2/insights/gh/argotorg/sourcify/workflows/test-chains-regularly?branch=master`;
   // Fetch last runs of the chain test workflow: https://circleci.com/docs/api/v2/#operation/getProjectWorkflowRuns
   const workflowResponse = await (await fetch(WORKFLOWS_URL)).json();
   if (workflowResponse.items.length === 0) {

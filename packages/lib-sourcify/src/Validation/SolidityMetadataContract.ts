@@ -344,7 +344,7 @@ export class SolidityMetadataContract {
   }
 
   handleInlinerBug() {
-    // Check inliner bug for below versions https://github.com/ethereum/sourcify/issues/640
+    // Check inliner bug for below versions https://github.com/argotorg/sourcify/issues/640
     const affectedVersions = ['0.8.2', '0.8.3', '0.8.4'];
     // Normalize the version e.g. 0.8.2+commit.6615895f -> 0.8.2
     const coercedVersion = semver.coerce(
@@ -425,7 +425,7 @@ export class SolidityMetadataContract {
 
     // We should canonicalize the metadata when we are generating "metadata variations" when we have a partial match.
     // It could be that the user somehow mixed the orderings of the metadata or added whitespaces etc.
-    // For more information read https://github.com/ethereum/sourcify/issues/978
+    // For more information read https://github.com/argotorg/sourcify/issues/978
     const metadata: Metadata = reorderAlphabetically(this.metadata) as Metadata;
 
     // For each variation
