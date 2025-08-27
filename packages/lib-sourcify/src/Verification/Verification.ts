@@ -283,8 +283,8 @@ export class Verification {
     // Case when extra unused files in compiler input cause different bytecode
     // See issues:
     //   https://github.com/argotorg/sourcify/issues/618
-    //   https://github.com/ethereum/solidity/issues/14250
-    //   https://github.com/ethereum/solidity/issues/14494
+    //   https://github.com/argotorg/solidity/issues/14250
+    //   https://github.com/argotorg/solidity/issues/14494
     const [, deployedAuxdata] = splitAuxdata(
       this.onchainRuntimeBytecode,
       AuxdataStyle.SOLIDITY,

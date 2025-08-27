@@ -106,7 +106,7 @@ export class SolidityCompilation extends AbstractCompilation {
   public async generateCborAuxdataPositions(forceEmscripten = false) {
     try {
       // Handle legacy Solidity versions with different auxdata support
-      // CBOR auxdata was introduced in Solidity 0.4.7 https://github.com/ethereum/solidity/releases/tag/v0.4.7
+      // CBOR auxdata was introduced in Solidity 0.4.7 https://github.com/argotorg/solidity/releases/tag/v0.4.7
       if (semver.lt(this.compilerVersion, '0.4.7')) {
         // No auxdata exists in versions before 0.4.7
         this._creationBytecodeCborAuxdata = {};

@@ -1,4 +1,4 @@
-// This is a ChatGPT typescript translation of the file https://github.com/ethereum/solidity/blob/develop/libsolutil/IpfsHash.cpp
+// This is a ChatGPT typescript translation of the file https://github.com/argotorg/solidity/blob/develop/libsolutil/IpfsHash.cpp
 
 import bs58 from 'bs58';
 import * as crypto from 'crypto';

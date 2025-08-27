@@ -449,7 +449,7 @@ export class SolidityMetadataContract {
                   }
                   if (url.includes('bzz-raw://')) {
                     // Here swarmBzzr1Hash is always used
-                    // https://github.com/ethereum/solidity/blob/eb2f874eac0aa871236bf5ff04b7937c49809c33/libsolidity/interface/CompilerStack.cpp#L1549
+                    // https://github.com/argotorg/solidity/blob/eb2f874eac0aa871236bf5ff04b7937c49809c33/libsolidity/interface/CompilerStack.cpp#L1549
                     return `bzz-raw://${swarmBzzr1Hash(source.content)}`;
                   }
                   return '';
