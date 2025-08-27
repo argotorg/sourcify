@@ -1,4 +1,3 @@
-// trigger CI
 import path from "path";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
