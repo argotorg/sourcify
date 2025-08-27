@@ -18,7 +18,7 @@ fi
 NAMESPACE="ghcr.io/argotorg/sourcify"
 IMAGE_NAME="$NAMESPACE/$SERVICE"
 # Login to Github Container Registry
-echo $GITHUB_CR_PAT | docker login ghcr.io --username kuzdogan --password-stdin
+echo $GITHUB_CR_PAT | docker login ghcr.io --username marcocastignoli --password-stdin
 
 # Triggered by a branch
 # e.g. sourcify/server:master-arm64

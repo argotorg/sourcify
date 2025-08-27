@@ -10,7 +10,7 @@ NAMESPACE="ghcr.io/argotorg/sourcify"
 services=("server" "monitor")
 
 # Login to Github Container Registry
-echo $GITHUB_CR_PAT | docker login ghcr.io --username kuzdogan --password-stdin
+echo $GITHUB_CR_PAT | docker login ghcr.io --username marcocastignoli --password-stdin
 
 # Triggered by a branch
 # e.g. sourcify/server:master
