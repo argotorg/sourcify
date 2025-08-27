@@ -160,6 +160,8 @@ aliases:
 
 jobs:
   set-base-revision:
+    docker:
+      - image: cimg/base:2024.07
     steps:
       - run:
           name: set-base-revision
