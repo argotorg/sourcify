@@ -25,7 +25,7 @@ COPY --from=builder /home/app/packages/ ./packages/
 COPY --from=builder /home/app/services/monitor/ ./services/monitor/
 
 RUN npm ci --workspace=sourcify-monitor --include-workspace-root --omit=dev
-LABEL org.opencontainers.image.source https://github.com/ethereum/sourcify
+LABEL org.opencontainers.image.source https://github.com/argotorg/sourcify
 LABEL org.opencontainers.image.licenses MIT
 
 ARG ALCHEMY_API_KEY

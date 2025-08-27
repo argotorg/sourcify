@@ -64,7 +64,6 @@ All notable changes to this project will be documented in this file.
 
 - Update dependencies
 
-
 ## sourcify-monitor@1.3.4 - 2024-12-11
 
 - Update dependencies
@@ -181,4 +180,4 @@ This was a total rewrite of the sourcify-monitor as a completely isolated module
 ## Older releases
 
 Previously, the releases were not done one separate modules of Sourcify but for the repository as a whole.
-You can find the changelog for those releases in [older releases](https://github.com/ethereum/sourcify/releases) for this repository.
+You can find the changelog for those releases in [older releases](https://github.com/argotorg/sourcify/releases) for this repository.

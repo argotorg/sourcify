@@ -123,10 +123,10 @@ You can run the Sourcify Monitor in two ways:
 
 ### 1. Run locally
 
-Clone the [Sourcify monorepo](https://github.com/ethereum/sourcify)
+Clone the [Sourcify monorepo](https://github.com/argotorg/sourcify)
 
 ```bash
-git clone git@github.com:ethereum/sourcify.git
+git clone git@github.com:argotorg/sourcify.git
 cd sourcify
 ```
 
@@ -153,7 +153,7 @@ If you want to build yourself, the builds need to be run from the project root c
 cd sourcify/ && docker build -f services/server/Dockerfile .
 ```
 
-The containers are published in the [Github Container Registry](https://github.com/ethereum/sourcify/pkgs/container/sourcify%2Fmonitor)
+The containers are published in the [Github Container Registry](https://github.com/argotorg/sourcify/pkgs/container/sourcify%2Fmonitor)
 
 The recommended way to run the Sourcify Monitor is via Docker.
 

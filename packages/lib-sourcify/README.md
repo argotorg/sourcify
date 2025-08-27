@@ -1,6 +1,6 @@
 # lib-sourcify v2
 
-[![codecov](https://codecov.io/gh/ethereum/sourcify/branch/staging/graph/badge.svg?token=eN6XDAwWfV&flag=lib-sourcify)](https://codecov.io/gh/ethereum/sourcify)
+[![codecov](https://codecov.io/gh/argotorg/sourcify/branch/staging/graph/badge.svg?token=eN6XDAwWfV&flag=lib-sourcify)](https://codecov.io/gh/argotorg/sourcify)
 
 lib-sourcify is [Sourcify](https://sourcify.dev)'s reusable backbone library for verifying contracts. Version 2 introduces a completely redesigned architecture with improved abstractions, better support for both Solidity and Vyper contracts, a more flexible verification process, and browser support.
 
@@ -216,7 +216,7 @@ setLibSourcifyLogger({
 
 ## Compiler Setup
 
-The `lib-sourcify` library does not come with compilers as dependencies. Instead, you need to provide a class that implements either the `ISolidityCompiler` or `IVyperCompiler` interface and pass it to any function that requires a compiler. We suggest you to use the official [`@ethereum-sourcify/compilers`](https://github.com/ethereum/sourcify/tree/staging/packages/compilers) package.
+The `lib-sourcify` library does not come with compilers as dependencies. Instead, you need to provide a class that implements either the `ISolidityCompiler` or `IVyperCompiler` interface and pass it to any function that requires a compiler. We suggest you to use the official [`@ethereum-sourcify/compilers`](https://github.com/argotorg/sourcify/tree/staging/packages/compilers) package.
 
 In the case of an error in the `compile` function, `lib-sourcify` expects the thrown error to have a public `errors` property containing the compilation output's `errors` property.
 

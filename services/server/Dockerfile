@@ -30,7 +30,7 @@ COPY --from=builder /home/app/services/server/ ./services/server/
 
 RUN npm ci --workspace=sourcify-server --include-workspace-root --omit=dev
 
-LABEL org.opencontainers.image.source https://github.com/ethereum/sourcify
+LABEL org.opencontainers.image.source https://github.com/argotorg/sourcify
 LABEL org.opencontainers.image.licenses MIT
 
 # Set default value for ARG

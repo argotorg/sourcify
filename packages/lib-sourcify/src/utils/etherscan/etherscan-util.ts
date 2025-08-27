@@ -248,7 +248,7 @@ export const fetchFromEtherscan = async (
   return contractResultJson;
 };
 
-// We use the new Etherscan API field `ContractFileName`, see https://github.com/ethereum/sourcify/issues/2239
+// We use the new Etherscan API field `ContractFileName`, see https://github.com/argotorg/sourcify/issues/2239
 export const getContractFileNameFromEtherscanResultOrThrow = (
   contractResultJson: EtherscanResult,
 ): string => {

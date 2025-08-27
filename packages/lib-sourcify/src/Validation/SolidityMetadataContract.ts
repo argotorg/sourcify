@@ -344,7 +344,7 @@ export class SolidityMetadataContract {
   }
 
   handleInlinerBug() {
-    // Check inliner bug for below versions https://github.com/ethereum/sourcify/issues/640
+    // Check inliner bug for below versions https://github.com/argotorg/sourcify/issues/640
     const affectedVersions = ['0.8.2', '0.8.3', '0.8.4'];
     // Normalize the version e.g. 0.8.2+commit.6615895f -> 0.8.2
     const coercedVersion = semver.coerce(
@@ -425,7 +425,7 @@ export class SolidityMetadataContract {
 
     // We should canonicalize the metadata when we are generating "metadata variations" when we have a partial match.
     // It could be that the user somehow mixed the orderings of the metadata or added whitespaces etc.
-    // For more information read https://github.com/ethereum/sourcify/issues/978
+    // For more information read https://github.com/argotorg/sourcify/issues/978
     const metadata: Metadata = reorderAlphabetically(this.metadata) as Metadata;
 
     // For each variation
@@ -449,7 +449,7 @@ export class SolidityMetadataContract {
                   }
                   if (url.includes('bzz-raw://')) {
                     // Here swarmBzzr1Hash is always used
-                    // https://github.com/ethereum/solidity/blob/eb2f874eac0aa871236bf5ff04b7937c49809c33/libsolidity/interface/CompilerStack.cpp#L1549
+                    // https://github.com/argotorg/solidity/blob/eb2f874eac0aa871236bf5ff04b7937c49809c33/libsolidity/interface/CompilerStack.cpp#L1549
                     return `bzz-raw://${swarmBzzr1Hash(source.content)}`;
                   }
                   return '';

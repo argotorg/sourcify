@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - Use consistent ethers version and JsonFragment instead of abitype
 - Handle legacyAssembly without .auxdata for solc <=0.4.11
 - Add tests for pre-0.4.11 solc cborAuxdata handling
-- Throw on pre-0.4.11 Solidity versions in lib-sourcify 
+- Throw on pre-0.4.11 Solidity versions in lib-sourcify
 - Pre 0.4.11 cbor auxdata (#2277)
 - Add support for `ContractFileName` in the Import From Etherscan (#2312)
 - Update dependencies
@@ -17,7 +17,6 @@ All notable changes to this project will be documented in this file.
 
 - Clean compiler version in compilation classes (#2295)
 - Rpcs housekeeping and removing URL logs with API Keys (#2283)
-
 
 ## @ethereum-sourcify/lib-sourcify@2.2.1 - 2025-08-11
 
@@ -200,4 +199,4 @@ All notable changes to this project will be documented in this file.
 ## Older releases
 
 Previously, the releases were not done one separate modules of Sourcify but for the repository as a whole.
-You can find the changelog for those releases in [older releases](https://github.com/ethereum/sourcify/releases) for this repository.
+You can find the changelog for those releases in [older releases](https://github.com/argotorg/sourcify/releases) for this repository.

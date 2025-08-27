@@ -1064,7 +1064,7 @@ describe("/", function () {
             chai
               .expect(res.body.error)
               .to.equal(
-                "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/ethereum/sourcify/issues/618",
+                "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/argotorg/sourcify/issues/618",
               );
             done();
           });
