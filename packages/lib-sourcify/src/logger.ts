@@ -1,3 +1,4 @@
+// Logger interface
 export interface ILogger {
   logLevel: number;
   log: (level: number, message: string, metadata?: any) => void;
