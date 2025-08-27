@@ -32,6 +32,7 @@ workflows:
             - equal: [master, << pipeline.git.branch >>]
             - equal: [staging, << pipeline.git.branch >>]
     jobs:
+      - set-base-revision
       # the path-filtering/filter job determines which pipeline parameters to update.
       - path-filtering/filter:
           name: check-updated-modules
@@ -40,7 +41,7 @@ workflows:
             services/server/.* run-build-server true
             packages/.* run-build-packages true
           # Compare against the last build of the branch not the default "main" branch
-          base-revision: "${git rev-parse HEAD~1}"
+          base-revision: $BASE_REVISION
           config-path: .circleci/continue_config.yml
   tagged_build_and_publish: # Triggered by a tag push. Runs separately for each tag.
     jobs:
@@ -158,6 +159,11 @@ aliases:
     resource_class: arm.large # override resource class
 
 jobs:
+  set-base-revision:
+    steps:
+      - run:
+          name: set-base-revision
+          command: echo 'export BASE_REVISION=$(git rev-parse HEAD~1)' >> $BASH_ENV
   build-push-monitor-amd64:
     <<: *build-base
     environment:
