@@ -3,7 +3,7 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@4.2.0
+  codecov: codecov/codecov@5.4.3
   gcp-cli: circleci/gcp-cli@3.3.2
 
 ## Commands via the gcp-cli orb to authenticate with GCP
@@ -295,8 +295,7 @@ jobs:
           name: create lcov reports
           command: npx lerna run cov:lcov
       - codecov/upload:
-          env:
-            CIRCLE_PROJECT_USERNAME: argotorg
+          slug: "argotorg/sourcify"
   monitor-e2e-sepolia:
     <<: *monitor-e2e-base
     environment:
