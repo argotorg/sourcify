@@ -1,3 +1,8 @@
+\restrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+
+-- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -900,6 +905,18 @@ CREATE TABLE public.compiled_contracts (
 
 
 --
+-- Name: compiled_contracts_signatures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compiled_contracts_signatures (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    compilation_id uuid NOT NULL,
+    signature_hash_32 bytea NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: compiled_contracts_sources; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -963,6 +980,21 @@ CREATE TABLE public.session (
     sid character varying NOT NULL,
     sess json NOT NULL,
     expire timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: signatures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.signatures (
+    signature_hash_32 bytea NOT NULL,
+    signature_hash_4 bytea GENERATED ALWAYS AS (SUBSTRING(signature_hash_32 FROM 1 FOR 4)) STORED,
+    signature character varying NOT NULL,
+    signature_type character varying NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT signatures_signature_type_check CHECK (((signature_type)::text = ANY ((ARRAY['function'::character varying, 'event'::character varying, 'error'::character varying])::text[])))
 );
 
 
@@ -1204,6 +1236,22 @@ ALTER TABLE ONLY public.compiled_contracts
 
 
 --
+-- Name: compiled_contracts_signatures compiled_contracts_signatures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_signatures
+    ADD CONSTRAINT compiled_contracts_signatures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: compiled_contracts_signatures compiled_contracts_signatures_pseudo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_signatures
+    ADD CONSTRAINT compiled_contracts_signatures_pseudo_pkey UNIQUE (compilation_id, signature_hash_32);
+
+
+--
 -- Name: compiled_contracts_sources compiled_contracts_sources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1265,6 +1313,22 @@ ALTER TABLE ONLY public.schema_migrations
 
 ALTER TABLE ONLY public.session
     ADD CONSTRAINT session_pkey PRIMARY KEY (sid);
+
+
+--
+-- Name: signatures signatures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.signatures
+    ADD CONSTRAINT signatures_pkey PRIMARY KEY (signature_hash_32);
+
+
+--
+-- Name: signatures signatures_pseudo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.signatures
+    ADD CONSTRAINT signatures_pseudo_pkey UNIQUE (signature, signature_type);
 
 
 --
@@ -1368,6 +1432,20 @@ CREATE INDEX compiled_contracts_runtime_code_hash ON public.compiled_contracts U
 
 
 --
+-- Name: compiled_contracts_signatures_compilation_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_signatures_compilation_idx ON public.compiled_contracts_signatures USING btree (compilation_id);
+
+
+--
+-- Name: compiled_contracts_signatures_signature_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_signatures_signature_idx ON public.compiled_contracts_signatures USING btree (signature_hash_32);
+
+
+--
 -- Name: compiled_contracts_sources_compilation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1414,6 +1492,13 @@ CREATE INDEX contracts_creation_code_hash_runtime_code_hash ON public.contracts 
 --
 
 CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtime_code_hash);
+
+
+--
+-- Name: signatures_hash_4_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX signatures_hash_4_type_idx ON public.signatures USING btree (signature_hash_4, signature_type);
 
 
 --
@@ -1725,6 +1810,13 @@ CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.contracts FOR EACH 
 
 
 --
+-- Name: signatures update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.signatures FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
+
+
+--
 -- Name: sources update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1801,6 +1893,22 @@ ALTER TABLE ONLY public.compiled_contracts
 
 ALTER TABLE ONLY public.compiled_contracts
     ADD CONSTRAINT compiled_contracts_runtime_code_hash_fkey FOREIGN KEY (runtime_code_hash) REFERENCES public.code(code_hash);
+
+
+--
+-- Name: compiled_contracts_signatures compiled_contracts_signatures_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_signatures
+    ADD CONSTRAINT compiled_contracts_signatures_compilation_id_fkey FOREIGN KEY (compilation_id) REFERENCES public.compiled_contracts(id);
+
+
+--
+-- Name: compiled_contracts_signatures compiled_contracts_signatures_signature_hash_32_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_signatures
+    ADD CONSTRAINT compiled_contracts_signatures_signature_hash_32_fkey FOREIGN KEY (signature_hash_32) REFERENCES public.signatures(signature_hash_32);
 
 
 --
@@ -1887,6 +1995,8 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
+\unrestrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+
 
 --
 -- Dbmate schema migrations
@@ -1895,4 +2005,5 @@ ALTER TABLE ONLY public.verified_contracts
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
     ('20250722133557'),
-    ('20250723145429');
+    ('20250723145429'),
+    ('20250828092603');
