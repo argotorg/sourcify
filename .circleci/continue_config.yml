@@ -294,8 +294,7 @@ jobs:
       - run:
           name: create lcov reports
           command: npx lerna run cov:lcov
-      - codecov/upload:
-          slug: "argotorg/sourcify"
+      - codecov/upload
   monitor-e2e-sepolia:
     <<: *monitor-e2e-base
     environment:
