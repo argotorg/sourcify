@@ -68,6 +68,21 @@ describe("Test Supported Chains", function () {
       );
     }
   });
+  // Privix Chain Mainnet
+  verifyContract(
+    "0x6696485Dc98Fadd6498414DD57dBaa3253FC31AD",
+    "16969696",
+    "Privix Chain Mainnet",
+    "shared/",
+  );
+
+  // Privix Chain Testnet
+  verifyContract(
+    "0x9A7ea4c9B7B0b628241F08ECC290b4C17F5f6955",
+    "96969696",
+    "Privix Chain Testnet",
+    "shared/",
+  );
   // exSat Mainnet
   verifyContract(
     "0xb0A32eBb9CD221d2FD91149195d87bE97552A90c",

@@ -45,6 +45,20 @@
       }
     ]
   },
+   "16969696": {
+    "sourcifyName": "Privix Chain Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": { "url": "https://privixscan.io" }
+    }
+  },
+  "96969696": {
+    "sourcifyName": "Privix Chain Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": { "url": "https://testnet.privixscan.io" }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": true,
