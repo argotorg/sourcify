@@ -2,7 +2,7 @@
 
 Sourcify's server for verifying Solidity and Vyper smart contracts.
 
-The server uses [lib-sourcify](https://github.com/argotorg/sourcify/tree/main/packages/lib-sourcify) under the hood for contract verification logic. It provides REST API endpoints for users to submit new contracts for verification or retrieve verified contracts. The data is stored in a PostgreSQL database.
+The server uses [lib-sourcify](https://github.com/argotorg/sourcify/tree/master/packages/lib-sourcify) under the hood for contract verification logic. It provides REST API endpoints for users to submit new contracts for verification or retrieve verified contracts. The data is stored in a PostgreSQL database.
 
 ## Quick Start with Docker Compose
 
