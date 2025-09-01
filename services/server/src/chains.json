@@ -30559,7 +30559,7 @@
     ]
   },
   {
-    "name": "Zilliqa EVM",
+    "name": "Zilliqa 2",
     "chain": "ZIL",
     "rpc": ["https://api.zilliqa.com"],
     "faucets": [],
@@ -30571,48 +30571,8 @@
     "icon": "zilliqa",
     "explorers": [
       {
-        "name": "Zilliqa EVM Explorer",
-        "url": "https://evmx.zilliqa.com",
-        "standard": "none"
-      }
-    ]
-  },
-  {
-    "name": "Zilliqa 2 EVM proto-mainnet",
-    "chain": "ZIL",
-    "rpc": ["https://api.zq2-protomainnet.zilliqa.com"],
-    "faucets": ["https://faucet.zq2-protomainnet.zilliqa.com"],
-    "nativeCurrency": { "name": "Zilliqa", "symbol": "ZIL", "decimals": 18 },
-    "infoURL": "https://www.zilliqa.com/",
-    "shortName": "zq2-proto-mainnet",
-    "chainId": 32770,
-    "networkId": 32770,
-    "icon": "zilliqa",
-    "explorers": [
-      {
-        "name": "Zilliqa 2 EVM proto-mainnet explorer",
-        "url": "https://explorer.zq2-protomainnet.zilliqa.com",
-        "standard": "EIP3091"
-      }
-    ]
-  },
-  {
-    "name": "Zilliqa EVM Isolated Server",
-    "chain": "ZIL",
-    "rpc": ["https://zilliqa-isolated-server.zilliqa.com/"],
-    "faucets": [
-      "https://dev-wallet.zilliqa.com/faucet?network=isolated_server"
-    ],
-    "nativeCurrency": { "name": "Zilliqa", "symbol": "ZIL", "decimals": 18 },
-    "infoURL": "https://www.zilliqa.com/",
-    "shortName": "zil-isolated-server",
-    "chainId": 32990,
-    "networkId": 32990,
-    "icon": "zilliqa",
-    "explorers": [
-      {
-        "name": "Zilliqa EVM Isolated Server Explorer",
-        "url": "https://devex.zilliqa.com/?network=https://zilliqa-isolated-server.zilliqa.com",
+        "name": "Zilliqa 2 Explorer",
+        "url": "https://otterscan.zilliqa.com/",
         "standard": "none"
       }
     ]
@@ -30637,10 +30597,10 @@
     ]
   },
   {
-    "name": "Zilliqa EVM Testnet",
+    "name": "Zilliqa 2 Testnet",
     "chain": "ZIL",
-    "rpc": ["https://dev-api.zilliqa.com"],
-    "faucets": ["https://dev-wallet.zilliqa.com/faucet?network=testnet"],
+    "rpc": ["https://api.testnet.zilliqa.com"],
+    "faucets": ["https://faucet.testnet.zilliqa.com/"],
     "nativeCurrency": { "name": "Zilliqa", "symbol": "ZIL", "decimals": 18 },
     "infoURL": "https://www.zilliqa.com/",
     "shortName": "zil-testnet",
@@ -30649,28 +30609,9 @@
     "slip44": 1,
     "explorers": [
       {
-        "name": "Zilliqa EVM Explorer",
-        "url": "https://evmx.zilliqa.com",
+        "name": "Zilliqa 2 Explorer",
+        "url": "https://otterscan.zq2-testnet.zilliqa.com/",
         "standard": "none"
-      }
-    ]
-  },
-  {
-    "name": "Zilliqa 2 EVM proto-testnet",
-    "chain": "ZIL",
-    "rpc": ["https://api.zq2-prototestnet.zilliqa.com"],
-    "faucets": ["https://faucet.zq2-prototestnet.zilliqa.com"],
-    "nativeCurrency": { "name": "Zilliqa", "symbol": "ZIL", "decimals": 18 },
-    "infoURL": "https://www.zilliqa.com/",
-    "shortName": "zq2-proto-testnet",
-    "chainId": 33103,
-    "networkId": 33103,
-    "icon": "zilliqa",
-    "explorers": [
-      {
-        "name": "Zilliqa 2 EVM proto-testnet explorer",
-        "url": "https://explorer.zq2-prototestnet.zilliqa.com",
-        "standard": "EIP3091"
       }
     ]
   },
@@ -30766,25 +30707,6 @@
     ]
   },
   {
-    "name": "Zilliqa EVM Devnet",
-    "chain": "ZIL",
-    "rpc": ["https://api.devnet.zilliqa.com/"],
-    "faucets": ["https://faucet.devnet.zilliqa.com/"],
-    "nativeCurrency": { "name": "Zilliqa", "symbol": "ZIL", "decimals": 18 },
-    "infoURL": "https://www.zilliqa.com/",
-    "shortName": "zil-devnet",
-    "chainId": 33385,
-    "networkId": 33385,
-    "icon": "zilliqa",
-    "explorers": [
-      {
-        "name": "Zilliqa EVM Devnet Explorer",
-        "url": "https://otterscan.devnet.zilliqa.com",
-        "standard": "EIP3091"
-      }
-    ]
-  },
-  {
     "name": "SlingShot",
     "chain": "SLING",
     "rpc": ["https://rpc.slingshotdao.com"],
@@ -30806,7 +30728,7 @@
     ]
   },
   {
-    "name": "Zilliqa 2 EVM devnet",
+    "name": "Zilliqa 2 Devnet",
     "chain": "ZIL",
     "rpc": ["https://api.zq2-devnet.zilliqa.com"],
     "faucets": ["https://faucet.zq2-devnet.zilliqa.com"],
@@ -30818,8 +30740,8 @@
     "icon": "zilliqa",
     "explorers": [
       {
-        "name": "Zilliqa-2 EVM Devnet Explorer",
-        "url": "https://explorer.zq2-devnet.zilliqa.com",
+        "name": "Zilliqa 2 Devnet Explorer",
+        "url": "https://faucet.zq2-devnet.zilliqa.com/",
         "standard": "EIP3091"
       }
     ]
