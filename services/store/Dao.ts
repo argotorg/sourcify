@@ -829,8 +829,8 @@ export class Dao {
     const records = await this.pool.query(
       `
         SELECT
-          DATE_FORMAT(verification_jobs.started_at, '%Y-%m-%dT%H:%i:%sT') AS started_at,
-          DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%dT%H:%i:%sT') AS completed_at,
+          DATE_FORMAT(verification_jobs.started_at, '%Y-%m-%d %H:%i:%s') AS started_at,
+          DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%d %H:%i:%s') AS completed_at,
           verification_jobs.chain_id,
           NULLIF(verification_jobs.contract_address, '0x') AS contract_address,
           verification_jobs.verified_contract_id,
@@ -848,7 +848,7 @@ export class Dao {
           verified_contracts.runtime_metadata_match,
           verified_contracts.creation_metadata_match,
           sourcify_matches.id as match_id,
-          DATE_FORMAT(sourcify_matches.created_at, '%Y-%m-%dT%H:%i:%sT') AS verified_at
+          DATE_FORMAT(sourcify_matches.created_at, '%Y-%m-%d %H:%i:%s') AS verified_at
         FROM verification_jobs
         LEFT JOIN verification_jobs_ephemeral ON verification_jobs.id = verification_jobs_ephemeral.id
         LEFT JOIN verified_contracts ON verification_jobs.verified_contract_id = verified_contracts.id
@@ -899,7 +899,6 @@ export class Dao {
     | "hardware"
   >): Promise<Pick<Tables.IVerificationJob, "id">> {
     const id = uuidv4()
-    const now = new Date()
     await this.pool.query(`
       INSERT INTO verification_jobs (
         id,                       
@@ -907,13 +906,11 @@ export class Dao {
         chain_id,
         contract_address,
         verification_endpoint,
-        hardware,
-        createdAt,
-        updatedAt                        
-      ) VALUES (?,?,?,?,?,?,?,?)
+        hardware                       
+      ) VALUES (?,?,?,?,?,?)
       `, {
         type: QueryTypes.INSERT,
-        replacements:[id, started_at, chain_id, contract_address, verification_endpoint, hardware, now, now],
+        replacements:[id, started_at, chain_id, contract_address, verification_endpoint, hardware],
       }
     )
     return {id} as any

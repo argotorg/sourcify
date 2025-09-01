@@ -13,9 +13,9 @@ interface GetJobRequest extends Request {
 type GetJobResponse = TypedResponse<VerificationJob>;
 
 export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
-  console.debug("getJobEndpoint", {
+  /*console.debug("getJobEndpoint", {
     verificationId: req.params.verificationId,
-  });
+  });*/
   const services = req.app.get("services") as Services;
 
   const job = await services.store.getVerificationJob(req.params.verificationId)

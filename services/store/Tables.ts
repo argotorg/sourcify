@@ -383,6 +383,7 @@ export namespace Tables {
       }, {
         tableName: 'verification_jobs',
         sequelize,
+        timestamps: false,
         indexes: [
           {
             name: 'idx_chainId_contractAddress',
@@ -419,6 +420,7 @@ export namespace Tables {
       }, {
         tableName: 'verification_jobs_ephemeral',
         sequelize,
+        timestamps: false,
         indexes: [],
       })
     }
