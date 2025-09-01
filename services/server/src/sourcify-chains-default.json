@@ -1389,14 +1389,6 @@
     "sourcifyName": "Zilliqa EVM Testnet",
     "supported": false
   },
-  "32770": {
-    "sourcifyName": "Zilliqa 2 EVM proto-mainnet",
-    "supported": false
-  },
-  "33103": {
-    "sourcifyName": "Zilliqa 2 EVM proto-testnet",
-    "supported": false
-  },
   "2221": {
     "sourcifyName": "Kava EVM Testnet",
     "supported": true,
