@@ -14,8 +14,8 @@ CREATE TABLE signatures (
   /* the signature text, e.g. 'transfer(address,uint256)' */
   signature VARCHAR NOT NULL,
 
-  /* type of signature: function, event, error */
-  signature_type VARCHAR NOT NULL CHECK (signature_type IN ('function','event','error')),
+  /* type of signature: function, event, error, constructor */
+  signature_type VARCHAR NOT NULL CHECK (signature_type IN ('function','event','error','constructor')),
 
   /* timestamps */
   created_at timestamptz NOT NULL DEFAULT NOW(),
