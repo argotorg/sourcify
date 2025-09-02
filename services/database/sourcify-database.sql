@@ -1,4 +1,4 @@
-\restrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+\restrict sJLcxaHYPMP28Leh0GKIaLP8htazg5uukakP8yabITtnQnY2bDLWjqTbU9pmxvH
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
@@ -994,7 +994,7 @@ CREATE TABLE public.signatures (
     signature_type character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT signatures_signature_type_check CHECK (((signature_type)::text = ANY ((ARRAY['function'::character varying, 'event'::character varying, 'error'::character varying])::text[])))
+    CONSTRAINT signatures_signature_type_check CHECK (((signature_type)::text = ANY ((ARRAY['function'::character varying, 'event'::character varying, 'error'::character varying, 'constructor'::character varying])::text[])))
 );
 
 
@@ -1995,7 +1995,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+\unrestrict sJLcxaHYPMP28Leh0GKIaLP8htazg5uukakP8yabITtnQnY2bDLWjqTbU9pmxvH
 
 
 --
