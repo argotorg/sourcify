@@ -1,5 +1,7 @@
 -- migrate:up
 
+CREATE TYPE signature_type_enum AS ENUM ('function','event','error','constructor');
+
 /*
     The `signatures` table stores signature information for compiled_contracts.
     It includes each signature in text and its keccak hash.
@@ -15,7 +17,7 @@ CREATE TABLE signatures (
   signature VARCHAR NOT NULL,
 
   /* type of signature: function, event, error, constructor */
-  signature_type VARCHAR NOT NULL CHECK (signature_type IN ('function','event','error','constructor')),
+  signature_type signature_type_enum NOT NULL,
 
   /* timestamps */
   created_at timestamptz NOT NULL DEFAULT NOW(),
@@ -53,5 +55,6 @@ CREATE INDEX compiled_contracts_signatures_compilation_idx ON compiled_contracts
 
 -- migrate:down
 
-DROP TABLE compiled_contracts_signatures;
-DROP TABLE signatures;
+DROP TABLE IF EXISTS compiled_contracts_signatures;
+DROP TABLE IF EXISTS signatures;
+DROP TYPE IF EXISTS signature_type_enum;
