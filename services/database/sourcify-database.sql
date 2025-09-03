@@ -1,4 +1,4 @@
-\restrict sJLcxaHYPMP28Leh0GKIaLP8htazg5uukakP8yabITtnQnY2bDLWjqTbU9pmxvH
+\restrict kgmY5Es1RqaV2ek1n2W1DYtdjrChsTn3Lku4HCOmWiEIMmK4Y1uY24lNTQUygKe
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
@@ -26,6 +26,18 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: signature_type_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.signature_type_enum AS ENUM (
+    'function',
+    'event',
+    'error',
+    'constructor'
+);
 
 
 --
@@ -991,10 +1003,9 @@ CREATE TABLE public.signatures (
     signature_hash_32 bytea NOT NULL,
     signature_hash_4 bytea GENERATED ALWAYS AS (SUBSTRING(signature_hash_32 FROM 1 FOR 4)) STORED,
     signature character varying NOT NULL,
-    signature_type character varying NOT NULL,
+    signature_type public.signature_type_enum NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT signatures_signature_type_check CHECK (((signature_type)::text = ANY ((ARRAY['function'::character varying, 'event'::character varying, 'error'::character varying, 'constructor'::character varying])::text[])))
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1995,7 +2006,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sJLcxaHYPMP28Leh0GKIaLP8htazg5uukakP8yabITtnQnY2bDLWjqTbU9pmxvH
+\unrestrict kgmY5Es1RqaV2ek1n2W1DYtdjrChsTn3Lku4HCOmWiEIMmK4Y1uY24lNTQUygKe
 
 
 --
