@@ -245,7 +245,6 @@ export class ExtendedVerification {
         this.compilation instanceof SolidityCompilation &&
         onchainAuxdata !== recompiledAuxdata
       ) {
-        console.log(`got this.compilation.metadata ==\n ${JSON.stringify(this.compilation.metadata)}`)
         const solidityMetadataContract = new SolidityMetadataContract(
           this.compilation.metadata,
           Object.keys(this.compilation.jsonInput.sources).map((source) => ({
@@ -354,13 +353,6 @@ export class ExtendedVerification {
     const libraryMap = librariesTransformationResult.libraryMap;
     populatedRecompiledBytecode =
       librariesTransformationResult.populatedRecompiledBytecode;
-    console.log(`got matchBytecodes -- isCreation${isCreation}==\n ${JSON.stringify(
-      {
-        libraryMap: librariesTransformationResult.libraryMap,
-        transformations: librariesTransformationResult.transformations,
-        transformationValues: librariesTransformationResult.transformationValues,
-      }
-    )}`)
 
     // Direct bytecode match
     const doBytecodesMatch = isCreation
@@ -408,12 +400,6 @@ export class ExtendedVerification {
       onchainBytecode,
       cborAuxdata,
     );
-    console.log(`got matchBytecodes -- isCreation${isCreation}==\n ${JSON.stringify(
-      {
-        transformations: auxdataTransformationResult.transformations,
-        transformationValues: auxdataTransformationResult.transformationValues,
-      }
-    )}`)
 
     result.populatedRecompiledBytecode =
       auxdataTransformationResult.populatedRecompiledBytecode;
@@ -469,12 +455,6 @@ export class ExtendedVerification {
         this.compilation.runtimeBytecode,
         this.onchainRuntimeBytecode,
       );
-    console.log(`got matchWithRuntimeBytecode -- callProtectionTransformationResult ==\n ${JSON.stringify(
-      {
-        transformations: callProtectionTransformationResult.transformations,
-        transformationValues: callProtectionTransformationResult.transformationValues,
-      }
-    )}`)
 
     // Handle immutable references
     const immutablesTransformationResult = extractImmutablesTransformation(
@@ -483,12 +463,6 @@ export class ExtendedVerification {
       this.compilation.immutableReferences,
       this.compilation.auxdataStyle,
     );
-    console.log(`got matchWithRuntimeBytecode -- immutablesTransformationResult ==\n ${JSON.stringify(
-      {
-        transformations: immutablesTransformationResult.transformations,
-        transformationValues: immutablesTransformationResult.transformationValues,
-      }
-    )}`)
 
     const matchBytecodesResult = await this.matchBytecodes(
       false,
@@ -531,12 +505,6 @@ export class ExtendedVerification {
       }catch (e) {
         console.log(`extractConstructorArgumentsTransformation err ==\n`, e)
       }
-      console.log(`got matchWithCreationTx -- constructorTransformationResult ==\n ${JSON.stringify(
-        {
-          transformations: constructorTransformationResult.transformations,
-          transformationValues: constructorTransformationResult.transformationValues,
-        }
-      )}`)
       this.creationTransformations = [
         ...matchBytecodesResult.transformations,
         ...constructorTransformationResult.transformations,

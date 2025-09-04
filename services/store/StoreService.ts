@@ -859,7 +859,6 @@ export class StoreService
     licenseType?: number,
     contractLabel?: string,
   ) {
-    console.log(`storeVerification ===\n`, {licenseType, contractLabel})
     const existingMatch = await this.checkAllByChainAndAddress(verification.address, verification.chainId)
     if (existingMatch.length > 0 && !isBetterVerification(verification, existingMatch[0])) {
       throw new ConflictError(

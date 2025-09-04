@@ -970,7 +970,6 @@ export class Dao {
     onchain_runtime_code,
     creation_transaction_hash,
   }: Tables.IVerificationJobEphemeral): Promise<void> {
-    const now = new Date();
     await this.pool.query(
       `
         INSERT INTO verification_jobs_ephemeral (
@@ -979,10 +978,8 @@ export class Dao {
         recompiled_runtime_code,
         onchain_creation_code,
         onchain_runtime_code,
-        creation_transaction_hash,
-        createdAt,
-        updatedAt
-      ) VALUES (?,?,?,?,?,?,?,?)
+        creation_transaction_hash
+      ) VALUES (?,?,?,?,?,?)
       `,
       {
         type: QueryTypes.INSERT,
@@ -993,8 +990,6 @@ export class Dao {
           onchain_creation_code,
           onchain_runtime_code,
           creation_transaction_hash,
-          now,
-          now,
         ],
       }
     );

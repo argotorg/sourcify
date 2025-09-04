@@ -3,17 +3,17 @@ import chaiHttp from "chai-http";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   hookIntoVerificationWorkerRun,
-} from "../../helpers/helpers";
-import { LocalChainFixture } from "../../helpers/LocalChainFixture";
-import { ServerFixture } from "../../helpers/ServerFixture";
+} from "../../../helpers/helpers";
+import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
+import { ServerFixture } from "../../../helpers/ServerFixture";
 import path from "path";
 import fs from "fs";
-import { assertJobVerification } from "../../helpers/assertions";
+import { assertJobVerification } from "../../../helpers/assertions";
 import sinon from "sinon";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
-} from "../../helpers/common-tests";
+} from "../../../helpers/common-tests";
 
 chai.use(chaiHttp);
 
@@ -60,6 +60,7 @@ describe("POST /verify/:chainId/:address", function () {
 
     const vyperContractPath = path.join(
       __dirname,
+      "..",
       "..",
       "..",
       "sources",

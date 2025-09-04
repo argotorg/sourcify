@@ -5,10 +5,10 @@ import { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 import {
   hookIntoVerificationWorkerRun,
   unusedAddress,
-} from "../../helpers/helpers";
-import { LocalChainFixture } from "../../helpers/LocalChainFixture";
-import { ServerFixture } from "../../helpers/ServerFixture";
-import { assertJobVerification } from "../../helpers/assertions";
+} from "../../../helpers/helpers";
+import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
+import { ServerFixture } from "../../../helpers/ServerFixture";
+import { assertJobVerification } from "../../../helpers/assertions";
 import {
   mockConfluxscanApi,
   MULTIPLE_CONTRACT_RESPONSE,
@@ -20,13 +20,13 @@ import {
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE
-} from "../../helpers/etherscanResponseMocks";
-import testContracts from "../../helpers/etherscanInstanceContracts.json";
+} from "../../../helpers/etherscanResponseMocks";
+import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
-} from "../../helpers/common-tests";
-import { toMatchLevel } from "../../../services/utils/util";
+} from "../../../helpers/common-tests";
+import { toMatchLevel } from "../../../../services/utils/util";
 
 use(chaiHttp);
 

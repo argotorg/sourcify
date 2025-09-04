@@ -1,15 +1,15 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { ServerFixture } from "../helpers/ServerFixture";
-import { VerificationJob } from "../../routes/types";
+import { ServerFixture } from "../../helpers/ServerFixture";
+import { VerificationJob } from "../../../routes/types";
 import { v4 as uuidv4 } from "uuid";
-import { LocalChainFixture } from "../helpers/LocalChainFixture";
+import { LocalChainFixture } from "../../helpers/LocalChainFixture";
 import {
   getVerificationErrorMessage,
   MatchingErrorResponse,
-} from "../../routes/api/errors";
-import { verifyContract } from "../helpers/helpers";
-import { JobErrorData } from "../../services/store/Tables";
+} from "../../../routes/api/errors";
+import { verifyContract } from "../../helpers/helpers";
+import { JobErrorData } from "../../../services/store/Tables";
 import { QueryTypes } from "sequelize";
 
 chai.use(chaiHttp);

@@ -5,15 +5,15 @@ import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   DeploymentInfo,
   verifyContract
-} from "../helpers/helpers";
-import { LocalChainFixture } from "../helpers/LocalChainFixture";
-import { ServerFixture } from "../helpers/ServerFixture";
+} from "../../helpers/helpers";
+import { LocalChainFixture } from "../../helpers/LocalChainFixture";
+import { ServerFixture } from "../../helpers/ServerFixture";
 import type { Response } from "superagent";
 import path from "path";
 import fs from "fs";
 import { getAddress } from "ethers";
 import Sinon from "sinon";
-import * as proxyContractUtil from "../../services/utils/proxy-contract-util";
+import * as proxyContractUtil from "../../../services/utils/proxy-contract-util";
 import { QueryTypes } from "sequelize";
 
 chai.use(chaiHttp);
@@ -645,10 +645,10 @@ describe("GET /contract/:chainId/:address", function () {
 
   it("should correctly detect proxy contracts", async function () {
     const proxyArtifact = (
-      await import("../testcontracts/Proxy/Proxy_flattened.json")
+      await import("../../testcontracts/Proxy/Proxy_flattened.json")
     ).default;
     const proxyMetadata = (
-      await import("../testcontracts/Proxy/metadata.json")
+      await import("../../testcontracts/Proxy/metadata.json")
     ).default;
     const proxySource = fs.readFileSync(
       path.join(
@@ -722,10 +722,10 @@ describe("GET /contract/:chainId/:address", function () {
       .throws(new Error("Proxy resolution failed"));
 
     const proxyArtifact = (
-      await import("../testcontracts/Proxy/Proxy_flattened.json")
+      await import("../../testcontracts/Proxy/Proxy_flattened.json")
     ).default;
     const proxyMetadata = (
-      await import("../testcontracts/Proxy/metadata.json")
+      await import("../../testcontracts/Proxy/metadata.json")
     ).default;
     const proxySource = fs.readFileSync(
       path.join(

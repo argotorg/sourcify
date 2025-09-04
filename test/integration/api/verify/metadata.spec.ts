@@ -1,14 +1,14 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { hookIntoVerificationWorkerRun } from "../../helpers/helpers";
-import { LocalChainFixture } from "../../helpers/LocalChainFixture";
-import { ServerFixture } from "../../helpers/ServerFixture";
-import { assertJobVerification } from "../../helpers/assertions";
+import { hookIntoVerificationWorkerRun } from "../../../helpers/helpers";
+import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
+import { ServerFixture } from "../../../helpers/ServerFixture";
+import { assertJobVerification } from "../../../helpers/assertions";
 import sinon from "sinon";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
-} from "../../helpers/common-tests";
+} from "../../../helpers/common-tests";
 
 chai.use(chaiHttp);
 
