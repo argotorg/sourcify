@@ -1,4 +1,4 @@
-\restrict PYokmnZc6G4LjXZxF2X72J3sNWn7BfoXus3Yobm230bWdZXyNBTS6tQMOt6LEn2
+\restrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
@@ -35,8 +35,7 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 CREATE TYPE public.signature_type_enum AS ENUM (
     'function',
     'event',
-    'error',
-    'constructor'
+    'error'
 );
 
 
@@ -1991,7 +1990,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PYokmnZc6G4LjXZxF2X72J3sNWn7BfoXus3Yobm230bWdZXyNBTS6tQMOt6LEn2
+\unrestrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
 
 
 --

@@ -1,6 +1,6 @@
 -- migrate:up
 
-CREATE TYPE signature_type_enum AS ENUM ('function','event','error','constructor');
+CREATE TYPE signature_type_enum AS ENUM ('function','event','error');
 
 /*
     The `signatures` table stores signature information for compiled_contracts.
@@ -39,7 +39,7 @@ CREATE TABLE compiled_contracts_signatures (
   compilation_id UUID NOT NULL REFERENCES compiled_contracts(id),
   signature_hash_32 BYTEA NOT NULL REFERENCES signatures(signature_hash_32),
 
-  /* type of signature: function, event, error, constructor */
+  /* type of signature: function, event, error */
   signature_type signature_type_enum NOT NULL,
 
   /* timestamp */
