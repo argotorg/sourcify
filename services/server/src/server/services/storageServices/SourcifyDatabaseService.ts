@@ -12,6 +12,7 @@ import {
   Field,
   FIELDS_TO_STORED_PROPERTIES,
   StoredProperties,
+  Tables,
 } from "../utils/database-util";
 import {
   ContractData,
@@ -28,6 +29,7 @@ import {
   VerificationJob,
   Match,
   VerificationJobId,
+  BytesKeccak,
 } from "../../types";
 import Path from "path";
 import {
@@ -37,6 +39,7 @@ import {
   toMatchLevel,
 } from "../utils/util";
 import { getAddress, id as keccak256Str } from "ethers";
+import { extractSignaturesFromAbi } from "../utils/signature-util";
 import { BadRequestError } from "../../../common/errors";
 import { RWStorageIdentifiers } from "./identifiers";
 import semver from "semver";
@@ -884,6 +887,57 @@ export class SourcifyDatabaseService
     });
   }
 
+  private async storeSignatures(
+    poolClient: PoolClient,
+    verifiedContractId: Tables.VerifiedContract["id"],
+    verification: VerificationExport,
+  ): Promise<void> {
+    try {
+      const compiledContractResult =
+        await this.database.getCompilationIdForVerifiedContract(
+          verifiedContractId,
+          poolClient,
+        );
+      if (compiledContractResult.rowCount === 0) {
+        throw new Error(
+          `No compilation found for verifiedContractId ${verifiedContractId}`,
+        );
+      }
+      const compilationId = compiledContractResult.rows[0].compilation_id;
+
+      const abi = verification.compilation.contractCompilerOutput.abi;
+      if (!abi) {
+        throw new Error("No ABI found in compilation output");
+      }
+
+      const signatureData = extractSignaturesFromAbi(abi);
+      const signatureColumns = signatureData.map((sig) => ({
+        signature_hash_32: bytesFromString<BytesKeccak>(sig.signatureHash32),
+        signature: sig.signature,
+        signature_type: sig.signatureType,
+      }));
+
+      await this.database.insertSignatures(signatureColumns, poolClient);
+      await this.database.insertCompiledContractSignatures(
+        compilationId,
+        signatureColumns,
+        poolClient,
+      );
+
+      logger.info("Stored signatures to SourcifyDatabase", {
+        verifiedContractId,
+        compilationId,
+        signatureCount: signatureData.length,
+      });
+    } catch (error) {
+      // Don't throw on errors, the job should not fail
+      logger.error("Error storing signatures", {
+        verifiedContractId,
+        error: error,
+      });
+    }
+  }
+
   // Override this method to include the SourcifyMatch
   async storeVerificationWithPoolClient(
     poolClient: PoolClient,
@@ -892,10 +946,10 @@ export class SourcifyDatabaseService
       verificationId: VerificationJobId;
       finishTime: Date;
     },
-  ): Promise<void> {
+  ): Promise<{ verifiedContractId: Tables.VerifiedContract["id"] }> {
     try {
       const { type, verifiedContractId, oldVerifiedContractId } =
-        await super.insertOrUpdateVerification(verification, poolClient);
+        await this.insertOrUpdateVerification(verification, poolClient);
 
       if (type === "insert") {
         if (!verifiedContractId) {
@@ -962,6 +1016,8 @@ export class SourcifyDatabaseService
           poolClient,
         );
       }
+
+      return { verifiedContractId: verifiedContractId };
     } catch (error: any) {
       logger.error("Error storing verification", {
         error: error,
@@ -970,7 +1026,6 @@ export class SourcifyDatabaseService
     }
   }
 
-  // Override this method to include the SourcifyMatch
   async storeVerification(
     verification: VerificationExport,
     jobData?: {
@@ -978,11 +1033,23 @@ export class SourcifyDatabaseService
       finishTime: Date;
     },
   ): Promise<void> {
+    const { verifiedContractId } = await this.withTransaction(
+      async (transactionPoolClient) => {
+        return await this.storeVerificationWithPoolClient(
+          transactionPoolClient,
+          verification,
+          jobData,
+        );
+      },
+    );
+
+    // Separate transaction because storing the verification should not fail
+    // if signatures cannot be stored
     await this.withTransaction(async (transactionPoolClient) => {
-      await this.storeVerificationWithPoolClient(
+      await this.storeSignatures(
         transactionPoolClient,
+        verifiedContractId,
         verification,
-        jobData,
       );
     });
   }
