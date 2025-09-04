@@ -1,4 +1,4 @@
-import { Interface, keccak256, Fragment, JsonFragment } from "ethers";
+import { Interface, id as keccak256str, Fragment, JsonFragment } from "ethers";
 
 export interface SignatureData {
   signature: string;
@@ -27,7 +27,7 @@ function getSignatureData(fragment: Fragment): SignatureData {
   const signature = fragment.format("sighash");
   return {
     signature,
-    signatureHash32: keccak256(signature),
+    signatureHash32: keccak256str(signature),
     signatureType: fragment.type as "function" | "event" | "error",
   };
 }
