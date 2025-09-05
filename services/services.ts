@@ -15,6 +15,7 @@ export class Services {
   }
 
   public async init() {
+    await this.verification.init();
     await this.store.init();
   }
 

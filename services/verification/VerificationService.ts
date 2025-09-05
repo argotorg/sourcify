@@ -22,8 +22,10 @@ import { ConfluxscanResult } from "../utils/confluxscan-util";
 import { StoreService } from "../store/StoreService";
 import { ChainMap } from "../../server";
 import { ChainInstance } from "../../config/Loader";
+import { findSolcPlatform, getSolcExecutable, getSolcJs } from "@ethereum-sourcify/compilers";
 
 export interface VerificationOptions {
+  initCompilers?: boolean;
   chains: ChainMap;
   solcRepoPath: string;
   solJsonRepoPath: string;
@@ -33,6 +35,9 @@ export interface VerificationOptions {
 }
 
 export class VerificationService {
+  private readonly initCompilers: boolean;
+  private solcRepoPath: string;
+  private solJsonRepoPath: string;
   private store: StoreService;
   private workerPool: Piscina;
   private runningTasks: Set<Promise<void>> = new Set();
@@ -42,6 +47,9 @@ export class VerificationService {
     options: VerificationOptions,
     store: StoreService,
   ) {
+    this.initCompilers = options.initCompilers;
+    this.solcRepoPath = options.solcRepoPath;
+    this.solJsonRepoPath = options.solJsonRepoPath;
     this.store = store;
 
     const chains = Object.entries(
@@ -68,6 +76,60 @@ export class VerificationService {
       idleTimeout: options.workerIdleTimeout || 30000,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
     });
+  }
+
+  public async init() {
+    const HOST_SOLC_REPO = "https://binaries.soliditylang.org/";
+
+    if (this.initCompilers) {
+      const platform = findSolcPlatform() || "bin"; // fallback to emscripten binaries "bin"
+      console.info(`Initializing compilers for platform ${platform}`);
+
+      // solc binary and solc-js downloads are handled with different helpers
+      const downLoadFunc =
+        platform === "bin"
+          ? (version: string) => getSolcJs(this.solJsonRepoPath, version)
+          : // eslint-disable-next-line indent
+          (version: string) =>
+            getSolcExecutable(this.solcRepoPath, platform, version);
+
+      // get the list of compiler versions
+      let solcList: string[];
+      try {
+        solcList = await fetch(`${HOST_SOLC_REPO}${platform}/list.json`)
+          .then((response) => response.json())
+          .then((data) =>
+            (Object.values(data.releases) as string[])
+              .map((str) => str.split("-v")[1]) // e.g. soljson-v0.8.26+commit.8a97fa7a.js or solc-linux-amd64-v0.8.26+commit.8a97fa7a
+              .map(
+                (str) => (str.endsWith(".js") ? str.slice(0, -3) : str), // remove .js extension
+              ),
+          );
+      } catch (e) {
+        throw new Error(`Failed to fetch list of solc versions: ${e}`);
+      }
+
+      const chunkSize = 10; // Download in chunks to not overload the Solidity server all at once
+      for (let i = 0; i < solcList.length; i += chunkSize) {
+        const chunk = solcList.slice(i, i + chunkSize);
+        const promises = chunk.map((solcVer) => {
+          const now = Date.now();
+          return downLoadFunc(solcVer).then(() => {
+            console.debug(
+              `Downloaded (or found existing) compiler ${solcVer} in ${Date.now() - now}ms`,
+            );
+          });
+        });
+
+        await Promise.all(promises);
+        console.debug(
+          `Batch ${i / chunkSize + 1} - Downloaded ${promises.length} - Total ${i + chunkSize}/${solcList.length}`,
+        );
+      }
+
+      console.info("Initialized compilers");
+    }
+    return true;
   }
 
   public async close() {
