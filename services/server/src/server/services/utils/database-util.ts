@@ -164,6 +164,19 @@ export namespace Tables {
     onchain_runtime_code: Nullable<Bytes>;
     creation_transaction_hash: Nullable<Bytes>;
   }
+
+  export interface Signatures {
+    signature_hash_32: BytesKeccak;
+    signature_hash_4: Bytes;
+    signature: string;
+  }
+
+  export interface CompiledContractsSignatures {
+    id: string;
+    compilation_id: string;
+    signature_hash_32: BytesKeccak;
+    signature_type: "function" | "event" | "error";
+  }
 }
 
 export interface SourceInformation {

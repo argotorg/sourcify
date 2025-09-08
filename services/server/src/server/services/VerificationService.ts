@@ -345,14 +345,14 @@ export class VerificationService {
     return verificationId;
   }
 
-  private async verifyViaWorker(
+  private verifyViaWorker(
     verificationId: VerificationJobId,
     functionName: string,
     input:
       | VerifyFromJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput,
-  ): Promise<void> {
+  ): void {
     const task = this.workerPool
       .run(input, { name: functionName })
       .then((output: VerifyOutput) => {
