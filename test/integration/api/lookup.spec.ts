@@ -654,6 +654,7 @@ describe("GET /contract/:chainId/:address", function () {
       path.join(
         __dirname,
         "..",
+        "..",
         "testcontracts",
         "Proxy",
         "Proxy_flattened.sol",
@@ -730,6 +731,7 @@ describe("GET /contract/:chainId/:address", function () {
     const proxySource = fs.readFileSync(
       path.join(
         __dirname,
+        "..",
         "..",
         "testcontracts",
         "Proxy",
