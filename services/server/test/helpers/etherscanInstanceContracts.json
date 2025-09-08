@@ -294,18 +294,6 @@
       "expectedStatus": "partial"
     }
   ],
-  "1101": [
-    {
-      "address": "0xe10Add2ad591A7AC3CA46788a06290De017b9fB4",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xbcDd6935D5B849D564a39fD776860e17eDAECf3E",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
   "534351": [
     {
       "address": "0xFc2bfE03d07eC96F62D6F209667A660e4BF65D74",
@@ -439,23 +427,6 @@
       "address": "0x9B1B4b0FD15eF697E2E61C29ee933b227C68dDb2",
       "type": "standard-json",
       "expectedStatus": "perfect"
-    }
-  ],
-  "2442": [
-    {
-      "address": "0x76de3276bd6adda3f00a29d6dff8b8fdf570d230",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x010788D1A2bbd1135c38648e2F99bd6D6cF70625",
-      "type": "multiple",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xd5a515CE2dF4C69aA809De5b9318a3D4452D86BE",
-      "type": "standard-json",
-      "expectedStatus": "partial"
     }
   ],
   "42170": [
