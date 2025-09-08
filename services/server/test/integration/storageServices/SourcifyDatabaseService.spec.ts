@@ -86,10 +86,10 @@ describe("SourcifyDatabaseService", function () {
     expect(storeSignature).to.exist;
 
     const expectedRetrieveSignatureHash32 = bytesFromString(
-      keccak256str(retrieveSignature!.signature),
+      keccak256str("retrieve()"),
     );
     const expectedStoreSignatureHash32 = bytesFromString(
-      keccak256str(storeSignature!.signature),
+      keccak256str("store(uint256)"),
     );
 
     expect(retrieveSignature!.signature_hash_32).to.be.instanceOf(Buffer);

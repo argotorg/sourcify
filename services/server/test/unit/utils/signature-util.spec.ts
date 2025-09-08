@@ -331,5 +331,35 @@ describe("signature-util", function () {
         .expect(result[0].signatureHash32)
         .to.equal(keccak256str(result[0].signature));
     });
+
+    it("should throw for invalid ABIs", function () {
+      const abi: JsonFragment[] = [
+        {
+          inputs: [{ internalType: "uint256", name: "num", type: "uint256" }],
+          name: "store",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          name: "get",
+          type: "function",
+          inputs: [
+            {
+              name: "dataStore",
+              type: "DataStore",
+              internalType: "contract DataStore",
+            },
+            {
+              name: "key",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+          ],
+        },
+      ];
+
+      chai.expect(() => extractSignaturesFromAbi(abi)).to.throw();
+    });
   });
 });

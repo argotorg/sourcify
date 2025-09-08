@@ -949,7 +949,7 @@ export class SourcifyDatabaseService
   ): Promise<{ verifiedContractId: Tables.VerifiedContract["id"] }> {
     try {
       const { type, verifiedContractId, oldVerifiedContractId } =
-        await this.insertOrUpdateVerification(verification, poolClient);
+        await super.insertOrUpdateVerification(verification, poolClient);
 
       if (type === "insert") {
         if (!verifiedContractId) {

@@ -1,4 +1,4 @@
-import { Interface, id as keccak256str, Fragment, JsonFragment } from "ethers";
+import { id as keccak256str, Fragment, JsonFragment } from "ethers";
 
 export interface SignatureData {
   signature: string;
@@ -9,16 +9,21 @@ export interface SignatureData {
 export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
   const signatures: SignatureData[] = [];
 
-  const iface = new Interface(abi);
-
-  iface.fragments.forEach((fragment) => {
-    switch (fragment.type) {
-      case "function":
-      case "event":
-      case "error":
-        signatures.push(getSignatureData(fragment));
+  try {
+    for (const item of abi) {
+      const fragment = Fragment.from(item);
+      switch (fragment.type) {
+        case "function":
+        case "event":
+        case "error":
+          signatures.push(getSignatureData(fragment));
+      }
     }
-  });
+  } catch (error) {
+    throw new Error(
+      "Failed to extract signatures from ABI due to an invalid fragment",
+    );
+  }
 
   return signatures;
 }
