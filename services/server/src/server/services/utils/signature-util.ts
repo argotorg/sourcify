@@ -9,20 +9,21 @@ export interface SignatureData {
 export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
   const signatures: SignatureData[] = [];
 
-  try {
-    for (const item of abi) {
-      const fragment = Fragment.from(item);
-      switch (fragment.type) {
-        case "function":
-        case "event":
-        case "error":
-          signatures.push(getSignatureData(fragment));
-      }
+  for (const item of abi) {
+    let fragment: Fragment;
+    try {
+      fragment = Fragment.from(item);
+    } catch (error) {
+      // Ignore invalid fragments
+      // e.g. with custom type as they can appear in library ABIs
+      continue;
     }
-  } catch (error) {
-    throw new Error(
-      "Failed to extract signatures from ABI due to an invalid fragment",
-    );
+    switch (fragment.type) {
+      case "function":
+      case "event":
+      case "error":
+        signatures.push(getSignatureData(fragment));
+    }
   }
 
   return signatures;

@@ -332,7 +332,7 @@ describe("signature-util", function () {
         .to.equal(keccak256str(result[0].signature));
     });
 
-    it("should throw for invalid ABIs", function () {
+    it("should ignore fragments with custom type", function () {
       const abi: JsonFragment[] = [
         {
           inputs: [{ internalType: "uint256", name: "num", type: "uint256" }],
@@ -359,7 +359,11 @@ describe("signature-util", function () {
         },
       ];
 
-      chai.expect(() => extractSignaturesFromAbi(abi)).to.throw();
+      const result = extractSignaturesFromAbi(abi);
+
+      chai.expect(result).to.have.lengthOf(1);
+      chai.expect(result[0].signatureType).to.equal("function");
+      chai.expect(result[0].signature).to.equal("store(uint256)");
     });
   });
 });
