@@ -5,12 +5,14 @@ import {
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
   validateStandardJsonInput,
-  validateMetadata, validateCompilerVersion, validateSources
+  validateMetadata,
+  validateCompilerVersion,
+  validateSources,
 } from "../middlewares";
 import {
   verifyFromConfluxscanEndpoint,
   verifyFromJsonInputEndpoint,
-  verifyFromMetadataEndpoint
+  verifyFromMetadataEndpoint,
 } from "./verification.handlers";
 import { Router } from "express";
 

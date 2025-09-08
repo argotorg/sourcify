@@ -1,4 +1,8 @@
-import { SolidityOutput, ISolidityCompiler, SolidityJsonInput} from "@ethereum-sourcify/lib-sourcify";
+import {
+  SolidityOutput,
+  ISolidityCompiler,
+  SolidityJsonInput,
+} from "@ethereum-sourcify/lib-sourcify";
 import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
 
 export class SolcLocal implements ISolidityCompiler {

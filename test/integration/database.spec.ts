@@ -1,6 +1,9 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { deployFromAbiAndBytecodeForCreatorTxHash } from "../helpers/helpers";
+import {
+  completeVerification,
+  deployFromAbiAndBytecodeForCreatorTxHash,
+} from "../helpers/helpers";
 import { id as keccak256str, keccak256 } from "ethers";
 import { LocalChainFixture } from "../helpers/LocalChainFixture";
 import { ServerFixture } from "../helpers/ServerFixture";
@@ -90,11 +93,9 @@ describe("Verifier Alliance database", function () {
       });*/
 
     // ==> verify with metadata
-    let res = await chai
+    const res = await chai
       .request(serverFixture.server.app)
-      .post(
-        `/verify/metadata/${chainFixture.chainId}/${contractAddress}`,
-      )
+      .post(`/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
       .send({
         sources: testCase.sources,
         metadata: {
@@ -124,15 +125,13 @@ describe("Verifier Alliance database", function () {
     chai
       .expect(res.body.verificationId)
       .to.match(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-    );
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      );
 
-    let jobRes
-    while(!jobRes?.body?.isJobCompleted) {
-      jobRes = await chai
-        .request(serverFixture.server.app)
-        .get(`/verify/${res.body.verificationId}`);
-    }
+    await completeVerification(
+      serverFixture.server.app,
+      res.body.verificationId,
+    );
     // <== verify with metadata
 
     await assertDatabase(
@@ -177,12 +176,14 @@ describe("Verifier Alliance database", function () {
         stdJsonInput: {
           language: "Vyper",
           sources: Object.keys(testCase.sources).reduce(
-            (sources, vyperSourceFileName) => {
+            (sources: any, vyperSourceFileName: string) => {
               sources[vyperSourceFileName] = {
-                content: testCase.sources[vyperSourceFileName]
+                content: testCase.sources[vyperSourceFileName],
               };
               return sources;
-            }, {}),
+            },
+            {},
+          ),
           settings: testCase.compiler_settings,
         },
         compilerVersion: testCase.version,
@@ -197,15 +198,13 @@ describe("Verifier Alliance database", function () {
     chai
       .expect(res.body.verificationId)
       .to.match(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-    );
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      );
 
-    let jobRes
-    while(!jobRes?.body?.isJobCompleted) {
-      jobRes = await chai
-        .request(serverFixture.server.app)
-        .get(`/verify/${res.body.verificationId}`);
-    }
+    await completeVerification(
+      serverFixture.server.app,
+      res.body.verificationId,
+    );
     // <== verify with json input
     await assertDatabase(
       testCase,
@@ -274,9 +273,7 @@ describe("Verifier Alliance database", function () {
         where cd.address = ?`,
       {
         type: QueryTypes.SELECT,
-        replacements: [
-          address
-        ],
+        replacements: [address],
       },
     );
     const resSources = await serverFixture.sourcifyDatabase.query(
@@ -291,9 +288,7 @@ describe("Verifier Alliance database", function () {
         where cd.address = ?`,
       {
         type: QueryTypes.SELECT,
-        replacements: [
-          address
-        ],
+        replacements: [address],
       },
     );
     chai.expect(res.length).to.equal(1);
@@ -309,7 +304,7 @@ describe("Verifier Alliance database", function () {
       .to.equal(testCase.fully_qualified_name);
     chai
       .expect(
-        resSources.reduce((sources, source: any) => {
+        resSources.reduce((sources: any, source: any) => {
           sources[source.path] = source.content;
           return sources;
         }, {}),
@@ -319,19 +314,11 @@ describe("Verifier Alliance database", function () {
       .expect(row.compiler_settings)
       .to.deep.equal(testCase.compiler_settings);
     chai.expect(row.chain_id).to.equal(chainFixture.chainId);
-    chai
-      .expect(row.address)
-      .to.deep.equal(address);
+    chai.expect(row.address).to.deep.equal(address);
 
-    chai
-      .expect(row.deployer)
-      .to.deep.equal(
-        chainFixture.localSigner.address,
-      );
+    chai.expect(row.deployer).to.deep.equal(chainFixture.localSigner.address);
 
-    chai
-      .expect(row.transaction_hash)
-      .to.deep.equal(txHash);
+    chai.expect(row.transaction_hash).to.deep.equal(txHash);
 
     chai.expect(row.block_number).to.equal(blockNumber);
     chai.expect(row.transaction_index).to.equal(txIndex);
@@ -391,7 +378,9 @@ describe("Verifier Alliance database", function () {
     chai
       .expect(row.creation_code_artifacts)
       .to.deep.equal(testCase.creation_code_artifacts);
-    chai.expect(row.creation_match === 1).to.deep.equal(testCase.creation_match);
+    chai
+      .expect(row.creation_match === 1)
+      .to.deep.equal(testCase.creation_match);
     chai.expect(row.creation_values).to.deep.equal(testCase.creation_values);
     chai
       .expect(row.creation_transformations)
@@ -465,42 +454,40 @@ describe("Verifier Alliance database", function () {
   });
 
   /*describe("Vyper", () => {*/
-    it("should store auxdata for a Vyper contract compiled with 0.3.4", async () => {
-      const vyperTestAuxdata0_3_4 = await import(
-        "../verifier-alliance/vyper/auxdata-0.3.4.json"
-      );
-      await verifierAllianceTestVyper(vyperTestAuxdata0_3_4);
-    });
+  it("should store auxdata for a Vyper contract compiled with 0.3.4", async () => {
+    const vyperTestAuxdata0_3_4 = await import(
+      "../verifier-alliance/vyper/auxdata-0.3.4.json"
+    );
+    await verifierAllianceTestVyper(vyperTestAuxdata0_3_4);
+  });
 
-    it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
-      const vyperTestAuxdata0_3_8 = await import(
-        "../verifier-alliance/vyper/auxdata-0.3.8.json"
-      );
-      await verifierAllianceTestVyper(vyperTestAuxdata0_3_8);
-    });
+  it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
+    const vyperTestAuxdata0_3_8 = await import(
+      "../verifier-alliance/vyper/auxdata-0.3.8.json"
+    );
+    await verifierAllianceTestVyper(vyperTestAuxdata0_3_8);
+  });
 
-    it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {
-      const vyperTestAuxdata0_4_0 = await import(
-        "../verifier-alliance/vyper/auxdata-0.4.0.json"
-      );
-      await verifierAllianceTestVyper(vyperTestAuxdata0_4_0);
-    });
+  it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {
+    const vyperTestAuxdata0_4_0 = await import(
+      "../verifier-alliance/vyper/auxdata-0.4.0.json"
+    );
+    await verifierAllianceTestVyper(vyperTestAuxdata0_4_0);
+  });
 
-    it("should store auxdata for a Vyper contract compiled with 0.4.1", async () => {
-      const vyperTestAuxdata0_4_1 = await import(
-        "../verifier-alliance/vyper/auxdata-0.4.1.json"
-      );
-      await verifierAllianceTestVyper(vyperTestAuxdata0_4_1);
-    });
+  it("should store auxdata for a Vyper contract compiled with 0.4.1", async () => {
+    const vyperTestAuxdata0_4_1 = await import(
+      "../verifier-alliance/vyper/auxdata-0.4.1.json"
+    );
+    await verifierAllianceTestVyper(vyperTestAuxdata0_4_1);
+  });
 
-    it("should store transformations for constructor arguments and immutables", async () => {
-      const vyperTestConstructorArgumentsAndImmutables = await import(
-        "../verifier-alliance/vyper/constructor_args_immutables.json"
-      );
-      await verifierAllianceTestVyper(
-        vyperTestConstructorArgumentsAndImmutables,
-      );
-    });
+  it("should store transformations for constructor arguments and immutables", async () => {
+    const vyperTestConstructorArgumentsAndImmutables = await import(
+      "../verifier-alliance/vyper/constructor_args_immutables.json"
+    );
+    await verifierAllianceTestVyper(vyperTestConstructorArgumentsAndImmutables);
+  });
   /*});*/
 });
 
@@ -547,39 +534,44 @@ describe("Sourcify database", function () {
     chai
       .expect(res.body.verificationId)
       .to.match(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-    );
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      );
 
-    let jobRes
-    while(!jobRes?.body?.isJobCompleted) {
-      jobRes = await chai
-        .request(serverFixture.server.app)
-        .get(`/verify/${res.body.verificationId}`);
-    }
+    await completeVerification(
+      serverFixture.server.app,
+      res.body.verificationId,
+    );
     // <== verify with metadata
 
     // query the database to check that nothing was stored, in any of the tables
     const verifiedContracts = await serverFixture.sourcifyDatabase.query(
-      "SELECT * FROM verified_contracts", { type: QueryTypes.SELECT }
+      "SELECT * FROM verified_contracts",
+      { type: QueryTypes.SELECT },
     );
     chai.expect(verifiedContracts).to.have.length(0);
     const contractDeployments = await serverFixture.sourcifyDatabase.query(
-      "SELECT * FROM contract_deployments", { type: QueryTypes.SELECT }
+      "SELECT * FROM contract_deployments",
+      { type: QueryTypes.SELECT },
     );
     chai.expect(contractDeployments).to.have.length(0);
     const compiledContracts = await serverFixture.sourcifyDatabase.query(
-      "SELECT * FROM compiled_contracts", { type: QueryTypes.SELECT }
+      "SELECT * FROM compiled_contracts",
+      { type: QueryTypes.SELECT },
     );
     chai.expect(compiledContracts).to.have.length(0);
     const sources = await serverFixture.sourcifyDatabase.query(
-      "SELECT * FROM sources", { type: QueryTypes.SELECT }
+      "SELECT * FROM sources",
+      { type: QueryTypes.SELECT },
     );
     chai.expect(sources).to.have.length(0);
-    const code =
-      await serverFixture.sourcifyDatabase.query("SELECT * FROM code", { type: QueryTypes.SELECT });
+    const code = await serverFixture.sourcifyDatabase.query(
+      "SELECT * FROM code",
+      { type: QueryTypes.SELECT },
+    );
     chai.expect(code).to.have.length(0);
     const sourcifyMatches = await serverFixture.sourcifyDatabase.query(
-      "SELECT * FROM sourcify_matches", { type: QueryTypes.SELECT }
+      "SELECT * FROM sourcify_matches",
+      { type: QueryTypes.SELECT },
     );
     chai.expect(sourcifyMatches).to.have.length(0);
   });
@@ -588,7 +580,7 @@ describe("Sourcify database", function () {
     const partialMetadata = (
       await import("../testcontracts/Storage/metadataModified.json")
     ).default;
-    const partialMetadataBuffer = Buffer.from(JSON.stringify(partialMetadata));
+    /*const partialMetadataBuffer = Buffer.from(JSON.stringify(partialMetadata));*/
 
     const partialSourcePath = path.join(
       __dirname,
@@ -627,15 +619,13 @@ describe("Sourcify database", function () {
     chai
       .expect(res.body.verificationId)
       .to.match(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-    );
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      );
 
-    let jobRes
-    while(!jobRes?.body?.isJobCompleted) {
-      jobRes = await chai
-        .request(serverFixture.server.app)
-        .get(`/verify/${res.body.verificationId}`);
-    }
+    await completeVerification(
+      serverFixture.server.app,
+      res.body.verificationId,
+    );
     // <== verify with metadata
 
     // lookup by chainID and address
@@ -668,7 +658,8 @@ describe("Sourcify database", function () {
 
     for (const table of beforeTables) {
       const result = await serverFixture.sourcifyDatabase.query(
-        `SELECT * FROM ${table}`, { type: QueryTypes.SELECT }
+        `SELECT * FROM ${table}`,
+        { type: QueryTypes.SELECT },
       );
       beforeData[table] = result;
     }
@@ -710,22 +701,21 @@ describe("Sourcify database", function () {
     chai
       .expect(res.body.verificationId)
       .to.match(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-    );
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      );
 
-    let jobResult
-    while(!jobResult?.body?.isJobCompleted) {
-      jobResult = await chai
-        .request(serverFixture.server.app)
-        .get(`/verify/${res.body.verificationId}`);
-    }
+    await completeVerification(
+      serverFixture.server.app,
+      res.body.verificationId,
+    );
     // <== verify with metadata
 
     const afterData: Record<string, any[]> = {};
 
     for (const table of beforeTables) {
       const result = await serverFixture.sourcifyDatabase.query(
-        `SELECT * FROM ${table}`, { type: QueryTypes.SELECT }
+        `SELECT * FROM ${table}`,
+        { type: QueryTypes.SELECT },
       );
       afterData[table] = result;
     }

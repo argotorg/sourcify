@@ -1,5 +1,6 @@
 import Piscina from "piscina";
-import {SolidityJsonInput,
+import {
+  SolidityJsonInput,
   VyperJsonInput,
   SolidityCompilation,
   VyperCompilation,
@@ -24,7 +25,8 @@ import type {
 import {
   isVyperResult,
   ProcessedConfluxscanResult,
-  processSolidityResultFromConfluxscan, processVyperResultFromConfluxscan
+  processSolidityResultFromConfluxscan,
+  processVyperResultFromConfluxscan,
 } from "../utils/confluxscan-util";
 import { asyncLocalStorage } from "../../common/async-context";
 import { Chain } from "../chain/Chain";
@@ -39,11 +41,13 @@ let solc: SolcLocal;
 let vyper: VyperLocal;
 
 const initWorker = () => {
-  if(chainMap && solc && vyper) {
+  if (chainMap && solc && vyper) {
     return;
   }
 
-  const chainInstanceMap = Piscina.workerData.chains as { [chainId: string]: ChainInstance };
+  const chainInstanceMap = Piscina.workerData.chains as {
+    [chainId: string]: ChainInstance;
+  };
 
   chainMap = Object.entries(chainInstanceMap).reduce(
     (acc, [chainId, chain]) => {
@@ -113,8 +117,8 @@ async function _verifyFromJsonInput({
         jsonInput as VyperJsonInput,
         compilationTarget,
       );
-    }else {
-      throw new Error(`No compiler for ${jsonInput.language} found`)
+    } else {
+      throw new Error(`No compiler for ${jsonInput.language} found`);
     }
   } catch (error: any) {
     return {
@@ -241,11 +245,12 @@ async function _verifyFromConfluxscan({
   address,
   confluxscanResult,
 }: VerifyFromConfluxscanInput): Promise<VerifyOutput> {
-  let processedResult: ProcessedConfluxscanResult
-  if(isVyperResult(confluxscanResult)) {
-    processedResult = await processVyperResultFromConfluxscan(confluxscanResult)
+  let processedResult: ProcessedConfluxscanResult;
+  if (isVyperResult(confluxscanResult)) {
+    processedResult =
+      await processVyperResultFromConfluxscan(confluxscanResult);
   } else {
-    processedResult = processSolidityResultFromConfluxscan(confluxscanResult)
+    processedResult = processSolidityResultFromConfluxscan(confluxscanResult);
   }
 
   return _verifyFromJsonInput({
@@ -257,7 +262,7 @@ async function _verifyFromConfluxscan({
       name: processedResult.contractName,
       path: processedResult.contractPath,
     },
-  })
+  });
 }
 
 function createErrorExport(

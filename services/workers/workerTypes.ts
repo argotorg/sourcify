@@ -1,4 +1,10 @@
-import type { SolidityJsonInput, VyperJsonInput, VerificationExport, CompilationTarget, Metadata, } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  SolidityJsonInput,
+  VyperJsonInput,
+  VerificationExport,
+  CompilationTarget,
+  Metadata,
+} from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../routes/api/errors";
 import { JobErrorData } from "../store/Tables";
 import { ConfluxscanResult } from "../utils/confluxscan-util";

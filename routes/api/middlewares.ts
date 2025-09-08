@@ -2,15 +2,20 @@ import { Request, Response, NextFunction } from "express";
 import {
   AlreadyVerifiedError,
   ChainNotFoundError,
-  DuplicateVerificationRequestError, getChainId,
+  DuplicateVerificationRequestError,
+  getChainId,
   InvalidParametersError as InvalidParameterError,
-  InvalidParametersError
+  InvalidParametersError,
 } from "./errors";
 import { getAddress } from "ethers";
 import { FIELDS_TO_STORED_PROPERTIES } from "../../services/store/Tables";
 import { reduceAccessorStringToProperty } from "../../services/utils/util";
 import { Services } from "../../services/services";
-import type { Metadata, SolidityJsonInput, VyperJsonInput} from "@ethereum-sourcify/lib-sourcify";
+import type {
+  Metadata,
+  SolidityJsonInput,
+  VyperJsonInput,
+} from "@ethereum-sourcify/lib-sourcify";
 import { ChainMap } from "../../server";
 
 export function validateChainId(
@@ -18,9 +23,9 @@ export function validateChainId(
   res: Response,
   next: NextFunction,
 ) {
-  const chainMap = req.app.get("chains") as ChainMap
-  const keys = new Set(Object.keys(chainMap))
-  if(!keys.has(req.params.chainId) || !chainMap[req.params.chainId]) {
+  const chainMap = req.app.get("chains") as ChainMap;
+  const keys = new Set(Object.keys(chainMap));
+  if (!keys.has(req.params.chainId) || !chainMap[req.params.chainId]) {
     console.info("Invalid chainId in params", {
       params: req.params,
     });
@@ -71,7 +76,7 @@ export function validateFieldsAndOmit(
 
     try {
       reduceAccessorStringToProperty(fullField, FIELDS_TO_STORED_PROPERTIES);
-    } catch (error) {
+    } catch (e) {
       throw new InvalidParametersError(
         `Field selector ${fullField} is not a valid field`,
       );
@@ -117,7 +122,9 @@ export function validateStandardJsonInput(
       "Standard JSON input must contain a sources field.",
     );
   }
-  if (Object.values(stdJsonInput.sources).some((source) => !source['content'])) {
+  if (
+    Object.values(stdJsonInput.sources).some((source) => !source["content"])
+  ) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a content field for each source.",
     );
@@ -211,9 +218,9 @@ export async function checkIfAlreadyVerified(
   next: NextFunction,
 ) {
   const { address, chainId } = req.params;
-  const chain = getChainId(chainId)
+  const chain = getChainId(chainId);
   const services = req.app.get("services") as Services;
-  const contract = await services.store.getContract(chain, address)
+  const contract = await services.store.getContract(chain, address);
   if (
     contract.runtimeMatch === "exact_match" &&
     contract.creationMatch === "exact_match"
@@ -232,11 +239,20 @@ export async function checkIfJobIsAlreadyRunning(
   next: NextFunction,
 ) {
   const { address, chainId } = req.params;
-  const chain = getChainId(chainId)
+  const chain = getChainId(chainId);
   const services = req.app.get("services") as Services;
-  const jobs = await services.store.getVerificationJobsByChainAndAddress(chain, address)
-  if (jobs.length > 0 &&
-    jobs.some(job => (!job.isJobCompleted) && services.verification.isRunning(job.verificationId))) {
+  const jobs = await services.store.getVerificationJobsByChainAndAddress(
+    chain,
+    address,
+  );
+  if (
+    jobs.length > 0 &&
+    jobs.some(
+      (job) =>
+        !job.isJobCompleted &&
+        services.verification.isRunning(job.verificationId),
+    )
+  ) {
     console.warn("Contract already being verified", { chainId, address });
     throw new DuplicateVerificationRequestError(
       `Contract ${address} on chain ${chainId} is already being verified`,

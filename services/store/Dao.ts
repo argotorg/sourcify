@@ -10,28 +10,28 @@ import {
   SourceInformation,
   STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
-  Tables
+  Tables,
 } from "./Tables";
 import { QueryTypes, Sequelize, Transaction } from "sequelize";
 import { DatabaseOptions } from "../../config/Loader";
 import { v4 as uuidv4 } from "uuid";
 
 export class Dao {
-  private readonly options: DatabaseOptions
+  private readonly options: DatabaseOptions;
   private _database: Sequelize;
 
   constructor(options: DatabaseOptions) {
-    this.options = options
+    this.options = options;
+    this._database = new Sequelize(this.options);
   }
 
   get pool(): Sequelize {
-    return this._database
+    return this._database;
   }
 
   async init(): Promise<boolean> {
-    this._database = new Sequelize(this.options)
-    await Tables.initModel(this._database)
-    if(this.options.syncSchema) {
+    await Tables.initModel(this._database);
+    if (this.options.syncSchema) {
       await this._database.sync();
     }
     return true;
@@ -41,7 +41,7 @@ export class Dao {
     chain: number,
     address: string,
     onlyPerfectMatches: boolean = false,
-  ): Promise<GetSourcifyMatchByChainAddressResult> {
+  ): Promise<GetSourcifyMatchByChainAddressResult | null> {
     const records = await this.pool.query(
       `
         SELECT
@@ -73,22 +73,20 @@ export class Dao {
       `,
       {
         type: QueryTypes.SELECT,
-        replacements:[chain, address],
+        replacements: [chain, address],
       },
     );
 
-    if(records?.length) {
-      const r = records[0]
-    }
-
-    return records?.length ? records[0] as GetSourcifyMatchByChainAddressResult : null
+    return records?.length
+      ? (records[0] as GetSourcifyMatchByChainAddressResult)
+      : null;
   }
 
   async getSourcifyMatchByChainAddressWithProperties(
     chain: number,
     address: string,
     properties: StoredProperties[],
-  ): Promise<GetSourcifyMatchByChainAddressWithPropertiesResult> {
+  ): Promise<GetSourcifyMatchByChainAddressWithPropertiesResult | null> {
     if (properties.length === 0) {
       throw new Error("No properties specified");
     }
@@ -114,7 +112,8 @@ export class Dao {
         LEFT JOIN code AS recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN code AS recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
         ${
-          properties.includes("sources") || properties.includes("std_json_input")
+          properties.includes("sources") ||
+          properties.includes("std_json_input")
             ? `JOIN compiled_contracts_sources ON compiled_contracts_sources.compilation_id = compiled_contracts.id
               LEFT JOIN sources ON sources.source_hash = compiled_contracts_sources.source_hash
               GROUP BY sourcify_matches.id, 
@@ -131,11 +130,13 @@ export class Dao {
         `,
       {
         type: QueryTypes.SELECT,
-        replacements:[chain, address],
-      }
-    )
+        replacements: [chain, address],
+      },
+    );
 
-    return records?.length ? records[0] as GetSourcifyMatchByChainAddressWithPropertiesResult : null
+    return records?.length
+      ? (records[0] as GetSourcifyMatchByChainAddressWithPropertiesResult)
+      : null;
   }
 
   async getCompiledContractSources(
@@ -152,17 +153,17 @@ export class Dao {
       `,
       {
         type: QueryTypes.SELECT,
-        replacements:[compilation_id],
-      }
+        replacements: [compilation_id],
+      },
     );
 
-    return records as CompiledContractSource[]
+    return records as CompiledContractSource[];
   }
 
   async getVerifiedContractByChainAndAddress(
     chain: number,
     address: string,
-  ): Promise<GetVerifiedContractByChainAndAddressResult> {
+  ): Promise<GetVerifiedContractByChainAndAddressResult | null> {
     const records = await this.pool.query(
       `
         SELECT
@@ -176,11 +177,13 @@ export class Dao {
       `,
       {
         type: QueryTypes.SELECT,
-        replacements:[chain, address],
-      }
-    )
+        replacements: [chain, address],
+      },
+    );
 
-    return records?.length ? records[0] as GetVerifiedContractByChainAndAddressResult : null
+    return records?.length
+      ? (records[0] as GetVerifiedContractByChainAndAddressResult)
+      : null;
   }
 
   async insertSourcifyMatch({
@@ -191,8 +194,8 @@ export class Dao {
     license_type,
     contract_label,
   }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
-    const metadataStr = JSON.stringify(metadata)
-    const now = new Date()
+    const metadataStr = JSON.stringify(metadata);
+    const now = new Date();
     await this.pool.query(
       `
         INSERT INTO sourcify_matches (
@@ -207,9 +210,17 @@ export class Dao {
       `,
       {
         type: QueryTypes.INSERT,
-        replacements:[verified_contract_id, creation_match, runtime_match, metadataStr, license_type, contract_label, now],
-      }
-    )
+        replacements: [
+          verified_contract_id,
+          creation_match,
+          runtime_match,
+          metadataStr,
+          license_type,
+          contract_label,
+          now,
+        ],
+      },
+    );
   }
 
   // Update sourcify_matches to the latest (and better) match in verified_contracts,
@@ -226,7 +237,7 @@ export class Dao {
     }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: number,
   ) {
-    const metadataStr = JSON.stringify(metadata)
+    const metadataStr = JSON.stringify(metadata);
     return this.pool.query(
       `
         UPDATE sourcify_matches SET 
@@ -249,11 +260,13 @@ export class Dao {
           metadataStr,
           oldVerifiedContractId,
         ],
-      }
+      },
     );
   }
 
-  async countSourcifyMatchAddresses(chain: number): Promise<CountSourcifyMatchAddresses> {
+  async countSourcifyMatchAddresses(
+    chain: number,
+  ): Promise<CountSourcifyMatchAddresses | null> {
     const records = await this.pool.query(
       `
         SELECT
@@ -271,10 +284,10 @@ export class Dao {
       {
         type: QueryTypes.SELECT,
         replacements: [chain],
-      }
+      },
     );
 
-    return records?.length ? records[0] as CountSourcifyMatchAddresses: null
+    return records?.length ? (records[0] as CountSourcifyMatchAddresses) : null;
   }
 
   async getSourcifyMatchesByChain(
@@ -284,27 +297,27 @@ export class Dao {
     afterId?: string,
     addresses?: string[],
   ): Promise<GetSourcifyMatchesByChainResult[]> {
-    const values: {[key: string]: number | string | string[]} = {
+    const values: { [key: string]: number | string | string[] } = {
       chain,
       limit,
-    }
+    };
     const orderBy = descending
       ? "ORDER BY sourcify_matches.id DESC"
       : "ORDER BY sourcify_matches.id ASC";
 
     let queryWhere = "";
     if (afterId) {
-      values.afterId = afterId
+      values.afterId = afterId;
       queryWhere = descending
         ? "WHERE sourcify_matches.id < :afterId"
-        : "WHERE sourcify_matches.id > :afterId"
+        : "WHERE sourcify_matches.id > :afterId";
     }
 
-    if(addresses?.length) {
-      values.addresses = addresses
+    if (addresses?.length) {
+      values.addresses = addresses;
       queryWhere = queryWhere
         ? `${queryWhere} AND contract_deployments.address IN (:addresses)`
-        : `WHERE contract_deployments.address IN (:addresses)`
+        : `WHERE contract_deployments.address IN (:addresses)`;
     }
 
     const selectors = [
@@ -330,10 +343,10 @@ export class Dao {
       {
         type: QueryTypes.SELECT,
         replacements: values,
-      }
-    )
+      },
+    );
 
-    return records as GetSourcifyMatchesByChainResult[]
+    return records as GetSourcifyMatchesByChainResult[];
   }
 
   async getSourcifyMatchAddressesByChainAndMatch(
@@ -383,100 +396,120 @@ export class Dao {
       `,
       {
         type: QueryTypes.SELECT,
-        replacements:  [chain, page * paginationSize, paginationSize],
-      }
-    )
+        replacements: [chain, page * paginationSize, paginationSize],
+      },
+    );
 
-    return records as { address: string }[]
+    return records as { address: string }[];
   }
 
-  async insertCode({ bytecode_hash_keccak, bytecode }: Omit<Tables.ICode, "bytecode_hash">, dbTx?: Transaction)
-    : Promise<Pick<Tables.ICode, "bytecode_hash">> {
-    const now = new Date()
-    const [_, effectRows] = await this.pool.query(`
-      INSERT INTO code 
-          (code_hash, code, code_hash_keccak, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE 
-          code_hash = values(code_hash)
-      `,{
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements:   [bytecode_hash_keccak, Buffer.from(bytecode, 'utf-8'), bytecode_hash_keccak, now, now]
-    })
+  async insertCode(
+    { bytecode_hash_keccak, bytecode }: Omit<Tables.ICode, "bytecode_hash">,
+    dbTx?: Transaction,
+  ): Promise<Pick<Tables.ICode, "bytecode_hash">> {
+    const now = new Date();
+    const result = await this.pool.query(
+      `
+          INSERT INTO code
+              (code_hash, code, code_hash_keccak, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE code_hash = values(code_hash)
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          bytecode_hash_keccak,
+          Buffer.from(bytecode, "utf-8"),
+          bytecode_hash_keccak,
+          now,
+          now,
+        ],
+      },
+    );
 
-    if(effectRows) {
-      return { bytecode_hash: bytecode_hash_keccak } as any
+    // effectRows
+    if (result[1]) {
+      return { bytecode_hash: bytecode_hash_keccak } as any;
     }
 
-    const records = await this.pool.query(`
+    const records = await this.pool.query(
+      `
         SELECT
           code_hash AS bytecode_hash
         FROM code
         WHERE code_hash = ?
-      `,{
+      `,
+      {
         type: QueryTypes.SELECT,
         transaction: dbTx,
-        replacements:  [bytecode_hash_keccak],
-      }
-    )
+        replacements: [bytecode_hash_keccak],
+      },
+    );
 
-    return records?.length ? records[0] as any : null
+    return records[0] as any;
   }
 
   async insertContract(
     {
-      creation_bytecode_hash = null,
+      creation_bytecode_hash,
       runtime_bytecode_hash,
     }: Omit<Tables.IContract, "id">,
-    dbTx?: Transaction)
-    : Promise<Pick<Tables.IContract, "id">> {
-    const now = new Date()
-    const [id, effectRows] = await this.pool.query(`
+    dbTx?: Transaction,
+  ): Promise<Pick<Tables.IContract, "id">> {
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
       INSERT INTO contracts 
           (creation_code_hash, runtime_code_hash, createdAt, updatedAt) 
       VALUES (?,?,?,?)
       ON DUPLICATE KEY UPDATE 
           creation_code_hash = values(creation_code_hash), 
           runtime_code_hash = values(runtime_code_hash)
-      `, {
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements: [creation_bytecode_hash, runtime_bytecode_hash, now, now],
-    })
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [creation_bytecode_hash, runtime_bytecode_hash, now, now],
+      },
+    );
 
-    if(effectRows) {
-      return {id} as any
+    if (effectRows) {
+      return { id } as any;
     }
 
-    const records = await this.pool.query(`
+    const records = await this.pool.query(
+      `
       SELECT
         id
       FROM contracts
       WHERE creation_code_hash = ? AND runtime_code_hash = ?
-    `, {
-      type: QueryTypes.SELECT,
-      transaction: dbTx,
-      replacements: [creation_bytecode_hash, runtime_bytecode_hash],
-    })
+    `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [creation_bytecode_hash, runtime_bytecode_hash],
+      },
+    );
 
-    return records?.length ? records[0] as any : null
+    return records[0] as any;
   }
 
   async insertContractDeployment(
     {
       chain_id,
       address,
-      transaction_hash = null,
+      transaction_hash,
       contract_id,
-      block_number = null,
-      transaction_index = null,
-      deployer = null,
+      block_number,
+      transaction_index,
+      deployer,
     }: Omit<Tables.IContractDeployment, "id">,
     dbTx?: Transaction,
   ): Promise<Pick<Tables.IContractDeployment, "id">> {
-    const now = new Date()
-    const [id, effectRows] =  await this.pool.query(`
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
       INSERT INTO contract_deployments (
         chain_id,
         address,
@@ -492,10 +525,11 @@ export class Dao {
          chain_id = values(chain_id),
          address = values(address),
          transaction_hash = values(transaction_hash)
-      `, {
+      `,
+      {
         type: QueryTypes.INSERT,
         transaction: dbTx,
-        replacements:  [
+        replacements: [
           chain_id,
           address,
           transaction_hash,
@@ -504,16 +538,17 @@ export class Dao {
           transaction_index,
           deployer,
           now,
-          now
+          now,
         ],
-      }
-    )
+      },
+    );
 
-    if(effectRows) {
-      return {id} as any
+    if (effectRows) {
+      return { id } as any;
     }
 
-    const records = await this.pool.query(`
+    const records = await this.pool.query(
+      `
       SELECT
         id
       FROM contract_deployments
@@ -522,13 +557,15 @@ export class Dao {
         AND address = ?
         AND transaction_hash = ?
         AND contract_id = ?
-      `, {
-      type: QueryTypes.SELECT,
-      transaction: dbTx,
-      replacements: [chain_id, address, transaction_hash, contract_id],
-    })
+      `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [chain_id, address, transaction_hash, contract_id],
+      },
+    );
 
-    return records?.length ? records[0] as any : null
+    return records[0] as any;
   }
 
   async insertCompiledContract(
@@ -547,12 +584,13 @@ export class Dao {
     }: Omit<Tables.ICompiledContract, "id">,
     dbTx?: Transaction,
   ): Promise<Pick<Tables.ICompiledContract, "id">> {
-    const compilationArtifacts = JSON.stringify(compilation_artifacts) // to json
-    const compilerSettings = JSON.stringify(compiler_settings) // to json
-    const creationCodeArtifacts = JSON.stringify(creation_code_artifacts) // to json
-    const runtimeCodeArtifacts = JSON.stringify(runtime_code_artifacts) // to json
-    const now = new Date()
-    const [id, effectRows] = await this.pool.query(`
+    const compilationArtifacts = JSON.stringify(compilation_artifacts); // to json
+    const compilerSettings = JSON.stringify(compiler_settings); // to json
+    const creationCodeArtifacts = JSON.stringify(creation_code_artifacts); // to json
+    const runtimeCodeArtifacts = JSON.stringify(runtime_code_artifacts); // to json
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
       INSERT INTO compiled_contracts (
         compiler,
         version,
@@ -573,31 +611,34 @@ export class Dao {
           language = values(language),
           creation_code_hash = values(creation_code_hash),
           runtime_code_hash = values(runtime_code_hash)
-      `, {
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements: [
-        compiler,
-        version,
-        language,
-        name,
-        fully_qualified_name,
-        compilationArtifacts,
-        compilerSettings,
-        creation_code_hash,
-        runtime_code_hash,
-        creationCodeArtifacts,
-        runtimeCodeArtifacts,
-        now,
-        now,
-      ],
-    })
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          compiler,
+          version,
+          language,
+          name,
+          fully_qualified_name,
+          compilationArtifacts,
+          compilerSettings,
+          creation_code_hash,
+          runtime_code_hash,
+          creationCodeArtifacts,
+          runtimeCodeArtifacts,
+          now,
+          now,
+        ],
+      },
+    );
 
-    if(effectRows) {
-      return {id} as any
+    if (effectRows) {
+      return { id } as any;
     }
 
-    const records = await this.pool.query(`
+    const records = await this.pool.query(
+      `
       SELECT
         id
       FROM compiled_contracts
@@ -606,13 +647,21 @@ export class Dao {
         AND language = ?
         AND (creation_code_hash = ? OR (creation_code_hash IS NULL AND ? IS NULL))
         AND runtime_code_hash = ?
-      `, {
-      type: QueryTypes.SELECT,
-      transaction: dbTx,
-      replacements: [compiler, language, creation_code_hash, creation_code_hash, runtime_code_hash],
-    })
+      `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [
+          compiler,
+          language,
+          creation_code_hash,
+          creation_code_hash,
+          runtime_code_hash,
+        ],
+      },
+    );
 
-    return records?.length ? records[0] as any : null
+    return records[0] as any;
   }
 
   async insertCompiledContractsSources(
@@ -626,20 +675,29 @@ export class Dao {
     dbTx?: Transaction,
   ) {
     // Add newly sources
-    const now = new Date()
+    const now = new Date();
     const sourceCodesQueryIndexes: string[] = [];
     const sourceCodesQueryValues: any[] = [];
-    let sourcesResult: any[] = []
-    sourcesInformation.forEach((sourceCode, sourceCodesQueryIndex) => {
+    let sourcesResult: any[] = [];
+    sourcesInformation.forEach((sourceCode) => {
       sourceCodesQueryIndexes.push(`(?,?,?,?,?)`);
-      sourceCodesQueryValues.push(...[sourceCode.source_hash_keccak,sourceCode.content,sourceCode.source_hash_keccak,now,now]);
+      sourceCodesQueryValues.push(
+        ...[
+          sourceCode.source_hash_keccak,
+          sourceCode.content,
+          sourceCode.source_hash_keccak,
+          now,
+          now,
+        ],
+      );
       sourcesResult.push({
         source_hash: sourceCode.source_hash_keccak,
         content: sourceCode.content,
         source_hash_keccak: sourceCode.source_hash_keccak,
-      })
-    })
-    let [_, effectRows] = await this.pool.query(`
+      });
+    });
+    const result = await this.pool.query(
+      `
       INSERT INTO sources (
         source_hash,
         content,
@@ -648,36 +706,55 @@ export class Dao {
         updatedAt
       ) VALUES ${sourceCodesQueryIndexes.join(",")}
       ON DUPLICATE KEY UPDATE
-        source_hash = values(source_hash)`, {
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements: sourceCodesQueryValues,
-    })
-    // Fetch existing sources
-    if (effectRows < sourcesInformation.length) {
-      sourcesResult = await this.pool.query(`
-        SELECT * FROM sources WHERE source_hash in (?)
-        `,{
-        type: QueryTypes.SELECT,
+        source_hash = values(source_hash)`,
+      {
+        type: QueryTypes.INSERT,
         transaction: dbTx,
-        replacements: [sourcesInformation.map((source) => source.source_hash_keccak)],
-      })
+        replacements: sourceCodesQueryValues,
+      },
+    );
+    // Fetch existing sources, effectRows < len(sourcesInformation)
+    if (result[1] < sourcesInformation.length) {
+      sourcesResult = await this.pool.query(
+        `
+        SELECT * FROM sources WHERE source_hash in (?)
+        `,
+        {
+          type: QueryTypes.SELECT,
+          transaction: dbTx,
+          replacements: [
+            sourcesInformation.map((source) => source.source_hash_keccak),
+          ],
+        },
+      );
     }
 
     // Add recompile contract sources
     const compiledContractsSourcesQueryIndexes: string[] = [];
     const compiledContractsSourcesQueryValues: any[] = [];
-    sourcesInformation.forEach(
-      (compiledContractsSource, compiledContractsSourcesQueryIndex) => {
-        const source = sourcesResult.find((sc) => sc.source_hash_keccak === compiledContractsSource.source_hash_keccak);
-        if (!source) {
-          throw new Error("Source not found while inserting compiled contracts sources");
-        }
-        compiledContractsSourcesQueryIndexes.push(`(?,?,?,?,?)`);
-        compiledContractsSourcesQueryValues.push(...[compilation_id,source.source_hash_keccak,compiledContractsSource.path,now,now]);
-      },
-    );
-    await this.pool.query(`
+    sourcesInformation.forEach((compiledContractsSource) => {
+      const source = sourcesResult.find(
+        (sc) =>
+          sc.source_hash_keccak === compiledContractsSource.source_hash_keccak,
+      );
+      if (!source) {
+        throw new Error(
+          "Source not found while inserting compiled contracts sources",
+        );
+      }
+      compiledContractsSourcesQueryIndexes.push(`(?,?,?,?,?)`);
+      compiledContractsSourcesQueryValues.push(
+        ...[
+          compilation_id,
+          source.source_hash_keccak,
+          compiledContractsSource.path,
+          now,
+          now,
+        ],
+      );
+    });
+    await this.pool.query(
+      `
       INSERT INTO compiled_contracts_sources (
         compilation_id,
         source_hash,
@@ -688,11 +765,13 @@ export class Dao {
       ON DUPLICATE KEY UPDATE
           compilation_id = values(compilation_id),
           path = values(path)
-    `, {
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements: compiledContractsSourcesQueryValues,
-    })
+    `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: compiledContractsSourcesQueryValues,
+      },
+    );
   }
 
   async insertVerifiedContract(
@@ -710,14 +789,23 @@ export class Dao {
     }: Omit<Tables.IVerifiedContract, "id">,
     dbTx?: Transaction,
   ): Promise<Pick<Tables.IVerifiedContract, "id">> {
-    const creationTransformations = creation_transformations?JSON.stringify(creation_transformations):null // to json
-    const creationValues = creation_values?JSON.stringify(creation_values):null // to json
-    const runtimeTransformations = runtime_transformations?JSON.stringify(runtime_transformations):null // to json
-    const runtimeValues = runtime_values?JSON.stringify(runtime_values):null // to json
-    const runtimeMetadataMatch = !!runtime_metadata_match
-    const creationMetadataMatch = !!creation_metadata_match
-    const now = new Date()
-    const [id, effectRows]= await this.pool.query(`
+    const creationTransformations = creation_transformations
+      ? JSON.stringify(creation_transformations)
+      : null; // to json
+    const creationValues = creation_values
+      ? JSON.stringify(creation_values)
+      : null; // to json
+    const runtimeTransformations = runtime_transformations
+      ? JSON.stringify(runtime_transformations)
+      : null; // to json
+    const runtimeValues = runtime_values
+      ? JSON.stringify(runtime_values)
+      : null; // to json
+    const runtimeMetadataMatch = !!runtime_metadata_match;
+    const creationMetadataMatch = !!creation_metadata_match;
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
       INSERT INTO verified_contracts (
         compilation_id,
         deployment_id,
@@ -735,59 +823,62 @@ export class Dao {
       ON DUPLICATE KEY UPDATE
         compilation_id = values(compilation_id),
         deployment_id = values(deployment_id)
-      `, {
-      type: QueryTypes.INSERT,
-      transaction: dbTx,
-      replacements: [
-        compilation_id,
-        deployment_id,
-        // transformations needs to be converted to string as a workaround:
-        // arrays are not treated as jsonb types by pg module
-        // then they are correctly stored as jsonb by postgresql
-        creationTransformations,
-        creationValues,
-        runtimeTransformations,
-        runtimeValues,
-        runtime_match,
-        creation_match,
-        runtimeMetadataMatch,
-        creationMetadataMatch,
-        now,
-        now,
-      ],
-    })
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          compilation_id,
+          deployment_id,
+          // transformations needs to be converted to string as a workaround:
+          // arrays are not treated as jsonb types by pg module
+          // then they are correctly stored as jsonb by postgresql
+          creationTransformations,
+          creationValues,
+          runtimeTransformations,
+          runtimeValues,
+          runtime_match,
+          creation_match,
+          runtimeMetadataMatch,
+          creationMetadataMatch,
+          now,
+          now,
+        ],
+      },
+    );
 
-    if(effectRows) {
-      return {id} as any
+    if (effectRows) {
+      return { id } as any;
     }
 
-    const records = await this.pool.query(`
+    const records = await this.pool.query(
+      `
       SELECT
         id
       FROM verified_contracts
       WHERE 1=1
         AND compilation_id = ?
         AND deployment_id = ?
-      `, {
-      type: QueryTypes.SELECT,
-      transaction: dbTx,
-      replacements: [compilation_id, deployment_id],
-    })
+      `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [compilation_id, deployment_id],
+      },
+    );
 
-    return records?.length ? records[0] as any : null
+    return records[0] as any;
   }
 
-  async updateContractDeployment(
-    {
-      id,
-      transaction_hash,
-      block_number,
-      transaction_index,
-      deployer,
-      contract_id,
-    }: Omit<Tables.IContractDeployment, "chain_id" | "address">,
-  ) {
-    const [_, effectRows] = await this.pool.query(
+  async updateContractDeployment({
+    id,
+    transaction_hash,
+    block_number,
+    transaction_index,
+    deployer,
+    contract_id,
+  }: Omit<Tables.IContractDeployment, "chain_id" | "address">) {
+    const result = await this.pool.query(
       `
         UPDATE contract_deployments 
          SET 
@@ -808,10 +899,11 @@ export class Dao {
           contract_id,
           id,
         ],
-      }
-    )
+      },
+    );
 
-    if(effectRows) {
+    // effectRows
+    if (result[1]) {
       return {
         id,
         transaction_hash,
@@ -819,13 +911,13 @@ export class Dao {
         transaction_index,
         deployer,
         contract_id,
-      } as any
+      } as any;
     }
   }
 
   async getVerificationJobById(
     verificationId: string,
-  ): Promise<GetVerificationJobByIdResult> {
+  ): Promise<GetVerificationJobByIdResult | null> {
     const records = await this.pool.query(
       `
         SELECT
@@ -857,10 +949,12 @@ export class Dao {
       `,
       {
         type: QueryTypes.SELECT,
-        replacements:  [verificationId],
-      }
-    )
-    return records?.length ? records[0] as GetVerificationJobByIdResult: null
+        replacements: [verificationId],
+      },
+    );
+    return records?.length
+      ? (records[0] as GetVerificationJobByIdResult)
+      : null;
   }
 
   async getVerificationJobsByChainAndAddress(
@@ -879,9 +973,9 @@ export class Dao {
       {
         type: QueryTypes.SELECT,
         replacements: [chainId, address],
-      }
-    )
-    return records as GetVerificationJobsByChainAndAddressResult[]
+      },
+    );
+    return records as GetVerificationJobsByChainAndAddressResult[];
   }
 
   async insertVerificationJob({
@@ -898,8 +992,9 @@ export class Dao {
     | "verification_endpoint"
     | "hardware"
   >): Promise<Pick<Tables.IVerificationJob, "id">> {
-    const id = uuidv4()
-    await this.pool.query(`
+    const id = uuidv4();
+    await this.pool.query(
+      `
       INSERT INTO verification_jobs (
         id,                       
         started_at,
@@ -908,12 +1003,20 @@ export class Dao {
         verification_endpoint,
         hardware                       
       ) VALUES (?,?,?,?,?,?)
-      `, {
+      `,
+      {
         type: QueryTypes.INSERT,
-        replacements:[id, started_at, chain_id, contract_address, verification_endpoint, hardware],
-      }
-    )
-    return {id} as any
+        replacements: [
+          id,
+          started_at,
+          chain_id,
+          contract_address,
+          verification_endpoint,
+          hardware,
+        ],
+      },
+    );
+    return { id } as any;
   }
 
   async updateVerificationJob({
@@ -958,7 +1061,7 @@ export class Dao {
           errorDataStr,
           id,
         ],
-      }
+      },
     );
   }
 
@@ -983,7 +1086,7 @@ export class Dao {
       `,
       {
         type: QueryTypes.INSERT,
-        replacements:  [
+        replacements: [
           id,
           recompiled_creation_code,
           recompiled_runtime_code,
@@ -991,7 +1094,7 @@ export class Dao {
           onchain_runtime_code,
           creation_transaction_hash,
         ],
-      }
+      },
     );
   }
 }

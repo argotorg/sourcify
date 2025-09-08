@@ -2,13 +2,20 @@ import { ChildProcess, spawn } from "child_process";
 import nock from "nock";
 import treeKill from "tree-kill";
 import { JsonRpcProvider, JsonRpcSigner, Network } from "ethers";
-import { deployFromAbiAndBytecodeForCreatorTxHash, DeploymentInfo } from "./helpers";
+import {
+  deployFromAbiAndBytecodeForCreatorTxHash,
+  DeploymentInfo,
+  readFilesFromDirectory,
+} from "./helpers";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
 import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
 import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import { loadConfig } from "../../config/Loader";
-import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
+import {
+  Metadata,
+  SolidityMetadataContract,
+} from "@ethereum-sourcify/lib-sourcify";
 import path from "path";
 import fs from "fs";
 
@@ -36,7 +43,7 @@ const HARDHAT_PORT = 8545;
 const DEFAULT_CHAIN_ID = "31337";
 
 export type LocalChainFixtureOptions = {
-  chainId?: string;
+  chainId?: number;
 };
 
 export class LocalChainFixture {
@@ -49,6 +56,8 @@ export class LocalChainFixture {
   defaultContractModifiedMetadata = Buffer.from(
     JSON.stringify(storageContractMetadataModified),
   );
+  defaultContractMetadataWithModifiedIpfsHash =
+    getMetadataWithModifiedIpfsHash();
   defaultContractArtifact = storageContractArtifact;
   defaultContractJsonInput = storageJsonInput;
 
@@ -106,11 +115,24 @@ export class LocalChainFixture {
    * Expected to be called in a "describe" block.
    */
   constructor(options: LocalChainFixtureOptions = {}) {
-    const chains = (loadConfig()).chains
-    const localChain = chains[DEFAULT_CHAIN_ID]
-    this._chainId = localChain.chainId.toString()
+    const chains = loadConfig().chains;
+    const localChain = chains[options.chainId ?? DEFAULT_CHAIN_ID];
+    this._chainId = localChain.chainId.toString();
 
     before(async () => {
+      // Init IPFS mock with all the necessary pinned files
+      const mockContent = await readFilesFromDirectory(
+        path.join(__dirname, "..", "mocks", "ipfs"),
+      );
+      for (const ipfsKey of Object.keys(mockContent)) {
+        nock(SolidityMetadataContract.getGlobalIpfsGateway().url || "")
+          .persist()
+          .get("/" + ipfsKey)
+          .reply(function () {
+            return [200, mockContent[ipfsKey]];
+          });
+      }
+
       this.hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
 
       const ethersNetwork = new Network(
@@ -183,4 +205,23 @@ function stopHardhatNetwork(hardhatNodeProcess: ChildProcess) {
       }
     });
   });
+}
+
+// Changes the IPFS hash inside the metadata file to make the source unfetchable
+function getMetadataWithModifiedIpfsHash(): Metadata {
+  const ipfsAddress =
+    storageContractMetadata.sources["project:/contracts/Storage.sol"].urls[1];
+  // change the last char in ipfs hash of the source file
+  const lastChar = ipfsAddress.charAt(ipfsAddress.length - 1);
+  const modifiedLastChar = lastChar === "a" ? "b" : "a";
+  const modifiedIpfsAddress =
+    ipfsAddress.slice(0, ipfsAddress.length - 1) + modifiedLastChar;
+  // the metadata needs to be deeply cloned here
+  // unfortunately `structuredClone` is not available in Node 16
+  const modifiedIpfsMetadata = JSON.parse(
+    JSON.stringify(storageContractMetadata),
+  );
+  modifiedIpfsMetadata.sources["project:/contracts/Storage.sol"].urls[1] =
+    modifiedIpfsAddress;
+  return modifiedIpfsMetadata;
 }

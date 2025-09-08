@@ -1,5 +1,4 @@
 import nock from "nock";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { Chain } from "../../services/chain/Chain";
 
 export const mockConfluxscanApi = (
@@ -9,9 +8,7 @@ export const mockConfluxscanApi = (
   apiKey?: string,
 ): nock.Scope => {
   if (!chain.confluxscanApi) {
-    chai.assert.fail(
-      `Confluxscan for chain ${chain.chainId} not configured`,
-    );
+    chai.assert.fail(`Confluxscan for chain ${chain.chainId} not configured`);
   }
   return nock(chain.confluxscanApi.apiURL)
     .get(

@@ -5,11 +5,7 @@ import {
 } from "@ethereum-sourcify/lib-sourcify";
 import StoreBase from "./StoreBase";
 import { RWStorageService } from "./StoreBase";
-import {
-  Field,
-  FIELDS_TO_STORED_PROPERTIES,
-  StoredProperties,
-} from "./Tables";
+import { Field, FIELDS_TO_STORED_PROPERTIES, StoredProperties } from "./Tables";
 import {
   ContractData,
   FileObject,
@@ -29,9 +25,10 @@ import {
 import Path from "path";
 import {
   getFileRelativePath,
-  getTotalMatchLevel, isBetterVerification,
+  getTotalMatchLevel,
+  isBetterVerification,
   reduceAccessorStringToProperty,
-  toMatchLevel
+  toMatchLevel,
 } from "../utils/util";
 import { getAddress, id as keccak256Str } from "ethers";
 import { BadRequestError, ConflictError } from "../../common/errors";
@@ -45,12 +42,9 @@ import { DatabaseOptions } from "../../config/Loader";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 
-export class StoreService
-  extends StoreBase
-  implements RWStorageService
-{
+export class StoreService extends StoreBase implements RWStorageService {
   constructor(options: DatabaseOptions) {
-    super(options)
+    super(options);
   }
 
   async checkByChainAndAddress(
@@ -74,8 +68,12 @@ export class StoreService
   ): Promise<Match[]> {
     await this.init();
 
-    const existingVerifiedContractResult = await this.database.getSourcifyMatchByChainAddress(
-      chainId, address!, onlyPerfectMatches)
+    const existingVerifiedContractResult =
+      await this.database.getSourcifyMatchByChainAddress(
+        chainId,
+        address!,
+        onlyPerfectMatches,
+      );
     if (!existingVerifiedContractResult) {
       return [];
     }
@@ -84,10 +82,13 @@ export class StoreService
       {
         address,
         chainId,
-        runtimeMatch: existingVerifiedContractResult.runtime_match as VerificationStatus,
-        creationMatch: existingVerifiedContractResult.creation_match as VerificationStatus,
+        runtimeMatch:
+          existingVerifiedContractResult.runtime_match as VerificationStatus,
+        creationMatch:
+          existingVerifiedContractResult.creation_match as VerificationStatus,
         storageTimestamp: existingVerifiedContractResult.created_at,
-        onchainRuntimeBytecode: existingVerifiedContractResult.onchain_runtime_code,
+        onchainRuntimeBytecode:
+          existingVerifiedContractResult.onchain_runtime_code,
         contractName: existingVerifiedContractResult.name,
       },
     ];
@@ -181,7 +182,8 @@ export class StoreService
     };
 
     // Count perfect and partial matches
-    const matchAddressesCountResult = await this.database.countSourcifyMatchAddresses(chainId);
+    const matchAddressesCountResult =
+      await this.database.countSourcifyMatchAddresses(chainId);
     if (!matchAddressesCountResult) {
       return pagination;
     }
@@ -225,11 +227,15 @@ export class StoreService
   ): Promise<PaginatedData<string>> => {
     await this.init();
 
-    const matchAddressesResult = await this.database.getSourcifyMatchAddressesByChainAndMatch(chainId, match,
-      page, limit, descending)
-    const results = matchAddressesResult.map((row) =>
-      getAddress(row.address),
-    );
+    const matchAddressesResult =
+      await this.database.getSourcifyMatchAddressesByChainAndMatch(
+        chainId,
+        match,
+        page,
+        limit,
+        descending,
+      );
+    const results = matchAddressesResult.map((row) => getAddress(row.address));
 
     const pagination = await this.getPaginationForContracts(
       chainId,
@@ -250,7 +256,10 @@ export class StoreService
   getFiles = async (chainId: number, address: string): Promise<FilesRaw> => {
     await this.init();
 
-    const sourcifyMatch = await this.database.getSourcifyMatchByChainAddress(chainId, address!)
+    const sourcifyMatch = await this.database.getSourcifyMatchByChainAddress(
+      chainId,
+      address!,
+    );
     if (!sourcifyMatch) {
       // This is how you handle a non existing contract
       return { status: "partial", files: {}, sources: {} };
@@ -263,7 +272,9 @@ export class StoreService
         ? "full"
         : "partial";
 
-    const sourcesResult = await this.database.getCompiledContractSources(sourcifyMatch.compilation_id)
+    const sourcesResult = await this.database.getCompiledContractSources(
+      sourcifyMatch.compilation_id,
+    );
     const sources = sourcesResult.reduce(
       (sources, source) => {
         // Add 'sources/' prefix for API compatibility with the repoV1 responses. RepoV1 filesystem has all source files in 'sources/'
@@ -756,14 +767,11 @@ export class StoreService
 
     await this.database.insertVerificationJobEphemeral({
       id: verificationId,
-      recompiled_creation_code:
-        error.recompiledCreationCode || null,
-      recompiled_runtime_code:
-        error.recompiledRuntimeCode || null,
+      recompiled_creation_code: error.recompiledCreationCode || null,
+      recompiled_runtime_code: error.recompiledRuntimeCode || null,
       onchain_creation_code: error.onchainCreationCode || null,
       onchain_runtime_code: error.onchainRuntimeCode || null,
-      creation_transaction_hash:
-        error.creationTransactionHash || null,
+      creation_transaction_hash: error.creationTransactionHash || null,
     });
   }
 
@@ -777,13 +785,14 @@ export class StoreService
     licenseType?: number,
     contractLabel?: string,
   ): Promise<void> {
-    const { type, verifiedContractId, oldVerifiedContractId } = await super.insertOrUpdateVerification(verification)
+    const { type, verifiedContractId, oldVerifiedContractId } =
+      await super.insertOrUpdateVerification(verification);
     const matchInfo = {
       address: verification.address,
       chainId: verification.chainId,
       runtimeMatch: verification.status.runtimeMatch,
       creationMatch: verification.status.creationMatch,
-    }
+    };
 
     if (type === "insert") {
       if (!verifiedContractId) {
@@ -806,7 +815,7 @@ export class StoreService
           "oldVerifiedContractId undefined before updating sourcify match",
         );
       }
-      const [,effectRows] = await this.database.updateSourcifyMatch(
+      const [, effectRows] = await this.database.updateSourcifyMatch(
         {
           verified_contract_id: verifiedContractId,
           creation_match: verification.status.creationMatch,
@@ -817,7 +826,7 @@ export class StoreService
         },
         oldVerifiedContractId,
       );
-      if(effectRows) {
+      if (effectRows) {
         console.info("Updated in SourcifyDatabase", matchInfo);
       } else {
         await this.database.insertSourcifyMatch({
@@ -859,14 +868,25 @@ export class StoreService
     licenseType?: number,
     contractLabel?: string,
   ) {
-    const existingMatch = await this.checkAllByChainAndAddress(verification.address, verification.chainId)
-    if (existingMatch.length > 0 && !isBetterVerification(verification, existingMatch[0])) {
+    const existingMatch = await this.checkAllByChainAndAddress(
+      verification.address,
+      verification.chainId,
+    );
+    if (
+      existingMatch.length > 0 &&
+      !isBetterVerification(verification, existingMatch[0])
+    ) {
       throw new ConflictError(
         `The contract ${verification.address} on chainId ${verification.chainId} is already partially verified. The provided new source code also yielded a partial match and will not be stored unless it's a full match`,
       );
     }
-    await this._storeVerification(verification, jobData, licenseType, contractLabel).catch((e: any) => {
+    await this._storeVerification(
+      verification,
+      jobData,
+      licenseType,
+      contractLabel,
+    ).catch((e: any) => {
       throw e;
-    })
+    });
   }
 }

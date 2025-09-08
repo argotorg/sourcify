@@ -22,10 +22,10 @@ describe("VerificationService", function () {
   });
 
   it("should initialize compilers", async function () {
-    const config = loadConfig()
-    const chainMap: ChainMap  = {}
-    for (const [_, chainObj] of Object.entries(config.chains)) {
-      chainMap[chainObj.chainId.toString()]= new Chain(chainObj)
+    const config = loadConfig();
+    const chainMap: ChainMap = {};
+    for (const chainObj of Object.values(config.chains)) {
+      chainMap[chainObj.chainId.toString()] = new Chain(chainObj);
     }
 
     rimraf.sync(config.solc.solcBinRepo);
@@ -98,7 +98,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.solc.solcJsRepo,
         vyperRepoPath: config.vyper.vyperRepo,
         workerIdleTimeout: 3000,
-        concurrentVerificationsPerWorker: 1
+        concurrentVerificationsPerWorker: 1,
       },
       new StoreService(config.mysql),
     );
@@ -108,9 +108,7 @@ describe("VerificationService", function () {
 
     // Check if the files exist in the expected directory
     const downloadDir =
-      platform === "bin"
-        ? config.solc.solcJsRepo
-        : config.solc.solcBinRepo;
+      platform === "bin" ? config.solc.solcJsRepo : config.solc.solcBinRepo;
 
     Object.values(releases).forEach((release) => {
       expect(fs.existsSync(path.join(downloadDir, release))).to.be.true;

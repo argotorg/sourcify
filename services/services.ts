@@ -1,4 +1,7 @@
-import { VerificationService, VerificationOptions } from "./verification/VerificationService"
+import {
+  VerificationService,
+  VerificationOptions,
+} from "./verification/VerificationService";
 import { StoreService } from "./store/StoreService";
 import { DatabaseOptions } from "../config/Loader";
 
@@ -8,10 +11,13 @@ export class Services {
 
   constructor(
     verificationOptions: VerificationOptions,
-    databaseOptions: DatabaseOptions
+    databaseOptions: DatabaseOptions,
   ) {
-    this.store = new StoreService(databaseOptions)
-    this.verification = new VerificationService(verificationOptions, this.store)
+    this.store = new StoreService(databaseOptions);
+    this.verification = new VerificationService(
+      verificationOptions,
+      this.store,
+    );
   }
 
   public async init() {

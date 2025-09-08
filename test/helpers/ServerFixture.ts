@@ -7,28 +7,27 @@ import { Chain } from "../../services/chain/Chain";
 import { Sequelize } from "sequelize";
 
 export type ServerFixtureOptions = {
-  port: number
-  skipDatabaseReset: boolean
-}
+  port: number;
+  skipDatabaseReset: boolean;
+};
 
 export class ServerFixture {
-  private _server?: Server
+  private _server?: Server;
 
   // Getters for type safety
   // Can be safely accessed in "it" blocks
   get sourcifyDatabase(): Sequelize {
-    const _sourcifyDatabase = this.server.services.store.database.pool
+    const _sourcifyDatabase = this.server.services.store.database.pool;
 
     if (!_sourcifyDatabase)
-      throw new Error("sourcifyDatabase not initialized!")
+      throw new Error("sourcifyDatabase not initialized!");
 
-    return _sourcifyDatabase
+    return _sourcifyDatabase;
   }
   get server(): Server {
-    if (!this._server)
-      throw new Error("server not initialized!")
+    if (!this._server) throw new Error("server not initialized!");
 
-    return this._server
+    return this._server;
   }
 
   /**
@@ -39,11 +38,14 @@ export class ServerFixture {
    */
   constructor(fixtureOptions_?: Partial<ServerFixtureOptions>) {
     before(async () => {
-      const config = loadConfig()
-      const solc = new SolcLocal(config.solc.solcBinRepo, config.solc.solcJsRepo)
-      const chainMap: ChainMap  = {}
-      for (const [_, chainObj] of Object.entries(config.chains)) {
-        chainMap[chainObj.chainId.toString()]= new Chain(chainObj)
+      const config = loadConfig();
+      const solc = new SolcLocal(
+        config.solc.solcBinRepo,
+        config.solc.solcJsRepo,
+      );
+      const chainMap: ChainMap = {};
+      for (const chainObj of Object.values(config.chains)) {
+        chainMap[chainObj.chainId.toString()] = new Chain(chainObj);
       }
 
       this._server = new Server(
@@ -60,26 +62,26 @@ export class ServerFixture {
           solJsonRepoPath: config.solc.solcJsRepo,
           vyperRepoPath: config.vyper.vyperRepo,
           workerIdleTimeout: 3000,
-          concurrentVerificationsPerWorker: 1
+          concurrentVerificationsPerWorker: 1,
         },
         config.mysql,
       );
 
-      await this._server.services.init()
+      await this._server.services.init();
       await this._server.listen(() => {
-        console.info(`Server listening on ${this._server.port}`)
-      })
-    })
+        console.info(`Server listening on ${this.server.port}`);
+      });
+    });
 
     beforeEach(async () => {
       if (!fixtureOptions_?.skipDatabaseReset) {
-        await resetDatabase(this.sourcifyDatabase)
-        console.log("Resetting SourcifyDatabase")
+        await resetDatabase(this.sourcifyDatabase);
+        console.log("Resetting SourcifyDatabase");
       }
-    })
+    });
 
     after(async () => {
-      await this._server.shutdown()
-    })
+      await this.server.shutdown();
+    });
   }
 }

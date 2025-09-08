@@ -62,11 +62,11 @@ export async function detectAndResolveProxy(
     (proxy) => proxy instanceof whatsabi.proxies.FixedProxyResolver,
   );
   // Only return EIP1167Proxies because whatsabi can falsely detect non-proxy contracts as FixedProxies (e.g. libraries)
-  if (fixedProxy && isEIP1167Proxy(bytecode, fixedProxy['resolvedAddress'])) {
+  if (fixedProxy && isEIP1167Proxy(bytecode, fixedProxy["resolvedAddress"])) {
     return {
       isProxy: true,
       proxyType: "EIP1167Proxy",
-      implementations: [{ address: fixedProxy['resolvedAddress'] }],
+      implementations: [{ address: fixedProxy["resolvedAddress"] }],
     };
   }
 
@@ -90,7 +90,7 @@ export async function detectAndResolveProxy(
         proxyType: "DiamondProxy",
         implementations: facets.map((facet: string) => ({ address: facet })),
       };
-    } catch (error) {
+    } catch (e) {
       // Falsely detected as a diamond proxy,
       // ignore and check if there are other proxy resolvers
     }

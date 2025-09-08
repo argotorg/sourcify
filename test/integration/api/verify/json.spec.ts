@@ -382,9 +382,7 @@ describe("POST /verify/:chainId/:address", function () {
 
     const verifyRes = await chai
       .request(serverFixture.server.app)
-      .post(
-        `/verify/${unknownChainId}/${chainFixture.defaultContractAddress}`,
-      )
+      .post(`/verify/${unknownChainId}/${chainFixture.defaultContractAddress}`)
       .send({
         stdJsonInput: chainFixture.defaultContractJsonInput,
         compilerVersion:

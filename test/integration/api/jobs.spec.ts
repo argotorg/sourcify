@@ -11,6 +11,7 @@ import {
 import { verifyContract } from "../../helpers/helpers";
 import { JobErrorData } from "../../../services/store/Tables";
 import { QueryTypes } from "sequelize";
+import moment from "moment";
 
 chai.use(chaiHttp);
 
@@ -36,8 +37,9 @@ describe("GET /verify/:verificationId", function () {
       await verifyContract(serverFixture, chainFixture);
 
       // Get the verification details from the database
-      const verificationResult: any[] = await serverFixture.sourcifyDatabase.query(
-        `SELECT 
+      const verificationResult: any[] =
+        await serverFixture.sourcifyDatabase.query(
+          `SELECT 
           sm.id as match_id,
           
           DATE_FORMAT(sm.created_at, '%Y-%m-%d %H:%i:%s') AS verified_at,
@@ -46,14 +48,14 @@ describe("GET /verify/:verificationId", function () {
         JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id
         JOIN contract_deployments cd ON cd.id = vc.deployment_id
         WHERE cd.address = ? AND cd.chain_id = ?`,
-        {
-          type: QueryTypes.SELECT,
-          replacements:[
-            chainFixture.defaultContractAddress,
-            chainFixture.chainId,
-          ],
-        },
-      );
+          {
+            type: QueryTypes.SELECT,
+            replacements: [
+              chainFixture.defaultContractAddress,
+              chainFixture.chainId,
+            ],
+          },
+        );
       verifiedAt = verificationResult[0].verified_at;
       matchId = verificationResult[0].match_id;
       verifiedContractId = verificationResult[0].verified_contract_id;
@@ -112,7 +114,7 @@ describe("GET /verify/:verificationId", function () {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       {
         type: QueryTypes.INSERT,
-        replacements:[
+        replacements: [
           verificationId,
           startTime,
           finishTime,
@@ -139,7 +141,7 @@ describe("GET /verify/:verificationId", function () {
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       {
         type: QueryTypes.INSERT,
-        replacements:[
+        replacements: [
           verificationId,
           recompiledCreationCode,
           recompiledRuntimeCode,
@@ -152,15 +154,17 @@ describe("GET /verify/:verificationId", function () {
 
     // const jobStartTime = startTime.toISOString().replace(/\.\d{3}Z$/, "Z");
     // const jobFinishTime = finishTime?.toISOString().replace(/\.\d{3}Z$/, "Z");
-    const moment = require('moment');
-    const jobStartTime = moment(startTime).format('YYYY-MM-DD HH:mm:ss')
-    const jobFinishTime = finishTime && moment(finishTime).format('YYYY-MM-DD HH:mm:ss')
+    const jobStartTime = moment(startTime).format("YYYY-MM-DD HH:mm:ss");
+    const jobFinishTime =
+      finishTime && moment(finishTime).format("YYYY-MM-DD HH:mm:ss");
     return {
       isJobCompleted: isCompleted,
       verificationId,
       jobStartTime,
       ...(jobFinishTime ? { jobFinishTime } : {}),
-      ...(compilationTime ? { compilationTime: parseInt(compilationTime) } : {}),
+      ...(compilationTime
+        ? { compilationTime: parseInt(compilationTime) }
+        : {}),
       contract: {
         match: isVerified ? "exact_match" : null,
         creationMatch: isVerified ? "exact_match" : null,

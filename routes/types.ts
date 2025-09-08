@@ -1,4 +1,14 @@
-import { Devdoc, ImmutableReferences, SolidityJsonInput, LinkReferences, Metadata, SolidityOutput, StorageLayout, Userdoc, VyperOutputSource, SolidityOutputSource,
+import {
+  Devdoc,
+  ImmutableReferences,
+  SolidityJsonInput,
+  LinkReferences,
+  Metadata,
+  SolidityOutput,
+  StorageLayout,
+  Userdoc,
+  VyperOutputSource,
+  SolidityOutputSource,
   CompiledContractCborAuxdata,
   CompilationLanguage,
   Transformation,
@@ -31,8 +41,8 @@ export interface VerifiedContractMinimal {
   address: string;
   verifiedAt?: string;
   matchId?: string;
-  licenseType?: number,
-  contractLabel?: string,
+  licenseType?: number;
+  contractLabel?: string;
 }
 
 // For displaying contracts in API v2
@@ -69,7 +79,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
     language: CompilationLanguage;
     compiler: string;
     compilerVersion: string;
-    compilerSettings: Object;
+    compilerSettings: object;
     name: string;
     fullyQualifiedName: string;
   };
@@ -84,8 +94,8 @@ export interface VerifiedContract extends VerifiedContractMinimal {
       Pick<SolidityOutputSource, "id"> | Pick<VyperOutputSource, "id">
     >
   >;
-  stdJsonInput?: SolidityJsonInput ;
-  stdJsonOutput?: SolidityOutput ;
+  stdJsonInput?: SolidityJsonInput;
+  stdJsonOutput?: SolidityOutput;
   proxyResolution?: ProxyResolution;
 }
 

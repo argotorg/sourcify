@@ -18,7 +18,9 @@ export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
   });*/
   const services = req.app.get("services") as Services;
 
-  const job = await services.store.getVerificationJob(req.params.verificationId)
+  const job = await services.store.getVerificationJob(
+    req.params.verificationId,
+  );
   if (!job) {
     throw new JobNotFoundError(
       `No verification job found for id ${req.params.verificationId}`,

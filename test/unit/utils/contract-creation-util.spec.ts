@@ -5,10 +5,11 @@ import { loadConfig } from "../../../config/Loader";
 import { Chain } from "../../../services/chain/Chain";
 import { ChainMap } from "../../../server";
 
-describe("findContractCreationTxByBinarySearch", function () {const config = loadConfig()
-  const sourcifyChainsMap: ChainMap  = {}
-  for (const [_, chainObj] of Object.entries(config.chains)) {
-    sourcifyChainsMap[chainObj.chainId.toString()]= new Chain(chainObj)
+describe("findContractCreationTxByBinarySearch", function () {
+  const config = loadConfig();
+  const sourcifyChainsMap: ChainMap = {};
+  for (const chainObj of Object.values(config.chains)) {
+    sourcifyChainsMap[chainObj.chainId.toString()] = new Chain(chainObj);
   }
 
   let mockSourcifyChain: Chain;

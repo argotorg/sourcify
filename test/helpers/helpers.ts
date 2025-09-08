@@ -1,12 +1,19 @@
-import { BytesLike, ContractFactory, Interface, InterfaceAbi, JsonRpcSigner } from "ethers";
+import {
+  BytesLike,
+  ContractFactory,
+  Interface,
+  InterfaceAbi,
+  JsonRpcSigner,
+} from "ethers";
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { ServerFixture } from "./ServerFixture";
 import sinon from "sinon";
 import { Sequelize } from "sequelize";
 import { LocalChainFixture } from "./LocalChainFixture";
-import type { SolidityJsonInput, VyperJsonInput } from "@ethereum-sourcify/lib-sourcify";
-import { sleep } from "js-conflux-sdk/dist/types/util";
+import express from "express";
+import { promises as fs } from "fs";
+import path from "path";
 
 chai.use(chaiHttp);
 
@@ -117,11 +124,12 @@ export async function verifyContract(
     .send({
       stdJsonInput: chainFixture.defaultContractJsonInput,
       compilerVersion:
-      chainFixture.defaultContractMetadataObject.compiler.version,
+        chainFixture.defaultContractMetadataObject.compiler.version,
       contractIdentifier: Object.entries(
         chainFixture.defaultContractMetadataObject.settings.compilationTarget,
       )[0].join(":"),
-      creationTransactionHash: creatorTxHash || chainFixture.defaultContractCreatorTx,
+      creationTransactionHash:
+        creatorTxHash || chainFixture.defaultContractCreatorTx,
     });
 
   chai
@@ -131,14 +139,29 @@ export async function verifyContract(
   chai
     .expect(verifyResponse.body.verificationId)
     .to.match(
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-  );
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+    );
 
-  let jobRes
-  while(!jobRes?.body?.isJobCompleted) {
-    jobRes = await chai
-      .request(serverFixture.server.app)
-      .get(`/verify/${verifyResponse.body.verificationId}`);
+  await completeVerification(
+    serverFixture.server.app,
+    verifyResponse.body.verificationId,
+  );
+}
+
+export async function completeVerification(
+  app: express.Application,
+  verificationId: string,
+  interval: number = 3,
+  retries: number = 10,
+) {
+  while (retries-- > 0) {
+    const resp = await chai.request(app).get(`/verify/${verificationId}`);
+
+    if (resp?.body?.isJobCompleted) {
+      break;
+    }
+
+    await waitSecs(interval);
   }
 }
 
@@ -153,12 +176,7 @@ export async function deployAndVerifyContract(
       chainFixture.defaultContractArtifact.bytecode,
       [],
     );
-  await verifyContract(
-    serverFixture,
-    chainFixture,
-    contractAddress,
-    txHash,
-  );
+  await verifyContract(serverFixture, chainFixture, contractAddress, txHash);
   return contractAddress;
 }
 
@@ -169,6 +187,25 @@ export async function deployAndVerifyContract(
  */
 export function waitSecs(secs = 0) {
   return new Promise((resolve) => setTimeout(resolve, secs * 1000));
+}
+
+export async function readFilesFromDirectory(dirPath: string) {
+  try {
+    const filesContent: Record<string, string> = {};
+    const files = await fs.readdir(dirPath);
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) {
+        const content = await fs.readFile(filePath, "utf8");
+        filesContent[file] = content;
+      }
+    }
+    return filesContent;
+  } catch (error) {
+    console.error("Error reading files from directory:", error);
+    throw error;
+  }
 }
 
 export async function resetDatabase(database: Sequelize) {

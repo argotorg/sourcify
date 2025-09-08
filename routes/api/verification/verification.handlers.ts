@@ -1,4 +1,7 @@
-import type { Metadata, VyperJsonInput, SolidityJsonInput,
+import type {
+  Metadata,
+  VyperJsonInput,
+  SolidityJsonInput,
   CompilationTarget,
 } from "@ethereum-sourcify/lib-sourcify";
 import { TypedResponse } from "../../types";
@@ -54,8 +57,9 @@ export async function verifyFromJsonInputEndpoint(
   };
 
   const services = req.app.get("services") as Services;
-  const chain = getChainId(req.params.chainId)
-  const verificationId = await services.verification.verifyFromJsonInputViaWorker(
+  const chain = getChainId(req.params.chainId);
+  const verificationId =
+    await services.verification.verifyFromJsonInputViaWorker(
       req.baseUrl + req.path,
       chain,
       req.params.address,
@@ -95,8 +99,9 @@ export async function verifyFromMetadataEndpoint(
   });
 
   const services = req.app.get("services") as Services;
-  const chain = getChainId(req.params.chainId)
-  const verificationId = await services.verification.verifyFromMetadataViaWorker(
+  const chain = getChainId(req.params.chainId);
+  const verificationId =
+    await services.verification.verifyFromMetadataViaWorker(
       req.baseUrl + req.path,
       chain,
       req.params.address,
@@ -125,9 +130,9 @@ export async function verifyFromConfluxscanEndpoint(
   console.debug("verifyFromConfluxscanEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
-  })
+  });
 
-  const chainMap = req.app.get("chains") as ChainMap
+  const chainMap = req.app.get("chains") as ChainMap;
 
   // Fetch here to give early feedback to the user.
   // Then, process in worker.
@@ -135,16 +140,17 @@ export async function verifyFromConfluxscanEndpoint(
     chainMap[req.params.chainId],
     req.params.address,
     req.body?.apiKey,
-  )
+  );
 
   const services = req.app.get("services") as Services;
-  const chain = getChainId(req.params.chainId)
-  const verificationId = await services.verification.verifyFromConfluxscanViaWorker(
+  const chain = getChainId(req.params.chainId);
+  const verificationId =
+    await services.verification.verifyFromConfluxscanViaWorker(
       req.baseUrl + req.path,
       chain,
       req.params.address,
       confluxscanResult,
-    )
+    );
 
-  res.status(StatusCodes.ACCEPTED).json({ verificationId })
+  res.status(StatusCodes.ACCEPTED).json({ verificationId });
 }

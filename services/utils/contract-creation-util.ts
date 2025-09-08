@@ -1,4 +1,4 @@
-import { ContractCreationFetcher} from "@ethereum-sourcify/lib-sourcify";
+import { ContractCreationFetcher } from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
 import { Chain } from "../chain/Chain";
 import { format } from "js-conflux-sdk";
@@ -9,7 +9,7 @@ const CONFLUXSCAN_API_SUFFIX = `/api?module=contract&action=getcontractcreation&
 
 function getApiContractCreationFetcher(
   url: string,
-  responseParser: Function,
+  responseParser: (response: any) => string | undefined,
 ): ContractCreationFetcher {
   return {
     type: "api",
@@ -47,8 +47,10 @@ function getConfluxscanApiContractCreatorFetcher(
   return getApiContractCreationFetcher(
     apiURL + CONFLUXSCAN_API_SUFFIX + apiKey,
     (response: any) => {
-      if (response?.result?.[0]?.txHash)
+      if (response?.result?.[0]?.txHash) {
         return response?.result?.[0]?.txHash as string;
+      }
+      return undefined;
     },
   );
 }
@@ -306,7 +308,7 @@ export async function findContractCreationTxByBinarySearch(
     }
 
     // Check each transaction in the block to find the creation transaction
-    const normalizedAddress = format.hexAddress(contractAddress)
+    const normalizedAddress = format.hexAddress(contractAddress);
     for (const tx of block.prefetchedTransactions) {
       // Skip if not a contract creation transaction
       if (tx.to !== null) continue;
@@ -322,7 +324,10 @@ export async function findContractCreationTxByBinarySearch(
         const receipt = await chain.getTxReceipt(tx.hash);
 
         // Check if this transaction created our contract
-        if (receipt?.contractAddress && (format.hexAddress(receipt.contractAddress) === normalizedAddress)) {
+        if (
+          receipt?.contractAddress &&
+          format.hexAddress(receipt.contractAddress) === normalizedAddress
+        ) {
           console.info(
             "Found contract creation transaction using binary search",
             {
@@ -334,7 +339,7 @@ export async function findContractCreationTxByBinarySearch(
           );
           return tx.hash;
         }
-      } catch (error) {
+      } catch (e) {
         continue; // Skip if we can't get receipt
       }
     }

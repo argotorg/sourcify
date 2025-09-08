@@ -241,9 +241,9 @@ export function getVerificationErrorMessage(
 }
 
 export function getChainId(chainId: string): number {
-  const chain = Number(chainId)
-  if(Number.isNaN(chain)){
+  const chain = Number(chainId);
+  if (Number.isNaN(chain)) {
     throw new InvalidParametersError(`Invalid chainId ${chainId}`);
   }
-  return chain
+  return chain;
 }

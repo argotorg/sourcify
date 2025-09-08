@@ -1,29 +1,30 @@
-import path from "path"
-import dotenv from "dotenv"
-dotenv.config({ path: path.resolve(__dirname, "..", ".env") })
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
 export default {
-  server:{
+  server: {
     port: parseInt(process.env.SERVER_PORT || "17651"),
     maxFileSize: parseInt(process.env.SERVER_MAX_FILE_SIZE || "31457280"), // 30 MB
     enableProfile: Boolean(process.env.SERVER_ENABLE_PROFILE) || false,
   },
-  solc:{
-    solcBinRepo: process.env.SOLC_REPO_BIN || './solc-repo/bin',
-    solcJsRepo: process.env.SOLC_REPO_JS || './solc-repo/js',
+  proxy: process.env.HTTP_PROXY,
+  solc: {
+    solcBinRepo: process.env.SOLC_REPO_BIN || "./solc-repo/bin",
+    solcJsRepo: process.env.SOLC_REPO_JS || "./solc-repo/js",
   },
-  vyper:{
-    vyperRepo: process.env.VYPER_REPO || './vyper-repo',
+  vyper: {
+    vyperRepo: process.env.VYPER_REPO || "./vyper-repo",
   },
   mysql: {
-    host: process.env.MYSQL_HOST || '127.0.0.1',
+    host: process.env.MYSQL_HOST || "127.0.0.1",
     port: parseInt(process.env.MYSQL_PORT || "3306"),
-    username: process.env.MYSQL_USERNAME || 'root',
-    password: process.env.MYSQL_PASSWORD || 'root',
-    database: process.env.MYSQL_DATABASE || 'verification',
-    dialect: 'mysql',
+    username: process.env.MYSQL_USERNAME || "root",
+    password: process.env.MYSQL_PASSWORD || "root",
+    database: process.env.MYSQL_DATABASE || "verification",
+    dialect: "mysql",
     syncSchema: true,
-    readonly : false,
+    readonly: false,
     logging: false,
   },
   chains: {
@@ -34,14 +35,12 @@ export default {
       confluxscanApi: {
         apiURL: "https://evmapi-stage.confluxscan.org",
       },
-      rpc: [
-        'http://evm.confluxrpc.com'
-      ],
+      rpc: ["http://evm.confluxrpc.com"],
       traceSupportedRPCs: [
         {
-          type: 'trace_transaction',
+          type: "trace_transaction",
           index: 0,
-        }
+        },
       ],
     },
     71: {
@@ -51,14 +50,12 @@ export default {
       confluxscanApi: {
         apiURL: "https://evmapi-testnet.confluxscan.org",
       },
-      rpc: [
-        'http://evmtestnet.confluxrpc.com'
-      ],
+      rpc: ["http://evmtestnet.confluxrpc.com"],
       traceSupportedRPCs: [
         {
-          type: 'trace_transaction',
+          type: "trace_transaction",
           index: 0,
-        }
+        },
       ],
     },
     1029: {
@@ -70,17 +67,17 @@ export default {
         apiURL: "https://api-stage.confluxscan.org",
       },
       rpc: [
-        'http://main.confluxrpc.com',
-        'http://main-internal.confluxrpc.com'
+        "http://main.confluxrpc.com",
+        "http://main-internal.confluxrpc.com",
       ],
       traceSupportedRPCs: [
         {
-          type: 'trace_transaction',
+          type: "trace_transaction",
           index: 1,
-        }
+        },
       ],
     },
-    /*1: {
+    1: {
       name: "Conflux coreSpace testnet",
       chainId: 1,
       supported: true,
@@ -88,17 +85,15 @@ export default {
       confluxscanApi: {
         apiURL: "https://api-testnet.confluxscan.org",
       },
-      rpc: [
-        'http://test.confluxrpc.com'
-      ],
+      rpc: ["http://test.confluxrpc.com"],
       traceSupportedRPCs: [
         {
-          type: 'trace_transaction',
+          type: "trace_transaction",
           index: 0,
-        }
+        },
       ],
-    },*/
-    1: {
+    },
+    /*1: {
       name: "Ethereum Mainnet",
       chainId: 1,
       supported: true,
@@ -116,7 +111,7 @@ export default {
           index: 0,
         }
       ],
-    },
+    },*/
     16601: {
       name: "0G Galileo Testnet",
       chainId: 16601,
@@ -125,18 +120,14 @@ export default {
       confluxscanApi: {
         apiURL: "https://chainscan-test.0g.ai/open",
       },
-      rpc: [
-        'http://127.0.0.1:32537'
-      ],
+      rpc: ["http://127.0.0.1:32537"],
     },
     31337: {
       name: "Hardhat Network Localhost",
       chainId: 31337,
       supported: true,
       corespace: false,
-      rpc: [
-        `http://localhost:8545`
-      ],
+      rpc: [`http://localhost:8545`],
     },
   },
 };

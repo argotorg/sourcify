@@ -7,10 +7,10 @@ import { Chain } from "../../../services/chain/Chain";
 import { ChainMap } from "../../../server";
 
 describe("proxy contract util", function () {
-  const config = loadConfig()
-  const chainMap: ChainMap  = {}
-  for (const [_, chainObj] of Object.entries(config.chains)) {
-    chainMap[chainObj.chainId.toString()]= new Chain(chainObj)
+  const config = loadConfig();
+  const chainMap: ChainMap = {};
+  for (const chainObj of Object.values(config.chains)) {
+    chainMap[chainObj.chainId.toString()] = new Chain(chainObj);
   }
 
   const mockSourcifyChain = chainMap[31337];

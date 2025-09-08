@@ -11,6 +11,7 @@ import {
   VerificationStatus,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
+import { ProxyAgent, setGlobalDispatcher } from "undici";
 
 export const getFileRelativePath = (
   chainId: number,
@@ -58,7 +59,7 @@ export async function readFile(
   try {
     const loadedFile = await fs.promises.readFile(fullPath);
     return loadedFile.toString() || false;
-  } catch (error) {
+  } catch (e) {
     return false;
   }
 }
@@ -162,12 +163,10 @@ export function getTotalMatchLevel(
   return "match";
 }
 
-export function getMatchStatus(
-  verificationStatus: {
-    runtimeMatch: string,
-    creationMatch: string,
-  },
-): VerificationStatus {
+export function getMatchStatus(verificationStatus: {
+  runtimeMatch: string;
+  creationMatch: string;
+}): VerificationStatus {
   if (
     verificationStatus.runtimeMatch === "perfect" ||
     verificationStatus.creationMatch === "perfect"
@@ -198,4 +197,12 @@ export function reduceAccessorStringToProperty(
       }
       return current[field];
     }, obj);
+}
+
+export function enableHttpProxy(options: ProxyAgent.Options | string) {
+  if (!options) {
+    return;
+  }
+  const proxyAgent = new ProxyAgent(options);
+  setGlobalDispatcher(proxyAgent);
 }

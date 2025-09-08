@@ -1,11 +1,29 @@
-import { ImmutableReferences, Metadata, VerificationStatus, StorageLayout, Transformation, TransformationValues, CompiledContractCborAuxdata, LinkReferences, VyperJsonInput, SolidityJsonInput, SolidityOutput, VyperOutput, VerificationExport, SolidityOutputContract,SoliditySettings, VyperSettings, SourcifyLibErrorData, } from "@ethereum-sourcify/lib-sourcify";
+import {
+  ImmutableReferences,
+  Metadata,
+  VerificationStatus,
+  StorageLayout,
+  Transformation,
+  TransformationValues,
+  CompiledContractCborAuxdata,
+  LinkReferences,
+  VyperJsonInput,
+  SolidityJsonInput,
+  SolidityOutput,
+  VyperOutput,
+  VerificationExport,
+  SolidityOutputContract,
+  SoliditySettings,
+  VyperSettings,
+  SourcifyLibErrorData,
+} from "@ethereum-sourcify/lib-sourcify";
 import { Abi } from "abitype";
 import {
   VerifiedContract as VerifiedContractApiObject,
   Nullable,
 } from "../../routes/types";
 import { keccak256 } from "ethers";
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, Model, Sequelize } from "sequelize";
 
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
@@ -16,21 +34,38 @@ export namespace Tables {
     bytecode_hash_keccak: string;
     bytecode: string;
   }
+
   export class Code extends Model<ICode> implements ICode {
-    bytecode_hash: string;
-    bytecode_hash_keccak: string;
-    bytecode: string;
-    static register(sequelize) {
-      Code.init( {
-        bytecode_hash:  {type: DataTypes.CHAR(66), allowNull: false, primaryKey:true, field: 'code_hash'},
-        bytecode_hash_keccak:  {type: DataTypes.CHAR(66), allowNull: false, field: 'code_hash_keccak'},
-        bytecode:  {type: DataTypes.BLOB('medium'), allowNull: false, field: 'code'},
-      }, {
-        tableName: 'code',
-        sequelize,
-        timestamps: true,
-        indexes: [],
-      })
+    bytecode_hash!: string;
+    bytecode_hash_keccak!: string;
+    bytecode!: string;
+    static register(sequelize: Sequelize) {
+      Code.init(
+        {
+          bytecode_hash: {
+            type: DataTypes.CHAR(66),
+            allowNull: false,
+            primaryKey: true,
+            field: "code_hash",
+          },
+          bytecode_hash_keccak: {
+            type: DataTypes.CHAR(66),
+            allowNull: false,
+            field: "code_hash_keccak",
+          },
+          bytecode: {
+            type: DataTypes.BLOB("medium"),
+            allowNull: false,
+            field: "code",
+          },
+        },
+        {
+          tableName: "code",
+          sequelize,
+          timestamps: true,
+          indexes: [],
+        },
+      );
     }
   }
 
@@ -40,23 +75,40 @@ export namespace Tables {
     runtime_bytecode_hash: string;
   }
   export class Contract extends Model<IContract> implements IContract {
-    id: number;
+    id!: number;
     creation_bytecode_hash?: string;
-    runtime_bytecode_hash: string;
-    static register(sequelize) {
-      Contract.init( {
-        id:  {type: DataTypes.BIGINT, allowNull: false, primaryKey:true, autoIncrement: true},
-        creation_bytecode_hash:  {type: DataTypes.CHAR(66), field: 'creation_code_hash'},
-        runtime_bytecode_hash:  {type: DataTypes.CHAR(66), field: 'runtime_code_hash', allowNull: false},
-      }, {
-        tableName: 'contracts',
-        sequelize,
-        indexes: [
-          {name: 'idx_creation_runtime_code_hash', unique: true,
-            fields:['creation_code_hash','runtime_code_hash']
+    runtime_bytecode_hash!: string;
+    static register(sequelize: Sequelize) {
+      Contract.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          creation_bytecode_hash: {
+            type: DataTypes.CHAR(66),
+            field: "creation_code_hash",
+          },
+          runtime_bytecode_hash: {
+            type: DataTypes.CHAR(66),
+            field: "runtime_code_hash",
+            allowNull: false,
+          },
+        },
+        {
+          tableName: "contracts",
+          sequelize,
+          indexes: [
+            {
+              name: "idx_creation_runtime_code_hash",
+              unique: true,
+              fields: ["creation_code_hash", "runtime_code_hash"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -70,34 +122,47 @@ export namespace Tables {
     transaction_index?: number;
     deployer?: string;
   }
-  export class ContractDeployment extends Model<IContractDeployment> implements IContractDeployment {
-    id: number;
-    chain_id: number;
-    address: string;
+  export class ContractDeployment
+    extends Model<IContractDeployment>
+    implements IContractDeployment
+  {
+    id!: number;
+    chain_id!: number;
+    address!: string;
     transaction_hash?: string;
-    contract_id: number;
+    contract_id!: number;
     block_number?: number;
     transaction_index?: number;
     deployer?: string;
-    static register(sequelize) {
-      ContractDeployment.init({
-        id: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true, autoIncrement: true },
-        chain_id: { type: DataTypes.INTEGER, allowNull: false },
-        address: { type: DataTypes.CHAR(42), allowNull: false },
-        transaction_hash: { type: DataTypes.CHAR(66) },
-        contract_id: { type: DataTypes.BIGINT, allowNull: false },
-        block_number: { type: DataTypes.BIGINT },
-        transaction_index: { type: DataTypes.INTEGER},
-        deployer: { type: DataTypes.CHAR(66)},
-      }, {
-        tableName: 'contract_deployments',
-        sequelize,
-        indexes: [
-          {name: 'idx_chainId_address_txHash', unique: true,
-            fields:['chain_id','address','transaction_hash']
+    static register(sequelize: Sequelize) {
+      ContractDeployment.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          chain_id: { type: DataTypes.INTEGER, allowNull: false },
+          address: { type: DataTypes.CHAR(42), allowNull: false },
+          transaction_hash: { type: DataTypes.CHAR(66) },
+          contract_id: { type: DataTypes.BIGINT, allowNull: false },
+          block_number: { type: DataTypes.BIGINT },
+          transaction_index: { type: DataTypes.INTEGER },
+          deployer: { type: DataTypes.CHAR(66) },
+        },
+        {
+          tableName: "contract_deployments",
+          sequelize,
+          indexes: [
+            {
+              name: "idx_chainId_address_txHash",
+              unique: true,
+              fields: ["chain_id", "address", "transaction_hash"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -133,60 +198,81 @@ export namespace Tables {
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
   }
-  export class CompiledContract extends Model<ICompiledContract> implements ICompiledContract{
-    id: number;
-    compiler: string;
-    version: string;
-    language: string;
-    name: string;
-    fully_qualified_name: string;
-    compilation_artifacts: {
+  export class CompiledContract
+    extends Model<ICompiledContract>
+    implements ICompiledContract
+  {
+    id!: number;
+    compiler!: string;
+    version!: string;
+    language!: string;
+    name!: string;
+    fully_qualified_name!: string;
+    compilation_artifacts!: {
       abi: Nullable<Abi>;
       userdoc: Nullable<any>;
       devdoc: Nullable<any>;
       storageLayout: Nullable<StorageLayout>;
       sources: Nullable<CompilationArtifactSource>;
     };
-    compiler_settings: Omit<
+    compiler_settings!: Omit<
       SoliditySettings | VyperSettings,
       "outputSelection"
     >;
     creation_code_hash?: string;
-    runtime_code_hash: string;
-    creation_code_artifacts: {
+    runtime_code_hash!: string;
+    creation_code_artifacts!: {
       sourceMap: Nullable<string>;
       linkReferences: Nullable<LinkReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
-    runtime_code_artifacts: {
+    runtime_code_artifacts!: {
       sourceMap: Nullable<string>;
       linkReferences: Nullable<LinkReferences>;
       immutableReferences: Nullable<ImmutableReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
-    }
-  static register(sequelize) {
-      CompiledContract.init({
-        id: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true, autoIncrement: true },
-        compiler: { type: DataTypes.CHAR(10), allowNull: false },
-        version: { type: DataTypes.CHAR(64), allowNull: false },
-        language: { type: DataTypes.CHAR(10), allowNull: false },
-        name: { type: DataTypes.STRING(512), allowNull: false },
-        fully_qualified_name: { type: DataTypes.STRING(512), allowNull: false },
-        compilation_artifacts: { type: DataTypes.JSON, allowNull: false },
-        compiler_settings:{ type: DataTypes.JSON, allowNull: false },
-        creation_code_hash: { type: DataTypes.CHAR(66), allowNull: false },
-        runtime_code_hash: { type: DataTypes.CHAR(66), allowNull: false },
-        creation_code_artifacts:{ type: DataTypes.JSON, allowNull: false },
-        runtime_code_artifacts:{ type: DataTypes.JSON, allowNull: false },
-  }, {
-        tableName: 'compiled_contracts',
-        sequelize,
-        indexes: [
-          {name: 'idx_compiler_language_creationCodeHash_runtimeCodeHash', unique: true,
-            fields:['compiler', 'language', 'creation_code_hash', 'runtime_code_hash']
+    };
+    static register(sequelize: Sequelize) {
+      CompiledContract.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          compiler: { type: DataTypes.CHAR(10), allowNull: false },
+          version: { type: DataTypes.CHAR(64), allowNull: false },
+          language: { type: DataTypes.CHAR(10), allowNull: false },
+          name: { type: DataTypes.STRING(512), allowNull: false },
+          fully_qualified_name: {
+            type: DataTypes.STRING(512),
+            allowNull: false,
+          },
+          compilation_artifacts: { type: DataTypes.JSON, allowNull: false },
+          compiler_settings: { type: DataTypes.JSON, allowNull: false },
+          creation_code_hash: { type: DataTypes.CHAR(66), allowNull: false },
+          runtime_code_hash: { type: DataTypes.CHAR(66), allowNull: false },
+          creation_code_artifacts: { type: DataTypes.JSON, allowNull: false },
+          runtime_code_artifacts: { type: DataTypes.JSON, allowNull: false },
+        },
+        {
+          tableName: "compiled_contracts",
+          sequelize,
+          indexes: [
+            {
+              name: "idx_compiler_language_creationCodeHash_runtimeCodeHash",
+              unique: true,
+              fields: [
+                "compiler",
+                "language",
+                "creation_code_hash",
+                "runtime_code_hash",
+              ],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -203,40 +289,61 @@ export namespace Tables {
     runtime_metadata_match: Nullable<boolean>;
     creation_metadata_match: Nullable<boolean>;
   }
-  export class VerifiedContract extends Model<IVerifiedContract> implements IVerifiedContract{
-    id: number;
-    compilation_id: number;
-    deployment_id: number;
-    creation_transformations: Nullable<Transformation[]>;
-    creation_values: Nullable<TransformationValues>;
-    runtime_transformations: Nullable<Transformation[]>;
-    runtime_values: Nullable<TransformationValues>;
-    runtime_match: boolean;
-    creation_match: boolean;
-    runtime_metadata_match: Nullable<boolean>;
-    creation_metadata_match: Nullable<boolean>;
-    static register(sequelize) {
-      VerifiedContract.init({
-        id: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true, autoIncrement: true },
-        compilation_id: { type: DataTypes.INTEGER, allowNull: false },
-        deployment_id: { type: DataTypes.INTEGER, allowNull: false },
-        creation_transformations: { type: DataTypes.JSON},
-        creation_values: { type: DataTypes.JSON},
-        runtime_transformations: { type: DataTypes.JSON},
-        runtime_values: { type: DataTypes.JSON},
-        runtime_match: { type: DataTypes.BOOLEAN, allowNull: false },
-        creation_match: { type: DataTypes.BOOLEAN, allowNull: false },
-        runtime_metadata_match: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-        creation_metadata_match: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false  },
-      }, {
-        tableName: 'verified_contracts',
-        sequelize,
-        indexes: [
-          {name: 'idx_compilationId_deploymentId', unique: true,
-            fields:['compilation_id','deployment_id']
+  export class VerifiedContract
+    extends Model<IVerifiedContract>
+    implements IVerifiedContract
+  {
+    id!: number;
+    compilation_id!: number;
+    deployment_id!: number;
+    creation_transformations!: Nullable<Transformation[]>;
+    creation_values!: Nullable<TransformationValues>;
+    runtime_transformations!: Nullable<Transformation[]>;
+    runtime_values!: Nullable<TransformationValues>;
+    runtime_match!: boolean;
+    creation_match!: boolean;
+    runtime_metadata_match!: Nullable<boolean>;
+    creation_metadata_match!: Nullable<boolean>;
+    static register(sequelize: Sequelize) {
+      VerifiedContract.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          compilation_id: { type: DataTypes.INTEGER, allowNull: false },
+          deployment_id: { type: DataTypes.INTEGER, allowNull: false },
+          creation_transformations: { type: DataTypes.JSON },
+          creation_values: { type: DataTypes.JSON },
+          runtime_transformations: { type: DataTypes.JSON },
+          runtime_values: { type: DataTypes.JSON },
+          runtime_match: { type: DataTypes.BOOLEAN, allowNull: false },
+          creation_match: { type: DataTypes.BOOLEAN, allowNull: false },
+          runtime_metadata_match: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+          },
+          creation_metadata_match: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+          },
+        },
+        {
+          tableName: "verified_contracts",
+          sequelize,
+          indexes: [
+            {
+              name: "idx_compilationId_deploymentId",
+              unique: true,
+              fields: ["compilation_id", "deployment_id"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -246,19 +353,26 @@ export namespace Tables {
     content: string;
   }
   export class Source extends Model<ISource> implements ISource {
-    source_hash: string;
-    source_hash_keccak: string;
-    content: string;
-    static register(sequelize) {
-      Source.init({
-        source_hash: {type: DataTypes.CHAR(66), allowNull: false, primaryKey: true},
-        source_hash_keccak: {type: DataTypes.CHAR(66), allowNull: false},
-        content: {type: DataTypes.BLOB('medium'), allowNull: false},
-      }, {
-        tableName: 'sources',
-        sequelize,
-        indexes: [],
-      })
+    source_hash!: string;
+    source_hash_keccak!: string;
+    content!: string;
+    static register(sequelize: Sequelize) {
+      Source.init(
+        {
+          source_hash: {
+            type: DataTypes.CHAR(66),
+            allowNull: false,
+            primaryKey: true,
+          },
+          source_hash_keccak: { type: DataTypes.CHAR(66), allowNull: false },
+          content: { type: DataTypes.BLOB("medium"), allowNull: false },
+        },
+        {
+          tableName: "sources",
+          sequelize,
+          indexes: [],
+        },
+      );
     }
   }
 
@@ -268,26 +382,39 @@ export namespace Tables {
     source_hash: string;
     path: string;
   }
-  export class CompiledContractSource extends Model<ICompiledContractSource> implements ICompiledContractSource {
-    id: string;
-    compilation_id: string;
-    path: string;
-    source_hash: string;
-    static register(sequelize) {
-      CompiledContractSource.init({
-        id: {type: DataTypes.BIGINT, allowNull: false, primaryKey: true, autoIncrement: true},
-        compilation_id: {type: DataTypes.BIGINT, allowNull: false},
-        path: {type: DataTypes.STRING(256), allowNull: false},
-        source_hash: {type: DataTypes.CHAR(66), allowNull: false},
-      }, {
-        tableName: 'compiled_contracts_sources',
-        sequelize,
-        indexes: [
-          {name: 'idx_compilationId_path', unique: true,
-            fields:['compilation_id','path']
+  export class CompiledContractSource
+    extends Model<ICompiledContractSource>
+    implements ICompiledContractSource
+  {
+    id!: string;
+    compilation_id!: string;
+    path!: string;
+    source_hash!: string;
+    static register(sequelize: Sequelize) {
+      CompiledContractSource.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          compilation_id: { type: DataTypes.BIGINT, allowNull: false },
+          path: { type: DataTypes.STRING(256), allowNull: false },
+          source_hash: { type: DataTypes.CHAR(66), allowNull: false },
+        },
+        {
+          tableName: "compiled_contracts_sources",
+          sequelize,
+          indexes: [
+            {
+              name: "idx_compilationId_path",
+              unique: true,
+              fields: ["compilation_id", "path"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -297,39 +424,56 @@ export namespace Tables {
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
     metadata: Metadata;
-    license_type: number;
-    contract_label: string;
+    license_type: number | null;
+    contract_label: string | null;
     created_at: Date;
   }
-  export class SourcifyMatch extends Model<ISourcifyMatch> implements ISourcifyMatch {
-    id: string;
-    verified_contract_id: number;
-    runtime_match: VerificationStatus | null;
-    creation_match: VerificationStatus | null;
-    metadata: Metadata;
-    license_type: number;
-    contract_label: string;
-    created_at: Date;
-    static register(sequelize) {
-      SourcifyMatch.init({
-        id: {type: DataTypes.BIGINT, allowNull: false, primaryKey: true, autoIncrement: true},
-        verified_contract_id: {type: DataTypes.BIGINT, allowNull: false},
-        runtime_match: {type: DataTypes.CHAR(20)},
-        creation_match: {type: DataTypes.CHAR(20)},
-        metadata: {type: DataTypes.JSON, allowNull: false},
-        license_type: {type: DataTypes.INTEGER, allowNull: false, defaultValue: 1},
-        contract_label: {type: DataTypes.STRING(512)},
-        created_at: {type: DataTypes.DATE, allowNull: false},
-      }, {
-        tableName: 'sourcify_matches',
-        sequelize,
-        timestamps: false,
-        indexes: [
-          {name: 'idx_verifiedContractId', unique: true,
-            fields:['verified_contract_id']
+  export class SourcifyMatch
+    extends Model<ISourcifyMatch>
+    implements ISourcifyMatch
+  {
+    id!: string;
+    verified_contract_id!: number;
+    runtime_match!: VerificationStatus | null;
+    creation_match!: VerificationStatus | null;
+    metadata!: Metadata;
+    license_type!: number;
+    contract_label!: string;
+    created_at!: Date;
+    static register(sequelize: Sequelize) {
+      SourcifyMatch.init(
+        {
+          id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
           },
-        ],
-      })
+          verified_contract_id: { type: DataTypes.BIGINT, allowNull: false },
+          runtime_match: { type: DataTypes.CHAR(20) },
+          creation_match: { type: DataTypes.CHAR(20) },
+          metadata: { type: DataTypes.JSON, allowNull: false },
+          license_type: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+          },
+          contract_label: { type: DataTypes.STRING(512) },
+          created_at: { type: DataTypes.DATE, allowNull: false },
+        },
+        {
+          tableName: "sourcify_matches",
+          sequelize,
+          timestamps: false,
+          indexes: [
+            {
+              name: "idx_verifiedContractId",
+              unique: true,
+              fields: ["verified_contract_id"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -353,44 +497,53 @@ export namespace Tables {
     hardware: Nullable<string>;
     compilation_time: Nullable<number>;
   }
-  export class VerificationJob extends Model<IVerificationJob> implements IVerificationJob {
-    id: string;
-    started_at: Date;
-    completed_at: Nullable<Date>;
-    chain_id: number;
-    contract_address: string;
-    verified_contract_id: Nullable<number>;
-    error_code: Nullable<string>;
-    error_id: Nullable<string>;
-    error_data: Nullable<JobErrorData>;
-    verification_endpoint: string;
-    hardware: Nullable<string>;
-    compilation_time: Nullable<number>;
-    static register(sequelize) {
-      VerificationJob.init({
-        id: {type: DataTypes.CHAR(36), allowNull: false, primaryKey: true},
-        started_at: {type: DataTypes.DATE, allowNull: false},
-        completed_at: {type: DataTypes.DATE},
-        chain_id: {type: DataTypes.BIGINT, allowNull: false},
-        contract_address: {type: DataTypes.CHAR(66), allowNull: false},
-        verified_contract_id: {type: DataTypes.BIGINT},
-        error_code: {type: DataTypes.CHAR(64)},
-        error_id: {type: DataTypes.CHAR(64)},
-        error_data: {type: DataTypes.JSON},
-        verification_endpoint: {type: DataTypes.CHAR(128), allowNull: false},
-        hardware: {type: DataTypes.CHAR(128)},
-        compilation_time: {type: DataTypes.INTEGER},
-      }, {
-        tableName: 'verification_jobs',
-        sequelize,
-        timestamps: false,
-        indexes: [
-          {
-            name: 'idx_chainId_contractAddress',
-            fields:['chain_id','contract_address']
+  export class VerificationJob
+    extends Model<IVerificationJob>
+    implements IVerificationJob
+  {
+    id!: string;
+    started_at!: Date;
+    completed_at!: Nullable<Date>;
+    chain_id!: number;
+    contract_address!: string;
+    verified_contract_id!: Nullable<number>;
+    error_code!: Nullable<string>;
+    error_id!: Nullable<string>;
+    error_data!: Nullable<JobErrorData>;
+    verification_endpoint!: string;
+    hardware!: Nullable<string>;
+    compilation_time!: Nullable<number>;
+    static register(sequelize: Sequelize) {
+      VerificationJob.init(
+        {
+          id: { type: DataTypes.CHAR(36), allowNull: false, primaryKey: true },
+          started_at: { type: DataTypes.DATE, allowNull: false },
+          completed_at: { type: DataTypes.DATE },
+          chain_id: { type: DataTypes.BIGINT, allowNull: false },
+          contract_address: { type: DataTypes.CHAR(66), allowNull: false },
+          verified_contract_id: { type: DataTypes.BIGINT },
+          error_code: { type: DataTypes.CHAR(64) },
+          error_id: { type: DataTypes.CHAR(64) },
+          error_data: { type: DataTypes.JSON },
+          verification_endpoint: {
+            type: DataTypes.CHAR(128),
+            allowNull: false,
           },
-        ],
-      })
+          hardware: { type: DataTypes.CHAR(128) },
+          compilation_time: { type: DataTypes.INTEGER },
+        },
+        {
+          tableName: "verification_jobs",
+          sequelize,
+          timestamps: false,
+          indexes: [
+            {
+              name: "idx_chainId_contractAddress",
+              fields: ["chain_id", "contract_address"],
+            },
+          ],
+        },
+      );
     }
   }
 
@@ -402,41 +555,47 @@ export namespace Tables {
     onchain_runtime_code: Nullable<string>;
     creation_transaction_hash: Nullable<string>;
   }
-  export class VerificationJobEphemeral extends Model<IVerificationJobEphemeral> implements IVerificationJobEphemeral {
-    id: string;
-    recompiled_creation_code: Nullable<string>;
-    recompiled_runtime_code: Nullable<string>;
-    onchain_creation_code: Nullable<string>;
-    onchain_runtime_code: Nullable<string>;
-    creation_transaction_hash: Nullable<string>;
-    static register(sequelize) {
-      VerificationJobEphemeral.init({
-        id: {type: DataTypes.CHAR(36), allowNull: false, primaryKey: true},
-        recompiled_creation_code: {type: DataTypes.BLOB('medium')},
-        recompiled_runtime_code: {type: DataTypes.BLOB('medium')},
-        onchain_creation_code: {type: DataTypes.BLOB('medium')},
-        onchain_runtime_code: {type: DataTypes.BLOB('medium')},
-        creation_transaction_hash: {type: DataTypes.CHAR(66)},
-      }, {
-        tableName: 'verification_jobs_ephemeral',
-        sequelize,
-        timestamps: false,
-        indexes: [],
-      })
+  export class VerificationJobEphemeral
+    extends Model<IVerificationJobEphemeral>
+    implements IVerificationJobEphemeral
+  {
+    id!: string;
+    recompiled_creation_code!: Nullable<string>;
+    recompiled_runtime_code!: Nullable<string>;
+    onchain_creation_code!: Nullable<string>;
+    onchain_runtime_code!: Nullable<string>;
+    creation_transaction_hash!: Nullable<string>;
+    static register(sequelize: Sequelize) {
+      VerificationJobEphemeral.init(
+        {
+          id: { type: DataTypes.CHAR(36), allowNull: false, primaryKey: true },
+          recompiled_creation_code: { type: DataTypes.BLOB("medium") },
+          recompiled_runtime_code: { type: DataTypes.BLOB("medium") },
+          onchain_creation_code: { type: DataTypes.BLOB("medium") },
+          onchain_runtime_code: { type: DataTypes.BLOB("medium") },
+          creation_transaction_hash: { type: DataTypes.CHAR(66) },
+        },
+        {
+          tableName: "verification_jobs_ephemeral",
+          sequelize,
+          timestamps: false,
+          indexes: [],
+        },
+      );
     }
   }
 
-  export async function initModel(sequelize) {
-    Code.register(sequelize)
-    Contract.register(sequelize)
-    ContractDeployment.register(sequelize)
-    CompiledContract.register(sequelize)
-    VerifiedContract.register(sequelize)
-    Source.register(sequelize)
-    CompiledContractSource.register(sequelize)
-    SourcifyMatch.register(sequelize)
-    VerificationJob.register(sequelize)
-    VerificationJobEphemeral.register(sequelize)
+  export async function initModel(sequelize: Sequelize) {
+    Code.register(sequelize);
+    Contract.register(sequelize);
+    ContractDeployment.register(sequelize);
+    CompiledContract.register(sequelize);
+    VerifiedContract.register(sequelize);
+    Source.register(sequelize);
+    CompiledContractSource.register(sequelize);
+    SourcifyMatch.register(sequelize);
+    VerificationJob.register(sequelize);
+    VerificationJobEphemeral.register(sequelize);
   }
 }
 
@@ -470,10 +629,13 @@ export type GetVerifiedContractByChainAndAddressResult =
     contract_id: string;
   };
 
-export type CountSourcifyMatchAddresses = Pick<Tables.IContractDeployment, "chain_id"> & {
+export type CountSourcifyMatchAddresses = Pick<
+  Tables.IContractDeployment,
+  "chain_id"
+> & {
   full_total: number;
   partial_total: number;
-}
+};
 
 export type GetSourcifyMatchByChainAddressResult = Tables.ISourcifyMatch &
   Pick<
@@ -493,7 +655,12 @@ export type GetSourcifyMatchesByChainResult = Pick<
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
   Pick<
     Tables.ISourcifyMatch,
-    "id" | "creation_match" | "runtime_match" | "metadata"
+    | "id"
+    | "creation_match"
+    | "runtime_match"
+    | "metadata"
+    | "license_type"
+    | "contract_label"
   > &
     Pick<
       Tables.ICompiledContract,
@@ -539,7 +706,8 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
     }
 >;
 
-export type CompiledContractSource = Tables.ICompiledContractSource & Pick<Tables.ISource, "content">
+export type CompiledContractSource = Tables.ICompiledContractSource &
+  Pick<Tables.ISource, "content">;
 
 export type GetVerificationJobByIdResult = Pick<
   Tables.IVerificationJob,
@@ -583,11 +751,10 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   creation_match: "sourcify_matches.creation_match",
   runtime_match: "sourcify_matches.runtime_match",
   verified_at:
-    'DATE_FORMAT(sourcify_matches.created_at, \'%Y-%m-%dT%H:%i:%sT\') as verified_at',
+    "DATE_FORMAT(sourcify_matches.created_at, '%Y-%m-%dT%H:%i:%sT') as verified_at",
   license_type: "sourcify_matches.license_type",
   contract_label: "sourcify_matches.contract_label",
-  address:
-    "nullif(contract_deployments.address, '0x') as address",
+  address: "nullif(contract_deployments.address, '0x') as address",
   onchain_creation_code:
     "nullif(CONVERT(onchain_creation_code.code USING utf8), '0x') as onchain_creation_code",
   recompiled_creation_code:
@@ -618,10 +785,10 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
     "nullif(contract_deployments.transaction_hash, '0x') as transaction_hash",
   block_number: "contract_deployments.block_number",
   transaction_index: "contract_deployments.transaction_index",
-  deployer:
-    "nullif(contract_deployments.deployer, '0x') as deployer",
+  deployer: "nullif(contract_deployments.deployer, '0x') as deployer",
   sources: `${sourcesAggregation} as sources`,
-  language: "CONCAT(UPPER(LEFT(compiled_contracts.language, 1)), LOWER(SUBSTRING(compiled_contracts.language, 2))) as language",
+  language:
+    "CONCAT(UPPER(LEFT(compiled_contracts.language, 1)), LOWER(SUBSTRING(compiled_contracts.language, 2))) as language",
   compiler: "compiled_contracts.compiler",
   version: "compiled_contracts.version as version",
   compiler_settings: "compiled_contracts.compiler_settings",
@@ -768,7 +935,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
     isProxy: "sources",
     proxyType: "sources",
     implementations: "sources",
-    proxyResolutionError: "sources"
+    proxyResolutionError: "sources",
   },
 };
 
@@ -788,38 +955,48 @@ export type Field =
 //     1. Replace library address placeholders ("__$53aea86b7d70b31448b230b20ae141a537$__") with zeros
 //     2. Immutables are already set to zeros
 export function normalizeRecompiledBytecodes(verification: VerificationExport) {
-  let normalizedRuntimeBytecode = verification.compilation.runtimeBytecode
-  let normalizedCreationBytecode = verification.compilation.creationBytecode
+  let normalizedRuntimeBytecode = verification.compilation.runtimeBytecode;
+  let normalizedCreationBytecode = verification.compilation.creationBytecode;
 
-  const PLACEHOLDER_LENGTH = 40
-  const placeholder = "0".repeat(PLACEHOLDER_LENGTH)
+  const PLACEHOLDER_LENGTH = 40;
+  const placeholder = "0".repeat(PLACEHOLDER_LENGTH);
 
   // Runtime bytecode normalzations
   verification.transformations.runtime.list.forEach((transformation) => {
     if (transformation.reason === "library" && normalizedRuntimeBytecode) {
-      normalizedRuntimeBytecode = normalizedRuntimeBytecode.substring(2)
+      normalizedRuntimeBytecode = normalizedRuntimeBytecode.substring(2);
       // we multiply by 2 because transformation.offset is stored as the length in bytes
-      const before = normalizedRuntimeBytecode.substring(0, transformation.offset * 2)
-      const after = normalizedRuntimeBytecode.substring(transformation.offset * 2 + PLACEHOLDER_LENGTH)
-      normalizedRuntimeBytecode = `0x${before + placeholder + after}`
+      const before = normalizedRuntimeBytecode.substring(
+        0,
+        transformation.offset * 2,
+      );
+      const after = normalizedRuntimeBytecode.substring(
+        transformation.offset * 2 + PLACEHOLDER_LENGTH,
+      );
+      normalizedRuntimeBytecode = `0x${before + placeholder + after}`;
     }
-  })
+  });
 
   // Creation bytecode normalizations
   verification.transformations.creation.list.forEach((transformation) => {
     if (transformation.reason === "library" && normalizedCreationBytecode) {
-      normalizedCreationBytecode = normalizedCreationBytecode.substring(2)
+      normalizedCreationBytecode = normalizedCreationBytecode.substring(2);
       // we multiply by 2 because transformation.offset is stored as the length in bytes
-      const before = normalizedCreationBytecode.substring(0, transformation.offset * 2)
-      const after = normalizedCreationBytecode.substring(transformation.offset * 2 + PLACEHOLDER_LENGTH)
-      normalizedCreationBytecode = `0x${before + placeholder + after}`
+      const before = normalizedCreationBytecode.substring(
+        0,
+        transformation.offset * 2,
+      );
+      const after = normalizedCreationBytecode.substring(
+        transformation.offset * 2 + PLACEHOLDER_LENGTH,
+      );
+      normalizedCreationBytecode = `0x${before + placeholder + after}`;
     }
-  })
+  });
 
   return {
     normalizedRuntimeBytecode,
-    normalizedCreationBytecode
-  }
+    normalizedCreationBytecode,
+  };
 }
 
 function getKeccak256Bytecodes(
@@ -828,35 +1005,50 @@ function getKeccak256Bytecodes(
   normalizedRuntimeBytecode: string | undefined,
 ) {
   if (normalizedRuntimeBytecode === undefined) {
-    throw new Error("normalizedRuntimeBytecode cannot be undefined")
+    throw new Error("normalizedRuntimeBytecode cannot be undefined");
   }
   if (verification.onchainRuntimeBytecode === undefined) {
-    throw new Error("onchainRuntimeBytecode cannot be undefined")
+    throw new Error("onchainRuntimeBytecode cannot be undefined");
   }
 
   return {
-    keccak256OnchainCreationBytecode: verification.onchainCreationBytecode ? keccak256(verification.onchainCreationBytecode) : undefined,
-    keccak256OnchainRuntimeBytecode: keccak256(verification.onchainRuntimeBytecode),
-    keccak256RecompiledCreationBytecode: normalizedCreationBytecode ? keccak256((normalizedCreationBytecode)) : undefined,
-    keccak256RecompiledRuntimeBytecode: keccak256(normalizedRuntimeBytecode)
-  }
+    keccak256OnchainCreationBytecode: verification.onchainCreationBytecode
+      ? keccak256(verification.onchainCreationBytecode)
+      : undefined,
+    keccak256OnchainRuntimeBytecode: keccak256(
+      verification.onchainRuntimeBytecode,
+    ),
+    keccak256RecompiledCreationBytecode: normalizedCreationBytecode
+      ? keccak256(normalizedCreationBytecode)
+      : undefined,
+    keccak256RecompiledRuntimeBytecode: keccak256(normalizedRuntimeBytecode),
+  };
 }
 
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
   // Normalize both creation and runtime recompiled bytecodes before storing them to the database
-  const { normalizedRuntimeBytecode, normalizedCreationBytecode } = normalizeRecompiledBytecodes(verification);
+  const { normalizedRuntimeBytecode, normalizedCreationBytecode } =
+    normalizeRecompiledBytecodes(verification);
 
   const {
     keccak256OnchainCreationBytecode,
     keccak256OnchainRuntimeBytecode,
     keccak256RecompiledCreationBytecode,
     keccak256RecompiledRuntimeBytecode,
-  } = getKeccak256Bytecodes(verification, normalizedCreationBytecode, normalizedRuntimeBytecode)
+  } = getKeccak256Bytecodes(
+    verification,
+    normalizedCreationBytecode,
+    normalizedRuntimeBytecode,
+  );
 
-  const runtimeMatch = verification.status.runtimeMatch === "perfect" || verification.status.runtimeMatch === "partial";
-  const creationMatch = verification.status.creationMatch === "perfect" || verification.status.creationMatch === "partial";
+  const runtimeMatch =
+    verification.status.runtimeMatch === "perfect" ||
+    verification.status.runtimeMatch === "partial";
+  const creationMatch =
+    verification.status.creationMatch === "perfect" ||
+    verification.status.creationMatch === "partial";
 
   const {
     runtime: {
@@ -945,40 +1137,41 @@ export async function getDatabaseColumnsFromVerification(
   if (normalizedCreationBytecode && keccak256RecompiledCreationBytecode) {
     recompiledCreationCode = {
       bytecode_hash_keccak: keccak256RecompiledCreationBytecode,
-      bytecode: normalizedCreationBytecode
-    }
+      bytecode: normalizedCreationBytecode,
+    };
   }
 
   let onchainCreationCode: Omit<Tables.ICode, "bytecode_hash"> | undefined;
-  try {
-    if (verification.onchainCreationBytecode && keccak256OnchainCreationBytecode) {
-      onchainCreationCode = {
-        bytecode_hash_keccak: keccak256OnchainCreationBytecode,
-        bytecode: verification.onchainCreationBytecode
-      }
-    }
-  } catch (e) {
-    // If the onchain creation bytecode is undefined, we don't store it
+  if (
+    verification.onchainCreationBytecode &&
+    keccak256OnchainCreationBytecode
+  ) {
+    onchainCreationCode = {
+      bytecode_hash_keccak: keccak256OnchainCreationBytecode,
+      bytecode: verification.onchainCreationBytecode,
+    };
   }
 
   const sourcesInformation = Object.keys(verification.compilation.sources).map(
     (path) => ({
       path,
-      source_hash_keccak: keccak256(Buffer.from(verification.compilation.sources[path])),
+      source_hash_keccak: keccak256(
+        Buffer.from(verification.compilation.sources[path]),
+      ),
       content: verification.compilation.sources[path],
-    })
-  )
+    }),
+  );
 
   return {
     recompiledCreationCode,
     recompiledRuntimeCode: {
       bytecode_hash_keccak: keccak256RecompiledRuntimeBytecode,
-      bytecode: normalizedRuntimeBytecode
+      bytecode: normalizedRuntimeBytecode,
     },
     onchainCreationCode,
     onchainRuntimeCode: {
       bytecode_hash_keccak: keccak256OnchainRuntimeBytecode,
-      bytecode: verification.onchainRuntimeBytecode
+      bytecode: verification.onchainRuntimeBytecode,
     },
     contractDeployment: {
       chain_id: verification.chainId,
@@ -986,11 +1179,14 @@ export async function getDatabaseColumnsFromVerification(
       transaction_hash: verification.deploymentInfo.txHash,
       block_number: verification.deploymentInfo.blockNumber,
       transaction_index: verification.deploymentInfo.txIndex,
-      deployer: verification.deploymentInfo.deployer
+      deployer: verification.deploymentInfo.deployer,
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler: verification.compilation.language.toLocaleLowerCase() === "solidity" ? "solc" : "vyper",
+      compiler:
+        verification.compilation.language.toLocaleLowerCase() === "solidity"
+          ? "solc"
+          : "vyper",
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,
@@ -1011,7 +1207,7 @@ export async function getDatabaseColumnsFromVerification(
       runtime_metadata_match,
       creation_metadata_match,
     },
-  }
+  };
 }
 
 export function prepareCompilerSettingsFromVerification(

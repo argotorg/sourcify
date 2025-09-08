@@ -1,6 +1,7 @@
 import {
   SolidityJsonInput,
-  Sources, VyperJsonInput
+  Sources,
+  VyperJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   ChainNotFoundError,
@@ -11,7 +12,6 @@ import {
 } from "../../routes/api/errors";
 import SolidityParser from "@solidity-parser/parser";
 import { Chain } from "../chain/Chain";
-import { ProxyAgent } from 'undici';
 
 interface VyperVersion {
   compiler_version: string;
@@ -130,7 +130,10 @@ export const getSolcJsonInputFromConfluxscanResult = (
         : undefined,
     libraries: {}, // TODO: Check the library format
   };
-  console.log('confluxscan-util: generated compiler setting from confluxscan result', generatedSettings)
+  console.log(
+    "confluxscan-util: generated compiler setting from confluxscan result",
+    generatedSettings,
+  );
   const solcJsonInput = {
     language: "Solidity",
     sources,
@@ -143,7 +146,10 @@ export const getContractPathFromSourcesOrThrow = (
   contractName: string,
   sources: Sources,
 ): string => {
-  console.debug("confluxscan-util: Parsing sources for finding the contract path", { contractName})
+  console.debug(
+    "confluxscan-util: Parsing sources for finding the contract path",
+    { contractName },
+  );
   let contractPath: string | undefined;
   const startTime = Date.now();
   for (const [path, { content }] of Object.entries(sources)) {
@@ -159,13 +165,22 @@ export const getContractPathFromSourcesOrThrow = (
       });
     } catch (error) {
       // Just continue, because the relevant contract might be in a different source file.
-      console.warn("confluxscan-util: Error parsing source code. Ignoring this source.", { path, error})
+      console.warn(
+        "confluxscan-util: Error parsing source code. Ignoring this source.",
+        { path, error },
+      );
     }
   }
-  console.debug("confluxscan-util: Parsing for all sources done", { contractName, contractPath, timeInMs: Date.now() - startTime})
+  console.debug("confluxscan-util: Parsing for all sources done", {
+    contractName,
+    contractPath,
+    timeInMs: Date.now() - startTime,
+  });
 
   if (contractPath === undefined) {
-    throw new MalformedConfluxscanResponseError("The sources returned by Confluxscan don't include the expected contract definition.")
+    throw new MalformedConfluxscanResponseError(
+      "The sources returned by Confluxscan don't include the expected contract definition.",
+    );
   }
 
   return contractPath;
@@ -206,13 +221,14 @@ export const fetchFromConfluxscan = async (
 ): Promise<ConfluxscanResult> => {
   if (!chain?.confluxscanApi) {
     const errorMessage = `Requested chain ${chain?.chainId} is not supported for importing from Confluxscan.`;
-    throw new ChainNotFoundError(errorMessage)
+    throw new ChainNotFoundError(errorMessage);
   }
 
-  const url = chain.corespace ?
-    `${chain.confluxscanApi.apiURL}/contract/getsourcecode?address=${address}`:
-    `${chain.confluxscanApi.apiURL}/api?module=contract&action=getsourcecode&address=${address}`
-  const usedApiKey = apiKey || process.env[chain.confluxscanApi.apiKeyEnvName || ""];
+  const url = chain.corespace
+    ? `${chain.confluxscanApi.apiURL}/contract/getsourcecode?address=${address}`
+    : `${chain.confluxscanApi.apiURL}/api?module=contract&action=getsourcecode&address=${address}`;
+  const usedApiKey =
+    apiKey || process.env[chain.confluxscanApi.apiKeyEnvName || ""];
   console.debug("Fetching from Confluxscan", {
     url,
     chainId: chain.chainId,
@@ -220,13 +236,11 @@ export const fetchFromConfluxscan = async (
   });
   let response;
   try {
-    const opt: any = {}
-    if(process.env.HTTP_PROXY) {
-      opt.dispatcher = new ProxyAgent(process.env.HTTP_PROXY)
-    }
-    response = await fetch(`${url}&apikey=${usedApiKey || ""}`, opt);
-  } catch (error) {
-    throw new ConfluxscanRequestFailedError(`Request to ${url}&apiKey=XXX failed.`)
+    response = await fetch(`${url}&apikey=${usedApiKey || ""}`);
+  } catch (e) {
+    throw new ConfluxscanRequestFailedError(
+      `Request to ${url}&apiKey=XXX failed.`,
+    );
   }
   console.debug("Fetched from Confluxscan", {
     url,
@@ -242,19 +256,26 @@ export const fetchFromConfluxscan = async (
       status: response.status,
       response: JSON.stringify(response),
     });
-    throw new ConfluxscanRequestFailedError(`Confluxscan API responded with an error. Status code: ${response.status}.`)
+    throw new ConfluxscanRequestFailedError(
+      `Confluxscan API responded with an error. Status code: ${response.status}.`,
+    );
   }
 
   let resultJson = await response.json();
-  resultJson = toEspaceResult(resultJson, chain.corespace)
-  if (resultJson.message === "NOTOK" && resultJson.result.includes("rate limit reached")) {
+  resultJson = toEspaceResult(resultJson, chain.corespace);
+  if (
+    resultJson.message === "NOTOK" &&
+    resultJson.result.includes("rate limit reached")
+  ) {
     console.info("Confluxscan Rate Limit", {
       url,
       chainId: chain.chainId,
       address,
       resultJson,
     });
-    throw new ConfluxscanLimitError("Confluxscan API rate limit reached, try later.")
+    throw new ConfluxscanLimitError(
+      "Confluxscan API rate limit reached, try later.",
+    );
   }
 
   if (resultJson.message === "NOTOK") {
@@ -264,7 +285,9 @@ export const fetchFromConfluxscan = async (
       address,
       resultJson,
     });
-    throw new ConfluxscanRequestFailedError("Error in Confluxscan API response. Result message: " + resultJson.result)
+    throw new ConfluxscanRequestFailedError(
+      "Error in Confluxscan API response. Result message: " + resultJson.result,
+    );
   }
 
   if (resultJson.result[0].SourceCode === "") {
@@ -273,20 +296,24 @@ export const fetchFromConfluxscan = async (
       chainId: chain.chainId,
       address,
     });
-    throw new NotConfluxscanVerifiedError("This contract is not verified on Confluxscan.")
+    throw new NotConfluxscanVerifiedError(
+      "This contract is not verified on Confluxscan.",
+    );
   }
 
   return resultJson.result[0] as ConfluxscanResult;
-}
+};
 
 export const processSolidityResultFromConfluxscan = (
-  contractResultJson: ConfluxscanResult
+  contractResultJson: ConfluxscanResult,
 ): ProcessedConfluxscanResult => {
   const sourceCodeObject = contractResultJson.SourceCode;
   const contractName = contractResultJson.ContractName;
 
-  const compilerVersion = contractResultJson.CompilerVersion.charAt(0) === "v"
-      ? contractResultJson.CompilerVersion.slice(1) : contractResultJson.CompilerVersion;
+  const compilerVersion =
+    contractResultJson.CompilerVersion.charAt(0) === "v"
+      ? contractResultJson.CompilerVersion.slice(1)
+      : contractResultJson.CompilerVersion;
 
   let solcJsonInput: SolidityJsonInput;
   let contractPath: string | undefined;
@@ -301,12 +328,18 @@ export const processSolidityResultFromConfluxscan = (
         "evm.deployedBytecode.object",
       ];
     }
-    contractPath = getContractPathFromSourcesOrThrow(contractName, solcJsonInput.sources)
+    contractPath = getContractPathFromSourcesOrThrow(
+      contractName,
+      solcJsonInput.sources,
+    );
   } else if (isConfluxscanMultipleFilesObject(sourceCodeObject)) {
     console.debug("Confluxscan Solidity multiple file contract found");
-    const sources = JSON.parse(sourceCodeObject) as Sources
-    solcJsonInput = getSolcJsonInputFromConfluxscanResult(contractResultJson, sources)
-    contractPath = getContractPathFromSourcesOrThrow(contractName, sources)
+    const sources = JSON.parse(sourceCodeObject) as Sources;
+    solcJsonInput = getSolcJsonInputFromConfluxscanResult(
+      contractResultJson,
+      sources,
+    );
+    contractPath = getContractPathFromSourcesOrThrow(contractName, sources);
   } else {
     console.debug("Confluxscan Solidity single file contract found");
     contractPath = contractResultJson.ContractName + ".sol";
@@ -332,24 +365,27 @@ export const processSolidityResultFromConfluxscan = (
 export const processVyperResultFromConfluxscan = async (
   contractResultJson: ConfluxscanResult,
 ): Promise<ProcessedConfluxscanResult> => {
-  const sourceCodeProperty = contractResultJson.SourceCode
+  const sourceCodeProperty = contractResultJson.SourceCode;
 
-  const compilerVersion = await getVyperCompilerVersion(contractResultJson.CompilerVersion)
+  const compilerVersion = await getVyperCompilerVersion(
+    contractResultJson.CompilerVersion,
+  );
   if (!compilerVersion) {
-    const errorMessage = "Could not map the Vyper version from Confluxscan to a valid compiler version."
-    throw new MalformedConfluxscanResponseError(errorMessage)
+    const errorMessage =
+      "Could not map the Vyper version from Confluxscan to a valid compiler version.";
+    throw new MalformedConfluxscanResponseError(errorMessage);
   }
 
-  let contractName: string
-  let contractPath: string
-  let vyperJsonInput: VyperJsonInput
+  let contractName: string;
+  let contractPath: string;
+  let vyperJsonInput: VyperJsonInput;
   if (isConfluxscanJsonInput(sourceCodeProperty)) {
-    console.debug("Confluxscan vyperJsonInput contract found")
+    console.debug("Confluxscan vyperJsonInput contract found");
 
-    const parsedJsonInput = parseConfluxscanJsonInput(sourceCodeProperty)
+    const parsedJsonInput = parseConfluxscanJsonInput(sourceCodeProperty);
 
     // Confluxscan derives the ContractName from the @title natspec. Therefore, we cannot use the ContractName to find the contract path.
-    contractPath = Object.keys(parsedJsonInput.settings.outputSelection)[0]
+    contractPath = Object.keys(parsedJsonInput.settings.outputSelection)[0];
 
     // contractPath can be also be "*" or "<unknown>", in the case of "<unknown>" both contractPath and contractName will be "<unknown>"
     if (contractPath === "*") {
@@ -360,7 +396,7 @@ export const processVyperResultFromConfluxscan = async (
       if (!contractPath) {
         const errorMessage =
           "The json input sources in the response from Confluxscan don't include the expected contract.";
-        throw new MalformedConfluxscanResponseError(errorMessage)
+        throw new MalformedConfluxscanResponseError(errorMessage);
       }
     }
 
@@ -387,17 +423,18 @@ export const processVyperResultFromConfluxscan = async (
     const sourceCode = sourceCodeProperty.replace(/\r/g, "");
     const sources = {
       [contractPath]: { content: sourceCode },
-    }
+    };
 
     vyperJsonInput = getVyperJsonInputFromSingleFileResult(
       contractResultJson,
       sources,
-    )
+    );
   }
 
   if (!vyperJsonInput.settings) {
-    const errorMessage = "Couldn't get Vyper compiler settings from Confluxscan.";
-    throw new MalformedConfluxscanResponseError(errorMessage)
+    const errorMessage =
+      "Couldn't get Vyper compiler settings from Confluxscan.";
+    throw new MalformedConfluxscanResponseError(errorMessage);
   }
 
   return {
@@ -408,19 +445,21 @@ export const processVyperResultFromConfluxscan = async (
   };
 };
 
-export const isVyperResult = (confluxscanResult: ConfluxscanResult): boolean => {
+export const isVyperResult = (
+  confluxscanResult: ConfluxscanResult,
+): boolean => {
   return confluxscanResult.CompilerVersion.startsWith("vyper");
 };
 
-function toEspaceResult(json: any, corespace: boolean) {
-  if(!corespace) {
-    return json
+function toEspaceResult(json: any, corespace?: boolean) {
+  if (!corespace) {
+    return json;
   }
 
-  json["status"] = json.code === 0 ? "1" : "0"
-  json["result"] = json.data
-  delete json["code"]
-  delete json["data"]
+  json["status"] = json.code === 0 ? "1" : "0";
+  json["result"] = json.data;
+  delete json["code"];
+  delete json["data"];
 
-  return json
+  return json;
 }

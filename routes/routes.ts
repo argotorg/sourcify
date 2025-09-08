@@ -12,7 +12,7 @@ router.get("/health", (_req, res) => {
 
 router.get("/chains", (_req, res) => {
   const chainMap = _req.app.get("chains") as ChainMap;
-  const chainsArray = Object.values(chainMap)
+  const chainsArray = Object.values(chainMap);
   const chains = chainsArray.map(
     ({
       rpcWithoutApiKeys,

@@ -1,13 +1,23 @@
 import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
-import { DatabaseColumns, Field, getDatabaseColumnsFromVerification, Tables } from "./Tables";
+import {
+  DatabaseColumns,
+  Field,
+  getDatabaseColumnsFromVerification,
+  Tables,
+} from "./Tables";
 import { Dao } from "./Dao";
 import {
   ContractData,
   FileObject,
-  FilesInfo, Match, PaginatedData,
+  FilesInfo,
+  Match,
+  PaginatedData,
   V1MatchLevel,
-  V1MatchLevelWithoutAny, VerificationJob,
-  VerificationJobId, VerifiedContract, VerifiedContractMinimal
+  V1MatchLevelWithoutAny,
+  VerificationJob,
+  VerificationJobId,
+  VerifiedContract,
+  VerifiedContractMinimal,
 } from "../../routes/types";
 import { VerifyErrorExport } from "../workers/workerTypes";
 import { DatabaseOptions } from "../../config/Loader";
@@ -48,57 +58,94 @@ export default class StoreBase {
     return true;
   }
 
-  async insertNewVerifiedContract(databaseColumns: DatabaseColumns): Promise<number> {
+  async insertNewVerifiedContract(
+    databaseColumns: DatabaseColumns,
+  ): Promise<number> {
     try {
-      return Tables.VerifiedContract.sequelize.transaction(async dbTx => {
+      const { sequelize } = Tables.VerifiedContract;
+      if (!sequelize) {
+        throw new Error("The sequelize not initialized");
+      }
+      return sequelize.transaction(async (dbTx) => {
         // Add recompiled bytecodes
-        let recompiledCreationCode: Pick<Tables.ICode, "bytecode_hash"> | undefined
-        let onchainCreationCode: Pick<Tables.ICode, "bytecode_hash"> | undefined
+        let recompiledCreationCode:
+          | Pick<Tables.ICode, "bytecode_hash">
+          | undefined;
+        let onchainCreationCode:
+          | Pick<Tables.ICode, "bytecode_hash">
+          | undefined;
         if (databaseColumns.recompiledCreationCode) {
-          recompiledCreationCode = await this.database.insertCode(databaseColumns.recompiledCreationCode, dbTx)
+          recompiledCreationCode = await this.database.insertCode(
+            databaseColumns.recompiledCreationCode,
+            dbTx,
+          );
         }
-        const recompiledRuntimeCode = await this.database.insertCode(databaseColumns.recompiledRuntimeCode, dbTx)
+        const recompiledRuntimeCode = await this.database.insertCode(
+          databaseColumns.recompiledRuntimeCode,
+          dbTx,
+        );
 
         // Add onchain bytecodes
         if (databaseColumns.onchainCreationCode) {
-          onchainCreationCode = await this.database.insertCode(databaseColumns.onchainCreationCode, dbTx)
+          onchainCreationCode = await this.database.insertCode(
+            databaseColumns.onchainCreationCode,
+            dbTx,
+          );
         }
-        const onchainRuntimeCode = await this.database.insertCode(databaseColumns.onchainRuntimeCode, dbTx)
+        const onchainRuntimeCode = await this.database.insertCode(
+          databaseColumns.onchainRuntimeCode,
+          dbTx,
+        );
 
         // Add onchain contract in contracts
-        const contract = await this.database.insertContract( {
-          creation_bytecode_hash: onchainCreationCode?.bytecode_hash,
-          runtime_bytecode_hash: onchainRuntimeCode.bytecode_hash,
-        }, dbTx);
+        const contract = await this.database.insertContract(
+          {
+            creation_bytecode_hash: onchainCreationCode?.bytecode_hash,
+            runtime_bytecode_hash: onchainRuntimeCode.bytecode_hash,
+          },
+          dbTx,
+        );
 
         // Add onchain contract in contract_deployments
-        const contractDeployment = await this.database.insertContractDeployment( {
-          ...databaseColumns.contractDeployment,
-          contract_id: contract.id,
-        }, dbTx);
+        const contractDeployment = await this.database.insertContractDeployment(
+          {
+            ...databaseColumns.contractDeployment,
+            contract_id: contract.id,
+          },
+          dbTx,
+        );
 
         // Add recompiled contract
-        const compiledContract = await this.database.insertCompiledContract( {
-          ...databaseColumns.compiledContract,
-          creation_code_hash: recompiledCreationCode?.bytecode_hash,
-          runtime_code_hash: recompiledRuntimeCode.bytecode_hash,
-        }, dbTx);
+        const compiledContract = await this.database.insertCompiledContract(
+          {
+            ...databaseColumns.compiledContract,
+            creation_code_hash: recompiledCreationCode?.bytecode_hash,
+            runtime_code_hash: recompiledRuntimeCode.bytecode_hash,
+          },
+          dbTx,
+        );
 
         // Add recompiled contract sources
-        await this.database.insertCompiledContractsSources( {
-          sourcesInformation: databaseColumns.sourcesInformation,
-          compilation_id: compiledContract.id,
-        }, dbTx);
+        await this.database.insertCompiledContractsSources(
+          {
+            sourcesInformation: databaseColumns.sourcesInformation,
+            compilation_id: compiledContract.id,
+          },
+          dbTx,
+        );
 
         // Add verified contract
-        const verifiedContract = await this.database.insertVerifiedContract( {
-          ...databaseColumns.verifiedContract,
-          compilation_id: compiledContract.id,
-          deployment_id: contractDeployment.id,
-        }, dbTx);
+        const verifiedContract = await this.database.insertVerifiedContract(
+          {
+            ...databaseColumns.verifiedContract,
+            compilation_id: compiledContract.id,
+            deployment_id: contractDeployment.id,
+          },
+          dbTx,
+        );
 
         return verifiedContract.id;
-      })
+      });
     } catch (e) {
       throw new Error(
         `cannot insert verified_contract address=${databaseColumns.contractDeployment.address} chainId=${databaseColumns.contractDeployment.chain_id}\n${e}`,
@@ -118,55 +165,88 @@ export default class StoreBase {
     }
 
     try {
-      return Tables.VerifiedContract.sequelize.transaction(async dbTx =>{
+      const { sequelize } = Tables.VerifiedContract;
+      if (!sequelize) {
+        throw new Error("The sequelize not initialized");
+      }
+      return sequelize.transaction(async (dbTx) => {
         // Add onchain bytecodes
-        let onchainCreationCode: Pick<Tables.Code, "bytecode_hash"> | undefined
+        let onchainCreationCode: Pick<Tables.Code, "bytecode_hash"> | undefined;
         if (databaseColumns.onchainCreationCode) {
-          onchainCreationCode = await this.database.insertCode(databaseColumns.onchainCreationCode, dbTx)
+          onchainCreationCode = await this.database.insertCode(
+            databaseColumns.onchainCreationCode,
+            dbTx,
+          );
         }
-        const onchainRuntimeCode = await this.database.insertCode(databaseColumns.onchainRuntimeCode, dbTx)
+        const onchainRuntimeCode = await this.database.insertCode(
+          databaseColumns.onchainRuntimeCode,
+          dbTx,
+        );
 
         // Add onchain contract in contracts
-        const contract = await this.database.insertContract({
-          creation_bytecode_hash: onchainCreationCode?.bytecode_hash,
-          runtime_bytecode_hash: onchainRuntimeCode.bytecode_hash,
-        }, dbTx)
+        const contract = await this.database.insertContract(
+          {
+            creation_bytecode_hash: onchainCreationCode?.bytecode_hash,
+            runtime_bytecode_hash: onchainRuntimeCode.bytecode_hash,
+          },
+          dbTx,
+        );
 
         // Add onchain contract in contract_deployments
-        const contractDeployment = await this.database.insertContractDeployment({
-          ...databaseColumns.contractDeployment,
-          contract_id: contract.id,
-        }, dbTx)
+        const contractDeployment = await this.database.insertContractDeployment(
+          {
+            ...databaseColumns.contractDeployment,
+            contract_id: contract.id,
+          },
+          dbTx,
+        );
 
         // Add recompiled bytecodes
-        let recompiledCreationCode: Pick<Tables.Code, "bytecode_hash"> | undefined
+        let recompiledCreationCode:
+          | Pick<Tables.Code, "bytecode_hash">
+          | undefined;
         if (databaseColumns.recompiledCreationCode) {
-          recompiledCreationCode = await this.database.insertCode(databaseColumns.recompiledCreationCode, dbTx)
+          recompiledCreationCode = await this.database.insertCode(
+            databaseColumns.recompiledCreationCode,
+            dbTx,
+          );
         }
-        const recompiledRuntimeCode= await this.database.insertCode(databaseColumns.recompiledRuntimeCode, dbTx)
+        const recompiledRuntimeCode = await this.database.insertCode(
+          databaseColumns.recompiledRuntimeCode,
+          dbTx,
+        );
 
         // Add recompiled contract
-        const compiledContracts = await this.database.insertCompiledContract({
-          ...databaseColumns.compiledContract,
-          creation_code_hash: recompiledCreationCode?.bytecode_hash,
-          runtime_code_hash: recompiledRuntimeCode.bytecode_hash,
-        }, dbTx)
+        const compiledContracts = await this.database.insertCompiledContract(
+          {
+            ...databaseColumns.compiledContract,
+            creation_code_hash: recompiledCreationCode?.bytecode_hash,
+            runtime_code_hash: recompiledRuntimeCode.bytecode_hash,
+          },
+          dbTx,
+        );
 
         // Add recompiled contract sources
-        await this.database.insertCompiledContractsSources({
-          sourcesInformation: databaseColumns.sourcesInformation,
-          compilation_id: compiledContracts.id,
-        }, dbTx)
+        await this.database.insertCompiledContractsSources(
+          {
+            sourcesInformation: databaseColumns.sourcesInformation,
+            compilation_id: compiledContracts.id,
+          },
+          dbTx,
+        );
 
         // update verified contract with the newly added recompiled contract
-        const verifiedContract = await this.database.insertVerifiedContract({
-          ...databaseColumns.verifiedContract,
-          compilation_id: compiledContracts.id,
-          deployment_id: contractDeployment.id,
-        }, dbTx)
+        const verifiedContract = await this.database.insertVerifiedContract(
+          {
+            ...databaseColumns.verifiedContract,
+            compilation_id: compiledContracts.id,
+            deployment_id: contractDeployment.id,
+          },
+          dbTx,
+        );
 
-        return verifiedContract.id
-      })
+        return verifiedContract.id;
+      });
     } catch (e) {
       throw new Error(
         `cannot update verified_contract address=${databaseColumns.contractDeployment.address} chainId=${databaseColumns.contractDeployment.chain_id}\n${e}`,
@@ -181,19 +261,25 @@ export default class StoreBase {
   }> {
     this.validateVerificationBeforeStoring(verification);
 
-    const existingVerifiedContractResult = await this.database.getVerifiedContractByChainAndAddress(
-      verification.chainId, verification.address!)
-    const databaseColumns = await getDatabaseColumnsFromVerification(verification);
+    const existingVerifiedContractResult =
+      await this.database.getVerifiedContractByChainAndAddress(
+        verification.chainId,
+        verification.address!,
+      );
+    const databaseColumns =
+      await getDatabaseColumnsFromVerification(verification);
 
     if (!existingVerifiedContractResult) {
       return {
         type: "insert",
-        verifiedContractId: await this.insertNewVerifiedContract(databaseColumns),
+        verifiedContractId:
+          await this.insertNewVerifiedContract(databaseColumns),
       };
     } else {
       return {
         type: "update",
-        verifiedContractId: await this.updateExistingVerifiedContract(databaseColumns),
+        verifiedContractId:
+          await this.updateExistingVerifiedContract(databaseColumns),
         oldVerifiedContractId: existingVerifiedContractResult.id,
       };
     }

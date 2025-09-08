@@ -1,7 +1,8 @@
 import {
   SolidityJsonInput,
   VerificationExport,
-  CompilationTarget, Metadata
+  CompilationTarget,
+  Metadata,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ConflictError } from "../../common/errors/ConflictError";
 import { asyncLocalStorage } from "../../common/async-context";
@@ -15,27 +16,32 @@ import {
   VerifyError,
   VerifyErrorExport,
   VerifyFromConfluxscanInput,
-  type VerifyFromJsonInput, VerifyFromMetadataInput,
-  type VerifyOutput
+  type VerifyFromJsonInput,
+  VerifyFromMetadataInput,
+  type VerifyOutput,
 } from "../workers/workerTypes";
 import { ConfluxscanResult } from "../utils/confluxscan-util";
 import { StoreService } from "../store/StoreService";
 import { ChainMap } from "../../server";
 import { ChainInstance } from "../../config/Loader";
-import { findSolcPlatform, getSolcExecutable, getSolcJs } from "@ethereum-sourcify/compilers";
+import {
+  findSolcPlatform,
+  getSolcExecutable,
+  getSolcJs,
+} from "@ethereum-sourcify/compilers";
 
 export interface VerificationOptions {
-  initCompilers?: boolean;
   chains: ChainMap;
   solcRepoPath: string;
   solJsonRepoPath: string;
   vyperRepoPath: string;
+  initCompilers?: boolean;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
 }
 
 export class VerificationService {
-  private readonly initCompilers: boolean;
+  private readonly initCompilers: boolean | undefined;
   private solcRepoPath: string;
   private solJsonRepoPath: string;
   private store: StoreService;
@@ -43,18 +49,13 @@ export class VerificationService {
   private runningTasks: Set<Promise<void>> = new Set();
   public runningTaskIds: Set<string> = new Set();
 
-  constructor(
-    options: VerificationOptions,
-    store: StoreService,
-  ) {
+  constructor(options: VerificationOptions, store: StoreService) {
     this.initCompilers = options.initCompilers;
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.store = store;
 
-    const chains = Object.entries(
-      options.chains,
-    ).reduce(
+    const chains = Object.entries(options.chains).reduce(
       (acc, [chainId, chain]) => {
         acc[chainId] = chain.getSourcifyChainObj();
         return acc;
@@ -90,8 +91,8 @@ export class VerificationService {
         platform === "bin"
           ? (version: string) => getSolcJs(this.solJsonRepoPath, version)
           : // eslint-disable-next-line indent
-          (version: string) =>
-            getSolcExecutable(this.solcRepoPath, platform, version);
+            (version: string) =>
+              getSolcExecutable(this.solcRepoPath, platform, version);
 
       // get the list of compiler versions
       let solcList: string[];
@@ -150,7 +151,12 @@ export class VerificationService {
     licenseType?: number,
     contractLabel?: string,
   ): Promise<VerificationJobId> {
-    const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
+    const verificationId = await this.store.storeVerificationJob(
+      new Date(),
+      chainId,
+      address,
+      verificationEndpoint,
+    );
 
     const input: VerifyFromJsonInput = {
       chainId,
@@ -165,10 +171,15 @@ export class VerificationService {
     const task = this.workerPool
       .run(input, { name: "verifyFromJsonInput" })
       .then((output: VerifyOutput) => {
-        return this.handleWorkerResponse(verificationId, output, licenseType, contractLabel);
+        return this.handleWorkerResponse(
+          verificationId,
+          output,
+          licenseType,
+          contractLabel,
+        );
       })
       .finally(() => {
-        this.runningTaskIds.delete(verificationId)
+        this.runningTaskIds.delete(verificationId);
         this.runningTasks.delete(task);
       });
     this.runningTaskIds.add(verificationId);
@@ -185,7 +196,12 @@ export class VerificationService {
     sources: Record<string, string>,
     creationTransactionHash?: string,
   ): Promise<VerificationJobId> {
-    const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
+    const verificationId = await this.store.storeVerificationJob(
+      new Date(),
+      chainId,
+      address,
+      verificationEndpoint,
+    );
 
     const input: VerifyFromMetadataInput = {
       chainId,
@@ -202,10 +218,10 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output);
       })
       .finally(() => {
-        this.runningTaskIds.delete(verificationId)
+        this.runningTaskIds.delete(verificationId);
         this.runningTasks.delete(task);
       });
-    this.runningTaskIds.add(verificationId)
+    this.runningTaskIds.add(verificationId);
     this.runningTasks.add(task);
 
     return verificationId;
@@ -217,7 +233,12 @@ export class VerificationService {
     address: string,
     etherscanResult: ConfluxscanResult,
   ): Promise<VerificationJobId> {
-    const verificationId = await this.store.storeVerificationJob(new Date(), chainId, address, verificationEndpoint)
+    const verificationId = await this.store.storeVerificationJob(
+      new Date(),
+      chainId,
+      address,
+      verificationEndpoint,
+    );
 
     const input: VerifyFromConfluxscanInput = {
       chainId,
@@ -232,10 +253,10 @@ export class VerificationService {
         return this.handleWorkerResponse(verificationId, output);
       })
       .finally(() => {
-        this.runningTaskIds.delete(verificationId)
+        this.runningTaskIds.delete(verificationId);
         this.runningTasks.delete(task);
       });
-    this.runningTaskIds.add(verificationId)
+    this.runningTaskIds.add(verificationId);
     this.runningTasks.add(task);
 
     return verificationId;
@@ -259,10 +280,15 @@ export class VerificationService {
         throw new Error(errorMessage);
       })
       .then((verification: VerificationExport) => {
-        return this.store.storeVerification(verification, {
-          verificationId,
-          finishTime: new Date()
-        }, licenseType, contractLabel);
+        return this.store.storeVerification(
+          verification,
+          {
+            verificationId,
+            finishTime: new Date(),
+          },
+          licenseType,
+          contractLabel,
+        );
       })
       .catch((error) => {
         let errorExport: VerifyErrorExport;
@@ -290,11 +316,11 @@ export class VerificationService {
           };
         }
 
-        return this.store.setJobError(verificationId, new Date(), errorExport)
+        return this.store.setJobError(verificationId, new Date(), errorExport);
       });
   }
 
-  public isRunning(verificationId): boolean {
-    return this.runningTaskIds.has(verificationId)
+  public isRunning(verificationId: string): boolean {
+    return this.runningTaskIds.has(verificationId);
   }
 }

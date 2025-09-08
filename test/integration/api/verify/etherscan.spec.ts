@@ -19,7 +19,7 @@ import {
   UNVERIFIED_CONTRACT_RESPONSE,
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
-  STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE
+  STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import {
@@ -31,11 +31,16 @@ import { toMatchLevel } from "../../../../services/utils/util";
 use(chaiHttp);
 
 describe("POST /verify/etherscan/:chainId/:address", function () {
+  if (!process.env.ETHERSCAN_API_KEY) {
+    console.log("Skipping Etherscan test for no ETHERSCAN_API_KEY set");
+    return;
+  }
+
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
   const sandbox = sinon.createSandbox();
   const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
-  const testChainId = 1
+  const testChainId = 1;
   const singleContract = testContracts[testChainId].find(
     (contract) => contract.type === "single",
   )!;

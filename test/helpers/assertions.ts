@@ -13,7 +13,7 @@ import { toVerificationStatus } from "../../services/utils/util";
 chai.use(chaiHttp);
 
 export async function assertContractSaved(
-  sourcifyDatabase: Sequelize | null,
+  sourcifyDatabase: Sequelize,
   expectedAddress: string | undefined,
   expectedChain: number | undefined,
   expectedStatus: VerificationStatus,
@@ -36,18 +36,22 @@ export async function assertContractSaved(
       WHERE cd.address = ? AND cd.chain_id = ?`,
       {
         type: QueryTypes.SELECT,
-        replacements: [
-          expectedAddress,
-          expectedChain,
-        ],
-      }
+        replacements: [expectedAddress, expectedChain],
+      },
     );
     const contract: any = list?.length ? list[0] : null;
 
     chai.expect(contract).to.not.be.null;
     chai.expect(contract.address).to.equal(expectedAddress);
     chai.expect(contract.chain_id).to.equal(expectedChain);
-    chai.expect(getMatchStatus({ runtimeMatch: contract.runtime_match, creationMatch: contract.creation_match})).to.equal(expectedStatus);
+    chai
+      .expect(
+        getMatchStatus({
+          runtimeMatch: contract.runtime_match,
+          creationMatch: contract.creation_match,
+        }),
+      )
+      .to.equal(expectedStatus);
   }
 }
 
@@ -130,7 +134,7 @@ export async function assertJobVerification(
 
 // If you pass storageService = false, then the match will not be compared to the database
 export const assertVerification = async (
-  serverFixture: ServerFixture | null,
+  serverFixture: ServerFixture,
   err: Error | null,
   res: Response,
   done: Done | null,
@@ -153,10 +157,10 @@ export const assertVerification = async (
     chai.expect(toVerificationStatus(result.match)).to.equal(expectedStatus);
 
     await assertContractSaved(
-      serverFixture?.sourcifyDatabase ?? null,
+      serverFixture.sourcifyDatabase,
       expectedAddress,
       expectedChain,
-      expectedStatus
+      expectedStatus,
     );
     if (done) done();
   } catch (e) {

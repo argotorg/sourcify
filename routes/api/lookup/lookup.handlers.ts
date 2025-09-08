@@ -13,7 +13,10 @@ import {
   Implementation,
 } from "../../../services/utils/proxy-contract-util";
 import { v4 as uuidv4 } from "uuid";
-import { Field, FIELDS_TO_STORED_PROPERTIES } from "../../../services/store/Tables";
+import {
+  Field,
+  FIELDS_TO_STORED_PROPERTIES,
+} from "../../../services/store/Tables";
 import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify/build/main/SourcifyChain/SourcifyChainTypes";
 import { getChainId } from "../errors";
 
@@ -45,7 +48,7 @@ export async function listContractsEndpoint(
     addresses: req.query.addresses,
   });*/
   const services = req.app.get("services") as Services;
-  const chain = getChainId(req.params.chainId)
+  const chain = getChainId(req.params.chainId);
   const addresses = req.query?.addresses?.split(",");
 
   const contracts = await services.store.getContractsByChainId(
@@ -53,7 +56,8 @@ export async function listContractsEndpoint(
     parseInt(req.query.limit || "200"),
     req.query.sort === "desc" || !req.query.sort,
     req.query.afterMatchId,
-    addresses)
+    addresses,
+  );
 
   res.status(StatusCodes.OK).json(contracts);
 }
@@ -82,16 +86,21 @@ export async function getContractEndpoint(
     omit: req.query.omit,
   });*/
   const services = req.app.get("services") as Services;
-  const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap
+  const sourcifyChainMap = req.app.get("chains") as SourcifyChainMap;
 
-  let fields = req.query.fields?.split(",") as Field[]
+  let fields = req.query.fields?.split(",") as Field[];
   if (fields?.includes("all" as Field)) {
-    fields = Object.keys(FIELDS_TO_STORED_PROPERTIES) as Field[]
+    fields = Object.keys(FIELDS_TO_STORED_PROPERTIES) as Field[];
   }
   const omit = req.query.omit?.split(",") as Field[];
-  const chain = getChainId(req.params.chainId)
+  const chain = getChainId(req.params.chainId);
 
-  const contract = await services.store.getContract(chain, req.params.address, fields, omit)
+  const contract = await services.store.getContract(
+    chain,
+    req.params.address,
+    fields,
+    omit,
+  );
 
   if (!contract.match) {
     res.status(StatusCodes.NOT_FOUND).json(contract);
@@ -125,14 +134,14 @@ export async function getContractEndpoint(
             const implementation: Implementation = {
               address: implementationAddress,
             };
-            const chain = getChainId(req.params.chainId)
+            const chain = getChainId(req.params.chainId);
 
             const implementationContract = await services.store.getContract(
               chain,
               implementationAddress,
               ["compilation.name"],
-              undefined
-            )
+              undefined,
+            );
             if (implementationContract.compilation?.name) {
               implementation.name = implementationContract.compilation.name;
             }

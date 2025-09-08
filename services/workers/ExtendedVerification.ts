@@ -1,18 +1,18 @@
-import { AbstractCompilation } from '@ethereum-sourcify/lib-sourcify';
-import { SourcifyChain } from '@ethereum-sourcify/lib-sourcify';
-import { lt } from 'semver';
+import { AbstractCompilation } from "@ethereum-sourcify/lib-sourcify";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import { lt } from "semver";
 import {
   splitAuxdata,
   AuxdataStyle,
   decode as decodeBytecode,
   SolidityDecodedObject,
-} from '@ethereum-sourcify/bytecode-utils';
-import { SolidityCompilation } from '@ethereum-sourcify/lib-sourcify';
-import { VyperCompilation } from '@ethereum-sourcify/lib-sourcify';
+} from "@ethereum-sourcify/bytecode-utils";
+import { SolidityCompilation } from "@ethereum-sourcify/lib-sourcify";
+import { VyperCompilation } from "@ethereum-sourcify/lib-sourcify";
 import {
   CompiledContractCborAuxdata,
   StringMap,
-} from '@ethereum-sourcify/lib-sourcify';
+} from "@ethereum-sourcify/lib-sourcify";
 
 import {
   extractAuxdataTransformation,
@@ -22,23 +22,26 @@ import {
   extractLibrariesTransformation,
   Transformation,
   TransformationValues,
-} from '@ethereum-sourcify/lib-sourcify';
+} from "@ethereum-sourcify/lib-sourcify";
 import {
   BytecodeMatchingResult,
   SolidityBugType,
   VerificationError,
   VerificationExport,
   VerificationStatus,
-} from '@ethereum-sourcify/lib-sourcify';
+} from "@ethereum-sourcify/lib-sourcify";
 import {
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
   SoliditySettings,
   Metadata,
-} from '@ethereum-sourcify/compilers-types';
-import { SolidityMetadataContract } from '@ethereum-sourcify/lib-sourcify';
-import { blueprintDeployerBytecode, parseBlueprintPreamble } from "../utils/erc5202-util";
+} from "@ethereum-sourcify/compilers-types";
+import { SolidityMetadataContract } from "@ethereum-sourcify/lib-sourcify";
+import {
+  blueprintDeployerBytecode,
+  parseBlueprintPreamble,
+} from "../utils/erc5202-util";
 
 export class ExtendedVerification {
   // Bytecodes
@@ -68,9 +71,9 @@ export class ExtendedVerification {
   ) {}
 
   async verify({
-                 forceEmscripten = false,
-               }: { forceEmscripten?: boolean } = {}): Promise<void> {
-    console.info('Verifying contract', {
+    forceEmscripten = false,
+  }: { forceEmscripten?: boolean } = {}): Promise<void> {
+    console.info("Verifying contract", {
       address: this.address,
       chainId: this.sourcifyChain.chainId,
     });
@@ -81,15 +84,15 @@ export class ExtendedVerification {
       );
     } catch (e: any) {
       throw new VerificationError({
-        code: 'cannot_fetch_bytecode',
+        code: "cannot_fetch_bytecode",
         address: this.address,
         chainId: this.sourcifyChain.chainId.toString(),
       });
     }
 
-    if (this.onchainRuntimeBytecode === '0x') {
+    if (this.onchainRuntimeBytecode === "0x") {
       throw new VerificationError({
-        code: 'contract_not_deployed',
+        code: "contract_not_deployed",
         address: this.address,
         chainId: this.sourcifyChain.chainId.toString(),
       });
@@ -105,9 +108,9 @@ export class ExtendedVerification {
     const compiledRuntimeBytecode = this.compilation.runtimeBytecode;
     const compiledCreationBytecode = this.compilation.creationBytecode;
 
-    if (compiledRuntimeBytecode === '0x' || compiledCreationBytecode === '0x') {
+    if (compiledRuntimeBytecode === "0x" || compiledCreationBytecode === "0x") {
       throw new VerificationError({
-        code: 'compiled_bytecode_is_zero',
+        code: "compiled_bytecode_is_zero",
       });
     }
 
@@ -119,7 +122,7 @@ export class ExtendedVerification {
     if (
       (this.compilation instanceof SolidityCompilation &&
         compiledRuntimeBytecode.length !==
-        this.onchainRuntimeBytecode.length) ||
+          this.onchainRuntimeBytecode.length) ||
       (this.compilation instanceof VyperCompilation &&
         compiledRuntimeBytecode.length > this.onchainRuntimeBytecode.length)
     ) {
@@ -128,12 +131,12 @@ export class ExtendedVerification {
         const solidityBugType = this.handleSolidityExtraFileInputBug();
         if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
           throw new VerificationError({
-            code: 'extra_file_input_bug',
+            code: "extra_file_input_bug",
           });
         }
       }
       throw new VerificationError({
-        code: 'bytecode_length_mismatch',
+        code: "bytecode_length_mismatch",
       });
     }
 
@@ -148,13 +151,13 @@ export class ExtendedVerification {
 
     // Try to match onchain runtime bytecode with compiled runtime bytecode
     try {
-      console.debug('Matching with runtime bytecode', {
+      console.debug("Matching with runtime bytecode", {
         chain: this.sourcifyChain.chainId,
         address: this.address,
       });
       await this.matchWithRuntimeBytecode();
     } catch (e: any) {
-      console.warn('Error matching with runtime bytecode', {
+      console.warn("Error matching with runtime bytecode", {
         chain: this.sourcifyChain.chainId,
         address: this.address,
         error: e.message,
@@ -169,7 +172,7 @@ export class ExtendedVerification {
       let solidityBugType = this.handleSolidityExtraFileInputBug();
       if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
         throw new VerificationError({
-          code: 'extra_file_input_bug',
+          code: "extra_file_input_bug",
         });
       }
 
@@ -184,7 +187,7 @@ export class ExtendedVerification {
     // Try to match onchain creation bytecode with compiled creation bytecode
     if (this.creatorTxHash) {
       try {
-        console.debug('Matching with creation tx', {
+        console.debug("Matching with creation tx", {
           chain: this.sourcifyChain.chainId,
           address: this.address,
           creatorTxHash: this.creatorTxHash,
@@ -206,7 +209,7 @@ export class ExtendedVerification {
 
         await this.matchWithCreationTx();
       } catch (e: any) {
-        console.warn('Error matching with creation tx', {
+        console.warn("Error matching with creation tx", {
           chain: this.sourcifyChain.chainId,
           address: this.address,
           creatorTxHash: this.creatorTxHash,
@@ -217,7 +220,7 @@ export class ExtendedVerification {
     }
 
     if (this.creationMatch !== null || this.runtimeMatch !== null) {
-      console.info('Verified contract', {
+      console.info("Verified contract", {
         address: this.address,
         chainId: this.sourcifyChain.chainId,
         runtimeMatch: this.runtimeMatch,
@@ -227,7 +230,7 @@ export class ExtendedVerification {
     }
 
     throw new VerificationError({
-      code: 'no_match',
+      code: "no_match",
     });
   }
 
@@ -263,7 +266,7 @@ export class ExtendedVerification {
           await this.compilation.compile(forceEmscripten);
         }
       }
-    } catch (e: any) {
+    } catch (e) {
       // If we fail to find perfect metadata, we proceed with the verification
     }
   }
@@ -304,11 +307,11 @@ export class ExtendedVerification {
     //   https://github.com/ethereum/sourcify/issues/1088
     if (
       !forceEmscripten && // Enter this case only if we are not already forcing Emscripten
-      lt(this.compilation.compilerVersion, '0.8.21') &&
+      lt(this.compilation.compilerVersion, "0.8.21") &&
       !settings.optimizer?.enabled &&
       settings.viaIR
     ) {
-      console.info('Force Emscripten compiler', {
+      console.info("Force Emscripten compiler", {
         address: this.address,
         chainId: this.sourcifyChain.chainId,
       });
@@ -378,9 +381,9 @@ export class ExtendedVerification {
           }
         })
       ) {
-        result.match = 'partial';
+        result.match = "partial";
       } else {
-        result.match = 'perfect';
+        result.match = "perfect";
       }
 
       result.libraryMap = libraryMap;
@@ -407,31 +410,43 @@ export class ExtendedVerification {
     /* eslint-disable indent */
     const doPopulatedBytecodesMatch = isCreation
       ? onchainBytecode.startsWith(
-        auxdataTransformationResult.populatedRecompiledBytecode,
-      )
+          auxdataTransformationResult.populatedRecompiledBytecode,
+        )
       : auxdataTransformationResult.populatedRecompiledBytecode ===
-      onchainBytecode;
+        onchainBytecode;
     /* eslint-enable indent */
 
     // ERC5202 contract verification
-    let doBlueprintBytecodesMatch
-    const initCode = Buffer.from(this.compilation.creationBytecode.slice(2), "hex")
-    if(isCreation) {
-      const blueprintBytecode = blueprintDeployerBytecode(initCode)
-      doBlueprintBytecodesMatch = blueprintBytecode.equals(Buffer.from(onchainBytecode.slice(2), "hex"))
-      if(doBlueprintBytecodesMatch) {
-        result.populatedRecompiledBytecode = `0x${blueprintBytecode.toString('hex')}`
+    let doBlueprintBytecodesMatch;
+    const initCode = Buffer.from(
+      this.compilation.creationBytecode.slice(2),
+      "hex",
+    );
+    if (isCreation) {
+      const blueprintBytecode = blueprintDeployerBytecode(initCode);
+      doBlueprintBytecodesMatch = blueprintBytecode.equals(
+        Buffer.from(onchainBytecode.slice(2), "hex"),
+      );
+      if (doBlueprintBytecodesMatch) {
+        result.populatedRecompiledBytecode = `0x${blueprintBytecode.toString("hex")}`;
       }
     } else {
-      const runtimeCode = Buffer.from(onchainBytecode.slice(2), "hex")
-      try{
-        const [, , parsedInitCode] = parseBlueprintPreamble(runtimeCode)
-        doBlueprintBytecodesMatch = parsedInitCode.equals(initCode)
-      }catch (e) {}
+      const runtimeCode = Buffer.from(onchainBytecode.slice(2), "hex");
+      try {
+        const { initCode: parsedInitCode } =
+          parseBlueprintPreamble(runtimeCode);
+        doBlueprintBytecodesMatch = parsedInitCode.equals(initCode);
+      } catch (e) {
+        if (e instanceof Error) {
+          console.log(`Check blueprint deployment`, e.message);
+        } else {
+          throw e;
+        }
+      }
     }
 
     if (doPopulatedBytecodesMatch || doBlueprintBytecodesMatch) {
-      result.match = 'partial';
+      result.match = "partial";
       result.libraryMap = libraryMap;
       result.transformations = [
         ...result.transformations,
@@ -491,20 +506,15 @@ export class ExtendedVerification {
     );
 
     if (
-      matchBytecodesResult.match === 'partial' ||
-      matchBytecodesResult.match === 'perfect'
+      matchBytecodesResult.match === "partial" ||
+      matchBytecodesResult.match === "perfect"
     ) {
-      let constructorTransformationResult
-      try {
-        constructorTransformationResult =
-          extractConstructorArgumentsTransformation(
-            matchBytecodesResult.populatedRecompiledBytecode,
-            this.onchainCreationBytecode,
-            this.compilation.metadata,
-          );
-      }catch (e) {
-        console.log(`extractConstructorArgumentsTransformation err ==\n`, e)
-      }
+      const constructorTransformationResult =
+        extractConstructorArgumentsTransformation(
+          matchBytecodesResult.populatedRecompiledBytecode,
+          this.onchainCreationBytecode,
+          this.compilation.metadata,
+        );
       this.creationTransformations = [
         ...matchBytecodesResult.transformations,
         ...constructorTransformationResult.transformations,
@@ -528,7 +538,7 @@ export class ExtendedVerification {
   get onchainRuntimeBytecode() {
     if (!this._onchainRuntimeBytecode) {
       throw new VerificationError({
-        code: 'onchain_runtime_bytecode_not_available',
+        code: "onchain_runtime_bytecode_not_available",
       });
     }
     return this._onchainRuntimeBytecode;
@@ -537,7 +547,7 @@ export class ExtendedVerification {
   get onchainCreationBytecode() {
     if (!this._onchainCreationBytecode) {
       throw new VerificationError({
-        code: 'onchain_creation_bytecode_not_available',
+        code: "onchain_creation_bytecode_not_available",
       });
     }
     return this._onchainCreationBytecode;
@@ -688,7 +698,7 @@ export class ExtendedVerification {
             },
             deployedBytecode: {
               sourceMap:
-              contractCompilerOutput?.evm?.deployedBytecode?.sourceMap,
+                contractCompilerOutput?.evm?.deployedBytecode?.sourceMap,
               linkReferences: (contractCompilerOutput as SolidityOutputContract)
                 ?.evm?.deployedBytecode?.linkReferences,
             },
