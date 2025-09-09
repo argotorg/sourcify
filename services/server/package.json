@@ -53,6 +53,7 @@
     "@ethereum-sourcify/bytecode-utils": "^1.3.12",
     "@ethereum-sourcify/compilers": "^1.0.9",
     "@ethereum-sourcify/lib-sourcify": "^2.3.0",
+    "@google-cloud/bigquery": "^8.1.1",
     "@google-cloud/cloud-sql-connector": "1.8.3",
     "@shazow/whatsabi": "0.22.2",
     "@solidity-parser/parser": "0.20.2",

@@ -32,6 +32,8 @@ tags:
     description: API v2 - Submit a contract for verification
   - name: Verification Jobs
     description: API v2 - Check the status of a verification job
+  - name: BigQuery
+    description: API v2 - Run read-only BigQuery queries
   - name: (Deprecated) Stateless Verification
     description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
   - name: (Deprecated) Repository
@@ -57,6 +59,68 @@ paths:
     $ref: "apiv2.yaml#/paths/~1v2~1contract~1all-chains~1{address}"
   /v2/contracts/{chainId}:
     $ref: "apiv2.yaml#/paths/~1v2~1contracts~1{chainId}"
+  /v2/bigquery:
+    post:
+      tags:
+        - BigQuery
+      summary: Run a read-only BigQuery SELECT query
+      description: |
+        Executes a BigQuery query on behalf of the Sourcify UI. The server performs a pre-flight dry-run to estimate bytes processed
+        and enforces a hard per-query cap using `maximumBytesBilled`. Only single-statement `SELECT` queries are allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BigQueryQueryRequest"
+            examples:
+              basic:
+                value:
+                  sql: "SELECT 1 AS one"
+                  maxRows: 10
+              withParams:
+                value:
+                  sql: "SELECT * FROM `project.dataset.table` WHERE address = @address"
+                  params:
+                    address: "0x0000000000000000000000000000000000000000"
+                  maxRows: 100
+              dryRunOnly:
+                value:
+                  sql: "SELECT COUNT(*) AS n FROM `project.dataset.table`"
+                  dryRunOnly: true
+      responses:
+        "200":
+          description: Query executed successfully or dry-run estimate returned
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/BigQueryQueryResponse"
+                  - $ref: "#/components/schemas/BigQueryDryRunResponse"
+        "400":
+          description: Bad request (e.g., non-SELECT or multi-statement SQL)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BigQueryError"
+        "403":
+          description: Query references non-allowlisted datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BigQueryError"
+        "422":
+          description: Estimated bytes exceed the configured cap (no charge)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BigQueryError"
+        "500":
+          description: Internal error while creating or running the query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BigQueryError"
   /verify:
     $ref: "server/apiv1/verification/verify/stateless/verify.stateless.paths.yaml#/paths/~1verify"
   /verify/vyper:
@@ -145,3 +209,116 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
+  schemas:
+    BigQueryQueryRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          description: Single-statement SELECT query. Semicolons are disallowed.
+        params:
+          type: object
+          additionalProperties: {}
+          description: Named query parameters. Use @name in SQL.
+        maxRows:
+          type: integer
+          minimum: 1
+          maximum: 5000
+          default: 1000
+          description: Maximum number of rows to return to the client.
+        dryRunOnly:
+          type: boolean
+          default: false
+          description: If true, only perform dry-run and return the byte estimate.
+    BigQueryQueryResponse:
+      type: object
+      required:
+        - ok
+        - jobId
+        - location
+        - estimatedBytes
+        - estimatedMiB
+        - billedBytes
+        - billedMiB
+        - capBytes
+        - capMiB
+        - rowCount
+        - rows
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        jobId:
+          type: string
+        location:
+          type: string
+        estimatedBytes:
+          type: string
+          description: Estimated bytes (dry-run) as decimal string.
+        estimatedMiB:
+          type: number
+        billedBytes:
+          type: string
+          description: Actual billed bytes as decimal string.
+        billedMiB:
+          type: number
+        capBytes:
+          type: string
+        capMiB:
+          type: number
+        rowCount:
+          type: integer
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+    BigQueryDryRunResponse:
+      type: object
+      required:
+        - ok
+        - dryRunOnly
+        - estimatedBytes
+        - estimatedMiB
+        - capBytes
+        - capMiB
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        dryRunOnly:
+          type: boolean
+          enum: [true]
+        estimatedBytes:
+          type: string
+        estimatedMiB:
+          type: number
+        capBytes:
+          type: string
+        capMiB:
+          type: number
+    BigQueryError:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        error:
+          type: string
+        reason:
+          type: string
+          description: Machine-readable reason (e.g., ESTIMATE_EXCEEDS_CAP)
+        estimatedBytes:
+          type: string
+        estimatedMiB:
+          type: number
+        capBytes:
+          type: string
+        capMiB:
+          type: number
+        message:
+          type: string

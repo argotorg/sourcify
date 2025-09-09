@@ -1,6 +1,7 @@
 import { Router } from "express";
 import lookupRoutes from "./lookup/lookup.routes";
 import jobsRoutes from "./jobs/jobs.routes";
+import { postBigQueryEndpoint } from "./bigquery/bigquery.handler";
 import verificationRoutes from "./verification/verification.routes";
 import { Services } from "../services/services";
 import { RWStorageIdentifiers } from "../services/storageServices/identifiers";
@@ -24,5 +25,6 @@ router.use((req, res, next) => {
 router.use("/", lookupRoutes);
 router.use("/", jobsRoutes);
 router.use("/", verificationRoutes);
+router.use("/", postBigQueryEndpoint);
 
 export default router;
