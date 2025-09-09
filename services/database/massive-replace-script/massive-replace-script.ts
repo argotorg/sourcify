@@ -66,7 +66,7 @@ function storeFailedContract(contract: any, error: any): void {
   }
 }
 
-const N = 5; // Number of contracts to process at a time
+const N = 100; // Number of contracts to process at a time
 
 const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
 
@@ -214,6 +214,7 @@ async function processContract(
           secondToWait = 5; // Increase wait time on error
         }
       }
+      break;
 
       // Update the counter file only after the batch successfully completes
 
