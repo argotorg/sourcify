@@ -852,37 +852,6 @@ ${
     return verifiedContractsInsertResult;
   }
 
-  async updateContractDeployment(
-    poolClient: PoolClient,
-    {
-      id,
-      transaction_hash,
-      block_number,
-      transaction_index,
-      deployer,
-      contract_id,
-    }: Omit<Tables.ContractDeployment, "chain_id" | "address">,
-  ) {
-    return await poolClient.query(
-      `UPDATE ${this.schema}.contract_deployments 
-       SET 
-         transaction_hash = $2,
-         block_number = $3,
-         transaction_index = $4,
-         deployer = $5,
-         contract_id = $6
-       WHERE id = $1`,
-      [
-        id,
-        transaction_hash,
-        block_number,
-        transaction_index,
-        deployer,
-        contract_id,
-      ],
-    );
-  }
-
   async getVerificationJobById(
     verificationId: string,
   ): Promise<QueryResult<GetVerificationJobByIdResult>> {
