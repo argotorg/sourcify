@@ -28,12 +28,14 @@ interface SignatureHashMapping {
 interface SignatureResult {
   function: SignatureHashMapping;
   event: SignatureHashMapping;
+  error: SignatureHashMapping;
 }
 
 interface LookupSignaturesRequest extends Request {
   query: {
     function?: string;
     event?: string;
+    error?: string;
     filter?: "true" | "false";
   };
 }
@@ -48,6 +50,7 @@ export async function lookupSignatures(
     const {
       function: functionQuery,
       event: eventQuery,
+      error: errorQuery,
       filter: shouldFilter = "true",
     } = req.query;
     // TODO: Implement filtering logic when shouldFilter is true
@@ -58,12 +61,13 @@ export async function lookupSignatures(
 
     const functionHashes = functionQuery?.split(",") || [];
     const eventHashes = eventQuery?.split(",") || [];
+    const errorHashes = errorQuery?.split(",") || [];
 
-    const result: SignatureResult = { function: {}, event: {} };
+    const result: SignatureResult = { function: {}, event: {}, error: {} };
 
     const getSignatures = async (
       hash: string,
-      type: Exclude<SignatureType, "error">,
+      type: SignatureType,
     ) => {
       let dbResult: QueryResult<Pick<Tables.Signatures, "signature">>;
       if (hash.length === 66) {
@@ -84,8 +88,9 @@ export async function lookupSignatures(
     };
 
     await Promise.all([
-      ...functionHashes.map((hash) => getSignatures(hash, "function")),
-      ...eventHashes.map((hash) => getSignatures(hash, "event")),
+      ...functionHashes.map((hash) => getSignatures(hash, SignatureType.Function)),
+      ...eventHashes.map((hash) => getSignatures(hash, SignatureType.Event)),
+      ...errorHashes.map((hash) => getSignatures(hash, SignatureType.Error)),
     ]);
 
     res.status(StatusCodes.OK).json({
@@ -122,11 +127,11 @@ export async function searchSignatures(
       RWStorageIdentifiers.SourcifyDatabase
     ] as SourcifyDatabaseService;
 
-    const result: SignatureResult = { function: {}, event: {} };
+    const result: SignatureResult = { function: {}, event: {}, error: {} };
 
     const searchSignaturesInDb = async (
       pattern: string,
-      type: Exclude<SignatureType, "error">,
+      type: SignatureType,
     ) => {
       const dbResult =
         await databaseService.database.searchSignaturesByPatternAndType(
@@ -136,7 +141,7 @@ export async function searchSignatures(
 
       for (const row of dbResult.rows) {
         const hash =
-          type === "event" ? row.signature_hash_32 : row.signature_hash_4;
+          type === SignatureType.Event ? row.signature_hash_32 : row.signature_hash_4;
 
         if (!result[type][hash]) {
           result[type][hash] = [];
@@ -148,10 +153,9 @@ export async function searchSignatures(
       }
     };
 
-    await Promise.all([
-      searchSignaturesInDb(searchQuery, "function"),
-      searchSignaturesInDb(searchQuery, "event"),
-    ]);
+    await Promise.all(
+      Object.values(SignatureType).map((type) => searchSignaturesInDb(searchQuery, type))
+    );
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -168,6 +172,7 @@ interface GetSignatureStatsResult {
   count: {
     function: number;
     event: number;
+    error: number;
   };
 }
 
@@ -184,10 +189,10 @@ export async function getSignaturesStats(
     ] as SourcifyDatabaseService;
 
     const result: GetSignatureStatsResult = {
-      count: { function: 0, event: 0 },
+      count: { function: 0, event: 0, error: 0 },
     };
 
-    const getSignatureCount = async (type: Exclude<SignatureType, "error">) => {
+    const getSignatureCount = async (type: SignatureType) => {
       const dbResult =
         await databaseService.database.getSignatureCountByType(type);
 
@@ -198,10 +203,9 @@ export async function getSignaturesStats(
       result.count[type] = parseInt(dbResult.rows[0].count, 10);
     };
 
-    await Promise.all([
-      getSignatureCount("function"),
-      getSignatureCount("event"),
-    ]);
+    await Promise.all(
+      Object.values(SignatureType).map((type) => getSignatureCount(type))
+    );
 
     res.status(StatusCodes.OK).json({
       ok: true,

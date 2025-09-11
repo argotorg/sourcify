@@ -1,6 +1,10 @@
 import { id as keccak256str, Fragment, JsonFragment } from "ethers";
 
-export type SignatureType = "function" | "event" | "error";
+export enum SignatureType {
+  Function = "function",
+  Event = "event",
+  Error = "error",
+}
 
 export interface SignatureData {
   signature: string;
@@ -21,9 +25,9 @@ export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
       continue;
     }
     switch (fragment.type) {
-      case "function":
-      case "event":
-      case "error":
+      case SignatureType.Function:
+      case SignatureType.Event:
+      case SignatureType.Error:
         signatures.push(getSignatureData(fragment));
     }
   }
