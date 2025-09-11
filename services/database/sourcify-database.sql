@@ -1,4 +1,4 @@
-\restrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+\restrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
@@ -26,6 +26,17 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: signature_type_enum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.signature_type_enum AS ENUM (
+    'function',
+    'event',
+    'error'
+);
 
 
 --
@@ -912,6 +923,7 @@ CREATE TABLE public.compiled_contracts_signatures (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     compilation_id uuid NOT NULL,
     signature_hash_32 bytea NOT NULL,
+    signature_type public.signature_type_enum NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -991,10 +1003,7 @@ CREATE TABLE public.signatures (
     signature_hash_32 bytea NOT NULL,
     signature_hash_4 bytea GENERATED ALWAYS AS (SUBSTRING(signature_hash_32 FROM 1 FOR 4)) STORED,
     signature character varying NOT NULL,
-    signature_type character varying NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT signatures_signature_type_check CHECK (((signature_type)::text = ANY ((ARRAY['function'::character varying, 'event'::character varying, 'error'::character varying])::text[])))
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1248,7 +1257,7 @@ ALTER TABLE ONLY public.compiled_contracts_signatures
 --
 
 ALTER TABLE ONLY public.compiled_contracts_signatures
-    ADD CONSTRAINT compiled_contracts_signatures_pseudo_pkey UNIQUE (compilation_id, signature_hash_32);
+    ADD CONSTRAINT compiled_contracts_signatures_pseudo_pkey UNIQUE (compilation_id, signature_hash_32, signature_type);
 
 
 --
@@ -1321,14 +1330,6 @@ ALTER TABLE ONLY public.session
 
 ALTER TABLE ONLY public.signatures
     ADD CONSTRAINT signatures_pkey PRIMARY KEY (signature_hash_32);
-
-
---
--- Name: signatures signatures_pseudo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.signatures
-    ADD CONSTRAINT signatures_pseudo_pkey UNIQUE (signature, signature_type);
 
 
 --
@@ -1432,13 +1433,6 @@ CREATE INDEX compiled_contracts_runtime_code_hash ON public.compiled_contracts U
 
 
 --
--- Name: compiled_contracts_signatures_compilation_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX compiled_contracts_signatures_compilation_idx ON public.compiled_contracts_signatures USING btree (compilation_id);
-
-
---
 -- Name: compiled_contracts_signatures_signature_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1495,10 +1489,10 @@ CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtim
 
 
 --
--- Name: signatures_hash_4_type_idx; Type: INDEX; Schema: public; Owner: -
+-- Name: signatures_hash_4_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX signatures_hash_4_type_idx ON public.signatures USING btree (signature_hash_4, signature_type);
+CREATE INDEX signatures_hash_4_idx ON public.signatures USING btree (signature_hash_4);
 
 
 --
@@ -1810,13 +1804,6 @@ CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.contracts FOR EACH 
 
 
 --
--- Name: signatures update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.signatures FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
-
-
---
 -- Name: sources update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1995,7 +1982,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict yGuaBLcqI5YLgMw7guCPXKi6eLMEGUffkZCZP08ITxWOCB9xlc9oE9gsPajsJdx
+\unrestrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
 
 
 --

@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult } from "pg";
-import { Bytes } from "../../types";
+import { Bytes, BytesKeccak } from "../../types";
 import {
   bytesFromString,
   GetSourcifyMatchByChainAddressResult,
@@ -282,6 +282,16 @@ ${
           AND contract_deployments.address = $2
       `,
       [chain, address],
+    );
+  }
+
+  async getCompilationIdForVerifiedContract(
+    verifiedContractId: Tables.VerifiedContract["id"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.VerifiedContract, "compilation_id">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT compilation_id FROM verified_contracts WHERE id = $1`,
+      [verifiedContractId],
     );
   }
 
@@ -713,6 +723,68 @@ ${
     await poolClient.query(
       compiledContractsSourcesQuery,
       compiledContractsSourcesQueryValues,
+    );
+  }
+
+  async insertSignatures(
+    signatures: Omit<Tables.Signatures, "signature_hash_4">[],
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    if (signatures.length === 0) {
+      return;
+    }
+
+    const valueIndexes: string[] = [];
+    const queryValues: (BytesKeccak | string)[] = [];
+
+    signatures.forEach((_, index) => {
+      const baseIndex = index * 2 + 1;
+      valueIndexes.push(`($${baseIndex}, $${baseIndex + 1})`);
+    });
+
+    signatures.forEach(({ signature_hash_32, signature }) => {
+      queryValues.push(signature_hash_32, signature);
+    });
+
+    await (poolClient || this.pool).query(
+      `INSERT INTO ${this.schema}.signatures (signature_hash_32, signature) 
+       VALUES ${valueIndexes.join(", ")} 
+       ON CONFLICT (signature_hash_32) DO NOTHING`,
+      queryValues,
+    );
+  }
+
+  async insertCompiledContractSignatures(
+    compilation_id: string,
+    signatures: Omit<
+      Tables.CompiledContractsSignatures,
+      "id" | "compilation_id"
+    >[],
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    if (signatures.length === 0) {
+      return;
+    }
+
+    const valueIndexes: string[] = [];
+    const queryValues: (BytesKeccak | string)[] = [];
+
+    signatures.forEach((_, index) => {
+      const baseIndex = index * 3 + 1;
+      valueIndexes.push(
+        `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2})`,
+      );
+    });
+
+    signatures.forEach(({ signature_hash_32, signature_type }) => {
+      queryValues.push(compilation_id, signature_hash_32, signature_type);
+    });
+
+    await (poolClient || this.pool).query(
+      `INSERT INTO ${this.schema}.compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) 
+       VALUES ${valueIndexes.join(", ")} 
+       ON CONFLICT (compilation_id, signature_hash_32, signature_type) DO NOTHING`,
+      queryValues,
     );
   }
 

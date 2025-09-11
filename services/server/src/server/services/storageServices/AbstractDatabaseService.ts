@@ -1,6 +1,6 @@
 import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import * as DatabaseUtil from "../utils/database-util";
-import { bytesFromString } from "../utils/database-util";
+import { bytesFromString, Tables } from "../utils/database-util";
 import { Database, DatabaseOptions } from "../utils/Database";
 import { PoolClient, QueryResult } from "pg";
 
@@ -44,7 +44,7 @@ export default abstract class AbstractDatabaseService {
   async insertNewVerifiedContract(
     databaseColumns: DatabaseUtil.DatabaseColumns,
     client: PoolClient,
-  ): Promise<string> {
+  ): Promise<Tables.VerifiedContract["id"]> {
     try {
       let recompiledCreationCodeInsertResult:
         | QueryResult<Pick<DatabaseUtil.Tables.Code, "bytecode_hash">>
@@ -127,7 +127,7 @@ export default abstract class AbstractDatabaseService {
   async updateExistingVerifiedContract(
     databaseColumns: DatabaseUtil.DatabaseColumns,
     client: PoolClient,
-  ): Promise<string> {
+  ): Promise<Tables.VerifiedContract["id"]> {
     // runtime bytecodes must exist
     if (databaseColumns.recompiledRuntimeCode.bytecode === undefined) {
       throw new Error("Missing normalized runtime bytecode");
@@ -224,8 +224,8 @@ export default abstract class AbstractDatabaseService {
     poolClient: PoolClient,
   ): Promise<{
     type: "update" | "insert";
-    verifiedContractId: string;
-    oldVerifiedContractId?: string;
+    verifiedContractId: Tables.VerifiedContract["id"];
+    oldVerifiedContractId?: Tables.VerifiedContract["id"];
   }> {
     this.validateVerificationBeforeStoring(verification);
 
