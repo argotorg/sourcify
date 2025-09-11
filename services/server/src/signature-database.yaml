@@ -1,0 +1,130 @@
+openapi: 3.0.0
+info:
+  title: Signature Database API
+  description: API for signature database lookup, search, and statistics
+  version: 1.0.0
+
+paths:
+  /signature-database/v1/lookup:
+    get:
+      summary: Lookup signatures
+      description: Look up one or more function or event signatures by hash
+      tags:
+        - Signature Database
+      parameters:
+        - in: query
+          name: function
+          required: false
+          description: A comma-delimited list of function hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
+          name: event
+          required: false
+          description: A comma-delimited list of event hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
+          name: filter
+          required: false
+          description: Whether or not to filter out junk results
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: The resulting signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    $ref: "#/components/schemas/SignatureResponse"
+
+  /signature-database/v1/search:
+    get:
+      summary: Search signatures
+      description: Search signatures by name with wildcards, limited to the first 100 unordered results
+      tags:
+        - Signature Database
+      parameters:
+        - in: query
+          name: query
+          required: true
+          description: The name of the function to search for. Use '*' and '?' for wildcards.
+          schema:
+            type: string
+        - in: query
+          name: filter
+          required: false
+          description: Whether or not to filter out junk results
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: The resulting signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    $ref: "#/components/schemas/SignatureResponse"
+
+  /signature-database/v1/stats:
+    get:
+      summary: Show database stats
+      description: Show the number of function and event signatures that the database has
+      tags:
+        - Signature Database
+      responses:
+        "200":
+          description: The status of the import
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      count:
+                        type: object
+                        properties:
+                          function:
+                            type: number
+                          event:
+                            type: number
+
+components:
+  schemas:
+    SignatureResponse:
+      properties:
+        function:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean
+        event:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean

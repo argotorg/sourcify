@@ -1,9 +1,11 @@
 import { id as keccak256str, Fragment, JsonFragment } from "ethers";
 
+export type SignatureType = "function" | "event" | "error";
+
 export interface SignatureData {
   signature: string;
   signatureHash32: string;
-  signatureType: "function" | "event" | "error";
+  signatureType: SignatureType;
 }
 
 export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
@@ -34,6 +36,6 @@ function getSignatureData(fragment: Fragment): SignatureData {
   return {
     signature,
     signatureHash32: keccak256str(signature),
-    signatureType: fragment.type as "function" | "event" | "error",
+    signatureType: fragment.type as SignatureType,
   };
 }
