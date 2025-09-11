@@ -1,4 +1,4 @@
-\restrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
+\restrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
@@ -1003,8 +1003,7 @@ CREATE TABLE public.signatures (
     signature_hash_32 bytea NOT NULL,
     signature_hash_4 bytea GENERATED ALWAYS AS (SUBSTRING(signature_hash_32 FROM 1 FOR 4)) STORED,
     signature character varying NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1805,13 +1804,6 @@ CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.contracts FOR EACH 
 
 
 --
--- Name: signatures update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_set_updated_at BEFORE UPDATE ON public.signatures FOR EACH ROW EXECUTE FUNCTION public.trigger_set_updated_at();
-
-
---
 -- Name: sources update_set_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1990,7 +1982,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
+\unrestrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
 
 
 --
