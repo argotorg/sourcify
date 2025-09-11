@@ -16,17 +16,11 @@ CREATE TABLE signatures (
   /* the signature text, e.g. 'transfer(address,uint256)' */
   signature VARCHAR NOT NULL,
 
-  /* timestamps */
-  created_at timestamptz NOT NULL DEFAULT NOW(),
-  updated_at timestamptz NOT NULL DEFAULT NOW()
+  /* timestamp */
+  created_at timestamptz NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX signatures_hash_4_idx ON signatures (signature_hash_4);
-
-CREATE TRIGGER update_set_updated_at
-  BEFORE UPDATE ON signatures
-  FOR EACH ROW
-  EXECUTE FUNCTION trigger_set_updated_at();
 
 /*
     The `compiled_contracts_signatures` table links a compiled_contract to its associated signatures.
