@@ -57,6 +57,7 @@ paths:
           description: The name of the function to search for. Use '*' and '?' for wildcards.
           schema:
             type: string
+          allowReserved: true
         - in: query
           name: filter
           required: false
