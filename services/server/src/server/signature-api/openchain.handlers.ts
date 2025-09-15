@@ -5,7 +5,10 @@ import logger from "../../common/logger";
 import { RWStorageIdentifiers } from "../services/storageServices/identifiers";
 import { SourcifyDatabaseService } from "../services/storageServices/SourcifyDatabaseService";
 import { TypedResponse } from "../types";
-import { SignatureType } from "../services/utils/signature-util";
+import {
+  SignatureType,
+  getCanonicalSignatures,
+} from "../services/utils/signature-util";
 import { bytesFromString, Tables } from "../services/utils/database-util";
 import { QueryResult } from "pg";
 import { sendSignatureApiFailure } from "./openchain.validation";
@@ -31,6 +34,30 @@ interface SignatureResult {
   error: SignatureHashMapping;
 }
 
+async function filterResponse(
+  response: SignatureResult,
+  shouldFilter: boolean,
+) {
+  const canonicalSignatures = await getCanonicalSignatures();
+
+  for (const hash in response.function) {
+    const expectedCanonical = canonicalSignatures.get(hash);
+    if (expectedCanonical !== undefined) {
+      for (const signatureItem of response.function[hash]) {
+        signatureItem.filtered = signatureItem.name !== expectedCanonical;
+      }
+    }
+  }
+
+  if (shouldFilter) {
+    for (const hash in response.function) {
+      response.function[hash] = response.function[hash].filter(
+        (signatureItem) => !signatureItem.filtered,
+      );
+    }
+  }
+}
+
 interface LookupSignaturesRequest extends Request {
   query: {
     function?: string;
@@ -53,7 +80,7 @@ export async function lookupSignatures(
       error: errorQuery,
       filter: shouldFilter = "true",
     } = req.query;
-    // TODO: Implement filtering logic when shouldFilter is true
+
     const services = req.app.get("services") as Services;
     const databaseService = services.storage.rwServices[
       RWStorageIdentifiers.SourcifyDatabase
@@ -65,10 +92,7 @@ export async function lookupSignatures(
 
     const result: SignatureResult = { function: {}, event: {}, error: {} };
 
-    const getSignatures = async (
-      hash: string,
-      type: SignatureType,
-    ) => {
+    const getSignatures = async (hash: string, type: SignatureType) => {
       let dbResult: QueryResult<Pick<Tables.Signatures, "signature">>;
       if (hash.length === 66) {
         dbResult = await databaseService.database.getSignatureByHash32AndType(
@@ -88,10 +112,14 @@ export async function lookupSignatures(
     };
 
     await Promise.all([
-      ...functionHashes.map((hash) => getSignatures(hash, SignatureType.Function)),
+      ...functionHashes.map((hash) =>
+        getSignatures(hash, SignatureType.Function),
+      ),
       ...eventHashes.map((hash) => getSignatures(hash, SignatureType.Event)),
       ...errorHashes.map((hash) => getSignatures(hash, SignatureType.Error)),
     ]);
+
+    await filterResponse(result, shouldFilter === "true");
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -120,7 +148,6 @@ export async function searchSignatures(
 ) {
   try {
     const { query: searchQuery, filter: shouldFilter = "true" } = req.query;
-    // TODO: Implement filtering logic when shouldFilter is true
 
     const services = req.app.get("services") as Services;
     const databaseService = services.storage.rwServices[
@@ -141,7 +168,9 @@ export async function searchSignatures(
 
       for (const row of dbResult.rows) {
         const hash =
-          type === SignatureType.Event ? row.signature_hash_32 : row.signature_hash_4;
+          type === SignatureType.Event
+            ? row.signature_hash_32
+            : row.signature_hash_4;
 
         if (!result[type][hash]) {
           result[type][hash] = [];
@@ -154,8 +183,12 @@ export async function searchSignatures(
     };
 
     await Promise.all(
-      Object.values(SignatureType).map((type) => searchSignaturesInDb(searchQuery, type))
+      Object.values(SignatureType).map((type) =>
+        searchSignaturesInDb(searchQuery, type),
+      ),
     );
+
+    await filterResponse(result, shouldFilter === "true");
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -204,7 +237,7 @@ export async function getSignaturesStats(
     };
 
     await Promise.all(
-      Object.values(SignatureType).map((type) => getSignatureCount(type))
+      Object.values(SignatureType).map((type) => getSignatureCount(type)),
     );
 
     res.status(StatusCodes.OK).json({
