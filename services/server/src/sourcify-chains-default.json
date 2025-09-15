@@ -302,7 +302,6 @@
     },
     "rpc": [
       "https://rpc.gnosischain.com",
-      "https://gnosis-mainnet.public.blastapi.io",
       {
         "type": "APIKeyRPC",
         "url": "https://{SUBDOMAIN}.xdai.quiknode.pro/{API_KEY}",
