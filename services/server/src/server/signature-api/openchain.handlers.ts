@@ -34,17 +34,15 @@ interface SignatureResult {
   error: SignatureHashMapping;
 }
 
-async function filterResponse(
-  response: SignatureResult,
-  shouldFilter: boolean,
-) {
-  const canonicalSignatures = await getCanonicalSignatures();
+function filterResponse(response: SignatureResult, shouldFilter: boolean) {
+  const canonicalSignatures = getCanonicalSignatures();
 
   for (const hash in response.function) {
-    const expectedCanonical = canonicalSignatures.get(hash);
+    const expectedCanonical = canonicalSignatures[hash];
     if (expectedCanonical !== undefined) {
       for (const signatureItem of response.function[hash]) {
-        signatureItem.filtered = signatureItem.name !== expectedCanonical;
+        signatureItem.filtered =
+          signatureItem.name !== expectedCanonical.signature;
       }
     }
   }
@@ -119,7 +117,7 @@ export async function lookupSignatures(
       ...errorHashes.map((hash) => getSignatures(hash, SignatureType.Error)),
     ]);
 
-    await filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter === "true");
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -188,7 +186,7 @@ export async function searchSignatures(
       ),
     );
 
-    await filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter === "true");
 
     res.status(StatusCodes.OK).json({
       ok: true,
