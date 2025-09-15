@@ -14,8 +14,7 @@ function validateHash(hash: string): boolean {
   }
 
   // Only accept 32 byte and 4 byte hashes
-  const hexLength = hash.length - 2;
-  if (hexLength !== 66 && hexLength !== 10) {
+  if (hash.length !== 66 && hash.length !== 10) {
     return false;
   }
 
