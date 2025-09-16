@@ -43,6 +43,7 @@ CREATE TABLE compiled_contracts_signatures (
 );
 
 CREATE INDEX compiled_contracts_signatures_signature_idx ON compiled_contracts_signatures (signature_hash_32);
+CREATE INDEX compiled_contracts_signatures_type_signature_idx ON compiled_contracts_signatures (signature_type, signature_hash_32);
 
 -- migrate:down
 

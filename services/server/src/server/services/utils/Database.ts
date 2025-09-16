@@ -726,6 +726,87 @@ ${
     );
   }
 
+  async getSignatureByHash32AndType(
+    signatureHash32: Tables.Signatures["signature_hash_32"],
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.Signatures, "signature">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT s.signature
+        FROM ${this.schema}.signatures s
+        WHERE s.signature_hash_32 = $1
+          AND EXISTS (
+            SELECT 1 
+            FROM ${this.schema}.compiled_contracts_signatures ccs
+            WHERE ccs.signature_hash_32 = s.signature_hash_32
+            AND ccs.signature_type = $2
+          )`,
+      [signatureHash32, signatureType],
+    );
+  }
+
+  async getSignatureByHash4AndType(
+    signatureHash4: Tables.Signatures["signature_hash_4"],
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.Signatures, "signature">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT s.signature
+        FROM  ${this.schema}.signatures s
+        WHERE s.signature_hash_4 = $1
+          AND EXISTS (
+            SELECT 1 
+            FROM ${this.schema}.compiled_contracts_signatures ccs
+            WHERE ccs.signature_hash_32 = s.signature_hash_32
+            AND ccs.signature_type = $2
+          )`,
+      [signatureHash4, signatureType],
+    );
+  }
+
+  async getSignatureCountByType(
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<{ count: string }>> {
+    return await (poolClient || this.pool).query(
+      `SELECT COUNT(DISTINCT s.signature_hash_32) as count
+        FROM signatures s
+        JOIN compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
+        WHERE ccs.signature_type = $1`,
+      [signatureType],
+    );
+  }
+
+  async searchSignaturesByPatternAndType(
+    pattern: string,
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    // 100 is the limit used by OpenChain
+    limit: number = 100,
+    poolClient?: PoolClient,
+  ): Promise<
+    QueryResult<{
+      signature: string;
+      signature_hash_4: string;
+      signature_hash_32: string;
+    }>
+  > {
+    const sanitizedPattern = pattern
+      .replace(/_/g, "\\_")
+      .replace(/\*/g, "%")
+      .replace(/\?/g, "_");
+
+    return await (poolClient || this.pool).query(
+      `SELECT DISTINCT s.signature, 
+        concat('0x',encode(s.signature_hash_4, 'hex')) as signature_hash_4,
+        concat('0x',encode(s.signature_hash_32, 'hex')) as signature_hash_32
+        FROM ${this.schema}.signatures s
+        JOIN ${this.schema}.compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
+        WHERE s.signature ILIKE $1 AND ccs.signature_type = $2
+        LIMIT $3`,
+      [sanitizedPattern, signatureType, limit],
+    );
+  }
+
   async insertSignatures(
     signatures: Omit<Tables.Signatures, "signature_hash_4">[],
     poolClient?: PoolClient,
@@ -850,37 +931,6 @@ ${
       );
     }
     return verifiedContractsInsertResult;
-  }
-
-  async updateContractDeployment(
-    poolClient: PoolClient,
-    {
-      id,
-      transaction_hash,
-      block_number,
-      transaction_index,
-      deployer,
-      contract_id,
-    }: Omit<Tables.ContractDeployment, "chain_id" | "address">,
-  ) {
-    return await poolClient.query(
-      `UPDATE ${this.schema}.contract_deployments 
-       SET 
-         transaction_hash = $2,
-         block_number = $3,
-         transaction_index = $4,
-         deployer = $5,
-         contract_id = $6
-       WHERE id = $1`,
-      [
-        id,
-        transaction_hash,
-        block_number,
-        transaction_index,
-        deployer,
-        contract_id,
-      ],
-    );
   }
 
   async getVerificationJobById(

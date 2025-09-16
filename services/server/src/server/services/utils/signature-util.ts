@@ -1,9 +1,16 @@
 import { id as keccak256str, Fragment, JsonFragment } from "ethers";
+import canonicalSignaturesData from "./canonical-signatures.json";
+
+export enum SignatureType {
+  Function = "function",
+  Event = "event",
+  Error = "error",
+}
 
 export interface SignatureData {
   signature: string;
   signatureHash32: string;
-  signatureType: "function" | "event" | "error";
+  signatureType: SignatureType;
 }
 
 export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
@@ -19,9 +26,9 @@ export function extractSignaturesFromAbi(abi: JsonFragment[]): SignatureData[] {
       continue;
     }
     switch (fragment.type) {
-      case "function":
-      case "event":
-      case "error":
+      case SignatureType.Function:
+      case SignatureType.Event:
+      case SignatureType.Error:
         signatures.push(getSignatureData(fragment));
     }
   }
@@ -34,6 +41,10 @@ function getSignatureData(fragment: Fragment): SignatureData {
   return {
     signature,
     signatureHash32: keccak256str(signature),
-    signatureType: fragment.type as "function" | "event" | "error",
+    signatureType: fragment.type as SignatureType,
   };
+}
+
+export function getCanonicalSignatures() {
+  return canonicalSignaturesData as Record<string, { signature?: string }>;
 }
