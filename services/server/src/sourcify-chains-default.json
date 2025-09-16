@@ -1475,7 +1475,7 @@
   },
   "2037": {
     "sourcifyName": "Kiwi Subnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
@@ -2012,14 +2012,14 @@
   },
   "764984": {
     "sourcifyName": "Lamina1 Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
   },
   "767368": {
     "sourcifyName": "Lamina1 Identity Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
