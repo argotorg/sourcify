@@ -53,14 +53,14 @@ paths:
   /signature-database/v1/search:
     get:
       summary: Search signatures
-      description: Search signatures by name with wildcards, limited to the first 100 unordered results
+      description: Search signatures by name (case insensitive) with wildcards, limited to the first 100 unordered results
       tags:
         - Signature Database
       parameters:
         - in: query
           name: query
           required: true
-          description: The name of the function to search for. Use '*' and '?' for wildcards.
+          description: The name of the function to search for. Case insensitive. Use '*' and '?' for wildcards.
           schema:
             type: string
           allowReserved: true
