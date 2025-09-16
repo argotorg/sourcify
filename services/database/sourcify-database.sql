@@ -1,7 +1,7 @@
-\restrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
+\restrict 8y3VMdglauf7BORdGaIRxxdGoW4z9YuNDjHJTsqoxbavfqZ6MWce9WRf480I6le
 
--- Dumped from database version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.10 (Ubuntu 16.10-1.pgdg24.04+1)
+-- Dumped from database version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1441,6 +1441,13 @@ CREATE INDEX compiled_contracts_signatures_signature_idx ON public.compiled_cont
 
 
 --
+-- Name: compiled_contracts_signatures_type_signature_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_signatures_type_signature_idx ON public.compiled_contracts_signatures USING btree (signature_type, signature_hash_32);
+
+
+--
 -- Name: compiled_contracts_sources_compilation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1990,7 +1997,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sBpQGzZuR3NWFLlVRerofedBhegIanLiA6lNiSNHlANaPWU1wyJoqn0vf2dj7j8
+\unrestrict 8y3VMdglauf7BORdGaIRxxdGoW4z9YuNDjHJTsqoxbavfqZ6MWce9WRf480I6le
 
 
 --
