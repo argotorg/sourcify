@@ -25,6 +25,12 @@ paths:
           schema:
             type: string
         - in: query
+          name: error
+          required: false
+          description: A comma-delimited list of error hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
           name: filter
           required: false
           description: Whether or not to filter out junk results
@@ -81,7 +87,7 @@ paths:
   /signature-database/v1/stats:
     get:
       summary: Show database stats
-      description: Show the number of function and event signatures that the database has
+      description: Show the number of function, event and error signatures that the database has
       tags:
         - Signature Database
       responses:
@@ -104,6 +110,8 @@ paths:
                             type: number
                           event:
                             type: number
+                          error:
+                            type: number
 
 components:
   schemas:
@@ -120,6 +128,16 @@ components:
                 filtered:
                   type: boolean
         event:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean
+        error:
           additionalProperties:
             type: array
             items:
