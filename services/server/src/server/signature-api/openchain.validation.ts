@@ -43,7 +43,10 @@ export function validateHashQueries(
 
   for (const hash of hashes) {
     if (!validateHash(hash)) {
-      sendSignatureApiFailure(res, "failed to load signatures");
+      sendSignatureApiFailure(
+        res,
+        `Invalid hash '${hash}'. Hash must be 0x-prefixed and either be a 4 byte or 32 byte hex string.`,
+      );
       return;
     }
   }
@@ -59,7 +62,10 @@ export function validateSearchQuery(
   const { query: searchQuery = "" } = req.query;
 
   if (!/^[a-zA-Z0-9$_()[\],*?]+$/.test(searchQuery)) {
-    sendSignatureApiFailure(res, "failed to query signatures");
+    sendSignatureApiFailure(
+      res,
+      `Invalid search pattern '${searchQuery}'. Query must be a valid function signature name but may include '*' and '?' wildcards.`,
+    );
     return;
   }
 
