@@ -49,6 +49,27 @@ paths:
                     type: boolean
                   result:
                     $ref: "#/components/schemas/SignatureResponse"
+              example:
+                ok: true
+                result:
+                  function:
+                    "0xa9059cbb":
+                      - name: "transfer(address,uint256)"
+                        filtered: false
+                    "0x095ea7b3":
+                      - name: "approve(address,uint256)"
+                        filtered: false
+                  event:
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                      - name: "Transfer(address,address,uint256)"
+                        filtered: false
+                    "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
+                      - name: "Approval(address,address,uint256)"
+                        filtered: false
+                  error:
+                    "0x356680b7":
+                      - name: "InsufficientBalance(uint256,uint256)"
+                        filtered: false
 
   /signature-database/v1/search:
     get:
@@ -83,6 +104,20 @@ paths:
                     type: boolean
                   result:
                     $ref: "#/components/schemas/SignatureResponse"
+              example:
+                ok: true
+                result:
+                  function:
+                    "0xa9059cbb":
+                      - name: "transfer(address,uint256)"
+                        filtered: false
+                      - name: "transferToken(address,uint256)"
+                        filtered: true
+                  event:
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                      - name: "Transfer(address,address,uint256)"
+                        filtered: false
+                  error: {}
 
   /signature-database/v1/stats:
     get:
@@ -112,6 +147,13 @@ paths:
                             type: number
                           error:
                             type: number
+              example:
+                ok: true
+                result:
+                  count:
+                    function: 125847
+                    event: 8329
+                    error: 2156
 
 components:
   schemas:
