@@ -916,7 +916,10 @@ components:
                     - signature: "AddedBlackList(address)"
                       signatureHash32: "0x42e160154868087d6bfdc0ca23d96a1c1cfa32f1b72ba9ba27b69b98a0d819dc"
                       signatureHash4: "0x42e16015"
-                  error: []
+                  error: 
+                    - signature: "ERC20InsufficientAllowance()"
+                      signatureHash32: "0x890e98490493b2eeaa713ba179e7b5e82994498e2a4fd1cb19df5f91a38c1532"
+                      signatureHash4: "0x890e9849"
                 proxyResolution:
                   isProxy: false
                   proxyType: null

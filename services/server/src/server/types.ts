@@ -21,7 +21,7 @@ import { Response } from "express";
 import { JsonFragment } from "ethers";
 import { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
 import { GenericErrorResponse, MatchingErrorResponse } from "./apiv2/errors";
-import { SignatureData, SignatureType } from "./services/utils/signature-util";
+import { SignatureType } from "./services/utils/signature-util";
 
 // Types used internally by the server.
 
