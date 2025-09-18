@@ -172,7 +172,7 @@ export function findAuxdataPositions(
         };
         // Match the first auxdata for each bytecodeDiffPosition. If there are multiple identical cborAuxdata,
         // without the break it will always match the last one. With first, it will be "mapped" in the `result[resultIndex]`
-        // See https://github.com/ethereum/sourcify/issues/1980
+        // See https://github.com/argotorg/sourcify/issues/1980
         break;
       }
     }

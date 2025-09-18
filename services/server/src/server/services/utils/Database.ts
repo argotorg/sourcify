@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult } from "pg";
-import { Bytes } from "../../types";
+import { Bytes, BytesKeccak } from "../../types";
 import {
   bytesFromString,
   GetSourcifyMatchByChainAddressResult,
@@ -181,6 +181,23 @@ ${
       (property) => STORED_PROPERTIES_TO_SELECTORS[property],
     );
 
+    const groupByClause =
+      properties.includes("sources") ||
+      properties.includes("std_json_input") ||
+      properties.includes("function_signatures") ||
+      properties.includes("event_signatures") ||
+      properties.includes("error_signatures")
+        ? `GROUP BY sourcify_matches.id,
+        verified_contracts.id,
+        compiled_contracts.id,
+        contract_deployments.id,
+        contracts.id,
+        onchain_runtime_code.code_hash,
+        onchain_creation_code.code_hash,
+        recompiled_runtime_code.code_hash,
+        recompiled_creation_code.code_hash`
+        : "";
+
     return await this.pool.query(
       `
         SELECT
@@ -198,20 +215,24 @@ ${
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
 ${
-  properties.includes("sources") || properties.includes("std_json_input")
-    ? `JOIN ${this.schema}.compiled_contracts_sources ON compiled_contracts_sources.compilation_id = compiled_contracts.id
-      LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
-      GROUP BY sourcify_matches.id, 
-        verified_contracts.id, 
-        compiled_contracts.id, 
-        contract_deployments.id,
-        contracts.id, 
-        onchain_runtime_code.code_hash, 
-        onchain_creation_code.code_hash,
-        recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash`
+  properties.includes("function_signatures") ||
+  properties.includes("event_signatures") ||
+  properties.includes("error_signatures")
+    ? `
+        JOIN ${this.schema}.compiled_contracts_signatures ON compiled_contracts_signatures.compilation_id = compiled_contracts.id
+        LEFT JOIN ${this.schema}.signatures ON signatures.signature_hash_32 = compiled_contracts_signatures.signature_hash_32
+      `
     : ""
 }
+${
+  properties.includes("sources") || properties.includes("std_json_input")
+    ? `
+        JOIN ${this.schema}.compiled_contracts_sources ON compiled_contracts_sources.compilation_id = compiled_contracts.id
+        LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
+      `
+    : ""
+}
+        ${groupByClause}
         `,
       [chain, address],
     );
@@ -282,6 +303,16 @@ ${
           AND contract_deployments.address = $2
       `,
       [chain, address],
+    );
+  }
+
+  async getCompilationIdForVerifiedContract(
+    verifiedContractId: Tables.VerifiedContract["id"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.VerifiedContract, "compilation_id">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT compilation_id FROM verified_contracts WHERE id = $1`,
+      [verifiedContractId],
     );
   }
 
@@ -716,6 +747,149 @@ ${
     );
   }
 
+  async getSignatureByHash32AndType(
+    signatureHash32: Tables.Signatures["signature_hash_32"],
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.Signatures, "signature">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT s.signature
+        FROM ${this.schema}.signatures s
+        WHERE s.signature_hash_32 = $1
+          AND EXISTS (
+            SELECT 1 
+            FROM ${this.schema}.compiled_contracts_signatures ccs
+            WHERE ccs.signature_hash_32 = s.signature_hash_32
+            AND ccs.signature_type = $2
+          )`,
+      [signatureHash32, signatureType],
+    );
+  }
+
+  async getSignatureByHash4AndType(
+    signatureHash4: Tables.Signatures["signature_hash_4"],
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<Pick<Tables.Signatures, "signature">>> {
+    return await (poolClient || this.pool).query(
+      `SELECT s.signature
+        FROM  ${this.schema}.signatures s
+        WHERE s.signature_hash_4 = $1
+          AND EXISTS (
+            SELECT 1 
+            FROM ${this.schema}.compiled_contracts_signatures ccs
+            WHERE ccs.signature_hash_32 = s.signature_hash_32
+            AND ccs.signature_type = $2
+          )`,
+      [signatureHash4, signatureType],
+    );
+  }
+
+  async getSignatureCountByType(
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    poolClient?: PoolClient,
+  ): Promise<QueryResult<{ count: string }>> {
+    return await (poolClient || this.pool).query(
+      `SELECT COUNT(DISTINCT s.signature_hash_32) as count
+        FROM signatures s
+        JOIN compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
+        WHERE ccs.signature_type = $1`,
+      [signatureType],
+    );
+  }
+
+  async searchSignaturesByPatternAndType(
+    pattern: string,
+    signatureType: Tables.CompiledContractsSignatures["signature_type"],
+    // 100 is the limit used by OpenChain
+    limit: number = 100,
+    poolClient?: PoolClient,
+  ): Promise<
+    QueryResult<{
+      signature: string;
+      signature_hash_4: string;
+      signature_hash_32: string;
+    }>
+  > {
+    const sanitizedPattern = pattern
+      .replace(/_/g, "\\_")
+      .replace(/\*/g, "%")
+      .replace(/\?/g, "_");
+
+    return await (poolClient || this.pool).query(
+      `SELECT DISTINCT s.signature, 
+        concat('0x',encode(s.signature_hash_4, 'hex')) as signature_hash_4,
+        concat('0x',encode(s.signature_hash_32, 'hex')) as signature_hash_32
+        FROM ${this.schema}.signatures s
+        JOIN ${this.schema}.compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
+        WHERE s.signature ILIKE $1 AND ccs.signature_type = $2
+        LIMIT $3`,
+      [sanitizedPattern, signatureType, limit],
+    );
+  }
+
+  async insertSignatures(
+    signatures: Omit<Tables.Signatures, "signature_hash_4">[],
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    if (signatures.length === 0) {
+      return;
+    }
+
+    const valueIndexes: string[] = [];
+    const queryValues: (BytesKeccak | string)[] = [];
+
+    signatures.forEach((_, index) => {
+      const baseIndex = index * 2 + 1;
+      valueIndexes.push(`($${baseIndex}, $${baseIndex + 1})`);
+    });
+
+    signatures.forEach(({ signature_hash_32, signature }) => {
+      queryValues.push(signature_hash_32, signature);
+    });
+
+    await (poolClient || this.pool).query(
+      `INSERT INTO ${this.schema}.signatures (signature_hash_32, signature) 
+       VALUES ${valueIndexes.join(", ")} 
+       ON CONFLICT (signature_hash_32) DO NOTHING`,
+      queryValues,
+    );
+  }
+
+  async insertCompiledContractSignatures(
+    compilation_id: string,
+    signatures: Omit<
+      Tables.CompiledContractsSignatures,
+      "id" | "compilation_id"
+    >[],
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    if (signatures.length === 0) {
+      return;
+    }
+
+    const valueIndexes: string[] = [];
+    const queryValues: (BytesKeccak | string)[] = [];
+
+    signatures.forEach((_, index) => {
+      const baseIndex = index * 3 + 1;
+      valueIndexes.push(
+        `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2})`,
+      );
+    });
+
+    signatures.forEach(({ signature_hash_32, signature_type }) => {
+      queryValues.push(compilation_id, signature_hash_32, signature_type);
+    });
+
+    await (poolClient || this.pool).query(
+      `INSERT INTO ${this.schema}.compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) 
+       VALUES ${valueIndexes.join(", ")} 
+       ON CONFLICT (compilation_id, signature_hash_32, signature_type) DO NOTHING`,
+      queryValues,
+    );
+  }
+
   async insertVerifiedContract(
     poolClient: PoolClient,
     {
@@ -778,37 +952,6 @@ ${
       );
     }
     return verifiedContractsInsertResult;
-  }
-
-  async updateContractDeployment(
-    poolClient: PoolClient,
-    {
-      id,
-      transaction_hash,
-      block_number,
-      transaction_index,
-      deployer,
-      contract_id,
-    }: Omit<Tables.ContractDeployment, "chain_id" | "address">,
-  ) {
-    return await poolClient.query(
-      `UPDATE ${this.schema}.contract_deployments 
-       SET 
-         transaction_hash = $2,
-         block_number = $3,
-         transaction_index = $4,
-         deployer = $5,
-         contract_id = $6
-       WHERE id = $1`,
-      [
-        id,
-        transaction_hash,
-        block_number,
-        transaction_index,
-        deployer,
-        contract_id,
-      ],
-    );
   }
 
   async getVerificationJobById(

@@ -667,7 +667,7 @@ export class SourcifyChain {
     // Non null txreceipt.contractAddress means that the contract was created with an EOA
     if (txReceipt.contractAddress !== null) {
       if (txReceipt.contractAddress !== address) {
-        // we need to check if this contract creation tx actually yields the same contract address https://github.com/ethereum/sourcify/issues/887
+        // we need to check if this contract creation tx actually yields the same contract address https://github.com/argotorg/sourcify/issues/887
         throw new Error(
           `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}`,
         );

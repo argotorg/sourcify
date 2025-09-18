@@ -28,10 +28,12 @@ import {
   BytesKeccak,
   BytesTypes,
   Nullable,
+  SignatureRepresentations,
 } from "../../types";
 import { keccak256, JsonFragment } from "ethers";
 import { Database } from "./Database";
 import logger from "../../../common/logger";
+import { SignatureType } from "./signature-util";
 
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
@@ -164,6 +166,19 @@ export namespace Tables {
     onchain_runtime_code: Nullable<Bytes>;
     creation_transaction_hash: Nullable<Bytes>;
   }
+
+  export interface Signatures {
+    signature_hash_32: BytesKeccak;
+    signature_hash_4: Bytes;
+    signature: string;
+  }
+
+  export interface CompiledContractsSignatures {
+    id: string;
+    compilation_id: string;
+    signature_hash_32: BytesKeccak;
+    signature_type: "function" | "event" | "error";
+  }
 }
 
 export interface SourceInformation {
@@ -269,6 +284,9 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       source_ids: Tables.CompiledContract["compilation_artifacts"]["sources"];
       std_json_input: SolidityJsonInput | VyperJsonInput;
       std_json_output: SolidityOutput | VyperOutput;
+      function_signatures: SignatureRepresentations[];
+      event_signatures: SignatureRepresentations[];
+      error_signatures: SignatureRepresentations[];
     }
 >;
 
@@ -307,6 +325,21 @@ export type GetVerificationJobsByChainAndAddressResult = {
 
 const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
+
+function generateSignaturesSelector(type: SignatureType) {
+  return `
+    COALESCE(
+      json_agg(
+        json_build_object(
+          'signature', signatures.signature,
+          'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
+          'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
+        )
+      ) FILTER (WHERE compiled_contracts_signatures.signature_type = '${type}'),
+      '[]'::json
+    ) as ${type}_signatures
+  `;
+}
 
 export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
@@ -401,6 +434,9 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
       )
     )
   ) as std_json_output`,
+  function_signatures: generateSignaturesSelector(SignatureType.Function),
+  event_signatures: generateSignaturesSelector(SignatureType.Event),
+  error_signatures: generateSignaturesSelector(SignatureType.Error),
 };
 
 export type StoredProperties = keyof typeof STORED_PROPERTIES_TO_SELECTORS;
@@ -417,6 +453,9 @@ type deploymentSubfields = keyof NonNullable<
 type compilationSubfields = keyof NonNullable<
   VerifiedContractApiObject["compilation"]
 >;
+type signaturesSubfields = keyof NonNullable<
+  VerifiedContractApiObject["signatures"]
+>;
 type proxyResolutionSubfields = keyof Partial<
   VerifiedContractApiObject["proxyResolution"]
 >;
@@ -432,6 +471,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
     | "runtimeBytecode"
     | "deployment"
     | "compilation"
+    | "signatures"
     | "proxyResolution"
   >,
   StoredProperties
@@ -440,6 +480,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
   runtimeBytecode: Record<runtimeBytecodeSubfields, StoredProperties>;
   deployment: Record<deploymentSubfields, StoredProperties>;
   compilation: Record<compilationSubfields, StoredProperties>;
+  signatures: Record<signaturesSubfields, StoredProperties>;
   proxyResolution: Record<proxyResolutionSubfields, StoredProperties>;
 } = {
   matchId: "id",
@@ -488,6 +529,11 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
   sourceIds: "source_ids",
   stdJsonInput: "std_json_input",
   stdJsonOutput: "std_json_output",
+  signatures: {
+    function: "function_signatures",
+    event: "event_signatures",
+    error: "error_signatures",
+  },
   proxyResolution: {
     // TODO: remove onchainRuntimeBytecode and onchainCreationBytecode when proxy detection result is stored in database
     onchainRuntimeBytecode: "onchain_runtime_code",

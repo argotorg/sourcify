@@ -2,7 +2,7 @@
 
 Sourcify's server for verifying Solidity and Vyper smart contracts.
 
-The server uses [lib-sourcify](https://github.com/ethereum/sourcify/tree/main/packages/lib-sourcify) under the hood for contract verification logic. It provides REST API endpoints for users to submit new contracts for verification or retrieve verified contracts. The data is stored in a PostgreSQL database.
+The server uses [lib-sourcify](https://github.com/argotorg/sourcify/tree/master/packages/lib-sourcify) under the hood for contract verification logic. It provides REST API endpoints for users to submit new contracts for verification or retrieve verified contracts. The data is stored in a PostgreSQL database.
 
 ## Quick Start with Docker Compose
 
@@ -355,7 +355,7 @@ Additionally you need to set up the credentials in the server's `.env` file. See
 
 ## Docker
 
-The images are published in the [Github Container Registry](https://github.com/ethereum/sourcify/pkgs/container/sourcify%2Fserver)
+The images are published in the [Github Container Registry](https://github.com/argotorg/sourcify/pkgs/container/sourcify%2Fserver)
 
 ### Building the image
 
@@ -372,13 +372,13 @@ You can run the server using Docker and pass in a custom `sourcify-chains.json` 
 Also set up the environment variables in the `.env` file. You can see the list of required environment variables in the `.env.dev` file. Pass it with the `--env-file` flag or use the `--env` flag to pass individual environment variables.
 
 ```bash
-$ docker pull ghcr.io/ethereum/sourcify/server:latest
+$ docker pull ghcr.io/argotorg/sourcify/server:latest
 $ docker run \
   -p 5555:5555 \
   -v path/to/custom/sourcify-chains.json:/home/app/services/server/dist/sourcify-chains.json \
   -v path/to/custom/config.js:/home/app/services/server/dist/config/local.js \
   --env-file path/to/your-server/.env \
-  ghcr.io/ethereum/sourcify/server:latest
+  ghcr.io/argotorg/sourcify/server:latest
 ```
 
 Keep in mind the default host for DB in the .env is "localhost" and the default port is 5432. If you're running your server and the database in Docker, you need to establish a network connection between the two over a [Docker network](https://docs.docker.com/network/).

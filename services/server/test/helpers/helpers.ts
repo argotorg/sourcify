@@ -289,8 +289,13 @@ export async function resetDatabase(sourcifyDatabase: Pool) {
   await sourcifyDatabase.query(
     "ALTER SEQUENCE sourcify_matches_id_seq RESTART WITH 1",
   );
+  await sourcifyDatabase.query(
+    "ALTER SEQUENCE verified_contracts_id_seq RESTART WITH 1",
+  );
   await sourcifyDatabase.query("DELETE FROM verified_contracts");
   await sourcifyDatabase.query("DELETE FROM contract_deployments");
+  await sourcifyDatabase.query("DELETE FROM compiled_contracts_signatures");
+  await sourcifyDatabase.query("DELETE FROM signatures");
   await sourcifyDatabase.query("DELETE FROM compiled_contracts_sources");
   await sourcifyDatabase.query("DELETE FROM sources");
   await sourcifyDatabase.query("DELETE FROM compiled_contracts");

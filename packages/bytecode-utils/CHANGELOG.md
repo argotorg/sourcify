@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.3.13 - 2025-09-18
+
+- update dependencies
+
 ## @ethereum-sourcify/bytecode-utils@1.3.12 - 2025-08-25
 
 - Update dependencies
@@ -9,7 +13,6 @@ All notable changes to this project will be documented in this file.
 ## @ethereum-sourcify/bytecode-utils@1.3.11 - 2025-08-11
 
 - update dependencies
-
 
 ## @ethereum-sourcify/bytecode-utils@1.3.10 - 2025-08-04
 
@@ -122,4 +125,4 @@ No changes this release. This marks the start of the changelog for this module.
 ## Older releases
 
 Previously, the releases were not done one separate modules of Sourcify but for the repository as a whole.
-You can find the changelog for those releases in [older releases](https://github.com/ethereum/sourcify/releases) for this repository.
+You can find the changelog for those releases in [older releases](https://github.com/argotorg/sourcify/releases) for this repository.

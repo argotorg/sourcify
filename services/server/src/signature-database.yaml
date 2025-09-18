@@ -1,0 +1,191 @@
+openapi: 3.0.0
+info:
+  title: Signature Database API
+  description: API for signature database lookup, search, and statistics
+  version: 1.0.0
+
+paths:
+  /signature-database/v1/lookup:
+    get:
+      summary: Lookup signatures
+      description: Look up one or more function or event signatures by hash
+      tags:
+        - Signature Database
+      parameters:
+        - in: query
+          name: function
+          required: false
+          description: A comma-delimited list of function hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
+          name: event
+          required: false
+          description: A comma-delimited list of event hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
+          name: error
+          required: false
+          description: A comma-delimited list of error hashes with leading 0x prefix
+          schema:
+            type: string
+        - in: query
+          name: filter
+          required: false
+          description: Whether or not to filter out junk results
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: The resulting signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    $ref: "#/components/schemas/SignatureResponse"
+              example:
+                ok: true
+                result:
+                  function:
+                    "0xa9059cbb":
+                      - name: "transfer(address,uint256)"
+                        filtered: false
+                    "0x095ea7b3":
+                      - name: "approve(address,uint256)"
+                        filtered: false
+                  event:
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                      - name: "Transfer(address,address,uint256)"
+                        filtered: false
+                    "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
+                      - name: "Approval(address,address,uint256)"
+                        filtered: false
+                  error:
+                    "0x356680b7":
+                      - name: "InsufficientBalance(uint256,uint256)"
+                        filtered: false
+
+  /signature-database/v1/search:
+    get:
+      summary: Search signatures
+      description: Search signatures by name (case insensitive) with wildcards, limited to the first 100 unordered results
+      tags:
+        - Signature Database
+      parameters:
+        - in: query
+          name: query
+          required: true
+          description: The name of the function to search for. Case insensitive. Use '*' and '?' for wildcards.
+          schema:
+            type: string
+          allowReserved: true
+        - in: query
+          name: filter
+          required: false
+          description: Whether or not to filter out junk results
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: The resulting signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    $ref: "#/components/schemas/SignatureResponse"
+              example:
+                ok: true
+                result:
+                  function:
+                    "0xa9059cbb":
+                      - name: "transfer(address,uint256)"
+                        filtered: false
+                      - name: "transferToken(address,uint256)"
+                        filtered: true
+                  event:
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                      - name: "Transfer(address,address,uint256)"
+                        filtered: false
+                  error: {}
+
+  /signature-database/v1/stats:
+    get:
+      summary: Show database stats
+      description: Show the number of function, event and error signatures that the database has
+      tags:
+        - Signature Database
+      responses:
+        "200":
+          description: The status of the import
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      count:
+                        type: object
+                        properties:
+                          function:
+                            type: number
+                          event:
+                            type: number
+                          error:
+                            type: number
+              example:
+                ok: true
+                result:
+                  count:
+                    function: 125847
+                    event: 8329
+                    error: 2156
+
+components:
+  schemas:
+    SignatureResponse:
+      properties:
+        function:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean
+        event:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean
+        error:
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                filtered:
+                  type: boolean

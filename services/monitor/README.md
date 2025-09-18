@@ -123,10 +123,10 @@ You can run the Sourcify Monitor in two ways:
 
 ### 1. Run locally
 
-Clone the [Sourcify monorepo](https://github.com/ethereum/sourcify)
+Clone the [Sourcify monorepo](https://github.com/argotorg/sourcify)
 
 ```bash
-git clone git@github.com:ethereum/sourcify.git
+git clone git@github.com:argotorg/sourcify.git
 cd sourcify
 ```
 
@@ -153,20 +153,20 @@ If you want to build yourself, the builds need to be run from the project root c
 cd sourcify/ && docker build -f services/server/Dockerfile .
 ```
 
-The containers are published in the [Github Container Registry](https://github.com/ethereum/sourcify/pkgs/container/sourcify%2Fmonitor)
+The containers are published in the [Github Container Registry](https://github.com/argotorg/sourcify/pkgs/container/sourcify%2Fmonitor)
 
 The recommended way to run the Sourcify Monitor is via Docker.
 
 You need to pass the `monitorChains.json` and `config.json` files to the container. You can do this by mounting them as volumes:
 
 ```bash
-$ docker pull ghcr.io/ethereum/sourcify/monitor:latest
+$ docker pull ghcr.io/argotorg/sourcify/monitor:latest
 $ docker run \
   -v /path/to/chains.json:/home/app/services/monitor/monitorChains.json \
   -v /path/to/config.json:/home/app/services/monitor/config.json \
   -e ALCHEMY_API_KEY=xxx \
   -e INFURA_API_KEY=xxx \
-  ghcr.io/ethereum/sourcify/monitor:latest
+  ghcr.io/argotorg/sourcify/monitor:latest
 ```
 
 ## Setting log levels dynamically

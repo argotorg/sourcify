@@ -1,13 +1,13 @@
 {
   "name": "sourcify-server",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "description": "Solidity metadata-based re-compilation and source verification tool",
   "main": "dist/server/server.js",
   "types": "dist/server/server.d.ts",
   "bin": "dist/server/cli.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ethereum/sourcify.git"
+    "url": "git+https://github.com/argotorg/sourcify.git"
   },
   "scripts": {
     "prebuild": "copyfiles -u 1 src/**/*.yaml src/*.json dist",
@@ -15,7 +15,7 @@
     "start": "node ./dist/server/cli.js",
     "postgres-test:start": "docker-compose -f test/docker-compose.yml up -d",
     "postgres-test:stop": "docker-compose -f test/docker-compose.yml rm -fsv",
-    "postgres-test:migrate": "cd ../database && git submodule update --init && export DATABASE_URL=postgres://sourcify:sourcify@127.0.0.1:${DOCKER_HOST_POSTGRES_TEST_PORT}/sourcify?sslmode=disable && export DBMATE_SCHEMA_FILE=./sourcify-database.sql && npm run migrate:load-schema",
+    "postgres-test:migrate": "cd ../database && git submodule update --init && export DATABASE_URL=postgres://sourcify:sourcify@127.0.0.1:${DOCKER_HOST_POSTGRES_TEST_PORT}/sourcify?sslmode=disable && export DBMATE_SCHEMA_FILE=./sourcify-database.sql && npm run migrate:up",
     "test:unit": "mocha  --exit --recursive test/unit/**",
     "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha --exit --recursive test/unit/** test/integration/**",
     "test:chains": "npm run postgres-test:migrate && mocha test/chains/chain-tests.spec.ts --reporter mochawesome --reporter-options reportDir=chain-tests-report,reportFilename=report --exit",
@@ -45,17 +45,17 @@
   "author": "sourcifyeth",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ethereum/sourcify/issues"
+    "url": "https://github.com/argotorg/sourcify/issues"
   },
-  "homepage": "https://github.com/ethereum/sourcify#readme",
+  "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "3.864.0",
-    "@ethereum-sourcify/bytecode-utils": "^1.3.12",
-    "@ethereum-sourcify/compilers": "^1.0.9",
-    "@ethereum-sourcify/lib-sourcify": "^2.3.0",
+    "@aws-sdk/client-s3": "3.886.0",
+    "@ethereum-sourcify/bytecode-utils": "^1.3.13",
+    "@ethereum-sourcify/compilers": "^1.0.10",
+    "@ethereum-sourcify/lib-sourcify": "^2.3.1",
     "@google-cloud/cloud-sql-connector": "1.8.3",
-    "@shazow/whatsabi": "0.22.2",
-    "@solidity-parser/parser": "^0.20.2",
+    "@shazow/whatsabi": "0.23.0",
+    "@solidity-parser/parser": "0.20.2",
     "bunyan": "1.8.15",
     "chalk": "4.1.2",
     "config": "3.3.12",
@@ -66,7 +66,7 @@
     "ethers": "6.15.0",
     "express": "5.1.0",
     "express-fileupload": "1.5.2",
-    "express-openapi-validator": "5.5.8",
+    "express-openapi-validator": "5.6.0",
     "express-session": "1.18.2",
     "http-status-codes": "2.3.0",
     "json-refs": "3.0.15",
@@ -92,7 +92,7 @@
     "@types/express-session": "1.18.2",
     "@types/mocha": "10.0.10",
     "@types/mochawesome": "6.2.4",
-    "@types/node": "22.17.2",
+    "@types/node": "22.18.1",
     "@types/pg": "8.15.5",
     "@types/serve-index": "1.9.4",
     "@types/sinon": "17.0.4",

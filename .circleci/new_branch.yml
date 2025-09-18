@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  codecov: codecov/codecov@4.2.0
+  codecov: codecov/codecov@5.4.3
 
 parameters:
   run-validate-database-schema:
@@ -162,6 +162,8 @@ jobs:
           name: Test that down migrations work
           command: |
             cd services/database
+            # Initialize git submodules
+            git submodule update --init
             # Drop db from previous test
             npm run migrate:drop-db
             # Apply migrations

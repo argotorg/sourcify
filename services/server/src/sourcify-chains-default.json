@@ -45,6 +45,20 @@
       }
     ]
   },
+  "16969696": {
+    "sourcifyName": "Privix Chain Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": { "url": "https://privixscan.io" }
+    }
+  },
+  "96969696": {
+    "sourcifyName": "Privix Chain Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": { "url": "https://testnet.privixscan.io" }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": true,
@@ -288,7 +302,6 @@
     },
     "rpc": [
       "https://rpc.gnosischain.com",
-      "https://gnosis-mainnet.public.blastapi.io",
       {
         "type": "APIKeyRPC",
         "url": "https://{SUBDOMAIN}.xdai.quiknode.pro/{API_KEY}",
@@ -1462,7 +1475,7 @@
   },
   "2037": {
     "sourcifyName": "Kiwi Subnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
@@ -1708,28 +1721,7 @@
   },
   "1101": {
     "sourcifyName": "Polygon zkEVM",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_ZKEVM_POLYGON"
-    },
-    "fetchContractCreationTxUsing": {
-      "blockscoutApi": {
-        "url": "https://zkevm.blockscout.com/"
-      },
-      "etherscanApi": true
-    },
-    "rpc": [
-      "https://zkevm-rpc.com",
-      "https://polygon-zkevm.drpc.org",
-      {
-        "type": "APIKeyRPC",
-        "url": "https://{SUBDOMAIN}.zkevm-mainnet.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
-      }
-    ]
+    "supported": false
   },
   "534352": {
     "sourcifyName": "Scroll",
@@ -2020,14 +2012,14 @@
   },
   "764984": {
     "sourcifyName": "Lamina1 Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
   },
   "767368": {
     "sourcifyName": "Lamina1 Identity Testnet",
-    "supported": true,
+    "supported": false,
     "fetchContractCreationTxUsing": {
       "avalancheApi": true
     }
@@ -2145,24 +2137,7 @@
   },
   "2442": {
     "sourcifyName": "Polygon zkEVM Cardona Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_ZKEVM_POLYGON"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    },
-    "rpc": [
-      "https://rpc.cardona.zkevm-rpc.com",
-      {
-        "type": "APIKeyRPC",
-        "url": "https://{SUBDOMAIN}.zkevm-cardona.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
-      }
-    ]
+    "supported": false
   },
   "1088": {
     "sourcifyName": "Metis Andromeda Mainnet",

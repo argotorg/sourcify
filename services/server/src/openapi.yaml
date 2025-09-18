@@ -13,10 +13,10 @@ info:
     - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
   license:
     name: MIT
-    url: https://github.com/ethereum/sourcify/blob/master/LICENSE
+    url: https://github.com/argotorg/sourcify/blob/master/LICENSE
   contact:
     name: Sourcify
-    url: 'https://sourcify.dev'
+    url: "https://sourcify.dev"
     email: hello@sourcify.dev
 servers:
   - url: https://sourcify.dev/server
@@ -32,6 +32,8 @@ tags:
     description: API v2 - Submit a contract for verification
   - name: Verification Jobs
     description: API v2 - Check the status of a verification job
+  - name: Signature Database
+    description: Lookup, search and get statistics for function, event and error signatures
   - name: (Deprecated) Stateless Verification
     description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
   - name: (Deprecated) Repository
@@ -99,6 +101,12 @@ paths:
     $ref: "server/apiv1/verification/solc-json/session/solc-json.session.paths.yaml#/paths/~1session~1input-solc-json"
   /session/verify/etherscan:
     $ref: "server/apiv1/verification/etherscan/session/etherscan.session.paths.yaml#/paths/~1session~1verify~1etherscan"
+  /signature-database/v1/lookup:
+    $ref: "signature-database.yaml#/paths/~1signature-database~1v1~1lookup"
+  /signature-database/v1/search:
+    $ref: "signature-database.yaml#/paths/~1signature-database~1v1~1search"
+  /signature-database/v1/stats:
+    $ref: "signature-database.yaml#/paths/~1signature-database~1v1~1stats"
   /private/change-log-level:
     post:
       summary: Change the logging level of the application

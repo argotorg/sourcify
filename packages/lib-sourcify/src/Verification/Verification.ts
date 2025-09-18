@@ -282,9 +282,9 @@ export class Verification {
   handleSolidityExtraFileInputBug(): SolidityBugType {
     // Case when extra unused files in compiler input cause different bytecode
     // See issues:
-    //   https://github.com/ethereum/sourcify/issues/618
-    //   https://github.com/ethereum/solidity/issues/14250
-    //   https://github.com/ethereum/solidity/issues/14494
+    //   https://github.com/argotorg/sourcify/issues/618
+    //   https://github.com/argotorg/solidity/issues/14250
+    //   https://github.com/argotorg/solidity/issues/14494
     const [, deployedAuxdata] = splitAuxdata(
       this.onchainRuntimeBytecode,
       AuxdataStyle.SOLIDITY,
@@ -312,7 +312,7 @@ export class Verification {
 
     // Handle when <0.8.21 and with viaIR and with optimizer disabled
     // See issues:
-    //   https://github.com/ethereum/sourcify/issues/1088
+    //   https://github.com/argotorg/sourcify/issues/1088
     if (
       !forceEmscripten && // Enter this case only if we are not already forcing Emscripten
       lt(this.compilation.compilerVersion, '0.8.21') &&

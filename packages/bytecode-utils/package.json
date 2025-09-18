@@ -1,11 +1,11 @@
 {
   "name": "@ethereum-sourcify/bytecode-utils",
-  "version": "1.3.12",
+  "version": "1.3.13",
   "description": "Decode the CBOR encoded data at the end of an Ethereum contract's bytecode.",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
   "module": "build/module/index.js",
-  "repository": "https://github.com/ethereum/sourcify",
+  "repository": "https://github.com/argotorg/sourcify",
   "license": "MIT",
   "keywords": [
     "sourcify",
@@ -47,7 +47,7 @@
   "devDependencies": {
     "@types/chai": "4.3.20",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.17.2",
+    "@types/node": "22.18.1",
     "c8": "10.1.3",
     "chai": "4.5.0",
     "cz-conventional-changelog": "3.3.0",

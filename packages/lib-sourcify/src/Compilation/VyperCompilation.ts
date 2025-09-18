@@ -157,7 +157,7 @@ export class VyperCompilation extends AbstractCompilation {
         'evm.methodIdentifiers',
       ],
     };
-    this.jsonInput.settings.outputSelection = outputSelection;
+    this.jsonInput.settings = { ...this.jsonInput.settings, outputSelection };
   }
 
   public constructor(
