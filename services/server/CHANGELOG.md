@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.4.0 - 2025-09-18
+
+- 4byte read endpoints (#2373)
+- Add fields and selectors for querying signatures via contract lookup API (#2377)
+- Add logic for writing signatures to db inside SourcifyDatabaseService (#2357)
+- Update Docker image references to argotorg in README and docker-compose files (#2332)
+- Add Privix Chain mainnet (16969696) & testnet (96969696) to Sourcify (#2338)
+- Disable polygon zkevm (#2360)
+- Disable chains that fail chain-tests in CI (#2375)
+- Replace Blast API with Alchemy, add Celo Sepolia (#2372)
+
 ## sourcify-server@3.3.3 - 2025-08-25
 
 - Move Etherscan utils to lib-sourcify (#2297)

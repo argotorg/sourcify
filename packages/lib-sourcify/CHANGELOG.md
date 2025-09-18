@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@2.3.1 - 2025-09-18
+
+- Fix empty Vyper settings in json (#2346)
+
 ## @ethereum-sourcify/lib-sourcify@2.3.0 - 2025-08-25
 
 - Move Etherscan utils to lib-sourcify (#2297)

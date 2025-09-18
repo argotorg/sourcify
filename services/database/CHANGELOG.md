@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.8.0 - 2025-09-18
+
+- Add migrations for signature tables (#2344)
+
 ## sourcify-database@2.7.2 - 2025-08-25
 
 - Add issue references in replace script configuration files (#2304)
