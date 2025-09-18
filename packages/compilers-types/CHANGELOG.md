@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers-types@1.0.8 - 2025-09-18
+
+- update repo links
+
 ## @ethereum-sourcify/compilers-types@1.0.7 - 2025-08-25
 
 - Use consistent ethers version and JsonFragment instead of abitype

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.3.13 - 2025-09-18
+
+- update dependencies
+
 ## @ethereum-sourcify/bytecode-utils@1.3.12 - 2025-08-25
 
 - Update dependencies

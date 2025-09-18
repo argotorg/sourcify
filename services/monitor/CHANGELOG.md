@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.3.20 - 2025-09-18
+
+- Replace Blast API with Alchemy, add Celo Sepolia (#2372)
+- Update Docker image references to argotorg in README and docker-compose files (#2332)
+
+
 ## sourcify-monitor@1.3.19 - 2025-08-25
 
 - Update dependencies
