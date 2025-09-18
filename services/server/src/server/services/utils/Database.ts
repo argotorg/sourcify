@@ -181,6 +181,23 @@ ${
       (property) => STORED_PROPERTIES_TO_SELECTORS[property],
     );
 
+    const groupByClause =
+      properties.includes("sources") ||
+      properties.includes("std_json_input") ||
+      properties.includes("function_signatures") ||
+      properties.includes("event_signatures") ||
+      properties.includes("error_signatures")
+        ? `GROUP BY sourcify_matches.id,
+        verified_contracts.id,
+        compiled_contracts.id,
+        contract_deployments.id,
+        contracts.id,
+        onchain_runtime_code.code_hash,
+        onchain_creation_code.code_hash,
+        recompiled_runtime_code.code_hash,
+        recompiled_creation_code.code_hash`
+        : "";
+
     return await this.pool.query(
       `
         SELECT
@@ -198,20 +215,24 @@ ${
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
 ${
-  properties.includes("sources") || properties.includes("std_json_input")
-    ? `JOIN ${this.schema}.compiled_contracts_sources ON compiled_contracts_sources.compilation_id = compiled_contracts.id
-      LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
-      GROUP BY sourcify_matches.id, 
-        verified_contracts.id, 
-        compiled_contracts.id, 
-        contract_deployments.id,
-        contracts.id, 
-        onchain_runtime_code.code_hash, 
-        onchain_creation_code.code_hash,
-        recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash`
+  properties.includes("function_signatures") ||
+  properties.includes("event_signatures") ||
+  properties.includes("error_signatures")
+    ? `
+        JOIN ${this.schema}.compiled_contracts_signatures ON compiled_contracts_signatures.compilation_id = compiled_contracts.id
+        LEFT JOIN ${this.schema}.signatures ON signatures.signature_hash_32 = compiled_contracts_signatures.signature_hash_32
+      `
     : ""
 }
+${
+  properties.includes("sources") || properties.includes("std_json_input")
+    ? `
+        JOIN ${this.schema}.compiled_contracts_sources ON compiled_contracts_sources.compilation_id = compiled_contracts.id
+        LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
+      `
+    : ""
+}
+        ${groupByClause}
         `,
       [chain, address],
     );

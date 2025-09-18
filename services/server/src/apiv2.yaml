@@ -694,8 +694,27 @@ components:
                                         type: object
                                         additionalProperties:
                                           type: object
+                  signatures:
+                    type: object
+                    description: The signatures of the contract grouped by type (function, event, error).
+                    properties:
+                      function:
+                        type: array
+                        description: Function signatures
+                        items:
+                          $ref: '#/components/schemas/SignatureRepresentations'
+                      event:
+                        type: array
+                        description: Event signatures
+                        items:
+                          $ref: '#/components/schemas/SignatureRepresentations'
+                      error:
+                        type: array
+                        description: Error signatures
+                        items:
+                          $ref: '#/components/schemas/SignatureRepresentations'
                   proxyResolution:
-                    $ref: '#/components/schemas/ProxyResoltion'
+                    $ref: '#/components/schemas/ProxyResolution'
           examples:
             Full response:
               value:
@@ -885,6 +904,22 @@ components:
                 stdJsonOutput:
                   sources: {}
                   contracts: {}
+                signatures:
+                  function:
+                    - signature: "name()"
+                      signatureHash32: "0x06fdde0383f15d582d1a74511486c9ddf862a882fb7904b3d9fe9b8b8e58a796"
+                      signatureHash4: "0x06fdde03"
+                    - signature: "deprecate(address)"
+                      signatureHash32: "0x0753c30c37785fe67c057e37b49f6f8d5a438a94f4d86e2f327454f9c52bf927"
+                      signatureHash4: "0x0753c30c"
+                  event:
+                    - signature: "AddedBlackList(address)"
+                      signatureHash32: "0x42e160154868087d6bfdc0ca23d96a1c1cfa32f1b72ba9ba27b69b98a0d819dc"
+                      signatureHash4: "0x42e16015"
+                  error: 
+                    - signature: "ERC20InsufficientAllowance()"
+                      signatureHash32: "0x890e98490493b2eeaa713ba179e7b5e82994498e2a4fd1cb19df5f91a38c1532"
+                      signatureHash4: "0x890e9849"
                 proxyResolution:
                   isProxy: false
                   proxyType: null
@@ -1475,9 +1510,9 @@ components:
       title: HexStringWithout0x
       pattern: '^([0-9|a-f][0-9|a-f])*$'
       example: '1a2b3c4d'
-    ProxyResoltion:
+    ProxyResolution:
       type: object
-      title: ProxyResoltion
+      title: ProxyResolution
       properties:
         isProxy:
           type: boolean
@@ -1517,3 +1552,26 @@ components:
           format: uuid
       required:
         - verificationId
+    SignatureRepresentations:
+      type: object
+      title: SignatureRepresentations
+      description: The text form and hash representations of a signature
+      properties:
+        signature:
+          type: string
+          description: The human-readable signature
+          example: "transfer(address,uint256)"
+        signatureHash32:
+          type: string
+          pattern: '^0x[a-f0-9]{64}$'
+          description: The full 32-byte keccak256 hash of the signature
+          example: "0xa9059cbb2ab09eb219583f4a59a5d0623ade346d962bcd4e46b11da047c9049b"
+        signatureHash4:
+          type: string
+          pattern: '^0x[a-f0-9]{8}$'
+          description: The 4-byte selector (first 4 bytes of the 32-byte hash)
+          example: "0xa9059cbb"
+      required:
+        - signature
+        - signatureHash32
+        - signatureHash4

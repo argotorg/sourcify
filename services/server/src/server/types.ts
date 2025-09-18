@@ -21,6 +21,7 @@ import { Response } from "express";
 import { JsonFragment } from "ethers";
 import { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
 import { GenericErrorResponse, MatchingErrorResponse } from "./apiv2/errors";
+import { SignatureType } from "./services/utils/signature-util";
 
 // Types used internally by the server.
 
@@ -96,7 +97,16 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   >;
   stdJsonInput?: SolidityJsonInput | VyperJsonInput;
   stdJsonOutput?: SolidityOutput | VyperOutput;
+  signatures?: {
+    [k in `${SignatureType}`]: SignatureRepresentations[];
+  };
   proxyResolution?: ProxyResolution;
+}
+
+export interface SignatureRepresentations {
+  signature: string;
+  signatureHash32: string;
+  signatureHash4: string;
 }
 
 // TODO:

@@ -13,6 +13,8 @@ import fs from "fs";
 import { getAddress } from "ethers";
 import Sinon from "sinon";
 import * as proxyContractUtil from "../../../../src/server/services/utils/proxy-contract-util";
+import { extractSignaturesFromAbi } from "../../../../src/server/services/utils/signature-util";
+import { SignatureRepresentations } from "../../../../src/server/types";
 
 chai.use(chaiHttp);
 
@@ -39,6 +41,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
     "sourceIds",
     "stdJsonInput",
     "stdJsonOutput",
+    "signatures",
     "proxyResolution",
   ];
 
@@ -74,6 +77,10 @@ describe("GET /v2/contract/:chainId/:address", function () {
       ...chainFixture.defaultContractMetadataObject.settings,
     } as Partial<typeof chainFixture.defaultContractMetadataObject.settings>;
     delete compilerSettings.compilationTarget;
+
+    const signatures = extractSignaturesFromAbi(
+      chainFixture.defaultContractMetadataObject.output.abi,
+    );
 
     for (const field of requestedFields) {
       const splitField = field.split(".");
@@ -255,6 +262,23 @@ describe("GET /v2/contract/:chainId/:address", function () {
               },
             },
           };
+          break;
+        case "signatures":
+          objectToExpect = signatures.reduce(
+            (acc, sig) => {
+              acc[sig.signatureType].push({
+                signature: sig.signature,
+                signatureHash32: sig.signatureHash32,
+                signatureHash4: sig.signatureHash32.slice(0, 10),
+              });
+              return acc;
+            },
+            {
+              function: [] as SignatureRepresentations[],
+              event: [] as SignatureRepresentations[],
+              error: [] as SignatureRepresentations[],
+            },
+          );
           break;
         case "proxyResolution":
           if (subField) {
@@ -474,6 +498,20 @@ describe("GET /v2/contract/:chainId/:address", function () {
 
     assertGetContractResponse(res, chainFixture.defaultContractDeploymentInfo, [
       "stdJsonOutput",
+    ]);
+  });
+
+  it("should return signatures information when requested", async function () {
+    await verifyContract(serverFixture, chainFixture);
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .get(
+        `/v2/contract/${chainFixture.chainId}/${chainFixture.defaultContractAddress}?fields=signatures`,
+      );
+
+    assertGetContractResponse(res, chainFixture.defaultContractDeploymentInfo, [
+      "signatures",
     ]);
   });
 
