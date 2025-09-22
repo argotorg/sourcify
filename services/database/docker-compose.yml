@@ -2,7 +2,14 @@ version: "3.8"
 
 services:
   db:
-    image: postgres:15.13-alpine
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:15.13-bookworm
+        RUN apt-get update && \
+            apt-get -y install postgresql-15-cron && \
+            apt-get clean && \
+            rm -rf /var/lib/apt/lists/*
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -11,6 +18,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - ${DOCKER_HOST_POSTGRES_PORT}:${POSTGRES_PORT}
+    command:
+      [
+        "postgres",
+        "-c",
+        "shared_preload_libraries=pg_cron",
+        "-c",
+        "cron.database_name=${POSTGRES_DB}",
+      ]
 
 volumes:
   postgres_data:

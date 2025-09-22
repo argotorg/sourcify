@@ -230,7 +230,7 @@ export async function getSignaturesStats(
     const dbResult = await databaseService.database.getSignatureCounts();
 
     for (const row of dbResult.rows) {
-      result.count[row.signature_type] = parseInt(row.count);
+      result.count[row.signature_type] = row.count;
     }
 
     res.status(StatusCodes.OK).json({
