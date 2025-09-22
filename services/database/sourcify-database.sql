@@ -153,7 +153,12 @@ CREATE FUNCTION public.refresh_signature_stats() RETURNS void
     LANGUAGE plpgsql
     AS $$
 BEGIN
+  -- Refresh materialized view with updated timestamps
   REFRESH MATERIALIZED VIEW signature_stats;
+
+  -- Update refreshed_at timestamp for all rows
+  UPDATE signature_stats SET refreshed_at = now();
+
   -- Log the refresh for monitoring
   RAISE NOTICE 'Signature stats materialized view refreshed at %', now();
 END;
@@ -1039,7 +1044,9 @@ CREATE TABLE public.session (
 
 CREATE MATERIALIZED VIEW public.signature_stats AS
  SELECT compiled_contracts_signatures.signature_type,
-    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count
+    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count,
+    now() AS created_at,
+    now() AS refreshed_at
    FROM public.compiled_contracts_signatures
   GROUP BY compiled_contracts_signatures.signature_type
   WITH NO DATA;
