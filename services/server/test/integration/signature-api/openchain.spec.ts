@@ -43,6 +43,13 @@ describe("Signature API OpenChain Endpoints", function () {
       signature_type: "function" as const,
     },
     {
+      signature: "test_underscore()",
+      signature_hash_32: bytesFromString(
+        keccak256("test_underscore()"),
+      ) as BytesKeccak,
+      signature_type: "function" as const,
+    },
+    {
       signature: "Transfer(address,address,uint256)",
       signature_hash_32: bytesFromString(
         keccak256("Transfer(address,address,uint256)"),
@@ -123,7 +130,11 @@ describe("Signature API OpenChain Endpoints", function () {
     });
 
     it("should lookup event signatures by 32-byte hash", async function () {
-      const hash32 = "0x" + testSignatures[4].signature_hash_32.toString("hex");
+      const hash32 =
+        "0x" +
+        testSignatures
+          .find((sig) => sig.signature_type === "event")
+          ?.signature_hash_32.toString("hex");
 
       const res = await chai
         .request(serverFixture.server.app)
@@ -142,7 +153,10 @@ describe("Signature API OpenChain Endpoints", function () {
     it("should lookup error signatures by hash", async function () {
       const hash4 =
         "0x" +
-        testSignatures[6].signature_hash_32.toString("hex").substring(0, 8);
+        testSignatures
+          .find((sig) => sig.signature_type === "error")
+          ?.signature_hash_32.toString("hex")
+          .substring(0, 8);
 
       const res = await chai
         .request(serverFixture.server.app)
@@ -287,7 +301,7 @@ describe("Signature API OpenChain Endpoints", function () {
       ).flat() as any[];
 
       const transferResults = functionResults.filter((sig: any) =>
-        sig.name.toLowerCase().startsWith("transfer"),
+        sig.name.startsWith("transfer"),
       );
       chai.expect(transferResults.length).to.be.at.least(2);
 
@@ -302,7 +316,7 @@ describe("Signature API OpenChain Endpoints", function () {
       chai.expect(hasTransferFrom).to.be.true;
     });
 
-    it("should search with case insensitive pattern", async function () {
+    it("should search with case sensitive pattern", async function () {
       const res = await chai
         .request(serverFixture.server.app)
         .get("/signature-database/v1/search")
@@ -315,9 +329,9 @@ describe("Signature API OpenChain Endpoints", function () {
         res.body.result.function,
       ).flat() as any[];
       const hasTransferFunction = functionResults.some((sig: any) =>
-        sig.name.toLowerCase().includes("transfer"),
+        sig.name.includes("transfer"),
       );
-      chai.expect(hasTransferFunction).to.be.true;
+      chai.expect(hasTransferFunction).to.be.false;
     });
 
     it("should support wildcard search with ?", async function () {
@@ -333,9 +347,27 @@ describe("Signature API OpenChain Endpoints", function () {
         res.body.result.function,
       ).flat() as any[];
       const hasApproveFunction = functionResults.some((sig: any) =>
-        sig.name.toLowerCase().includes("approve"),
+        sig.name.includes("approve"),
       );
       chai.expect(hasApproveFunction).to.be.true;
+    });
+
+    it("should escape underscore in search", async function () {
+      const res = await chai
+        .request(serverFixture.server.app)
+        .get("/signature-database/v1/search")
+        .query({ query: "test_underscore()" });
+
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.body.ok).to.be.true;
+
+      const functionResults = Object.values(
+        res.body.result.function,
+      ).flat() as any[];
+      const hasTestUnderscoreFunction = functionResults.some((sig: any) =>
+        sig.name.includes("test_underscore"),
+      );
+      chai.expect(hasTestUnderscoreFunction).to.be.true;
     });
 
     it("should handle missing query parameter in search", async function () {

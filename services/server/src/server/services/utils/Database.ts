@@ -812,17 +812,18 @@ ${
     }>
   > {
     const sanitizedPattern = pattern
+      .trim()
       .replace(/_/g, "\\_")
       .replace(/\*/g, "%")
       .replace(/\?/g, "_");
 
     return await (poolClient || this.pool).query(
-      `SELECT DISTINCT s.signature, 
+      `SELECT DISTINCT s.signature,
         concat('0x',encode(s.signature_hash_4, 'hex')) as signature_hash_4,
         concat('0x',encode(s.signature_hash_32, 'hex')) as signature_hash_32
         FROM ${this.schema}.signatures s
         JOIN ${this.schema}.compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
-        WHERE s.signature ILIKE $1 AND ccs.signature_type = $2
+        WHERE s.signature LIKE $1 ESCAPE '\\' AND ccs.signature_type = $2
         LIMIT $3`,
       [sanitizedPattern, signatureType, limit],
     );

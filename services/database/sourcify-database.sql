@@ -1,8 +1,3 @@
-\restrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
-
--- Dumped from database version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
--- Dumped by pg_dump version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -13,6 +8,20 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
 
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
@@ -1503,6 +1512,13 @@ CREATE INDEX signatures_hash_4_idx ON public.signatures USING btree (signature_h
 
 
 --
+-- Name: signatures_signature_trgm_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX signatures_signature_trgm_idx ON public.signatures USING gin (signature public.gin_trgm_ops);
+
+
+--
 -- Name: sourcify_matches_verified_contract_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1989,8 +2005,6 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
-
 
 --
 -- Dbmate schema migrations
@@ -2000,4 +2014,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
     ('20250722133557'),
     ('20250723145429'),
-    ('20250828092603');
+    ('20250828092603'),
+    ('20250922140427');
