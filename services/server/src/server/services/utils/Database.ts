@@ -789,10 +789,12 @@ ${
     QueryResult<{
       signature_type: Tables.CompiledContractsSignatures["signature_type"];
       count: number;
+      created_at: Date;
+      refreshed_at: Date;
     }>
   > {
     return await (poolClient || this.pool).query(
-      `SELECT signature_type, count
+      `SELECT signature_type, count, created_at, refreshed_at
       FROM ${this.schema}.signature_stats
       ORDER BY signature_type;`,
     );

@@ -8,7 +8,9 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE MATERIALIZED VIEW signature_stats AS
 SELECT
   signature_type,
-  COUNT(DISTINCT signature_hash_32) AS count
+  COUNT(DISTINCT signature_hash_32) AS count,
+  now() AS created_at,
+  now() AS refreshed_at
 FROM compiled_contracts_signatures
 GROUP BY signature_type;
 
@@ -19,7 +21,12 @@ CREATE UNIQUE INDEX signature_stats_type_idx ON signature_stats (signature_type)
 CREATE OR REPLACE FUNCTION refresh_signature_stats()
 RETURNS void AS $$
 BEGIN
+  -- Refresh materialized view with updated timestamps
   REFRESH MATERIALIZED VIEW signature_stats;
+
+  -- Update refreshed_at timestamp for all rows
+  UPDATE signature_stats SET refreshed_at = now();
+
   -- Log the refresh for monitoring
   RAISE NOTICE 'Signature stats materialized view refreshed at %', now();
 END;
