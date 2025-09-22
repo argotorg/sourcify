@@ -30,7 +30,7 @@ describe("GET /verify/:verificationId", function () {
     }
 
     let verifiedAt: string | undefined;
-    let matchId: string | undefined;
+    let matchId: number | undefined;
     let verifiedContractId: string | undefined;
 
     if (isVerified) {

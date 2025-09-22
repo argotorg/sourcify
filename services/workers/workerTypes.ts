@@ -10,12 +10,12 @@ import { JobErrorData } from "../store/Tables";
 import { ConfluxscanResult } from "../utils/confluxscan-util";
 
 export interface VerificationWorkerInput {
+  chainId: number;
+  address: string;
   traceId?: string;
 }
 
 export interface VerifyFromJsonInput extends VerificationWorkerInput {
-  chainId: number;
-  address: string;
   jsonInput: SolidityJsonInput | VyperJsonInput;
   compilerVersion: string;
   compilationTarget: CompilationTarget;
@@ -23,16 +23,12 @@ export interface VerifyFromJsonInput extends VerificationWorkerInput {
 }
 
 export interface VerifyFromMetadataInput extends VerificationWorkerInput {
-  chainId: number;
-  address: string;
   metadata: Metadata;
   sources: Record<string, string>;
   creationTransactionHash?: string;
 }
 
 export interface VerifyFromConfluxscanInput extends VerificationWorkerInput {
-  chainId: number;
-  address: string;
   confluxscanResult: ConfluxscanResult;
 }
 

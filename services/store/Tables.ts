@@ -158,7 +158,7 @@ export namespace Tables {
             {
               name: "idx_chainId_address_txHash",
               unique: true,
-              fields: ["chain_id", "address", "transaction_hash"],
+              fields: ["chain_id", "address"],
             },
           ],
         },
@@ -419,26 +419,30 @@ export namespace Tables {
   }
 
   export interface ISourcifyMatch {
-    id: string;
+    id: number;
     verified_contract_id: number;
-    runtime_match: VerificationStatus | null;
-    creation_match: VerificationStatus | null;
+    runtime_match: Nullable<VerificationStatus>;
+    creation_match: Nullable<VerificationStatus>;
     metadata: Metadata;
-    license_type: number | null;
-    contract_label: string | null;
+    license_type?: number;
+    contract_label?: string;
+    similar_match_chain_id?: number;
+    similar_match_address?: string;
     created_at: Date;
   }
   export class SourcifyMatch
     extends Model<ISourcifyMatch>
     implements ISourcifyMatch
   {
-    id!: string;
+    id!: number;
     verified_contract_id!: number;
-    runtime_match!: VerificationStatus | null;
-    creation_match!: VerificationStatus | null;
+    runtime_match!: Nullable<VerificationStatus>;
+    creation_match!: Nullable<VerificationStatus>;
     metadata!: Metadata;
-    license_type!: number;
-    contract_label!: string;
+    license_type?: number;
+    contract_label?: string;
+    similar_match_chain_id?: number;
+    similar_match_address?: string;
     created_at!: Date;
     static register(sequelize: Sequelize) {
       SourcifyMatch.init(
@@ -459,6 +463,8 @@ export namespace Tables {
             defaultValue: 1,
           },
           contract_label: { type: DataTypes.STRING(512) },
+          similar_match_chain_id: { type: DataTypes.INTEGER },
+          similar_match_address: { type: DataTypes.CHAR(42) },
           created_at: { type: DataTypes.DATE, allowNull: false },
         },
         {

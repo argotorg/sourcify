@@ -12,10 +12,10 @@ import {
   TransactionReceipt,
   TransactionResponse,
   TransactionResponseParams,
+  ZeroHash,
 } from "ethers";
 import { Conflux, format, Transaction } from "js-conflux-sdk";
 import cfxFormat from "js-conflux-sdk/dist/types/rpc/types/formatter";
-import { ZeroHash } from "ethers/src.ts/constants";
 
 export class Chain extends SourcifyChain {
   readonly baseGetBlockNumber = this.getBlockNumber;

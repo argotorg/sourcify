@@ -11,6 +11,7 @@ import {
 } from "../middlewares";
 import {
   verifyFromConfluxscanEndpoint,
+  verifyFromCrossChainEndpoint,
   verifyFromJsonInputEndpoint,
   verifyFromMetadataEndpoint,
 } from "./verification.handlers";
@@ -51,6 +52,16 @@ router
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromConfluxscanEndpoint,
+  );
+
+router
+  .route("/verify/crosschain/:chainId/:address")
+  .post(
+    validateChainId,
+    validateAddress,
+    checkIfAlreadyVerified,
+    checkIfJobIsAlreadyRunning,
+    verifyFromCrossChainEndpoint,
   );
 
 export default router;

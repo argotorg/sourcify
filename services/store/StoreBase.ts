@@ -284,6 +284,70 @@ export default class StoreBase {
       };
     }
   }
+
+  async insertNewSimilarContract(
+    chainId: number,
+    address: string,
+    codeHash: string,
+  ): Promise<number> {
+    try {
+      const contractDeployment =
+        await this.database.getContractDeploymentByRuntimeCodeHash(codeHash);
+      if (!contractDeployment) {
+        throw new Error("Failed to find contract-deployment.");
+      }
+      const verifiedContract =
+        await this.database.getVerifiedContractByContractDeploymentId(
+          contractDeployment.id,
+        );
+      if (!verifiedContract) {
+        throw new Error("Failed to find verified-contract.");
+      }
+      const sourcifyMatch =
+        await this.database.getSourcifyMatchByVerifiedContractId(
+          verifiedContract.id,
+        );
+      if (!sourcifyMatch) {
+        throw new Error("Failed to find sourcify-match.");
+      }
+
+      const { sequelize } = Tables.VerifiedContract;
+      if (!sequelize) {
+        throw new Error("Failed to init the sequelize.");
+      }
+
+      return sequelize.transaction(async (dbTx) => {
+        const deployment = await this.database.insertContractDeployment(
+          {
+            chain_id: chainId,
+            address: address,
+            contract_id: contractDeployment.contract_id,
+          },
+          dbTx,
+        );
+        const verified = await this.database.insertVerifiedContract(
+          {
+            ...verifiedContract,
+            deployment_id: deployment.id,
+          },
+          dbTx,
+        );
+        return this.database.insertSourcifyMatch(
+          {
+            ...sourcifyMatch,
+            verified_contract_id: verified.id,
+            similar_match_chain_id: contractDeployment.chain_id,
+            similar_match_address: contractDeployment.address,
+          },
+          dbTx,
+        );
+      });
+    } catch (e) {
+      throw new Error(
+        `Failed to insert similar contract address=${address} chainId=${chainId}\n${e}`,
+      );
+    }
+  }
 }
 
 export interface WStorageService {

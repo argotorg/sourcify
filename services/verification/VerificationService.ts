@@ -4,7 +4,7 @@ import {
   CompilationTarget,
   Metadata,
 } from "@ethereum-sourcify/lib-sourcify";
-import { ConflictError } from "../../common/errors/ConflictError";
+import { ConflictError } from "../../common/errors";
 import { asyncLocalStorage } from "../../common/async-context";
 import { VerificationJobId } from "../../routes/types";
 import Piscina from "piscina";
@@ -29,6 +29,7 @@ import {
   getSolcExecutable,
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
+import { keccak256 } from "ethers";
 
 export interface VerificationOptions {
   chains: ChainMap;
@@ -44,6 +45,7 @@ export class VerificationService {
   private readonly initCompilers: boolean | undefined;
   private solcRepoPath: string;
   private solJsonRepoPath: string;
+  private chains: ChainMap;
   private store: StoreService;
   private workerPool: Piscina;
   private runningTasks: Set<Promise<void>> = new Set();
@@ -53,6 +55,7 @@ export class VerificationService {
     this.initCompilers = options.initCompilers;
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
+    this.chains = options.chains;
     this.store = store;
 
     const chains = Object.entries(options.chains).reduce(
@@ -258,6 +261,42 @@ export class VerificationService {
       });
     this.runningTaskIds.add(verificationId);
     this.runningTasks.add(task);
+
+    return verificationId;
+  }
+
+  public async verifyFromCrossChainViaWorker(
+    verificationEndpoint: string,
+    chainId: number,
+    address: string,
+  ): Promise<VerificationJobId> {
+    const verificationId = await this.store.storeVerificationJob(
+      new Date(),
+      chainId,
+      address,
+      verificationEndpoint,
+    );
+
+    try {
+      const chain = this.chains[chainId];
+      const bytecode = await chain.getBytecode(address);
+      const codeHash = keccak256(bytecode);
+      await this.store.insertNewSimilarContract(chainId, address, codeHash);
+    } catch (error) {
+      let errorExport: VerifyErrorExport;
+      if (`${error}`.includes("Failed to find contract-deployment.")) {
+        errorExport = {
+          customCode: "no_similar_match_found",
+          errorId: uuidv4(),
+        };
+      } else {
+        errorExport = {
+          customCode: "internal_error",
+          errorId: uuidv4(),
+        };
+      }
+      await this.store.setJobError(verificationId, new Date(), errorExport);
+    }
 
     return verificationId;
   }

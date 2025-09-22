@@ -40,7 +40,7 @@ export interface VerifiedContractMinimal {
   chainId: number;
   address: string;
   verifiedAt?: string;
-  matchId?: string;
+  matchId?: number;
   licenseType?: number;
   contractLabel?: string;
 }

@@ -1,0 +1,7 @@
+curl -X 'POST' \
+  'http://127.0.0.1:17651/verify/crosschain/1030/0x76240902Bc1B02f21378F6C7F09369624005B7EF' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "apiKey": "xxx"
+}'

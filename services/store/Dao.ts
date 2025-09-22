@@ -15,6 +15,10 @@ import {
 import { QueryTypes, Sequelize, Transaction } from "sequelize";
 import { DatabaseOptions } from "../../config/Loader";
 import { v4 as uuidv4 } from "uuid";
+import IContractDeployment = Tables.IContractDeployment;
+import IVerifiedContract = Tables.IVerifiedContract;
+import ISourcifyMatch = Tables.ISourcifyMatch;
+import { CONST } from "../../common/constants";
 
 export class Dao {
   private readonly options: DatabaseOptions;
@@ -35,6 +39,203 @@ export class Dao {
       await this._database.sync();
     }
     return true;
+  }
+
+  // =======================================================================
+  // sourcify match
+  // =======================================================================
+  async insertSourcifyMatch(
+    {
+      verified_contract_id,
+      runtime_match,
+      creation_match,
+      metadata,
+      license_type,
+      contract_label,
+      similar_match_chain_id,
+      similar_match_address,
+    }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
+    dbTx?: Transaction,
+  ): Promise<number> {
+    const metadataStr = JSON.stringify(metadata);
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
+        INSERT INTO sourcify_matches (
+        verified_contract_id,
+        creation_match,
+        runtime_match,
+        metadata,
+        license_type,
+        contract_label,
+        similar_match_chain_id,
+        similar_match_address,
+        created_at                              
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          verified_contract_id,
+          creation_match,
+          runtime_match,
+          metadataStr,
+          license_type || CONST.LICENSES.None.code,
+          contract_label || null,
+          similar_match_chain_id || null,
+          similar_match_address || null,
+          now,
+        ],
+      },
+    );
+
+    if (effectRows) {
+      return { id } as any;
+    }
+
+    const records = await this.pool.query(
+      `
+      SELECT
+        id
+      FROM sourcify_matches
+      WHERE
+        verified_contract_id = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [verified_contract_id],
+      },
+    );
+
+    return records[0] as any;
+  }
+
+  // Update sourcify_matches to the latest (and better) match in verified_contracts,
+  // you need to pass the old verified_contract_id to be updated.
+  // The old verified_contracts are not deleted from the verified_contracts table.
+  async updateSourcifyMatch(
+    {
+      verified_contract_id,
+      runtime_match,
+      creation_match,
+      metadata,
+      license_type,
+      contract_label,
+    }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
+    oldVerifiedContractId: number,
+  ) {
+    const metadataStr = JSON.stringify(metadata);
+    return this.pool.query(
+      `
+        UPDATE sourcify_matches SET 
+        verified_contract_id = ?,
+        creation_match=?,
+        runtime_match=?,
+        license_type=?,
+        contract_label=?,
+        metadata=?
+      WHERE  verified_contract_id = ?
+      `,
+      {
+        type: QueryTypes.UPDATE,
+        replacements: [
+          verified_contract_id,
+          creation_match,
+          runtime_match,
+          license_type || CONST.LICENSES.None.code,
+          contract_label || null,
+          metadataStr,
+          oldVerifiedContractId,
+        ],
+      },
+    );
+  }
+
+  async countSourcifyMatchAddresses(
+    chain: number,
+  ): Promise<CountSourcifyMatchAddresses | null> {
+    const records = await this.pool.query(
+      `
+        SELECT
+        contract_deployments.chain_id,
+        CAST(SUM(CASE 
+          WHEN COALESCE(sourcify_matches.creation_match, '') = 'perfect' OR sourcify_matches.runtime_match = 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS full_total,
+        CAST(SUM(CASE 
+          WHEN COALESCE(sourcify_matches.creation_match, '') != 'perfect' AND sourcify_matches.runtime_match != 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS partial_total
+        FROM sourcify_matches
+        JOIN verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
+        JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
+        WHERE contract_deployments.chain_id = ?
+        GROUP BY contract_deployments.chain_id;
+        `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [chain],
+      },
+    );
+
+    return records?.length ? (records[0] as CountSourcifyMatchAddresses) : null;
+  }
+
+  async getSourcifyMatchesByChain(
+    chain: number,
+    limit: number,
+    descending: boolean,
+    afterId?: string,
+    addresses?: string[],
+  ): Promise<GetSourcifyMatchesByChainResult[]> {
+    const values: { [key: string]: number | string | string[] } = {
+      chain,
+      limit,
+    };
+    const orderBy = descending
+      ? "ORDER BY sourcify_matches.id DESC"
+      : "ORDER BY sourcify_matches.id ASC";
+
+    let queryWhere = "";
+    if (afterId) {
+      values.afterId = afterId;
+      queryWhere = descending
+        ? "WHERE sourcify_matches.id < :afterId"
+        : "WHERE sourcify_matches.id > :afterId";
+    }
+
+    if (addresses?.length) {
+      values.addresses = addresses;
+      queryWhere = queryWhere
+        ? `${queryWhere} AND contract_deployments.address IN (:addresses)`
+        : `WHERE contract_deployments.address IN (:addresses)`;
+    }
+
+    const selectors = [
+      STORED_PROPERTIES_TO_SELECTORS["id"],
+      STORED_PROPERTIES_TO_SELECTORS["creation_match"],
+      STORED_PROPERTIES_TO_SELECTORS["runtime_match"],
+      STORED_PROPERTIES_TO_SELECTORS["address"],
+      STORED_PROPERTIES_TO_SELECTORS["verified_at"],
+    ];
+    const records = await this.pool.query(
+      `
+        SELECT
+          ${selectors.join(", ")}
+        FROM sourcify_matches
+        JOIN verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
+        JOIN contract_deployments ON 
+            contract_deployments.id = verified_contracts.deployment_id
+            AND contract_deployments.chain_id = :chain
+        ${queryWhere}
+        ${orderBy}
+        LIMIT :limit
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: values,
+      },
+    );
+
+    return records as GetSourcifyMatchesByChainResult[];
   }
 
   async getSourcifyMatchByChainAddress(
@@ -139,216 +340,6 @@ export class Dao {
       : null;
   }
 
-  async getCompiledContractSources(
-    compilation_id: number,
-  ): Promise<CompiledContractSource[]> {
-    const records = await this.pool.query(
-      `
-        SELECT
-          compiled_contracts_sources.*,
-          sources.content
-        FROM compiled_contracts_sources
-        LEFT JOIN sources ON sources.source_hash = compiled_contracts_sources.source_hash
-        WHERE compilation_id = ?
-      `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: [compilation_id],
-      },
-    );
-
-    return records as CompiledContractSource[];
-  }
-
-  async getVerifiedContractByChainAndAddress(
-    chain: number,
-    address: string,
-  ): Promise<GetVerifiedContractByChainAndAddressResult | null> {
-    const records = await this.pool.query(
-      `
-        SELECT
-          verified_contracts.*,
-          contract_deployments.transaction_hash,
-          contract_deployments.contract_id
-        FROM verified_contracts
-        JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
-        WHERE contract_deployments.chain_id = ?
-          AND contract_deployments.address = ?
-      `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: [chain, address],
-      },
-    );
-
-    return records?.length
-      ? (records[0] as GetVerifiedContractByChainAndAddressResult)
-      : null;
-  }
-
-  async insertSourcifyMatch({
-    verified_contract_id,
-    runtime_match,
-    creation_match,
-    metadata,
-    license_type,
-    contract_label,
-  }: Omit<Tables.ISourcifyMatch, "created_at" | "id">) {
-    const metadataStr = JSON.stringify(metadata);
-    const now = new Date();
-    await this.pool.query(
-      `
-        INSERT INTO sourcify_matches (
-        verified_contract_id,
-        creation_match,
-        runtime_match,
-        metadata,
-        license_type,
-        contract_label,
-        created_at                              
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      {
-        type: QueryTypes.INSERT,
-        replacements: [
-          verified_contract_id,
-          creation_match,
-          runtime_match,
-          metadataStr,
-          license_type,
-          contract_label,
-          now,
-        ],
-      },
-    );
-  }
-
-  // Update sourcify_matches to the latest (and better) match in verified_contracts,
-  // you need to pass the old verified_contract_id to be updated.
-  // The old verified_contracts are not deleted from the verified_contracts table.
-  async updateSourcifyMatch(
-    {
-      verified_contract_id,
-      runtime_match,
-      creation_match,
-      metadata,
-      license_type,
-      contract_label,
-    }: Omit<Tables.ISourcifyMatch, "created_at" | "id">,
-    oldVerifiedContractId: number,
-  ) {
-    const metadataStr = JSON.stringify(metadata);
-    return this.pool.query(
-      `
-        UPDATE sourcify_matches SET 
-        verified_contract_id = ?,
-        creation_match=?,
-        runtime_match=?,
-        license_type=?,
-        contract_label=?,
-        metadata=?
-      WHERE  verified_contract_id = ?
-      `,
-      {
-        type: QueryTypes.UPDATE,
-        replacements: [
-          verified_contract_id,
-          creation_match,
-          runtime_match,
-          license_type,
-          contract_label,
-          metadataStr,
-          oldVerifiedContractId,
-        ],
-      },
-    );
-  }
-
-  async countSourcifyMatchAddresses(
-    chain: number,
-  ): Promise<CountSourcifyMatchAddresses | null> {
-    const records = await this.pool.query(
-      `
-        SELECT
-        contract_deployments.chain_id,
-        CAST(SUM(CASE 
-          WHEN COALESCE(sourcify_matches.creation_match, '') = 'perfect' OR sourcify_matches.runtime_match = 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS full_total,
-        CAST(SUM(CASE 
-          WHEN COALESCE(sourcify_matches.creation_match, '') != 'perfect' AND sourcify_matches.runtime_match != 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS partial_total
-        FROM sourcify_matches
-        JOIN verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
-        JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
-        WHERE contract_deployments.chain_id = ?
-        GROUP BY contract_deployments.chain_id;
-        `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: [chain],
-      },
-    );
-
-    return records?.length ? (records[0] as CountSourcifyMatchAddresses) : null;
-  }
-
-  async getSourcifyMatchesByChain(
-    chain: number,
-    limit: number,
-    descending: boolean,
-    afterId?: string,
-    addresses?: string[],
-  ): Promise<GetSourcifyMatchesByChainResult[]> {
-    const values: { [key: string]: number | string | string[] } = {
-      chain,
-      limit,
-    };
-    const orderBy = descending
-      ? "ORDER BY sourcify_matches.id DESC"
-      : "ORDER BY sourcify_matches.id ASC";
-
-    let queryWhere = "";
-    if (afterId) {
-      values.afterId = afterId;
-      queryWhere = descending
-        ? "WHERE sourcify_matches.id < :afterId"
-        : "WHERE sourcify_matches.id > :afterId";
-    }
-
-    if (addresses?.length) {
-      values.addresses = addresses;
-      queryWhere = queryWhere
-        ? `${queryWhere} AND contract_deployments.address IN (:addresses)`
-        : `WHERE contract_deployments.address IN (:addresses)`;
-    }
-
-    const selectors = [
-      STORED_PROPERTIES_TO_SELECTORS["id"],
-      STORED_PROPERTIES_TO_SELECTORS["creation_match"],
-      STORED_PROPERTIES_TO_SELECTORS["runtime_match"],
-      STORED_PROPERTIES_TO_SELECTORS["address"],
-      STORED_PROPERTIES_TO_SELECTORS["verified_at"],
-    ];
-    const records = await this.pool.query(
-      `
-        SELECT
-          ${selectors.join(", ")}
-        FROM sourcify_matches
-        JOIN verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
-        JOIN contract_deployments ON 
-            contract_deployments.id = verified_contracts.deployment_id
-            AND contract_deployments.chain_id = :chain
-        ${queryWhere}
-        ${orderBy}
-        LIMIT :limit
-      `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: values,
-      },
-    );
-
-    return records as GetSourcifyMatchesByChainResult[];
-  }
-
   async getSourcifyMatchAddressesByChainAndMatch(
     chain: number,
     match: "full_match" | "partial_match" | "any_match",
@@ -403,140 +394,95 @@ export class Dao {
     return records as { address: string }[];
   }
 
-  async insertCode(
-    { bytecode_hash_keccak, bytecode }: Omit<Tables.ICode, "bytecode_hash">,
-    dbTx?: Transaction,
-  ): Promise<Pick<Tables.ICode, "bytecode_hash">> {
-    const now = new Date();
-    const result = await this.pool.query(
-      `
-          INSERT INTO code
-              (code_hash, code, code_hash_keccak, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE code_hash = values(code_hash)
-      `,
-      {
-        type: QueryTypes.INSERT,
-        transaction: dbTx,
-        replacements: [
-          bytecode_hash_keccak,
-          Buffer.from(bytecode, "utf-8"),
-          bytecode_hash_keccak,
-          now,
-          now,
-        ],
-      },
-    );
-
-    // effectRows
-    if (result[1]) {
-      return { bytecode_hash: bytecode_hash_keccak } as any;
-    }
-
+  async getSourcifyMatchByVerifiedContractId(
+    verifiedId: number,
+  ): Promise<ISourcifyMatch | null> {
     const records = await this.pool.query(
       `
         SELECT
-          code_hash AS bytecode_hash
-        FROM code
-        WHERE code_hash = ?
+          *
+        FROM sourcify_matches
+        WHERE verified_contract_id = ?
       `,
       {
         type: QueryTypes.SELECT,
-        transaction: dbTx,
-        replacements: [bytecode_hash_keccak],
+        replacements: [verifiedId],
       },
     );
 
-    return records[0] as any;
+    return records?.length ? (records[0] as ISourcifyMatch) : null;
   }
 
-  async insertContract(
+  // =======================================================================
+  // verified contracts
+  // =======================================================================
+  async insertVerifiedContract(
     {
-      creation_bytecode_hash,
-      runtime_bytecode_hash,
-    }: Omit<Tables.IContract, "id">,
+      compilation_id,
+      deployment_id,
+      creation_transformations = null,
+      creation_values = null,
+      runtime_transformations = null,
+      runtime_values = null,
+      runtime_match,
+      creation_match,
+      runtime_metadata_match = null,
+      creation_metadata_match = null,
+    }: Omit<Tables.IVerifiedContract, "id">,
     dbTx?: Transaction,
-  ): Promise<Pick<Tables.IContract, "id">> {
+  ): Promise<Pick<Tables.IVerifiedContract, "id">> {
+    const creationTransformations = creation_transformations
+      ? JSON.stringify(creation_transformations)
+      : null; // to json
+    const creationValues = creation_values
+      ? JSON.stringify(creation_values)
+      : null; // to json
+    const runtimeTransformations = runtime_transformations
+      ? JSON.stringify(runtime_transformations)
+      : null; // to json
+    const runtimeValues = runtime_values
+      ? JSON.stringify(runtime_values)
+      : null; // to json
+    const runtimeMetadataMatch = !!runtime_metadata_match;
+    const creationMetadataMatch = !!creation_metadata_match;
     const now = new Date();
     const [id, effectRows] = await this.pool.query(
       `
-      INSERT INTO contracts 
-          (creation_code_hash, runtime_code_hash, createdAt, updatedAt) 
-      VALUES (?,?,?,?)
-      ON DUPLICATE KEY UPDATE 
-          creation_code_hash = values(creation_code_hash), 
-          runtime_code_hash = values(runtime_code_hash)
-      `,
-      {
-        type: QueryTypes.INSERT,
-        transaction: dbTx,
-        replacements: [creation_bytecode_hash, runtime_bytecode_hash, now, now],
-      },
-    );
-
-    if (effectRows) {
-      return { id } as any;
-    }
-
-    const records = await this.pool.query(
-      `
-      SELECT
-        id
-      FROM contracts
-      WHERE creation_code_hash = ? AND runtime_code_hash = ?
-    `,
-      {
-        type: QueryTypes.SELECT,
-        transaction: dbTx,
-        replacements: [creation_bytecode_hash, runtime_bytecode_hash],
-      },
-    );
-
-    return records[0] as any;
-  }
-
-  async insertContractDeployment(
-    {
-      chain_id,
-      address,
-      transaction_hash,
-      contract_id,
-      block_number,
-      transaction_index,
-      deployer,
-    }: Omit<Tables.IContractDeployment, "id">,
-    dbTx?: Transaction,
-  ): Promise<Pick<Tables.IContractDeployment, "id">> {
-    const now = new Date();
-    const [id, effectRows] = await this.pool.query(
-      `
-      INSERT INTO contract_deployments (
-        chain_id,
-        address,
-        transaction_hash,
-        contract_id,
-        block_number,
-        transaction_index,
-        deployer,
-        createdAt,
+      INSERT INTO verified_contracts (
+        compilation_id,
+        deployment_id,
+        creation_transformations,
+        creation_values,
+        runtime_transformations,
+        runtime_values,
+        runtime_match,
+        creation_match,
+        runtime_metadata_match,
+        creation_metadata_match,
+        createdAt, 
         updatedAt
-      ) VALUES (?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
-         chain_id = values(chain_id),
-         address = values(address),
-         transaction_hash = values(transaction_hash)
+        compilation_id = values(compilation_id),
+        deployment_id = values(deployment_id)
       `,
       {
         type: QueryTypes.INSERT,
         transaction: dbTx,
         replacements: [
-          chain_id,
-          address,
-          transaction_hash,
-          contract_id,
-          block_number,
-          transaction_index,
-          deployer,
+          compilation_id,
+          deployment_id,
+          // transformations needs to be converted to string as a workaround:
+          // arrays are not treated as jsonb types by pg module
+          // then they are correctly stored as jsonb by postgresql
+          creationTransformations,
+          creationValues,
+          runtimeTransformations,
+          runtimeValues,
+          runtime_match,
+          creation_match,
+          runtimeMetadataMatch,
+          creationMetadataMatch,
           now,
           now,
         ],
@@ -551,23 +497,69 @@ export class Dao {
       `
       SELECT
         id
-      FROM contract_deployments
-      WHERE 1=1 
-        AND chain_id = ?
-        AND address = ?
-        AND transaction_hash = ?
-        AND contract_id = ?
+      FROM verified_contracts
+      WHERE 1=1
+        AND compilation_id = ?
+        AND deployment_id = ?
       `,
       {
         type: QueryTypes.SELECT,
         transaction: dbTx,
-        replacements: [chain_id, address, transaction_hash, contract_id],
+        replacements: [compilation_id, deployment_id],
       },
     );
 
     return records[0] as any;
   }
 
+  async getVerifiedContractByChainAndAddress(
+    chain: number,
+    address: string,
+  ): Promise<GetVerifiedContractByChainAndAddressResult | null> {
+    const records = await this.pool.query(
+      `
+        SELECT
+          verified_contracts.*,
+          contract_deployments.transaction_hash,
+          contract_deployments.contract_id
+        FROM verified_contracts
+        JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
+        WHERE contract_deployments.chain_id = ?
+          AND contract_deployments.address = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [chain, address],
+      },
+    );
+
+    return records?.length
+      ? (records[0] as GetVerifiedContractByChainAndAddressResult)
+      : null;
+  }
+
+  async getVerifiedContractByContractDeploymentId(
+    deploymentId: number,
+  ): Promise<IVerifiedContract | null> {
+    const records = await this.pool.query(
+      `
+        SELECT
+          *
+        FROM verified_contracts
+        WHERE deployment_id = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [deploymentId],
+      },
+    );
+
+    return records?.length ? (records[0] as IVerifiedContract) : null;
+  }
+
+  // =======================================================================
+  // compiled contracts
+  // =======================================================================
   async insertCompiledContract(
     {
       compiler,
@@ -774,73 +766,72 @@ export class Dao {
     );
   }
 
-  async insertVerifiedContract(
+  async getCompiledContractSources(
+    compilation_id: number,
+  ): Promise<CompiledContractSource[]> {
+    const records = await this.pool.query(
+      `
+        SELECT
+          compiled_contracts_sources.*,
+          sources.content
+        FROM compiled_contracts_sources
+        LEFT JOIN sources ON sources.source_hash = compiled_contracts_sources.source_hash
+        WHERE compilation_id = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [compilation_id],
+      },
+    );
+
+    return records as CompiledContractSource[];
+  }
+
+  // =======================================================================
+  // contract deployments
+  // =======================================================================
+  async insertContractDeployment(
     {
-      compilation_id,
-      deployment_id,
-      creation_transformations = null,
-      creation_values = null,
-      runtime_transformations = null,
-      runtime_values = null,
-      runtime_match,
-      creation_match,
-      runtime_metadata_match = null,
-      creation_metadata_match = null,
-    }: Omit<Tables.IVerifiedContract, "id">,
+      chain_id,
+      address,
+      transaction_hash,
+      contract_id,
+      block_number,
+      transaction_index,
+      deployer,
+    }: Omit<Tables.IContractDeployment, "id">,
     dbTx?: Transaction,
-  ): Promise<Pick<Tables.IVerifiedContract, "id">> {
-    const creationTransformations = creation_transformations
-      ? JSON.stringify(creation_transformations)
-      : null; // to json
-    const creationValues = creation_values
-      ? JSON.stringify(creation_values)
-      : null; // to json
-    const runtimeTransformations = runtime_transformations
-      ? JSON.stringify(runtime_transformations)
-      : null; // to json
-    const runtimeValues = runtime_values
-      ? JSON.stringify(runtime_values)
-      : null; // to json
-    const runtimeMetadataMatch = !!runtime_metadata_match;
-    const creationMetadataMatch = !!creation_metadata_match;
+  ): Promise<Pick<Tables.IContractDeployment, "id">> {
     const now = new Date();
     const [id, effectRows] = await this.pool.query(
       `
-      INSERT INTO verified_contracts (
-        compilation_id,
-        deployment_id,
-        creation_transformations,
-        creation_values,
-        runtime_transformations,
-        runtime_values,
-        runtime_match,
-        creation_match,
-        runtime_metadata_match,
-        creation_metadata_match,
-        createdAt, 
+      INSERT INTO contract_deployments (
+        chain_id,
+        address,
+        transaction_hash,
+        contract_id,
+        block_number,
+        transaction_index,
+        deployer,
+        createdAt,
         updatedAt
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?)
       ON DUPLICATE KEY UPDATE
-        compilation_id = values(compilation_id),
-        deployment_id = values(deployment_id)
+         chain_id = values(chain_id),
+         address = values(address),
+         transaction_hash = values(transaction_hash)
       `,
       {
         type: QueryTypes.INSERT,
         transaction: dbTx,
         replacements: [
-          compilation_id,
-          deployment_id,
-          // transformations needs to be converted to string as a workaround:
-          // arrays are not treated as jsonb types by pg module
-          // then they are correctly stored as jsonb by postgresql
-          creationTransformations,
-          creationValues,
-          runtimeTransformations,
-          runtimeValues,
-          runtime_match,
-          creation_match,
-          runtimeMetadataMatch,
-          creationMetadataMatch,
+          chain_id,
+          address,
+          transaction_hash || null,
+          contract_id,
+          block_number || null,
+          transaction_index || null,
+          deployer || null,
           now,
           now,
         ],
@@ -855,15 +846,17 @@ export class Dao {
       `
       SELECT
         id
-      FROM verified_contracts
-      WHERE 1=1
-        AND compilation_id = ?
-        AND deployment_id = ?
+      FROM contract_deployments
+      WHERE 1=1 
+        AND chain_id = ?
+        AND address = ?
+        AND transaction_hash = ?
+        AND contract_id = ?
       `,
       {
         type: QueryTypes.SELECT,
         transaction: dbTx,
-        replacements: [compilation_id, deployment_id],
+        replacements: [chain_id, address, transaction_hash, contract_id],
       },
     );
 
@@ -915,69 +908,125 @@ export class Dao {
     }
   }
 
-  async getVerificationJobById(
-    verificationId: string,
-  ): Promise<GetVerificationJobByIdResult | null> {
+  async getContractDeploymentByRuntimeCodeHash(
+    codeHash: string,
+  ): Promise<Tables.IContractDeployment | null> {
     const records = await this.pool.query(
       `
         SELECT
-          DATE_FORMAT(verification_jobs.started_at, '%Y-%m-%d %H:%i:%s') AS started_at,
-          DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%d %H:%i:%s') AS completed_at,
-          verification_jobs.chain_id,
-          NULLIF(verification_jobs.contract_address, '0x') AS contract_address,
-          verification_jobs.verified_contract_id,
-          verification_jobs.error_code,
-          verification_jobs.error_id,
-          verification_jobs.error_data,
-          verification_jobs.compilation_time,
-          NULLIF(CONVERT(verification_jobs_ephemeral.recompiled_creation_code USING utf8), '0x') AS recompiled_creation_code,
-          NULLIF(CONVERT(verification_jobs_ephemeral.recompiled_runtime_code USING utf8), '0x') AS recompiled_runtime_code,
-          NULLIF(CONVERT(verification_jobs_ephemeral.onchain_creation_code USING utf8), '0x') AS onchain_creation_code,
-          NULLIF(CONVERT(verification_jobs_ephemeral.onchain_runtime_code USING utf8), '0x') AS onchain_runtime_code,
-          NULLIF(verification_jobs_ephemeral.creation_transaction_hash, '0x') AS creation_transaction_hash,
-          verified_contracts.runtime_match,
-          verified_contracts.creation_match,
-          verified_contracts.runtime_metadata_match,
-          verified_contracts.creation_metadata_match,
-          sourcify_matches.id as match_id,
-          DATE_FORMAT(sourcify_matches.created_at, '%Y-%m-%d %H:%i:%s') AS verified_at
-        FROM verification_jobs
-        LEFT JOIN verification_jobs_ephemeral ON verification_jobs.id = verification_jobs_ephemeral.id
-        LEFT JOIN verified_contracts ON verification_jobs.verified_contract_id = verified_contracts.id
-        LEFT JOIN sourcify_matches ON verified_contracts.id = sourcify_matches.verified_contract_id
-        WHERE verification_jobs.id = ?
+          cd.*
+        FROM contract_deployments cd
+        JOIN contracts c ON cd.contract_id = c.id and c.runtime_code_hash = ?
       `,
       {
         type: QueryTypes.SELECT,
-        replacements: [verificationId],
+        replacements: [codeHash],
       },
     );
-    return records?.length
-      ? (records[0] as GetVerificationJobByIdResult)
-      : null;
+
+    return records?.length ? (records[0] as IContractDeployment) : null;
   }
 
-  async getVerificationJobsByChainAndAddress(
-    chainId: number,
-    address: string,
-  ): Promise<GetVerificationJobsByChainAndAddressResult[]> {
+  async insertContract(
+    {
+      creation_bytecode_hash,
+      runtime_bytecode_hash,
+    }: Omit<Tables.IContract, "id">,
+    dbTx?: Transaction,
+  ): Promise<Pick<Tables.IContract, "id">> {
+    const now = new Date();
+    const [id, effectRows] = await this.pool.query(
+      `
+      INSERT INTO contracts 
+          (creation_code_hash, runtime_code_hash, createdAt, updatedAt) 
+      VALUES (?,?,?,?)
+      ON DUPLICATE KEY UPDATE 
+          creation_code_hash = values(creation_code_hash), 
+          runtime_code_hash = values(runtime_code_hash)
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          creation_bytecode_hash || null,
+          runtime_bytecode_hash,
+          now,
+          now,
+        ],
+      },
+    );
+
+    if (effectRows) {
+      return { id } as any;
+    }
+
     const records = await this.pool.query(
       `
       SELECT
-        id,
-        DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%dT%H:%i:%sT') AS completed_at
-      FROM verification_jobs
-      WHERE verification_jobs.chain_id = ?
-        AND verification_jobs.contract_address = ?
-     `,
+        id
+      FROM contracts
+      WHERE creation_code_hash = ? AND runtime_code_hash = ?
+    `,
       {
         type: QueryTypes.SELECT,
-        replacements: [chainId, address],
+        transaction: dbTx,
+        replacements: [creation_bytecode_hash, runtime_bytecode_hash],
       },
     );
-    return records as GetVerificationJobsByChainAndAddressResult[];
+
+    return records[0] as any;
   }
 
+  async insertCode(
+    { bytecode_hash_keccak, bytecode }: Omit<Tables.ICode, "bytecode_hash">,
+    dbTx?: Transaction,
+  ): Promise<Pick<Tables.ICode, "bytecode_hash">> {
+    const now = new Date();
+    const result = await this.pool.query(
+      `
+          INSERT INTO code
+              (code_hash, code, code_hash_keccak, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE code_hash = values(code_hash)
+      `,
+      {
+        type: QueryTypes.INSERT,
+        transaction: dbTx,
+        replacements: [
+          bytecode_hash_keccak,
+          Buffer.from(bytecode, "utf-8"),
+          bytecode_hash_keccak,
+          now,
+          now,
+        ],
+      },
+    );
+
+    // effectRows
+    if (result[1]) {
+      return { bytecode_hash: bytecode_hash_keccak } as any;
+    }
+
+    const records = await this.pool.query(
+      `
+        SELECT
+          code_hash AS bytecode_hash
+        FROM code
+        WHERE code_hash = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        transaction: dbTx,
+        replacements: [bytecode_hash_keccak],
+      },
+    );
+
+    return records[0] as any;
+  }
+
+  // =======================================================================
+  // verification job
+  // =======================================================================
   async insertVerificationJob({
     started_at,
     chain_id,
@@ -1096,5 +1145,68 @@ export class Dao {
         ],
       },
     );
+  }
+
+  async getVerificationJobById(
+    verificationId: string,
+  ): Promise<GetVerificationJobByIdResult | null> {
+    const records = await this.pool.query(
+      `
+        SELECT
+          DATE_FORMAT(verification_jobs.started_at, '%Y-%m-%d %H:%i:%s') AS started_at,
+          DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%d %H:%i:%s') AS completed_at,
+          verification_jobs.chain_id,
+          NULLIF(verification_jobs.contract_address, '0x') AS contract_address,
+          verification_jobs.verified_contract_id,
+          verification_jobs.error_code,
+          verification_jobs.error_id,
+          verification_jobs.error_data,
+          verification_jobs.compilation_time,
+          NULLIF(CONVERT(verification_jobs_ephemeral.recompiled_creation_code USING utf8), '0x') AS recompiled_creation_code,
+          NULLIF(CONVERT(verification_jobs_ephemeral.recompiled_runtime_code USING utf8), '0x') AS recompiled_runtime_code,
+          NULLIF(CONVERT(verification_jobs_ephemeral.onchain_creation_code USING utf8), '0x') AS onchain_creation_code,
+          NULLIF(CONVERT(verification_jobs_ephemeral.onchain_runtime_code USING utf8), '0x') AS onchain_runtime_code,
+          NULLIF(verification_jobs_ephemeral.creation_transaction_hash, '0x') AS creation_transaction_hash,
+          verified_contracts.runtime_match,
+          verified_contracts.creation_match,
+          verified_contracts.runtime_metadata_match,
+          verified_contracts.creation_metadata_match,
+          sourcify_matches.id as match_id,
+          DATE_FORMAT(sourcify_matches.created_at, '%Y-%m-%d %H:%i:%s') AS verified_at
+        FROM verification_jobs
+        LEFT JOIN verification_jobs_ephemeral ON verification_jobs.id = verification_jobs_ephemeral.id
+        LEFT JOIN verified_contracts ON verification_jobs.verified_contract_id = verified_contracts.id
+        LEFT JOIN sourcify_matches ON verified_contracts.id = sourcify_matches.verified_contract_id
+        WHERE verification_jobs.id = ?
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [verificationId],
+      },
+    );
+    return records?.length
+      ? (records[0] as GetVerificationJobByIdResult)
+      : null;
+  }
+
+  async getVerificationJobsByChainAndAddress(
+    chainId: number,
+    address: string,
+  ): Promise<GetVerificationJobsByChainAndAddressResult[]> {
+    const records = await this.pool.query(
+      `
+      SELECT
+        id,
+        DATE_FORMAT(verification_jobs.completed_at, '%Y-%m-%dT%H:%i:%sT') AS completed_at
+      FROM verification_jobs
+      WHERE verification_jobs.chain_id = ?
+        AND verification_jobs.contract_address = ?
+     `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: [chainId, address],
+      },
+    );
+    return records as GetVerificationJobsByChainAndAddressResult[];
   }
 }

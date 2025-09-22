@@ -154,3 +154,32 @@ export async function verifyFromConfluxscanEndpoint(
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });
 }
+
+interface VerifyFromCrossChainRequest extends Request {
+  params: {
+    chainId: string;
+    address: string;
+  };
+}
+
+export async function verifyFromCrossChainEndpoint(
+  req: VerifyFromCrossChainRequest,
+  res: VerifyResponse,
+) {
+  console.debug("verifyFromCrossChainEndpoint", {
+    chainId: req.params.chainId,
+    address: req.params.address,
+  });
+
+  const services = req.app.get("services") as Services;
+  const chain = getChainId(req.params.chainId);
+
+  const verificationId =
+    await services.verification.verifyFromCrossChainViaWorker(
+      req.baseUrl + req.path,
+      chain,
+      req.params.address,
+    );
+
+  res.status(StatusCodes.ACCEPTED).json({ verificationId });
+}

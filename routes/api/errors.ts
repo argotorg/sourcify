@@ -217,7 +217,8 @@ export type VerificationErrorCode =
   | SourcifyLibErrorCode
   | "unsupported_language"
   | "already_verified"
-  | "internal_error";
+  | "internal_error"
+  | "no_similar_match_found";
 
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters

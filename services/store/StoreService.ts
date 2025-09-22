@@ -805,8 +805,8 @@ export class StoreService extends StoreBase implements RWStorageService {
         creation_match: verification.status.creationMatch,
         runtime_match: verification.status.runtimeMatch,
         metadata: verification.compilation.metadata as any,
-        license_type: licenseType || null,
-        contract_label: contractLabel || null,
+        license_type: licenseType,
+        contract_label: contractLabel,
       });
       console.info("Stored to SourcifyDatabase", matchInfo);
     } else if (type === "update") {
@@ -821,8 +821,8 @@ export class StoreService extends StoreBase implements RWStorageService {
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
-          license_type: licenseType || null,
-          contract_label: contractLabel || null,
+          license_type: licenseType,
+          contract_label: contractLabel,
         },
         oldVerifiedContractId,
       );
@@ -834,8 +834,8 @@ export class StoreService extends StoreBase implements RWStorageService {
           creation_match: verification.status.creationMatch,
           runtime_match: verification.status.runtimeMatch,
           metadata: verification.compilation.metadata as any,
-          license_type: licenseType || null,
-          contract_label: contractLabel || null,
+          license_type: licenseType,
+          contract_label: contractLabel,
         });
         console.info("Stored to SourcifyDatabase", matchInfo);
       }
