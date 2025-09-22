@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:15.13-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
