@@ -334,7 +334,7 @@ function generateSignaturesSelector(type: SignatureType) {
           'signature', signatures.signature,
           'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
           'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
-        )
+        ) ORDER BY signatures.signature
       ) FILTER (WHERE compiled_contracts_signatures.signature_type = '${type}'),
       '[]'::json
     ) as ${type}_signatures
