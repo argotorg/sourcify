@@ -785,16 +785,16 @@ ${
     );
   }
 
-  async getSignatureCountByType(
-    signatureType: Tables.CompiledContractsSignatures["signature_type"],
-    poolClient?: PoolClient,
-  ): Promise<QueryResult<{ count: string }>> {
+  async getSignatureCounts(poolClient?: PoolClient): Promise<
+    QueryResult<{
+      signature_type: Tables.CompiledContractsSignatures["signature_type"];
+      count: string;
+    }>
+  > {
     return await (poolClient || this.pool).query(
-      `SELECT COUNT(DISTINCT s.signature_hash_32) as count
-        FROM signatures s
-        JOIN compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
-        WHERE ccs.signature_type = $1`,
-      [signatureType],
+      `SELECT signature_type, COUNT(DISTINCT signature_hash_32) AS count
+      FROM ${this.schema}.compiled_contracts_signatures
+      GROUP BY signature_type;`,
     );
   }
 
