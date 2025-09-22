@@ -10,6 +10,20 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -127,6 +141,21 @@ CREATE FUNCTION public.is_valid_hex(val text, repetition text) RETURNS boolean
     AS $$
 BEGIN
     RETURN val SIMILAR TO CONCAT('0x([0-9|a-f|A-F][0-9|a-f|A-F])', repetition);
+END;
+$$;
+
+
+--
+-- Name: refresh_signature_stats(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.refresh_signature_stats() RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW signature_stats;
+  -- Log the refresh for monitoring
+  RAISE NOTICE 'Signature stats materialized view refreshed at %', now();
 END;
 $$;
 
@@ -1005,6 +1034,18 @@ CREATE TABLE public.session (
 
 
 --
+-- Name: signature_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW public.signature_stats AS
+ SELECT compiled_contracts_signatures.signature_type,
+    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count
+   FROM public.compiled_contracts_signatures
+  GROUP BY compiled_contracts_signatures.signature_type
+  WITH NO DATA;
+
+
+--
 -- Name: signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1502,6 +1543,13 @@ CREATE INDEX contracts_creation_code_hash_runtime_code_hash ON public.contracts 
 --
 
 CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtime_code_hash);
+
+
+--
+-- Name: signature_stats_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX signature_stats_type_idx ON public.signature_stats USING btree (signature_type);
 
 
 --
@@ -2015,4 +2063,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250722133557'),
     ('20250723145429'),
     ('20250828092603'),
-    ('20250922140427');
+    ('20250922140427'),
+    ('20250922141802');

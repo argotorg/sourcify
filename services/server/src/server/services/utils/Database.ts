@@ -788,13 +788,13 @@ ${
   async getSignatureCounts(poolClient?: PoolClient): Promise<
     QueryResult<{
       signature_type: Tables.CompiledContractsSignatures["signature_type"];
-      count: string;
+      count: number;
     }>
   > {
     return await (poolClient || this.pool).query(
-      `SELECT signature_type, COUNT(DISTINCT signature_hash_32) AS count
-      FROM ${this.schema}.compiled_contracts_signatures
-      GROUP BY signature_type;`,
+      `SELECT signature_type, count
+      FROM ${this.schema}.signature_stats
+      ORDER BY signature_type;`,
     );
   }
 
