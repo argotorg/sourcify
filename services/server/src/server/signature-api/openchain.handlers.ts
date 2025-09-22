@@ -223,20 +223,11 @@ export async function getSignaturesStats(
       count: { function: 0, event: 0, error: 0 },
     };
 
-    const getSignatureCount = async (type: SignatureType) => {
-      const dbResult =
-        await databaseService.database.getSignatureCountByType(type);
+    const dbResult = await databaseService.database.getSignatureCounts();
 
-      if (dbResult.rows.length === 0) {
-        throw new Error(`No rows returned from count query for type ${type}`);
-      }
-
-      result.count[type] = parseInt(dbResult.rows[0].count, 10);
-    };
-
-    await Promise.all(
-      Object.values(SignatureType).map((type) => getSignatureCount(type)),
-    );
+    for (const row of dbResult.rows) {
+      result.count[row.signature_type] = parseInt(row.count);
+    }
 
     res.status(StatusCodes.OK).json({
       ok: true,
