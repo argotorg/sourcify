@@ -788,7 +788,7 @@ ${
   async getSignatureCounts(poolClient?: PoolClient): Promise<
     QueryResult<{
       signature_type: Tables.CompiledContractsSignatures["signature_type"];
-      count: number;
+      count: string;
       created_at: Date;
       refreshed_at: Date;
     }>

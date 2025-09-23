@@ -381,6 +381,13 @@ describe("Signature API OpenChain Endpoints", function () {
 
   describe("GET /signature-database/v1/stats", function () {
     it("should return signature statistics", async function () {
+      // Manually refresh the materialized view to ensure fresh stats for this test.
+      await (
+        serverFixture.server.services.storage.rwServices[
+          RWStorageIdentifiers.SourcifyDatabase
+        ] as SourcifyDatabaseService
+      ).database.pool.query("REFRESH MATERIALIZED VIEW signature_stats");
+
       const res = await chai
         .request(serverFixture.server.app)
         .get("/signature-database/v1/stats");
