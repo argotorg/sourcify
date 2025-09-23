@@ -37,21 +37,25 @@ interface SignatureResult {
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   const canonicalSignatures = getCanonicalSignatures();
 
-  for (const hash in response.function) {
-    const expectedCanonical = canonicalSignatures[hash];
-    if (expectedCanonical !== undefined) {
-      for (const signatureItem of response.function[hash]) {
-        signatureItem.filtered =
-          signatureItem.name !== expectedCanonical.signature;
+  for (const type of Object.values(SignatureType)) {
+    for (const hash in response[type]) {
+      const expectedCanonical = canonicalSignatures[hash];
+      if (expectedCanonical !== undefined) {
+        for (const signatureItem of response[type][hash]) {
+          signatureItem.filtered =
+            signatureItem.name !== expectedCanonical.signature;
+        }
       }
     }
   }
 
   if (shouldFilter) {
-    for (const hash in response.function) {
-      response.function[hash] = response.function[hash].filter(
-        (signatureItem) => !signatureItem.filtered,
-      );
+    for (const type of Object.values(SignatureType)) {
+      for (const hash in response[type]) {
+        response[type][hash] = response[type][hash].filter(
+          (signatureItem) => !signatureItem.filtered,
+        );
+      }
     }
   }
 }
