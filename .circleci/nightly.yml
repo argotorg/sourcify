@@ -48,8 +48,10 @@ workflows:
     jobs:
       - monitor-e2e-sepolia
       - monitor-e2e-holesky
+      - monitor-e2e-hoodi
       - verification-e2e-sepolia
       - verification-e2e-holesky
+      - verification-e2e-hoodi
   # s3-backup-check:
   #   when:
   #     equal: [ master, << pipeline.git.branch >> ]
@@ -70,6 +72,11 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  monitor-e2e-hoodi:
+    <<: *monitor-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi
   verification-e2e-sepolia:
     <<: *verification-e2e-base
     environment:
@@ -80,6 +87,11 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  verification-e2e-hoodi:
+    <<: *verification-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi
   check-s3-backup:
     working_directory: ~/sourcify
     steps:
