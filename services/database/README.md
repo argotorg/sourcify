@@ -81,7 +81,7 @@ Please follow these steps:
 
 1. Create a new migration file: `npm run migrate:new <migration_name>`
 2. Add the required SQL for the schema change to the generated migration file (e.g., `./migrations/20250717103432_<migration_name>.sql`).
-3. Apply the new migration to a local database: `npm run migrate:up`. `dbmate` automatically generates the updated `sourcify-database.sql` dump. The there will be an error because the dump is not yet generated. This step will be skipped. You can run `dbmate dump` to generate the dump manually or see the errors.
+3. Apply the new migration to a local database: `npm run migrate:up`. `dbmate` automatically generates the updated `sourcify-database.sql` dump. There won't be an error if the dump cannot be generated. You can run `dbmate dump` to generate the dump manually or see the errors.
 4. Commit both the new migration file and the updated `sourcify-database.sql` to the repository.
 
 Important: Since the schema dump should be committed, ensure that the connected database does not contain any custom schema changes that are not part of the migrations.
