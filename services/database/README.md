@@ -9,6 +9,8 @@ A complete dump of the Sourcify database schema can be found in `./sourcify-data
 
 ## Running the database
 
+We use PostgreSQL 15.13 for the database. Higher versions should also work but are not tested.
+
 ### Run with Docker
 
 For convenience, you can run the Postgres container in `docker-compose.yml` with
