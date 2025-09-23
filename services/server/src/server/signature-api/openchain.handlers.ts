@@ -56,14 +56,14 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   }
 }
 
-interface LookupSignaturesRequest extends Request {
+type LookupSignaturesRequest = Omit<Request, "query"> & {
   query: {
     function?: string;
     event?: string;
     error?: string;
-    filter?: "true" | "false";
+    filter?: boolean;
   };
-}
+};
 
 type LookupSignaturesResponse = SignatureApiResponse<SignatureResult>;
 
@@ -76,7 +76,7 @@ export async function lookupSignatures(
       function: functionQuery,
       event: eventQuery,
       error: errorQuery,
-      filter: shouldFilter = "true",
+      filter: shouldFilter = true,
     } = req.query;
 
     const services = req.app.get("services") as Services;
@@ -117,7 +117,7 @@ export async function lookupSignatures(
       ...errorHashes.map((hash) => getSignatures(hash, SignatureType.Error)),
     ]);
 
-    filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter);
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -131,12 +131,12 @@ export async function lookupSignatures(
   }
 }
 
-interface SearchSignaturesRequest extends Request {
+type SearchSignaturesRequest = Omit<Request, "query"> & {
   query: {
-    query: string;
-    filter?: "true" | "false";
+    query?: string;
+    filter?: boolean;
   };
-}
+};
 
 type SearchSignaturesResponse = SignatureApiResponse<SignatureResult>;
 
@@ -145,7 +145,7 @@ export async function searchSignatures(
   res: SearchSignaturesResponse,
 ) {
   try {
-    const { query: searchQuery, filter: shouldFilter = "true" } = req.query;
+    const { query: searchQuery = "", filter: shouldFilter = true } = req.query;
 
     const services = req.app.get("services") as Services;
     const databaseService = services.storage.rwServices[
@@ -186,7 +186,7 @@ export async function searchSignatures(
       ),
     );
 
-    filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter);
 
     res.status(StatusCodes.OK).json({
       ok: true,

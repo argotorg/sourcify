@@ -63,6 +63,14 @@ describe("Signature API OpenChain Endpoints", function () {
       ) as BytesKeccak,
       signature_type: "error" as const,
     },
+    // Same signature_hash_4 as transfer(address,uint256) to test filtering
+    {
+      signature: "transfer(bytes4[9],bytes5[6],int48[11])",
+      signature_hash_32: bytesFromString(
+        keccak256("transfer(bytes4[9],bytes5[6],int48[11])"),
+      ) as BytesKeccak,
+      signature_type: "function" as const,
+    },
   ];
 
   beforeEach(async function () {
@@ -85,7 +93,7 @@ describe("Signature API OpenChain Endpoints", function () {
   });
 
   describe("GET /signature-database/v1/lookup", function () {
-    it("should lookup function signatures by 4-byte hash", async function () {
+    it("should lookup function signatures by 4-byte hash and filter by default", async function () {
       const hash4 =
         "0x" +
         testSignatures[0].signature_hash_32.toString("hex").substring(0, 8);
@@ -103,6 +111,12 @@ describe("Signature API OpenChain Endpoints", function () {
         name: "transfer(address,uint256)",
         filtered: false,
       });
+      chai.expect(res.body.result.function[hash4]).to.not.have.deep.members([
+        {
+          name: "transfer(bytes4[9],bytes5[6],int48[11])",
+          filtered: true,
+        },
+      ]);
     });
 
     it("should lookup function signatures by 32-byte hash", async function () {
@@ -222,9 +236,12 @@ describe("Signature API OpenChain Endpoints", function () {
 
       chai.expect(res.status).to.equal(200);
       chai.expect(res.body.ok).to.be.true;
-      chai
-        .expect(res.body.result.function[hash4][0])
-        .to.have.property("filtered");
+      chai.expect(res.body.result.function).to.have.property(hash4);
+      chai.expect(res.body.result.function[hash4]).to.be.an("array");
+      chai.expect(res.body.result.function[hash4]).to.have.deep.members([
+        { name: "transfer(address,uint256)", filtered: false },
+        { name: "transfer(bytes4[9],bytes5[6],int48[11])", filtered: true },
+      ]);
     });
 
     it("should handle invalid hash format", async function () {
