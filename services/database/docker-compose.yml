@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile_inline: |
-        FROM postgres:15.13-bookworm
+        FROM postgres:15-bookworm
         RUN apt-get update && \
             apt-get -y install postgresql-15-cron && \
             apt-get clean && \
