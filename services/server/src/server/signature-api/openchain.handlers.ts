@@ -238,7 +238,7 @@ export async function getSignaturesStats(
     const dbResult = await databaseService.database.getSignatureCounts();
 
     for (const row of dbResult.rows) {
-      result.count[row.signature_type] = row.count;
+      result.count[row.signature_type] = parseInt(row.count);
 
       // Set metadata from the first row (all rows have same timestamps)
       if (result.metadata.created_at === "") {
