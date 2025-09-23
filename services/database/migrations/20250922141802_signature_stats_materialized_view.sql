@@ -1,7 +1,14 @@
 -- migrate:up
 
--- Enable pg_cron extension for scheduled tasks
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Enable pg_cron extension for scheduled tasks (gracefully handle if not available)
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS pg_cron;
+    RAISE NOTICE 'pg_cron extension enabled successfully';
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'pg_cron extension not available, continuing without scheduled refresh';
+END
+$$;
 
 -- Create materialized view for signature statistics
 -- This pre-computes the counts that the /stats endpoint needs
@@ -32,14 +39,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Schedule daily refresh at 2 AM UTC
+-- Schedule daily refresh at 2 AM UTC (only if pg_cron is available)
 -- This keeps stats current without impacting real-time performance
-SELECT cron.schedule('refresh-signature-stats', '0 2 * * *', 'SELECT refresh_signature_stats();');
+DO $$
+BEGIN
+    PERFORM cron.schedule('refresh-signature-stats', '0 2 * * *', 'SELECT refresh_signature_stats();');
+    RAISE NOTICE 'Scheduled daily refresh of signature stats at 2 AM UTC';
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'pg_cron not available, materialized view refresh must be done manually';
+END
+$$;
 
 -- migrate:down
 
--- Remove scheduled job
-SELECT cron.unschedule('refresh-signature-stats');
+-- Remove scheduled job (gracefully handle if pg_cron not available)
+DO $$
+BEGIN
+    PERFORM cron.unschedule('refresh-signature-stats');
+    RAISE NOTICE 'Unscheduled signature stats refresh job';
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'pg_cron not available or job not found, continuing with cleanup';
+END
+$$;
 
 -- Drop function and materialized view
 DROP FUNCTION IF EXISTS refresh_signature_stats();
