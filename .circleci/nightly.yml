@@ -126,7 +126,7 @@ jobs:
             SOURCIFY_POSTGRES_PORT: 5432
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:15.13-alpine
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
