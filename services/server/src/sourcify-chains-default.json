@@ -388,29 +388,6 @@
       }
     ]
   },
-  "44787": {
-    "sourcifyName": "Celo Alfajores Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_CELO"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true,
-      "blockscoutScrape": {
-        "url": "https://explorer.celo.org/alfajores/"
-      }
-    }
-  },
-  "62320": {
-    "sourcifyName": "Celo Baklava Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://baklava-blockscout.celo-testnet.org/"
-      }
-    }
-  },
   "11142220": {
     "sourcifyName": "Celo Sepolia Testnet",
     "supported": true,

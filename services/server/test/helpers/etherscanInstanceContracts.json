@@ -113,18 +113,6 @@
       "expectedStatus": "perfect"
     }
   ],
-  "44787": [
-    {
-      "address": "0xfb1bffC9d739B8D520DaF37dF666da4C687191EA",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x1ff8030705dB05DcDEbEA2BF0f8CDAd1966A71C6",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
   "42220": [
     {
       "address": "0x8084936982D089130e001b470eDf58faCA445008",
