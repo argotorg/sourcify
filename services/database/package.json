@@ -8,6 +8,7 @@
     "sourcify:database": "node scripts.mjs ",
     "migrate:setup": "rm -rf migrations-temp && mkdir -p migrations-temp && ln -sf $PWD/database-specs/migrations/* $PWD/migrations-temp/ && ln -sf $PWD/migrations/* $PWD/migrations-temp/",
     "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate up",
+    "migrate:up-no-dump": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate --no-dump-schema up",
     "migrate:rollback": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp dbmate rollback",
     "migrate:new": "DBMATE_MIGRATIONS_DIR=./migrations dbmate new",
     "migrate:create-db": "dbmate create",

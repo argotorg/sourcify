@@ -37,33 +37,37 @@ interface SignatureResult {
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   const canonicalSignatures = getCanonicalSignatures();
 
-  for (const hash in response.function) {
-    const expectedCanonical = canonicalSignatures[hash];
-    if (expectedCanonical !== undefined) {
-      for (const signatureItem of response.function[hash]) {
-        signatureItem.filtered =
-          signatureItem.name !== expectedCanonical.signature;
+  for (const type of Object.values(SignatureType)) {
+    for (const hash in response[type]) {
+      const expectedCanonical = canonicalSignatures[hash];
+      if (expectedCanonical !== undefined) {
+        for (const signatureItem of response[type][hash]) {
+          signatureItem.filtered =
+            signatureItem.name !== expectedCanonical.signature;
+        }
       }
     }
   }
 
   if (shouldFilter) {
-    for (const hash in response.function) {
-      response.function[hash] = response.function[hash].filter(
-        (signatureItem) => !signatureItem.filtered,
-      );
+    for (const type of Object.values(SignatureType)) {
+      for (const hash in response[type]) {
+        response[type][hash] = response[type][hash].filter(
+          (signatureItem) => !signatureItem.filtered,
+        );
+      }
     }
   }
 }
 
-interface LookupSignaturesRequest extends Request {
+type LookupSignaturesRequest = Omit<Request, "query"> & {
   query: {
     function?: string;
     event?: string;
     error?: string;
-    filter?: "true" | "false";
+    filter?: boolean;
   };
-}
+};
 
 type LookupSignaturesResponse = SignatureApiResponse<SignatureResult>;
 
@@ -76,7 +80,7 @@ export async function lookupSignatures(
       function: functionQuery,
       event: eventQuery,
       error: errorQuery,
-      filter: shouldFilter = "true",
+      filter: shouldFilter = true,
     } = req.query;
 
     const services = req.app.get("services") as Services;
@@ -117,7 +121,7 @@ export async function lookupSignatures(
       ...errorHashes.map((hash) => getSignatures(hash, SignatureType.Error)),
     ]);
 
-    filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter);
 
     res.status(StatusCodes.OK).json({
       ok: true,
@@ -131,12 +135,12 @@ export async function lookupSignatures(
   }
 }
 
-interface SearchSignaturesRequest extends Request {
+type SearchSignaturesRequest = Omit<Request, "query"> & {
   query: {
-    query: string;
-    filter?: "true" | "false";
+    query?: string;
+    filter?: boolean;
   };
-}
+};
 
 type SearchSignaturesResponse = SignatureApiResponse<SignatureResult>;
 
@@ -145,7 +149,7 @@ export async function searchSignatures(
   res: SearchSignaturesResponse,
 ) {
   try {
-    const { query: searchQuery, filter: shouldFilter = "true" } = req.query;
+    const { query: searchQuery = "", filter: shouldFilter = true } = req.query;
 
     const services = req.app.get("services") as Services;
     const databaseService = services.storage.rwServices[
@@ -186,7 +190,7 @@ export async function searchSignatures(
       ),
     );
 
-    filterResponse(result, shouldFilter === "true");
+    filterResponse(result, shouldFilter);
 
     res.status(StatusCodes.OK).json({
       ok: true,
