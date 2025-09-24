@@ -209,6 +209,10 @@ interface GetSignatureStatsResult {
     event: number;
     error: number;
   };
+  metadata: {
+    created_at: string;
+    refreshed_at: string;
+  };
 }
 
 type GetSignaturesStatsResponse = SignatureApiResponse<GetSignatureStatsResult>;
@@ -225,12 +229,22 @@ export async function getSignaturesStats(
 
     const result: GetSignatureStatsResult = {
       count: { function: 0, event: 0, error: 0 },
+      metadata: {
+        created_at: "",
+        refreshed_at: "",
+      },
     };
 
     const dbResult = await databaseService.database.getSignatureCounts();
 
     for (const row of dbResult.rows) {
       result.count[row.signature_type] = parseInt(row.count);
+
+      // Set metadata from the first row (all rows have same timestamps)
+      if (result.metadata.created_at === "") {
+        result.metadata.created_at = row.created_at.toISOString();
+        result.metadata.refreshed_at = row.refreshed_at.toISOString();
+      }
     }
 
     res.status(StatusCodes.OK).json({

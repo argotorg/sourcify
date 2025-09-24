@@ -33,7 +33,7 @@ jobs:
           path: ./services/server/chain-tests-report
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:15-alpine
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify

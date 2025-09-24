@@ -789,12 +789,14 @@ ${
     QueryResult<{
       signature_type: Tables.CompiledContractsSignatures["signature_type"];
       count: string;
+      created_at: Date;
+      refreshed_at: Date;
     }>
   > {
     return await (poolClient || this.pool).query(
-      `SELECT signature_type, COUNT(DISTINCT signature_hash_32) AS count
-      FROM ${this.schema}.compiled_contracts_signatures
-      GROUP BY signature_type;`,
+      `SELECT signature_type, count, created_at, refreshed_at
+      FROM ${this.schema}.signature_stats
+      ORDER BY signature_type;`,
     );
   }
 
@@ -812,17 +814,18 @@ ${
     }>
   > {
     const sanitizedPattern = pattern
+      .trim()
       .replace(/_/g, "\\_")
       .replace(/\*/g, "%")
       .replace(/\?/g, "_");
 
     return await (poolClient || this.pool).query(
-      `SELECT DISTINCT s.signature, 
+      `SELECT DISTINCT s.signature,
         concat('0x',encode(s.signature_hash_4, 'hex')) as signature_hash_4,
         concat('0x',encode(s.signature_hash_32, 'hex')) as signature_hash_32
         FROM ${this.schema}.signatures s
         JOIN ${this.schema}.compiled_contracts_signatures ccs ON s.signature_hash_32 = ccs.signature_hash_32
-        WHERE s.signature ILIKE $1 AND ccs.signature_type = $2
+        WHERE s.signature LIKE $1 ESCAPE '\\' AND ccs.signature_type = $2
         LIMIT $3`,
       [sanitizedPattern, signatureType, limit],
     );
