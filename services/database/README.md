@@ -39,7 +39,7 @@ Please initialize the Verifier Alliance [database-specs](https://github.com/veri
 git submodule update --init
 ```
 
-**Extension**: pg_cron is used to schedule the refresh of the signature stats materialized view. If the pg_cron extension is not available, the migration will be skipped.
+**Extension**: `pg_cron` is used to schedule the refresh of the signature stats materialized view. If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron job will be skipped in the migration.
 
 dbmate is used to manage the database migrations.
 A local installation of dbmate comes with `npm i`.
