@@ -411,6 +411,15 @@
       }
     }
   },
+  "11142220": {
+    "sourcifyName": "Celo Sepolia Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://celo-sepolia.blockscout.com/"
+      }
+    }
+  },
   "80001": {
     "sourcifyName": "Polygon Mumbai Testnet",
     "supported": false
