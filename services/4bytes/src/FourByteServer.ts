@@ -1,0 +1,91 @@
+import { config } from "dotenv";
+config();
+
+import path from "path";
+import http from "http";
+import { Pool } from "pg";
+import logger from "./logger";
+import { SignatureDatabase } from "./SignatureDatabase";
+import express from "express";
+import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import yaml from "yamljs";
+import { createSignatureHandlers } from "./api/handlers";
+import { validateHashQueries, validateSearchQuery } from "./api/validation";
+
+export interface ServerOptions {
+  port: string | number;
+}
+
+export class FourByteServer {
+  app: express.Application;
+  port: string | number;
+  pool: Pool;
+  database: SignatureDatabase;
+  httpServer?: http.Server;
+
+  constructor(options: ServerOptions) {
+    this.app = express();
+    this.port = options.port;
+    logger.info("4Byte Server port set", { port: this.port });
+    this.pool = new Pool({
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT
+        ? parseInt(process.env.POSTGRES_PORT)
+        : 5432,
+      database: process.env.POSTGRES_DB,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      max: process.env.POSTGRES_MAX_CONNECTIONS
+        ? parseInt(process.env.POSTGRES_MAX_CONNECTIONS)
+        : 20,
+    });
+    this.database = new SignatureDatabase(this.pool, {
+      schema: process.env.POSTGRES_SCHEMA,
+    });
+
+    this.app.use(cors());
+    this.app.use(express.json());
+
+    const apiSpecPath = path.join(__dirname, "openapi.yaml");
+    const openApiSpec = yaml.load(apiSpecPath);
+    this.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+
+    const handlers = createSignatureHandlers(this.database, logger);
+
+    this.app.get(
+      "/signature-database/v1/lookup",
+      validateHashQueries,
+      handlers.lookupSignatures,
+    );
+    this.app.get(
+      "/signature-database/v1/search",
+      validateSearchQuery,
+      handlers.searchSignatures,
+    );
+    this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
+
+    this.app.get("/health", (_req, res) => {
+      res.json({ status: "ok", service: "4bytes-api" });
+    });
+
+    this.httpServer = this.app.listen(this.port, () => {
+      logger.info(`4bytes API server running on port ${this.port}`);
+    });
+
+    const shutdown = async (signal: NodeJS.Signals) => {
+      logger.info(`Received ${signal}. Shutting down gracefully...`);
+      this.httpServer!.close(async (error) => {
+        if (error) {
+          logger.error("Error while closing HTTP server", { error });
+          process.exitCode = 1;
+        }
+        await this.pool.end();
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
+  }
+}

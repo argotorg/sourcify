@@ -1,0 +1,137 @@
+{
+  "0xd55ec697": {
+    "signature": "upgrade()",
+    "source": "generic:proxy"
+  },
+  "0x415565b0": {
+    "signature": "transformERC20(address,address,uint256,uint256,(uint32,bytes)[])",
+    "source": "protocol:0x"
+  },
+  "0x7c025200": {
+    "signature": "swap(address,(address,address,address,address,uint256,uint256,uint256,bytes),bytes)",
+    "source": "protocol:1inch"
+  },
+  "0x9a2b8115": {
+    "signature": "batchBuyWithETH((uint256,uint256,bytes)[])",
+    "source": "protocol:gemswap"
+  },
+  "0x5f575529": {
+    "signature": "swap(string,address,uint256,bytes)",
+    "source": "protocol:metamask"
+  },
+  "0x41973cd9": {
+    "signature": "putCurEpochConPubKeyBytes(bytes)",
+    "source": "protocol:polynetwork"
+  },
+  "0xe7acab24": {
+    "signature": "fulfillAdvancedOrder(((address,address,(uint8,address,uint256,uint256,uint256)[],(uint8,address,uint256,uint256,uint256,address)[],uint8,uint256,uint256,bytes32,uint256,bytes32,uint256),uint120,uint120,bytes,bytes),(uint256,uint8,uint256,uint256,bytes32[])[],bytes32,address)",
+    "source": "protocol:seaport"
+  },
+  "0xfd9f1e10": {
+    "signature": "cancel((address,address,(uint8,address,uint256,uint256,uint256)[],(uint8,address,uint256,uint256,uint256,address)[],uint8,uint256,uint256,bytes32,uint256,bytes32,uint256)[])",
+    "source": "protocol:seaport"
+  },
+  "0x0d0f30c6": {
+    "signature": "token1()",
+    "source": "protocol:uniswap"
+  },
+  "0x0dfe1681": {
+    "signature": "token0()",
+    "source": "protocol:uniswap"
+  },
+  "0x1a686502": {
+    "signature": "uniswapV3SwapCallback(int256,int256,bytes)",
+    "source": "protocol:uniswap"
+  },
+  "0x89035730": {
+    "signature": "flash(address,uint256,uint256,bytes)",
+    "source": "protocol:uniswap"
+  },
+  "0xc45a0155": {
+    "signature": "mint(address,int24,int24,uint128,bytes)",
+    "source": "protocol:uniswap"
+  },
+  "0xfc6f7865": {
+    "signature": "uniswapV3MintCallback(uint256,uint256,bytes)",
+    "source": "protocol:uniswap"
+  },
+  "0x3644e515": {
+    "signature": "DOMAIN_SEPARATOR()",
+    "source": "standard:eip712"
+  },
+  "0x01ffc9a7": {
+    "signature": "supportsInterface(bytes4)",
+    "source": "standard:erc165"
+  },
+  "0x081812fc": {
+    "signature": "getApproved(uint256)",
+    "source": "standard:erc721"
+  },
+  "0x8da5cb5b": {
+    "signature": "owner()",
+    "source": "standard:ownable"
+  },
+  "0x18160ddd": {
+    "signature": "totalSupply()",
+    "source": "standard:erc20"
+  },
+  "0x23b872dd": {
+    "signature": "transferFrom(address,address,uint256)",
+    "source": "standard:erc20"
+  },
+  "0x313ce567": {
+    "signature": "decimals()",
+    "source": "standard:erc20"
+  },
+  "0x70a08231": {
+    "signature": "balanceOf(address)",
+    "source": "standard:erc20"
+  },
+  "0x95d89b41": {
+    "signature": "symbol()",
+    "source": "standard:erc20"
+  },
+  "0xa457c2d7": {
+    "signature": "decreaseAllowance(address,uint256)",
+    "source": "standard:erc20"
+  },
+  "0xa9059cbb": {
+    "signature": "transfer(address,uint256)",
+    "source": "standard:erc20"
+  },
+  "0xdd62ed3e": {
+    "signature": "allowance(address,address)",
+    "source": "standard:erc20"
+  },
+  "0x095ea7b3": {
+    "signature": "approve(address,uint256)",
+    "source": "standard:erc20"
+  },
+  "0x06fdde03": {
+    "signature": "name()",
+    "source": "standard:erc20"
+  },
+  "0x39509351": {
+    "signature": "increaseAllowance(address,uint256)",
+    "source": "standard:erc20"
+  },
+  "0x60806040": {
+    "source": "system:magic"
+  },
+  "0x60a06040": {
+    "source": "system:magic"
+  },
+  "0x60c06040": {
+    "source": "system:magic"
+  },
+  "0x60e06040": {
+    "source": "system:magic"
+  },
+  "0x61010060": {
+    "source": "system:magic"
+  },
+  "0x8abf6077": {
+    "signature": "proxyOwner()",
+    "source": "generic:proxy"
+  }
+}
