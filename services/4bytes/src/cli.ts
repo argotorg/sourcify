@@ -1,8 +1,8 @@
 // CLI module to be run when running the server from the CLI
-import { config } from "dotenv";
-config();
-
 import path from "path";
+import { config } from "dotenv";
+config({ path: path.resolve(__dirname, "..", ".env") });
+
 import swaggerUi from "swagger-ui-express";
 import yaml from "yamljs";
 import logger from "./logger";
