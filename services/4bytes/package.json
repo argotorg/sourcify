@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "Standalone service exposing Sourcify signature database endpoints",
-  "main": "dist/server.js",
-  "types": "dist/server.d.ts",
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
   "scripts": {
     "prebuild": "copyfiles -u 1 src/**/*.yaml src/**/*.json dist",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts",
+    "start": "node dist/cli.js",
+    "dev": "ts-node src/cli.ts",
     "test": "mocha --require ts-node/register --exit --recursive test/**/*.spec.ts"
   },
   "dependencies": {

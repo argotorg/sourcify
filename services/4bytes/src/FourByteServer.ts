@@ -1,15 +1,9 @@
-import { config } from "dotenv";
-config();
-
-import path from "path";
 import http from "http";
 import { Pool } from "pg";
 import logger from "./logger";
 import { SignatureDatabase } from "./SignatureDatabase";
 import express from "express";
 import cors from "cors";
-import swaggerUi from "swagger-ui-express";
-import yaml from "yamljs";
 import { createSignatureHandlers } from "./api/handlers";
 import { validateHashQueries, validateSearchQuery } from "./api/validation";
 
@@ -47,10 +41,6 @@ export class FourByteServer {
     this.app.use(cors());
     this.app.use(express.json());
 
-    const apiSpecPath = path.join(__dirname, "openapi.yaml");
-    const openApiSpec = yaml.load(apiSpecPath);
-    this.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
-
     const handlers = createSignatureHandlers(this.database, logger);
 
     this.app.get(
@@ -69,23 +59,52 @@ export class FourByteServer {
       res.json({ status: "ok", service: "4bytes-api" });
     });
 
-    this.httpServer = this.app.listen(this.port, () => {
-      logger.info(`4bytes API server running on port ${this.port}`);
-    });
-
     const shutdown = async (signal: NodeJS.Signals) => {
       logger.info(`Received ${signal}. Shutting down gracefully...`);
-      this.httpServer!.close(async (error) => {
-        if (error) {
-          logger.error("Error while closing HTTP server", { error });
-          process.exitCode = 1;
-        }
-        await this.pool.end();
-        process.exit(0);
-      });
+      if (this.httpServer) {
+        this.httpServer.close(async (error) => {
+          if (error) {
+            logger.error("Error while closing HTTP server", { error });
+            process.exitCode = 1;
+          }
+          await this.pool.end();
+          process.exit(0);
+        });
+      }
     };
 
     process.on("SIGTERM", shutdown);
     process.on("SIGINT", shutdown);
+  }
+
+  async listen(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.httpServer = this.app.listen(this.port, (error?: Error) => {
+        if (error) {
+          reject(error);
+        } else {
+          logger.info(`4bytes API server running on port ${this.port}`);
+          resolve();
+        }
+      });
+    });
+  }
+
+  async shutdown(): Promise<void> {
+    logger.info("Shutting down 4bytes server");
+    if (this.httpServer) {
+      await new Promise<void>((resolve) => {
+        this.httpServer!.close((error?: Error) => {
+          if (error) {
+            logger.error("Error closing 4bytes server", error);
+          } else {
+            logger.info("4bytes server closed");
+          }
+          resolve();
+        });
+      });
+    }
+    await this.pool.end();
+    logger.info("4bytes database connection closed");
   }
 }
