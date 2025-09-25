@@ -35,6 +35,23 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "4Bytes - without build",
+      "program": "${workspaceFolder}/services/4bytes/dist/cli.js",
+      "envFile": "${workspaceFolder}/services/4bytes/.env",
+      "outFiles": [
+        "${workspaceFolder}/services/4bytes/dist/**/*.js",
+        "${workspaceFolder}/packages/**/build/**/*.js"
+      ],
+      "env": {
+        // "NODE_ENV": "production"
+      },
+      "smartStep": true,
+      "console": "integratedTerminal",
+      "outputCapture": "std"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Monitor - without build",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "dist/index.js",
