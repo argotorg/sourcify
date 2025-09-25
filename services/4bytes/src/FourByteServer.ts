@@ -7,8 +7,19 @@ import cors from "cors";
 import { createSignatureHandlers } from "./api/handlers";
 import { validateHashQueries, validateSearchQuery } from "./api/validation";
 
+export interface DatabaseConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+  max: number;
+  schema?: string;
+}
+
 export interface ServerOptions {
   port: string | number;
+  databaseConfig: DatabaseConfig;
 }
 
 export class FourByteServer {
@@ -22,20 +33,9 @@ export class FourByteServer {
     this.app = express();
     this.port = options.port;
     logger.info("4Byte Server port set", { port: this.port });
-    this.pool = new Pool({
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT
-        ? parseInt(process.env.POSTGRES_PORT)
-        : 5432,
-      database: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      max: process.env.POSTGRES_MAX_CONNECTIONS
-        ? parseInt(process.env.POSTGRES_MAX_CONNECTIONS)
-        : 20,
-    });
+    this.pool = new Pool(options.databaseConfig);
     this.database = new SignatureDatabase(this.pool, {
-      schema: process.env.POSTGRES_SCHEMA,
+      schema: options.databaseConfig.schema,
     });
 
     this.app.use(cors());
