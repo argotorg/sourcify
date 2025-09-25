@@ -190,6 +190,28 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Mocha - 4Bytes",
+      "cwd": "${workspaceFolder}/services/4bytes",
+      "program": "${workspaceRoot}/node_modules/.bin/mocha",
+      "args": [
+        "--require", "ts-node/register",
+        "--exit",
+        "--recursive",
+        "test/**/*.spec.ts"
+        // Run a single test when debugging
+        // "--grep=should lookup signatures"
+      ],
+      "env": {
+        // "NODE_ENV": "test"
+        // "NODE_LOG_LEVEL": "debug"
+      },
+      "smartStep": true,
+      "console": "integratedTerminal"
+      // "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Mocha - Monitor",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
