@@ -179,13 +179,19 @@ workflows:
       - monitor-e2e-holesky:
           requires:
             - deploy
+      - monitor-e2e-hoodi:
+          requires:
+            - deploy
       - verification-e2e-sepolia:
           requires:
             - deploy
       - verification-e2e-holesky:
           requires:
-            - deploy # Tests workflow for not staging or master
-  tests:
+            - deploy
+      - verification-e2e-hoodi:
+          requires:
+            - deploy 
+  tests: # Tests workflow for not staging or master
     when:
       and:
         - not:
@@ -305,6 +311,11 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  monitor-e2e-hoodi:
+    <<: *monitor-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi
   verification-e2e-sepolia:
     <<: *verification-e2e-base
     environment:
@@ -315,3 +326,8 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  verification-e2e-hoodi:
+    <<: *verification-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi

@@ -18,18 +18,21 @@ paths:
           description: A comma-delimited list of function hashes with leading 0x prefix
           schema:
             type: string
+          allowReserved: true
         - in: query
           name: event
           required: false
           description: A comma-delimited list of event hashes with leading 0x prefix
           schema:
             type: string
+          allowReserved: true
         - in: query
           name: error
           required: false
           description: A comma-delimited list of error hashes with leading 0x prefix
           schema:
             type: string
+          allowReserved: true
         - in: query
           name: filter
           required: false
@@ -92,6 +95,7 @@ paths:
           schema:
             type: boolean
             default: true
+          allowReserved: true
       responses:
         "200":
           description: The resulting signatures
