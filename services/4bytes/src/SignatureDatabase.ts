@@ -42,7 +42,10 @@ export interface SignatureDatabaseOptions {
 export class SignatureDatabase implements SignatureDataProvider {
   private readonly schema: string;
 
-  constructor(private readonly pool: Pool, options: SignatureDatabaseOptions = {}) {
+  constructor(
+    private readonly pool: Pool,
+    options: SignatureDatabaseOptions = {},
+  ) {
     this.schema = options.schema ?? "public";
   }
 
@@ -66,7 +69,10 @@ export class SignatureDatabase implements SignatureDataProvider {
         )
     `;
 
-    const result = await this.pool.query<SignatureLookupRow>(query, [hash, type]);
+    const result = await this.pool.query<SignatureLookupRow>(query, [
+      hash,
+      type,
+    ]);
     return result.rows;
   }
 
@@ -86,7 +92,10 @@ export class SignatureDatabase implements SignatureDataProvider {
         )
     `;
 
-    const result = await this.pool.query<SignatureLookupRow>(query, [hash, type]);
+    const result = await this.pool.query<SignatureLookupRow>(query, [
+      hash,
+      type,
+    ]);
     return result.rows;
   }
 

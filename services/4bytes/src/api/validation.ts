@@ -23,11 +23,16 @@ function validateHash(hash: string): boolean {
 }
 
 export function validateHashQueries(
-  req: Request<unknown, unknown, unknown, {
-    function?: string;
-    event?: string;
-    error?: string;
-  }>,
+  req: Request<
+    unknown,
+    unknown,
+    unknown,
+    {
+      function?: string;
+      event?: string;
+      error?: string;
+    }
+  >,
   res: Response,
   next: NextFunction,
 ): void {

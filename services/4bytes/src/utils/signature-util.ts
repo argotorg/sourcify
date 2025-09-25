@@ -48,6 +48,11 @@ function getSignatureData(fragment: Fragment): SignatureData {
   };
 }
 
-export function getCanonicalSignatures(): Record<string, { signature?: string }> {
+// prettier-ignore
+export function getCanonicalSignatures(): 
+Record<
+  string,
+  { signature?: string }
+  > {
   return canonicalSignaturesData as Record<string, { signature?: string }>;
 }

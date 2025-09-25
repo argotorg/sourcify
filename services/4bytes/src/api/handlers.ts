@@ -104,6 +104,7 @@ export function createSignatureHandlers(
 
         const result: SignatureResult = { function: {}, event: {}, error: {} };
 
+        /* eslint-disable indent */
         const getSignatures = async (hash: string, type: SignatureType) => {
           const rows =
             hash.length === 66
@@ -118,6 +119,7 @@ export function createSignatureHandlers(
 
           result[type][hash] = mapLookupResult(rows);
         };
+        /* eslint-enable indent */
 
         await Promise.all([
           ...functionHashes.map((hash) =>
