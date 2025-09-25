@@ -32,6 +32,12 @@ const apiSpecPath = path.join(__dirname, "openapi.yaml");
 const openApiSpec = yaml.load(apiSpecPath);
 server.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
-server.listen().then(() => {
-  logger.info("4bytes API server started successfully");
-});
+server
+  .listen()
+  .then(() => {
+    logger.info("4bytes API server started successfully");
+  })
+  .catch((error) => {
+    logger.error("Failed to start 4bytes API server", { error });
+    process.exit(1);
+  });

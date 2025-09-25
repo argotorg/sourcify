@@ -38,6 +38,9 @@ export class FourByteServer {
       schema: options.databaseConfig.schema,
     });
 
+    // Check database health during initialization
+    this.checkDatabaseHealth();
+
     this.app.use(cors());
     this.app.use(express.json());
 
@@ -75,6 +78,29 @@ export class FourByteServer {
 
     process.on("SIGTERM", shutdown);
     process.on("SIGINT", shutdown);
+  }
+
+  async checkDatabaseHealth(): Promise<void> {
+    // Checking pool health before continuing
+    try {
+      logger.debug("Checking database pool health for 4bytes service");
+      await this.pool.query("SELECT 1;");
+      logger.info("Database connection healthy", {
+        host: this.pool.options.host,
+        port: this.pool.options.port,
+        database: this.pool.options.database,
+        user: this.pool.options.user,
+      });
+    } catch (error) {
+      logger.error("Cannot connect to 4bytes database", {
+        host: this.pool.options.host,
+        port: this.pool.options.port,
+        database: this.pool.options.database,
+        user: this.pool.options.user,
+        error,
+      });
+      throw new Error("Cannot connect to 4bytes database");
+    }
   }
 
   async listen(): Promise<void> {
