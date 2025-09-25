@@ -33,6 +33,7 @@ export interface DatabaseOptions {
     password: string;
   };
   schema?: string;
+  maxConnections?: number;
 }
 
 export class Database {
@@ -47,7 +48,7 @@ export class Database {
   private postgresDatabase?: string;
   private postgresUser?: string;
   private postgresPassword?: string;
-
+  private maxConnections?: number;
   constructor(options: DatabaseOptions) {
     this.googleCloudSqlInstanceName = options.googleCloudSql?.instanceName;
     this.googleCloudSqlUser = options.googleCloudSql?.user;
@@ -61,6 +62,7 @@ export class Database {
     if (options.schema) {
       this.schema = options.schema;
     }
+    this.maxConnections = options.maxConnections;
   }
 
   get pool(): Pool {
@@ -90,8 +92,8 @@ export class Database {
         ...clientOpts,
         user: this.googleCloudSqlUser,
         database: this.googleCloudSqlDatabase,
-        max: 5,
         password: this.googleCloudSqlPassword,
+        max: this.maxConnections || 15,
       });
     } else if (this.postgresHost) {
       this._pool = new Pool({
@@ -100,7 +102,7 @@ export class Database {
         database: this.postgresDatabase,
         user: this.postgresUser,
         password: this.postgresPassword,
-        max: 5,
+        max: this.maxConnections || 15,
       });
     } else {
       throw new Error("Alliance Database is disabled");
