@@ -64,6 +64,7 @@ export class FourByteServerFixture {
     beforeEach(async () => {
       if (!fixtureOptions?.skipDatabaseReset) {
         await this.resetDatabase();
+        await this.insertTestSignatures(FourByteServerFixture.testSignatures);
         console.log("Resetting 4Bytes database");
       }
     });

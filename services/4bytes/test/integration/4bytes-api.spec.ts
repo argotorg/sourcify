@@ -13,13 +13,7 @@ describe("4Bytes API End-to-End Tests", function () {
   const serverFixture = new FourByteServerFixture();
 
   describe("GET /signature-database/v1/lookup", function () {
-    beforeEach(async function () {
-      await serverFixture.insertTestSignatures(
-        FourByteServerFixture.testSignatures,
-      );
-    });
-
-    it("should lookup function signatures by 4-byte hash", async function () {
+    it("should lookup function signatures by 4-byte hash and filter by default", async function () {
       const signature = "transfer(address,uint256)";
       const hash4 = keccak256(signature).slice(0, 10);
 
@@ -31,6 +25,7 @@ describe("4Bytes API End-to-End Tests", function () {
       chai.expect(res).to.have.status(200);
       chai.expect(res.body).to.have.property("ok", true);
       chai.expect(res.body.result.function[hash4]).to.be.an("array");
+      chai.expect(res.body.result.function[hash4].length).to.equal(1);
       chai.expect(res.body.result.function[hash4][0]).to.deep.include({
         name: signature,
         filtered: false,
@@ -86,6 +81,34 @@ describe("4Bytes API End-to-End Tests", function () {
     });
 
     it("should lookup multiple signatures at once", async function () {
+      const eventSignature = "Transfer(address,address,uint256)";
+      const eventHash = keccak256(eventSignature);
+      const functionSignature = "transfer(address,uint256)";
+      const functionHash = keccak256(functionSignature).slice(0, 10);
+      const errorSignature = "InsufficientBalance(uint256,uint256)";
+      const errorHash = keccak256(errorSignature).slice(0, 10);
+
+      const res = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: functionHash, event: eventHash, error: errorHash });
+
+      chai.expect(res).to.have.status(200);
+      chai.expect(res.body.result.function).to.have.property(functionHash);
+      chai.expect(res.body.result.event).to.have.property(eventHash);
+      chai.expect(res.body.result.error).to.have.property(errorHash);
+      chai
+        .expect(res.body.result.function[functionHash][0].name)
+        .to.equal(functionSignature);
+      chai
+        .expect(res.body.result.event[eventHash][0].name)
+        .to.equal(eventSignature);
+      chai
+        .expect(res.body.result.error[errorHash][0].name)
+        .to.equal(errorSignature);
+    });
+
+    it("should lookup comma-delimited signatures at once", async function () {
       const sig1 = "transfer(address,uint256)";
       const sig2 = "approve(address,uint256)";
       const hash1 = keccak256(sig1).slice(0, 10);
@@ -114,26 +137,6 @@ describe("4Bytes API End-to-End Tests", function () {
         .is.empty;
     });
 
-    it("should filter spam signatures by default", async function () {
-      const collusionSignature =
-        "_____$_$__$___$$$___$$___$__$$(address,uint256)";
-      const collusionHash4 = keccak256(collusionSignature).slice(0, 10);
-
-      const res = await chai
-        .request(`http://localhost:${serverFixture.port}`)
-        .get("/signature-database/v1/lookup")
-        .query({ function: collusionHash4 });
-
-      chai.expect(res).to.have.status(200);
-      chai
-        .expect(res.body.result.function[collusionHash4])
-        .to.be.an("array")
-        .with.lengthOf(1);
-      chai
-        .expect(res.body.result.function[collusionHash4][0].name)
-        .to.not.equal(collusionSignature);
-    });
-
     it("should handle filter parameter to be false", async function () {
       const signature = "transfer(address,uint256)";
       const hash4 = keccak256(signature).slice(0, 10);
@@ -149,33 +152,10 @@ describe("4Bytes API End-to-End Tests", function () {
         .query({ function: hash4, filter: "false" });
 
       chai.expect(res).to.have.status(200);
-      const names = res.body.result.function[hash4].map((obj: any) => obj.name);
-      chai.expect(names).to.include(signature);
-      chai.expect(names).to.include(collusionSignature);
-    });
-
-    it("should handle mixed signature types in one request", async function () {
-      const funcSig = "transfer(address,uint256)";
-      const eventSig = "Transfer(address,address,uint256)";
-      const errorSig = "InsufficientBalance(uint256,uint256)";
-
-      const funcHash = keccak256(funcSig).slice(0, 10);
-      const eventHash = keccak256(eventSig);
-      const errorHash = keccak256(errorSig).slice(0, 10);
-
-      const res = await chai
-        .request(`http://localhost:${serverFixture.port}`)
-        .get("/signature-database/v1/lookup")
-        .query({
-          function: funcHash,
-          event: eventHash,
-          error: errorHash,
-        });
-
-      chai.expect(res).to.have.status(200);
-      chai.expect(res.body.result.function[funcHash][0].name).to.equal(funcSig);
-      chai.expect(res.body.result.event[eventHash][0].name).to.equal(eventSig);
-      chai.expect(res.body.result.error[errorHash][0].name).to.equal(errorSig);
+      chai.expect(res.body.result.function[hash4]).to.have.deep.members([
+        { name: signature, filtered: false },
+        { name: collusionSignature, filtered: true },
+      ]);
     });
 
     it("should handle invalid hash format with proper error", async function () {
@@ -190,12 +170,6 @@ describe("4Bytes API End-to-End Tests", function () {
   });
 
   describe("GET /signature-database/v1/search", function () {
-    beforeEach(async function () {
-      await serverFixture.insertTestSignatures(
-        FourByteServerFixture.testSignatures,
-      );
-    });
-
     it("should search signatures by exact pattern", async function () {
       const signature = "transfer(address,uint256)";
 
@@ -323,12 +297,6 @@ describe("4Bytes API End-to-End Tests", function () {
   });
 
   describe("GET /signature-database/v1/stats", function () {
-    beforeEach(async function () {
-      await serverFixture.insertTestSignatures(
-        FourByteServerFixture.testSignatures,
-      );
-    });
-
     it("should return signature statistics", async function () {
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
@@ -417,6 +385,8 @@ describe("4Bytes API End-to-End Tests", function () {
         });
       }
 
+      // Reset database and insert large signature set
+      await serverFixture.resetDatabase();
       await serverFixture.insertTestSignatures(largeSignatureSet);
 
       const res = await chai
@@ -432,10 +402,6 @@ describe("4Bytes API End-to-End Tests", function () {
     });
 
     it("should maintain data consistency across requests", async function () {
-      await serverFixture.insertTestSignatures(
-        FourByteServerFixture.testSignatures,
-      );
-
       // Make multiple concurrent requests
       const requests = Array(10)
         .fill(0)
