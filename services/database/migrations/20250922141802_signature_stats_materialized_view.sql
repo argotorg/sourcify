@@ -1,6 +1,7 @@
 -- migrate:up
 
 -- Enable pg_cron extension for scheduled tasks (gracefully handle if not available)
+-- By default this only runs on the database "postgres" but you can set the cron.database_name variable in the postgresql.conf to a different database.
 DO $$
 BEGIN
     CREATE EXTENSION IF NOT EXISTS pg_cron;
