@@ -4,9 +4,9 @@
 DO $$
 BEGIN
     CREATE EXTENSION IF NOT EXISTS pg_cron;
-    RAISE LOG 'pg_cron extension enabled successfully';
+    RAISE WARNING 'pg_cron extension enabled successfully';
 EXCEPTION WHEN OTHERS THEN
-    RAISE LOG 'pg_cron extension not available, continuing without scheduled refresh. Error: %', SQLERRM;
+    RAISE WARNING 'pg_cron extension not available, continuing without scheduled refresh. Error: %', SQLERRM;
 END
 $$;
 
@@ -28,9 +28,9 @@ CREATE UNIQUE INDEX signature_stats_type_idx ON signature_stats (signature_type)
 DO $$
 BEGIN
     PERFORM cron.schedule('refresh-signature-stats', '0 2 * * *', 'REFRESH MATERIALIZED VIEW signature_stats;');
-    RAISE LOG 'Scheduled daily refresh of signature stats at 2 AM UTC';
+    RAISE WARNING 'Scheduled daily refresh of signature stats at 2 AM UTC';
 EXCEPTION WHEN OTHERS THEN
-    RAISE LOG 'pg_cron not available, materialized view refresh must be done manually. Error: %', SQLERRM;
+    RAISE WARNING 'pg_cron not available, materialized view refresh must be done manually. Error: %', SQLERRM;
 END
 $$;
 
@@ -40,9 +40,9 @@ $$;
 DO $$
 BEGIN
     PERFORM cron.unschedule('refresh-signature-stats');
-    RAISE LOG 'Unscheduled signature stats refresh job';
+    RAISE WARNING 'Unscheduled signature stats refresh job';
 EXCEPTION WHEN OTHERS THEN
-    RAISE LOG 'pg_cron not available or job not found, continuing with cleanup. Error: %', SQLERRM;
+    RAISE WARNING 'pg_cron not available or job not found, continuing with cleanup. Error: %', SQLERRM;
 END
 $$;
 
