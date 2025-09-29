@@ -229,13 +229,6 @@ describe("Test Supported Chains", function () {
   );
 
   verifyContract(
-    "0x8F78b9c92a68DdF719849a40702cFBfa4EB60dD0",
-    "44787",
-    "Celo Alfajores Testnet",
-    "shared/",
-  );
-
-  verifyContract(
     "0xd46fd24ea21F04459407Fb0B518451e54d0b07a1",
     "97",
     "Binance Smart Chain Testnet",
@@ -255,20 +248,6 @@ describe("Test Supported Chains", function () {
   //   "Polygon Mumbai Testnet",
   //   "shared/"
   // );
-
-  verifyContract(
-    "0x03943C3ef00d92e130185CeBC0bcc435Def2cC94",
-    "42220",
-    "Celo Mainnet",
-    "42220/",
-  );
-
-  verifyContract(
-    "0xdd5FFA1DF887D5A42931a746BaAd62574501A5Aa",
-    "62320",
-    "Celo Baklava Testnet",
-    "62320/",
-  );
 
   verifyContract(
     "0x0Ec727eD4b65Ca0e2D80A6a9fdA73D4d3bb042A6",

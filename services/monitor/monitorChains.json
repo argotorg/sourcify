@@ -201,18 +201,6 @@
     ]
   },
   {
-    "name": "Celo Alfajores Testnet",
-    "chainId": 44787,
-    "rpc": [
-      {
-        "type": "ApiKey",
-        "url": "https://celo-alfajores.g.alchemy.com/v2/{API_KEY}",
-        "apiKeyEnvName": "ALCHEMY_API_KEY"
-      },
-      "https://alfajores-forno.celo-testnet.org"
-    ]
-  },
-  {
     "name": "Celo Sepolia Testnet",
     "chainId": 11142220,
     "rpc": [
@@ -222,11 +210,6 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       }
     ]
-  },
-  {
-    "name": "Celo Baklava Testnet",
-    "chainId": 62320,
-    "rpc": ["https://baklava-forno.celo-testnet.org"]
   },
   {
     "name": "Linea Mainnet",
