@@ -210,7 +210,6 @@ interface GetSignatureStatsResult {
     error: number;
   };
   metadata: {
-    created_at: string;
     refreshed_at: string;
   };
 }
@@ -230,7 +229,6 @@ export async function getSignaturesStats(
     const result: GetSignatureStatsResult = {
       count: { function: 0, event: 0, error: 0 },
       metadata: {
-        created_at: "",
         refreshed_at: "",
       },
     };
@@ -241,8 +239,7 @@ export async function getSignaturesStats(
       result.count[row.signature_type] = parseInt(row.count);
 
       // Set metadata from the first row (all rows have same timestamps)
-      if (result.metadata.created_at === "") {
-        result.metadata.created_at = row.created_at.toISOString();
+      if (result.metadata.refreshed_at === "") {
         result.metadata.refreshed_at = row.refreshed_at.toISOString();
       }
     }

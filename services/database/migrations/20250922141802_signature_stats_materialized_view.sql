@@ -16,7 +16,6 @@ CREATE MATERIALIZED VIEW signature_stats AS
 SELECT
   signature_type,
   COUNT(DISTINCT signature_hash_32) AS count,
-  now() AS created_at,
   now() AS refreshed_at
 FROM compiled_contracts_signatures
 GROUP BY signature_type;

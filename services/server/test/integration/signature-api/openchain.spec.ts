@@ -411,10 +411,18 @@ describe("Signature API OpenChain Endpoints", function () {
 
       chai.expect(res.status).to.equal(200);
       chai.expect(res.body.ok).to.be.true;
+      // stats part
       chai.expect(res.body.result).to.have.property("count");
       chai.expect(res.body.result.count).to.have.property("function");
       chai.expect(res.body.result.count).to.have.property("event");
       chai.expect(res.body.result.count).to.have.property("error");
+      // refreshed_at
+      chai.expect(res.body.result).to.have.property("metadata");
+      chai.expect(res.body.result.metadata).to.have.property("refreshed_at");
+      // should be a valid ISO string
+      chai
+        .expect(new Date(res.body.result.metadata.refreshed_at).toISOString())
+        .to.be.a("string");
 
       const functionCount = testSignatures.filter(
         (sig) => sig.signature_type === "function",
