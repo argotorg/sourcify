@@ -388,6 +388,14 @@
       }
     ]
   },
+  "44787": {
+    "sourcifyName": "Celo Alfajores Testnet",
+    "supported": false
+  },
+  "62320": {
+    "sourcifyName": "Celo Baklava Testnet",
+    "supported": false
+  },
   "11142220": {
     "sourcifyName": "Celo Sepolia Testnet",
     "supported": true,
