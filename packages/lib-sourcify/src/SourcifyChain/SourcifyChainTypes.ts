@@ -1,9 +1,4 @@
-import { SourcifyChain } from './SourcifyChain';
-
-export type SourcifyChainMap = {
-  [chainId: string]: SourcifyChain;
-};
-
+/* Type for the sourcify-chains.json configuration file */
 export interface SourcifyChainsExtensionsObject {
   [chainId: string]: SourcifyChainExtension;
 }
@@ -17,49 +12,6 @@ export type SourcifyChainExtension = {
   };
   fetchContractCreationTxUsing?: FetchContractCreationTxMethods;
   rpc?: Array<string | BaseRPC | APIKeyRPC | FetchRequestRPC>;
-};
-
-// Need to define the rpc property explicitly as when a sourcifyChain is created with {...chain, sourcifyChainExtension}, Typescript throws with "Type '(string | FetchRequest)[]' is not assignable to type 'string[]'." For some reason the Chain.rpc is not getting overwritten by SourcifyChainExtension.rpc
-// Also omit the 'sourcifyName' as it is only needed to have the name in sourcify-chains.json but not when instantiating a SourcifyChain
-export type SourcifyChainInstance = Omit<Chain, 'rpc'> &
-  Omit<SourcifyChainExtension, 'rpc' | 'sourcifyName'> & {
-    rpc: Array<string | FetchRequestRPC>;
-    rpcWithoutApiKeys?: Array<string>;
-    rpcWithApiKeyMasked?: Array<string>;
-    traceSupportedRPCs?: TraceSupportedRPC[];
-  };
-
-// types of the keys of FetchContractCreationTxMethods
-export type FetchContractCreationTxMethod =
-  keyof FetchContractCreationTxMethods;
-
-export type TraceSupport = 'trace_transaction' | 'debug_traceTransaction';
-
-export type BaseRPC = {
-  url: string;
-  type: 'BaseRPC';
-  traceSupport?: TraceSupport;
-};
-
-// override the type of BaseRPC to add the type field
-export type APIKeyRPC = Omit<BaseRPC, 'type'> & {
-  type: 'APIKeyRPC';
-  apiKeyEnvName: string;
-  subDomainEnvName?: string;
-};
-
-// override the type of BaseRPC to add the type field
-export type FetchRequestRPC = Omit<BaseRPC, 'type'> & {
-  type: 'FetchRequest';
-  headers?: Array<{
-    headerName: string;
-    headerValue: string;
-  }>;
-};
-
-export type TraceSupportedRPC = {
-  type: TraceSupport;
-  index: number;
 };
 
 export interface FetchContractCreationTxMethods {
@@ -94,6 +46,49 @@ export interface FetchContractCreationTxMethods {
   veChainApi?: boolean;
 }
 
+// types of the keys of FetchContractCreationTxMethods
+export type FetchContractCreationTxMethod =
+  keyof FetchContractCreationTxMethods;
+
+export type TraceSupport = 'trace_transaction' | 'debug_traceTransaction';
+
+export type BaseRPC = {
+  url: string;
+  type: 'BaseRPC';
+  traceSupport?: TraceSupport;
+};
+
+// override the type of BaseRPC to add the type field
+export type APIKeyRPC = Omit<BaseRPC, 'type'> & {
+  type: 'APIKeyRPC';
+  apiKeyEnvName: string;
+  subDomainEnvName?: string;
+};
+
+// override the type of BaseRPC to add the type field
+export type FetchRequestRPC = Omit<BaseRPC, 'type'> & {
+  type: 'FetchRequest';
+  headers?: Array<{
+    headerName: string;
+    headerValue: string;
+  }>;
+};
+
+// Need to define the rpc property explicitly as when a sourcifyChain is created with {...chain, sourcifyChainExtension}, Typescript throws with "Type '(string | FetchRequest)[]' is not assignable to type 'string[]'." For some reason the Chain.rpc is not getting overwritten by SourcifyChainExtension.rpc
+// Also omit the 'sourcifyName' as it is only needed to have the name in sourcify-chains.json but not when instantiating a SourcifyChain
+export type SourcifyChainInstance = Omit<Chain, 'rpc'> &
+  Omit<SourcifyChainExtension, 'rpc' | 'sourcifyName'> & {
+    rpc: Array<string | FetchRequestRPC>;
+    rpcWithoutApiKeys?: Array<string>;
+    rpcWithApiKeyMasked?: Array<string>;
+    traceSupportedRPCs?: TraceSupportedRPC[];
+  };
+
+export type TraceSupportedRPC = {
+  type: TraceSupport;
+  index: number;
+};
+
 export type Chain = {
   name: string;
   title?: string;
@@ -112,14 +107,6 @@ type Currency = {
   symbol: string;
   decimals: number;
 };
-
-export interface ContractCreationFetcher {
-  type: 'scrape' | 'api';
-  url: string;
-  maskedUrl?: string;
-  responseParser?: Function;
-  scrapeRegex?: string[];
-}
 
 // https://geth.ethereum.org/docs/developers/evm-tracing/built-in-tracers#call-tracer
 export interface CallFrame {

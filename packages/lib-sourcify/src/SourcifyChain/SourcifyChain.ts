@@ -33,6 +33,10 @@ export function createFetchRequest(rpc: FetchRequestRPC): FetchRequest {
   return ethersFetchReq;
 }
 
+export type SourcifyChainMap = {
+  [chainId: string]: SourcifyChain;
+};
+
 export class SourcifyChain {
   name: string;
   readonly title?: string | undefined;
