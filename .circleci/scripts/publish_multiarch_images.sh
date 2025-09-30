@@ -7,7 +7,7 @@ set -e
 
 NAMESPACE="ghcr.io/argotorg/sourcify"
 # Define the list of services
-services=("server" "monitor")
+services=("server" "monitor" "4bytes")
 
 # Login to Github Container Registry
 echo $GITHUB_CR_PAT | docker login ghcr.io --username marcocastignoli --password-stdin

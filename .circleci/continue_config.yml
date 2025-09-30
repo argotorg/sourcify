@@ -55,6 +55,9 @@ parameters:
   run-build-monitor:
     type: boolean
     default: false
+  run-build-4bytes:
+    type: boolean
+    default: false
   run-build-packages:
     type: boolean
     default: false
@@ -152,24 +155,33 @@ workflows:
         #     ]
     jobs:
       - tests-node-v22
+      # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
       - build-push-server-amd64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
+      - build-push-4bytes-amd64:
+          run-build: << pipeline.parameters.run-build-4bytes >>
+          run-build-2: false # 4bytes does not depend on packages
       - build-push-monitor-arm64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
       - build-push-server-arm64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
+      - build-push-4bytes-arm64:
+          run-build: << pipeline.parameters.run-build-4bytes >>
+          run-build-2: false # 4bytes does not depend on packages
       - publish-multiarch-images:
           requires:
             - build-push-monitor-amd64
             - build-push-server-amd64
+            - build-push-4bytes-amd64
             - build-push-monitor-arm64
             - build-push-server-arm64
+            - build-push-4bytes-arm64
       - deploy:
           requires:
             - publish-multiarch-images
@@ -217,6 +229,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
+  build-push-4bytes-amd64:
+    <<: *build-base
+    environment:
+      SERVICE: "4bytes"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE: "services/4bytes/Dockerfile"
   # ARM64 builds
   build-push-monitor-arm64:
     <<: *build-base-arm64
@@ -230,6 +248,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
+  build-push-4bytes-arm64:
+    <<: *build-base-arm64
+    environment:
+      SERVICE: "4bytes"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE: "services/4bytes/Dockerfile"
   publish-multiarch-images:
     docker:
       - image: cimg/base:2024.12

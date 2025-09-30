@@ -8,7 +8,7 @@
 set -e
 
 # Define the list of services
-services=("server" "monitor")
+services=("server" "monitor" "4bytes")
 
 ARTIFACT_REGISTRY_URL="europe-west1-docker.pkg.dev/sourcify-project/ghcr-proxy/argotorg/sourcify/"
 
