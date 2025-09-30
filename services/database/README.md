@@ -41,7 +41,7 @@ git submodule update --init
 
 **Extensions**
 
-- `pg_cron`: used to schedule the refresh of the signature stats materialized view. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) abd set the `cron.database_name` variable to the name of the database you are using.
+- `pg_cron`: used to schedule the refresh of the signature stats materialized view. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
   - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron job will be skipped in the migration.
   - In Google Cloud SQL, you can install the extension by setting the flag `cloudsql.enable_pg_cron` to `true`, and setting the `cron.database_name` flag to the name of the database you are using.
 - `pg_trgm`: used to create the index on the `signatures` table.
