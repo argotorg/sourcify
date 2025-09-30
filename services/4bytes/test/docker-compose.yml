@@ -1,10 +1,10 @@
 version: "3.8"
 
 services:
-  db-test:
+  fourbytes-db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: "fourbytes_test"
+      POSTGRES_DB: "fourbytes_test_db"
       POSTGRES_USER: "fourbytes"
       POSTGRES_PASSWORD: "fourbytes"
     ports:

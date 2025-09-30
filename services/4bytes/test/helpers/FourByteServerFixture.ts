@@ -33,26 +33,26 @@ export class FourByteServerFixture {
     this.port = fixtureOptions?.port || 4445;
 
     before(async () => {
-      // Set up database connection
+      // Seperate connection to initialize or reset the database
       this._pool = new Pool({
-        host: process.env.POSTGRES_HOST || "localhost",
-        port: parseInt(process.env.POSTGRES_PORT || "5433"),
-        database: process.env.POSTGRES_DB || "fourbytes_test",
-        user: process.env.POSTGRES_USER || "fourbytes",
-        password: process.env.POSTGRES_PASSWORD || "fourbytes",
+        host: process.env.FOURBYTES_POSTGRES_HOST || "localhost",
+        port: parseInt(process.env.FOURBYTES_POSTGRES_PORT || "5433"),
+        database: process.env.FOURBYTES_POSTGRES_DB || "fourbytes_test",
+        user: process.env.FOURBYTES_POSTGRES_USER || "fourbytes",
+        password: process.env.FOURBYTES_POSTGRES_PASSWORD || "fourbytes",
       });
 
       // Create server instance
       this._server = new FourByteServer({
         port: this.port,
         databaseConfig: {
-          host: process.env.POSTGRES_HOST || "localhost",
-          port: parseInt(process.env.POSTGRES_PORT || "5433"),
-          database: process.env.POSTGRES_DB || "fourbytes_test",
-          user: process.env.POSTGRES_USER || "fourbytes",
-          password: process.env.POSTGRES_PASSWORD || "fourbytes",
+          host: process.env.FOURBYTES_POSTGRES_HOST || "localhost",
+          port: parseInt(process.env.FOURBYTES_POSTGRES_PORT || "5433"),
+          database: process.env.FOURBYTES_POSTGRES_DB || "fourbytes_test",
+          user: process.env.FOURBYTES_POSTGRES_USER || "fourbytes",
+          password: process.env.FOURBYTES_POSTGRES_PASSWORD || "fourbytes",
           max: 20,
-          schema: process.env.POSTGRES_SCHEMA || "public",
+          schema: process.env.FOURBYTES_POSTGRES_SCHEMA || "public",
         },
       });
 

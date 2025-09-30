@@ -13,17 +13,17 @@ const port = process.env.PORT || 4444;
 const server = new FourByteServer({
   port,
   databaseConfig: {
-    host: process.env.POSTGRES_HOST || "localhost",
-    port: process.env.POSTGRES_PORT
-      ? parseInt(process.env.POSTGRES_PORT)
+    host: process.env.FOURBYTES_POSTGRES_HOST || "localhost",
+    port: process.env.FOURBYTES_POSTGRES_PORT
+      ? parseInt(process.env.FOURBYTES_POSTGRES_PORT)
       : 5432,
-    database: process.env.POSTGRES_DB || "sourcify",
-    user: process.env.POSTGRES_USER || "postgres",
-    password: process.env.POSTGRES_PASSWORD || "",
-    max: process.env.POSTGRES_MAX_CONNECTIONS
-      ? parseInt(process.env.POSTGRES_MAX_CONNECTIONS)
+    database: process.env.FOURBYTES_POSTGRES_DB || "sourcify",
+    user: process.env.FOURBYTES_POSTGRES_USER || "postgres",
+    password: process.env.FOURBYTES_POSTGRES_PASSWORD || "",
+    max: process.env.FOURBYTES_POSTGRES_MAX_CONNECTIONS
+      ? parseInt(process.env.FOURBYTES_POSTGRES_MAX_CONNECTIONS)
       : 20,
-    schema: process.env.POSTGRES_SCHEMA,
+    schema: process.env.FOURBYTES_POSTGRES_SCHEMA,
   },
 });
 
