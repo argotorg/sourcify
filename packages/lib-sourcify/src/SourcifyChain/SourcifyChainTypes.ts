@@ -78,11 +78,25 @@ export type FetchRequestRPC = Omit<BaseRPC, 'type'> & {
 // Also omit the 'sourcifyName' as it is only needed to have the name in sourcify-chains.json but not when instantiating a SourcifyChain
 export type SourcifyChainInstance = Omit<Chain, 'rpc'> &
   Omit<SourcifyChainExtension, 'rpc' | 'sourcifyName'> & {
-    rpc: Array<string | FetchRequestRPC>;
-    rpcWithoutApiKeys?: Array<string>;
-    rpcWithApiKeyMasked?: Array<string>;
-    traceSupportedRPCs?: TraceSupportedRPC[];
+    rpcs: SourcifyRpc[];
   };
+
+/**
+ * Unified RPC configuration that combines URL, credentials, trace support, and display variants
+ */
+export interface SourcifyRpc {
+  /** The actual RPC URL or FetchRequest config used to create the provider */
+  rpc: string | FetchRequestRPC;
+
+  /** URL without API keys for public display (e.g., in /chains API response) */
+  urlWithoutApiKey?: string;
+
+  /** URL with masked API key for safe logging (e.g., "https://eth-mainnet.g.alchemy.com/v2/****xyz") */
+  maskedUrl?: string;
+
+  /** Optional trace support type if this RPC supports trace/debug methods */
+  traceSupport?: TraceSupport;
+}
 
 export type TraceSupportedRPC = {
   type: TraceSupport;

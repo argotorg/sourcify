@@ -136,7 +136,7 @@ export class LocalChainFixture {
 
       const sourcifyChainHardhat = LOCAL_CHAINS[1];
       const ethersNetwork = new Network(
-        sourcifyChainHardhat.rpc[0] as string,
+        sourcifyChainHardhat.rpcs[0].rpc as string,
         sourcifyChainHardhat.chainId,
       );
       this._localSigner = await new JsonRpcProvider(

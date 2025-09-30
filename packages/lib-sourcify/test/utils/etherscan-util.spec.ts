@@ -33,7 +33,7 @@ function makeChain(chainId: number): SourcifyChain {
   return new SourcifyChain({
     name: 'Test',
     chainId,
-    rpc: [],
+    rpcs: [],
     supported: false, // avoid provider initialization
     etherscanApi: { supported: true },
   } as any);

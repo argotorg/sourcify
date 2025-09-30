@@ -28,8 +28,12 @@ describe("GET /v2/contract/all-chains/:address", function () {
         title: `Test Chain ${chainId}`,
         supported: true,
         chainId: chainId,
-        rpc: [`http://localhost:${TEST_CHAIN_PORTS[index]}`],
-        rpcWithoutApiKeys: [`http://localhost:${TEST_CHAIN_PORTS[index]}`],
+        rpcs: [
+          {
+            rpc: `http://localhost:${TEST_CHAIN_PORTS[index]}`,
+            urlWithoutApiKey: `http://localhost:${TEST_CHAIN_PORTS[index]}`,
+          },
+        ],
       });
       return acc;
     }, {} as SourcifyChainMap),

@@ -5,8 +5,8 @@ import {
   APIKeyRPC,
   FetchRequestRPC,
   BaseRPC,
-  TraceSupportedRPC,
   SourcifyChainExtension,
+  SourcifyRpc,
 } from "@ethereum-sourcify/lib-sourcify";
 import chainsRaw from "./chains.json";
 import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
@@ -72,7 +72,13 @@ export const LOCAL_CHAINS: SourcifyChain[] = [
     nativeCurrency: { name: "localETH", symbol: "localETH", decimals: 18 },
     network: "testnet",
     networkId: 1337,
-    rpc: [`http://localhost:8545`],
+    rpcs: [
+      {
+        rpc: `http://localhost:8545`,
+        urlWithoutApiKey: `http://localhost:8545`,
+        maskedUrl: `http://localhost:8545`,
+      },
+    ],
     supported: true,
   }),
   new SourcifyChain({
@@ -84,7 +90,13 @@ export const LOCAL_CHAINS: SourcifyChain[] = [
     nativeCurrency: { name: "localETH", symbol: "localETH", decimals: 18 },
     network: "testnet",
     networkId: 31337,
-    rpc: [`http://localhost:8545`],
+    rpcs: [
+      {
+        rpc: `http://localhost:8545`,
+        urlWithoutApiKey: `http://localhost:8545`,
+        maskedUrl: `http://localhost:8545`,
+      },
+    ],
     supported: true,
   }),
 ];
@@ -97,36 +109,29 @@ function buildCustomRpcs(
   sourcifyRpcs: Array<
     string | BaseRPC | APIKeyRPC | FetchRequestRPCWithHeaderEnvName
   >,
-) {
-  const traceSupportedRPCs: TraceSupportedRPC[] = [];
-  const rpc: (string | FetchRequestRPCWithHeaderEnvName)[] = [];
-  const rpcWithoutApiKeys: string[] = [];
-  const rpcWithApiKeyMasked: string[] = [];
-  const skippedRPCs: any[] = [];
-  sourcifyRpcs.forEach((sourcifyRpc, index) => {
+): SourcifyRpc[] {
+  const rpcs: SourcifyRpc[] = [];
+
+  sourcifyRpcs.forEach((sourcifyRpc) => {
     // simple url, can't have traceSupport
     if (typeof sourcifyRpc === "string") {
-      rpc.push(sourcifyRpc);
-      rpcWithoutApiKeys.push(sourcifyRpc);
-      rpcWithApiKeyMasked.push(sourcifyRpc);
-      return;
-    }
-
-    if (sourcifyRpc.traceSupport) {
-      traceSupportedRPCs.push({
-        type: sourcifyRpc.traceSupport,
-        index: index - skippedRPCs.length,
+      rpcs.push({
+        rpc: sourcifyRpc,
+        urlWithoutApiKey: sourcifyRpc,
+        maskedUrl: sourcifyRpc,
+        traceSupport: undefined,
       });
-    }
-
-    if (sourcifyRpc.type === "BaseRPC") {
-      rpc.push(sourcifyRpc.url);
-      rpcWithoutApiKeys.push(sourcifyRpc.url);
-      rpcWithApiKeyMasked.push(sourcifyRpc.url);
       return;
-    }
-    // Fill in the api keys
-    else if (sourcifyRpc.type === "APIKeyRPC") {
+    } else if (sourcifyRpc.type === "BaseRPC") {
+      rpcs.push({
+        rpc: sourcifyRpc.url,
+        urlWithoutApiKey: sourcifyRpc.url,
+        maskedUrl: sourcifyRpc.url,
+        traceSupport: sourcifyRpc.traceSupport,
+      });
+      return;
+    } else if (sourcifyRpc.type === "APIKeyRPC") {
+      // Fill in the api keys
       const apiKey =
         process.env[sourcifyRpc.apiKeyEnvName] || process.env["API_KEY"] || "";
       if (!apiKey) {
@@ -138,7 +143,6 @@ function buildCustomRpcs(
           logger.warn(
             `API key not found for ${sourcifyRpc.apiKeyEnvName} on ${sourcifyRpc.url}, skipping on CI or development`,
           );
-          skippedRPCs.push(index);
           return;
         } else {
           throw new Error(`API key not found for ${sourcifyRpc.apiKeyEnvName}`);
@@ -161,25 +165,35 @@ function buildCustomRpcs(
             : "*".repeat(subDomain.length);
         maskedUrl = maskedUrl.replace("{SUBDOMAIN}", maskedSubDomain);
       }
-      rpc.push(secretUrl);
-      rpcWithoutApiKeys.push(sourcifyRpc.url);
-      rpcWithApiKeyMasked.push(maskedUrl);
+      rpcs.push({
+        rpc: secretUrl,
+        urlWithoutApiKey: sourcifyRpc.url,
+        maskedUrl: maskedUrl,
+        traceSupport: sourcifyRpc.traceSupport,
+      });
       return;
     } else if (sourcifyRpc.type === "FetchRequest") {
-      rpc.push(sourcifyRpc);
-      rpcWithoutApiKeys.push(sourcifyRpc.url);
-      rpcWithApiKeyMasked.push(sourcifyRpc.url);
+      // Remove headerEnvName before adding to rpcs
+      const fetchRequestRpc: FetchRequestRPC = {
+        type: "FetchRequest",
+        url: sourcifyRpc.url,
+        traceSupport: sourcifyRpc.traceSupport,
+        headers: sourcifyRpc.headers?.map(({ headerName, headerValue }) => ({
+          headerName,
+          headerValue: headerValue || "",
+        })),
+      };
+      rpcs.push({
+        rpc: fetchRequestRpc,
+        urlWithoutApiKey: sourcifyRpc.url,
+        maskedUrl: sourcifyRpc.url,
+        traceSupport: sourcifyRpc.traceSupport,
+      });
       return;
     }
     throw new Error(`Invalid rpc type: ${JSON.stringify(sourcifyRpc)}`);
   });
-  return {
-    rpc,
-    rpcWithoutApiKeys,
-    rpcWithApiKeyMasked,
-    traceSupportedRPCs:
-      traceSupportedRPCs.length > 0 ? traceSupportedRPCs : undefined,
-  };
+  return rpcs;
 }
 
 const sourcifyChainsMap: SourcifyChainMap = {};
@@ -212,18 +226,13 @@ for (const chain of allChains) {
   if (chainId in sourcifyChainsExtensions) {
     const sourcifyExtension = sourcifyChainsExtensions[chainId];
 
-    let rpc: (string | FetchRequestRPCWithHeaderEnvName)[] = [];
-    let rpcWithoutApiKeys: string[] = [];
-    let rpcWithApiKeyMasked: string[] = [];
-    let traceSupportedRPCs: TraceSupportedRPC[] | undefined = undefined;
+    let rpcs: SourcifyRpc[] = [];
     if (sourcifyExtension.rpc) {
-      ({ rpc, rpcWithoutApiKeys, rpcWithApiKeyMasked, traceSupportedRPCs } =
-        buildCustomRpcs(sourcifyExtension.rpc));
+      rpcs = buildCustomRpcs(sourcifyExtension.rpc);
     }
     // Fallback to rpcs of chains.json
-    if (!rpc.length) {
-      ({ rpc, rpcWithoutApiKeys, rpcWithApiKeyMasked, traceSupportedRPCs } =
-        buildCustomRpcs(chain.rpc));
+    if (!rpcs.length) {
+      rpcs = buildCustomRpcs(chain.rpc);
     }
 
     // Replace headerEnvName with headerValue in rpc
@@ -238,14 +247,14 @@ for (const chain of allChains) {
       }
     });
 
-    // sourcifyExtension is spread later to overwrite chains.json values, rpc specifically
+    // sourcifyExtension is spread later to overwrite chains.json values
+    // Exclude rpc from sourcifyExtension as we now use rpcs
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { rpc: _rpc, ...sourcifyExtensionWithoutRpc } = sourcifyExtension;
     const sourcifyChain = new SourcifyChain({
       ...chain,
-      ...sourcifyExtension,
-      rpc: rpc as FetchRequestRPC[],
-      rpcWithoutApiKeys,
-      rpcWithApiKeyMasked,
-      traceSupportedRPCs,
+      ...sourcifyExtensionWithoutRpc,
+      rpcs,
     });
     sourcifyChainsMap[chainId] = sourcifyChain;
   }
@@ -280,17 +289,13 @@ if (missingChains.length > 0) {
           `Chain ${chainId} is missing rpc in sourcify-chains.json`,
         );
       }
-      const { rpc, rpcWithoutApiKeys, traceSupportedRPCs } = buildCustomRpcs(
-        chain.rpc,
-      );
+      const rpcs = buildCustomRpcs(chain.rpc);
       sourcifyChainsMap[chainId] = new SourcifyChain({
         name: chain.sourcifyName,
         chainId: parseInt(chainId),
         supported: chain.supported,
-        rpc: rpc as FetchRequestRPC[],
+        rpcs,
         fetchContractCreationTxUsing: chain.fetchContractCreationTxUsing,
-        rpcWithoutApiKeys,
-        traceSupportedRPCs,
       });
     });
   }

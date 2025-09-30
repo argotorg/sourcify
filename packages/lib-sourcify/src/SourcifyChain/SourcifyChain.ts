@@ -12,7 +12,7 @@ import {
   FetchContractCreationTxMethods,
   FetchRequestRPC,
   SourcifyChainInstance,
-  TraceSupportedRPC,
+  SourcifyRpc,
 } from './SourcifyChainTypes';
 
 // It is impossible to get the url from the Provider for logging purposes
@@ -41,14 +41,9 @@ export class SourcifyChain {
   name: string;
   readonly title?: string | undefined;
   readonly chainId: number;
-  readonly rpc: Array<string | FetchRequestRPC>;
-  readonly rpcWithoutApiKeys?: Array<string>;
-  readonly rpcWithApiKeyMasked?: Array<string>;
+  readonly rpcs: SourcifyRpc[];
   /** Whether the chain supports tracing, used for fetching the creation bytecode for factory contracts */
   readonly traceSupport?: boolean;
-  /** The RPCs that support tracing. Needed in a separate field than `this.rpc` because the `rpc` was an array of strings or FetchRequest. Modifying the `rpc` to be something else would have caused a breaking change. */
-  // TODO: in a future breaking change, merge traceSupportedRPCs with rpc and make rpc an array of objects with url and type.
-  readonly traceSupportedRPCs?: TraceSupportedRPC[];
   readonly supported: boolean;
   readonly providers: JsonRpcProviderWithUrl[];
   readonly fetchContractCreationTxUsing?: FetchContractCreationTxMethods;
@@ -75,22 +70,18 @@ export class SourcifyChain {
     this.name = sourcifyChainObj.name;
     this.title = sourcifyChainObj.title;
     this.chainId = sourcifyChainObj.chainId;
-    this.rpc = sourcifyChainObj.rpc;
-    this.rpcWithoutApiKeys = sourcifyChainObj?.rpcWithoutApiKeys;
-    this.rpcWithApiKeyMasked = sourcifyChainObj?.rpcWithApiKeyMasked;
     this.supported = sourcifyChainObj.supported;
     this.providers = [];
     this.fetchContractCreationTxUsing =
       sourcifyChainObj.fetchContractCreationTxUsing;
     this.etherscanApi = sourcifyChainObj.etherscanApi;
-    this.traceSupportedRPCs = sourcifyChainObj.traceSupportedRPCs;
-    this.traceSupport =
-      sourcifyChainObj.traceSupportedRPCs &&
-      sourcifyChainObj.traceSupportedRPCs.length > 0;
+
+    this.rpcs = sourcifyChainObj.rpcs;
+    this.traceSupport = this.rpcs.some((r) => r.traceSupport !== undefined);
 
     if (!this.supported) return; // Don't create providers if chain is not supported
 
-    if (!this?.rpc.length)
+    if (!this.rpcs.length)
       throw new Error(
         'No RPC provider was given for this chain with id ' +
           this.chainId +
@@ -98,8 +89,9 @@ export class SourcifyChain {
           this.name,
       );
 
-    for (let i = 0; i < this.rpc.length; i++) {
-      const rpc = this.rpc[i];
+    // Create providers from rpcs
+    for (const sourcifyRpc of this.rpcs) {
+      const rpc = sourcifyRpc.rpc;
       let provider: JsonRpcProviderWithUrl | undefined;
       const ethersNetwork = new Network(this.name, this.chainId);
       if (typeof rpc === 'string') {
@@ -109,7 +101,7 @@ export class SourcifyChain {
             staticNetwork: ethersNetwork,
           });
           provider.url = rpc;
-          provider.maskedUrl = this.rpcWithApiKeyMasked?.[i];
+          provider.maskedUrl = sourcifyRpc.maskedUrl;
         } else {
           // Do not use WebSockets because of not being able to catch errors on websocket initialization. Most networks don't support WebSockets anyway. See https://github.com/ethers-io/ethers.js/discussions/2896
         }
@@ -121,7 +113,7 @@ export class SourcifyChain {
           staticNetwork: ethersNetwork,
         });
         provider.url = rpc.url;
-        provider.maskedUrl = this.rpcWithApiKeyMasked?.[i];
+        provider.maskedUrl = sourcifyRpc.maskedUrl;
       }
       if (provider) {
         this.providers.push(provider);
@@ -134,13 +126,10 @@ export class SourcifyChain {
       name: this.name,
       title: this.title,
       chainId: this.chainId,
-      rpc: this.rpc,
-      rpcWithoutApiKeys: this.rpcWithoutApiKeys,
-      rpcWithApiKeyMasked: this.rpcWithApiKeyMasked,
+      rpcs: this.rpcs,
       supported: this.supported,
       fetchContractCreationTxUsing: this.fetchContractCreationTxUsing,
       etherscanApi: this.etherscanApi,
-      traceSupportedRPCs: this.traceSupportedRPCs,
     };
   };
 
@@ -251,16 +240,20 @@ export class SourcifyChain {
   ) => {
     // TODO: Alternative methods e.g. getting from Coleslaw. Not only traces.
 
-    if (!this.traceSupport || !this.traceSupportedRPCs) {
+    if (!this.traceSupport) {
       throw new Error(
         `No trace support for chain ${this.chainId}. No other method to get the creation bytecode`,
       );
     }
 
-    // Try sequentially all providers with trace support
-    for (const traceSupportedRPCObj of this.traceSupportedRPCs) {
-      const { index, type } = traceSupportedRPCObj;
-      const provider = this.providers[index];
+    // Try sequentially all RPCs with trace support
+    for (let i = 0; i < this.rpcs.length; i++) {
+      const sourcifyRpc = this.rpcs[i];
+      if (!sourcifyRpc.traceSupport) continue; // Skip RPCs without trace support
+
+      const provider = this.providers[i];
+      const { traceSupport: type } = sourcifyRpc;
+
       // Parity type `trace_transaction`
       if (type === 'trace_transaction') {
         logDebug('Fetching creation bytecode from parity traces', {

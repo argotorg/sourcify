@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
-import { SourcifyChain, TraceSupportedRPC } from '../src';
+import { SourcifyChain } from '../src';
 import { JsonRpcProvider } from 'ethers';
 import {
   startHardhatNetwork,
@@ -23,9 +23,13 @@ describe('SourcifyChain', () => {
     sourcifyChain = new SourcifyChain({
       name: 'TestChain',
       chainId: 1,
-      rpc: ['http://localhost:8545'],
+      rpcs: [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'trace_transaction',
+        },
+      ],
       supported: true,
-      traceSupportedRPCs: [{ index: 0, type: 'trace_transaction' }],
     });
   });
 
@@ -38,7 +42,11 @@ describe('SourcifyChain', () => {
       sourcifyChain = new SourcifyChain({
         name: 'TestChain',
         chainId: 1,
-        rpc: ['http://localhost:8545'],
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
         supported: true,
       });
       await expect(
@@ -80,10 +88,16 @@ describe('SourcifyChain', () => {
     });
 
     it('should try multiple trace-supported RPCs if the first one fails', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'trace_transaction' },
-        { index: 1, type: 'trace_transaction' },
-      ] as TraceSupportedRPC[];
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'trace_transaction',
+        },
+        {
+          rpc: 'http://localhost:8546',
+          traceSupport: 'trace_transaction',
+        },
+      ];
       sourcifyChain.providers.push(
         new JsonRpcProvider('http://localhost:8546'),
       );
@@ -110,9 +124,12 @@ describe('SourcifyChain', () => {
     });
 
     it('should extract creation bytecode from geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+        },
+      ];
       const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
@@ -136,9 +153,12 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error if no CREATE or CREATE2 calls are found in geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+        },
+      ];
       const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
@@ -158,9 +178,12 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error if the contract address is not found in geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+        },
+      ];
       const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
@@ -293,16 +316,20 @@ describe('SourcifyChain unit tests', () => {
     sourcifyChain = new SourcifyChain({
       name: 'TestChain',
       chainId: 1,
-      rpc: ['http://localhost:8546'],
+      rpcs: [
+        {
+          rpc: 'http://localhost:8546',
+          traceSupport: 'trace_transaction',
+        },
+      ],
       supported: true,
-      traceSupportedRPCs: [{ index: 0, type: 'trace_transaction' }],
     });
   });
   after(async () => {
     await stopHardhatNetwork(hardhatNodeProcess);
   });
   it("Should fail to instantiate with empty rpc's", function () {
-    const emptyRpc = { ...sourcifyChain, rpc: [] };
+    const emptyRpc = { ...sourcifyChain, rpcs: [] };
     try {
       new SourcifyChain(emptyRpc);
       throw new Error('Should have failed');

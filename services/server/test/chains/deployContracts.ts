@@ -47,12 +47,13 @@ async function main(chainId: number, privateKey: string) {
     return;
   }
   let provider;
-  console.log("Using rpc: " + chain.rpc[0]);
+  const firstRpc = chain.rpcs[0].rpc;
+  console.log("Using rpc: " + firstRpc);
   try {
-    if (typeof chain.rpc[0] === "string") {
-      provider = new JsonRpcProvider(chain.rpc[0]);
+    if (typeof firstRpc === "string") {
+      provider = new JsonRpcProvider(firstRpc);
     } else {
-      provider = new JsonRpcProvider(createFetchRequest(chain.rpc[0]));
+      provider = new JsonRpcProvider(createFetchRequest(firstRpc));
     }
   } catch (err) {
     console.log(
