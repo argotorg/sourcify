@@ -2,15 +2,27 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "database-test:up",
+      "label": "server:database-test:up",
       "type": "shell",
       "command": "cd services/server && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run postgres-test:migrate",
       "problemMatcher": []
     },
     {
-      "label": "database-test:down",
+      "label": "server:database-test:down",
       "type": "shell",
       "command": "cd services/server && npm run postgres-test:stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "4bytes:database-test:up",
+      "type": "shell",
+      "command": "cd services/4bytes && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5433} && npm run postgres-test:start && sleep 3 && npm run postgres-test:migrate",
+      "problemMatcher": []
+    },
+    {
+      "label": "4bytes:database-test:down",
+      "type": "shell",
+      "command": "cd services/4bytes && npm run postgres-test:stop",
       "problemMatcher": []
     }
   ]

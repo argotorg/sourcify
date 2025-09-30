@@ -90,8 +90,8 @@
       "env": {
         // "DEBUG": "express:*", // Debug all express modules *
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/integration/**/*.spec.ts",
         "-r",
@@ -114,8 +114,8 @@
       "env": {
         // "TEST_CHAIN": "84532",
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/chains/etherscan-instances.spec.ts",
         "-r",
@@ -193,6 +193,8 @@
       "name": "Mocha - 4Bytes",
       "cwd": "${workspaceFolder}/services/4bytes",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
+      "preLaunchTask": "4bytes:database-test:up",
+      "postDebugTask": "4bytes:database-test:down",
       "args": [
         "--require", "ts-node/register",
         "--exit",
@@ -235,8 +237,8 @@
       "env": {
         // "NEW_CHAIN_ID": "333000333"
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/chains/chain-tests.spec.ts",
         "-r",
