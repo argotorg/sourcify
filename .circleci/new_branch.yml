@@ -67,12 +67,12 @@ jobs:
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432
+            SOURCIFY_POSTGRES_PORT: 5432 # On it's own db container
             FOURBYTES_POSTGRES_HOST: "fourbytes-db"
             FOURBYTES_POSTGRES_DB: "fourbytes_test_db"
             FOURBYTES_POSTGRES_USER: "fourbytes"
             FOURBYTES_POSTGRES_PASSWORD: "fourbytes"
-            FOURBYTES_POSTGRES_PORT: 5433
+            FOURBYTES_POSTGRES_PORT: 5432 # On it's own db container
       - run:
           name: create lcov reports
           command: npx lerna run cov:lcov
