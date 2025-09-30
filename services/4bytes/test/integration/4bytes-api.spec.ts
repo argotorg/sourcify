@@ -304,25 +304,30 @@ describe("4Bytes API End-to-End Tests", function () {
 
       chai.expect(res).to.have.status(200);
       chai.expect(res.body.result).to.have.property("count");
+      chai.expect(res.body.result.count).to.have.property("function");
+      chai.expect(res.body.result.count).to.have.property("event");
+      chai.expect(res.body.result.count).to.have.property("error");
+      // refreshed_at
+      chai.expect(res.body.result).to.have.property("metadata");
+      chai.expect(res.body.result.metadata).to.have.property("refreshed_at");
+      // should be a valid ISO string
+      chai
+        .expect(new Date(res.body.result.metadata.refreshed_at).toISOString())
+        .to.be.a("string");
 
-      // Count expected signatures by type
-      const expectedCounts = FourByteServerFixture.testSignatures.reduce(
-        (counts, sig) => {
-          counts[sig.type] = (counts[sig.type] || 0) + 1;
-          return counts;
-        },
-        {} as Record<SignatureType, number>,
-      );
+      const functionCount = FourByteServerFixture.testSignatures.filter(
+        (sig) => sig.type === SignatureType.Function,
+      ).length;
+      const eventCount = FourByteServerFixture.testSignatures.filter(
+        (sig) => sig.type === SignatureType.Event,
+      ).length;
+      const errorCount = FourByteServerFixture.testSignatures.filter(
+        (sig) => sig.type === SignatureType.Error,
+      ).length;
 
-      chai
-        .expect(res.body.result.count.function)
-        .to.equal(expectedCounts[SignatureType.Function] || 0);
-      chai
-        .expect(res.body.result.count.event)
-        .to.equal(expectedCounts[SignatureType.Event] || 0);
-      chai
-        .expect(res.body.result.count.error)
-        .to.equal(expectedCounts[SignatureType.Error] || 0);
+      chai.expect(res.body.result.count.function).to.be.equal(functionCount);
+      chai.expect(res.body.result.count.event).to.be.equal(eventCount);
+      chai.expect(res.body.result.count.error).to.be.equal(errorCount);
     });
 
     it("should return zero counts for empty database", async function () {

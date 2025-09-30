@@ -208,14 +208,13 @@ export function createSignatureHandlers(
 
         const stats = {
           count: { function: 0, event: 0, error: 0 },
-          metadata: { created_at: "", refreshed_at: "" },
+          metadata: { refreshed_at: "" },
         };
 
         for (const row of rows) {
           stats.count[row.signature_type] = parseInt(row.count, 10);
 
-          if (stats.metadata.created_at === "") {
-            stats.metadata.created_at = row.created_at.toISOString();
+          if (stats.metadata.refreshed_at === "") {
             stats.metadata.refreshed_at = row.refreshed_at.toISOString();
           }
         }

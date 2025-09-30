@@ -136,7 +136,6 @@ export class SignatureDatabase implements SignatureDataProvider {
       SELECT
         signature_type,
         count::text,
-        created_at,
         refreshed_at
       FROM ${this.qualify("signature_stats")}
       ORDER BY signature_type
