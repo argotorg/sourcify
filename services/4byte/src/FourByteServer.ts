@@ -58,8 +58,9 @@ export class FourByteServer {
     );
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
 
-    this.app.get("/health", (_req, res) => {
-      res.json({ status: "ok", service: "4bytes-api" });
+    this.app.get("/health", async (_req, res) => {
+      await this.pool.query("SELECT 1;");
+      res.status(200).json({ status: "ok", service: "4byte-api" });
     });
 
     const shutdown = async (signal: NodeJS.Signals) => {
@@ -83,7 +84,7 @@ export class FourByteServer {
   async checkDatabaseHealth(): Promise<void> {
     // Checking pool health before continuing
     try {
-      logger.debug("Checking database pool health for 4bytes service");
+      logger.debug("Checking database pool health for 4byte service");
       await this.pool.query("SELECT 1;");
       logger.info("Database connection healthy", {
         host: this.pool.options.host,
@@ -92,14 +93,14 @@ export class FourByteServer {
         user: this.pool.options.user,
       });
     } catch (error) {
-      logger.error("Cannot connect to 4bytes database", {
+      logger.error("Cannot connect to 4byte database", {
         host: this.pool.options.host,
         port: this.pool.options.port,
         database: this.pool.options.database,
         user: this.pool.options.user,
         error,
       });
-      throw new Error("Cannot connect to 4bytes database");
+      throw new Error("Cannot connect to 4byte database");
     }
   }
 
@@ -109,7 +110,7 @@ export class FourByteServer {
         if (error) {
           reject(error);
         } else {
-          logger.info(`4bytes API server running on port ${this.port}`);
+          logger.info(`4byte API server running on port ${this.port}`);
           resolve();
         }
       });
@@ -117,20 +118,20 @@ export class FourByteServer {
   }
 
   async shutdown(): Promise<void> {
-    logger.info("Shutting down 4bytes server");
+    logger.info("Shutting down 4byte server");
     if (this.httpServer) {
       await new Promise<void>((resolve) => {
         this.httpServer!.close((error?: Error) => {
           if (error) {
-            logger.error("Error closing 4bytes server", error);
+            logger.error("Error closing 4byte server", error);
           } else {
-            logger.info("4bytes server closed");
+            logger.info("4byte server closed");
           }
           resolve();
         });
       });
     }
     await this.pool.end();
-    logger.info("4bytes database connection closed");
+    logger.info("4byte database connection closed");
   }
 }

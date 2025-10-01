@@ -35,11 +35,11 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "4Bytes - without build",
-      "program": "${workspaceFolder}/services/4bytes/dist/cli.js",
-      "envFile": "${workspaceFolder}/services/4bytes/.env",
+      "name": "4Byte - without build",
+      "program": "${workspaceFolder}/services/4byte/dist/cli.js",
+      "envFile": "${workspaceFolder}/services/4byte/.env",
       "outFiles": [
-        "${workspaceFolder}/services/4bytes/dist/**/*.js",
+        "${workspaceFolder}/services/4byte/dist/**/*.js",
         "${workspaceFolder}/packages/**/build/**/*.js"
       ],
       "env": {
@@ -190,11 +190,11 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Mocha - 4Bytes",
-      "cwd": "${workspaceFolder}/services/4bytes",
+      "name": "Mocha - 4Byte",
+      "cwd": "${workspaceFolder}/services/4byte",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
-      "preLaunchTask": "4bytes:database-test:up",
-      "postDebugTask": "4bytes:database-test:down",
+      "preLaunchTask": "4byte:database-test:up",
+      "postDebugTask": "4byte:database-test:down",
       "args": [
         "--require", "ts-node/register",
         "--exit",

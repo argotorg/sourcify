@@ -5,7 +5,7 @@ import {
 } from "../../../src/utils/signature-util";
 import { JsonFragment, id as keccak256str } from "ethers";
 
-describe("4bytes signature-util", function () {
+describe("4byte signature-util", function () {
   describe("extractSignaturesFromAbi", function () {
     it("should extract all signature types from comprehensive ABI", function () {
       const abi: JsonFragment[] = [

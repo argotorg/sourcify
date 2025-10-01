@@ -12,7 +12,7 @@
     "build:lerna": "lerna run build",
     "server:start": "cd services/server && node ./dist/server/cli.js",
     "monitor:start": "node ./services/monitor/dist/index.js",
-    "4bytes:start": "node ./services/4bytes/dist/cli.js",
+    "4byte:start": "node ./services/4byte/dist/cli.js",
     "update-chains": "node --experimental-fetch scripts/updateChains.mjs && prettier --write services/server/src/chains.json",
     "lerna-test": "lerna run test --stream",
     "lerna-lint": "lerna run check",

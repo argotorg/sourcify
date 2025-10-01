@@ -9,7 +9,7 @@ import { SignatureType } from "../../src/utils/signature-util";
 
 chai.use(chaiHttp);
 
-describe("4Bytes API End-to-End Tests", function () {
+describe("4byte API End-to-End Tests", function () {
   const serverFixture = new FourByteServerFixture();
 
   describe("GET /signature-database/v1/lookup", function () {
@@ -354,7 +354,7 @@ describe("4Bytes API End-to-End Tests", function () {
       chai.expect(res).to.have.status(200);
       chai.expect(res.body).to.deep.equal({
         status: "ok",
-        service: "4bytes-api",
+        service: "4byte-api",
       });
     });
   });

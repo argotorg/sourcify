@@ -12,7 +12,7 @@ export enum LogLevels {
 export const validLogLevels = Object.values(LogLevels);
 const loggerInstance: Logger = createLogger();
 
-// 2024-03-06T17:04:16.375Z [warn]: [4BytesService] Storing signature hash=0x1234567890abcdef, signature=transfer(address,uint256)
+// 2024-03-06T17:04:16.375Z [warn]: [4byteService] Storing signature hash=0x1234567890abcdef, signature=transfer(address,uint256)
 const rawlineFormat = format.printf(
   ({ level, message, timestamp, service, ...metadata }: any) => {
     let msg = `${timestamp} [${level}] ${service ? service : ""} ${chalk.bold(
@@ -107,7 +107,7 @@ const consoleTransport = new transports.Console({
 loggerInstance.add(consoleTransport);
 const fourBytesLoggerInstance = loggerInstance.child({
   service:
-    process.env.NODE_ENV === "production" ? "4bytes" : chalk.blue("[4Bytes]"),
+    process.env.NODE_ENV === "production" ? "4byte" : chalk.blue("[4byte]"),
 });
 
 export default fourBytesLoggerInstance;

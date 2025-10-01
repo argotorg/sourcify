@@ -38,7 +38,7 @@ workflows:
           mapping: |
             services/monitor/.* run-build-monitor true
             services/server/.* run-build-server true
-            services/4bytes/.* run-build-4bytes true
+            services/4byte/.* run-build-4byte true
             packages/.* run-build-packages true
           # Compare against the last build of the branch not the default "main" branch
           base-revision: << pipeline.git.base_revision >>
@@ -83,18 +83,18 @@ workflows:
               ignore: /.*/
           requires:
             - npm-publish
-      - build-push-4bytes-amd64:
+      - build-push-4byte-amd64:
           filters:
             tags:
-              only: /^sourcify-4bytes.*/
+              only: /^sourcify-4byte.*/
             branches:
               ignore: /.*/
           requires:
             - npm-publish
-      - build-push-4bytes-arm64:
+      - build-push-4byte-arm64:
           filters:
             tags:
-              only: /^sourcify-4bytes.*/
+              only: /^sourcify-4byte.*/
             branches:
               ignore: /.*/
           requires:
@@ -108,10 +108,10 @@ workflows:
           requires:
             - build-push-monitor-amd64
             - build-push-server-amd64
-            - build-push-4bytes-amd64
+            - build-push-4byte-amd64
             - build-push-monitor-arm64
             - build-push-server-arm64
-            - build-push-4bytes-arm64
+            - build-push-4byte-arm64
   new-branch:
     when:
       and:
@@ -189,12 +189,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
-  build-push-4bytes-amd64:
+  build-push-4byte-amd64:
     <<: *build-base
     environment:
-      SERVICE: "4bytes"
+      SERVICE: "4byte"
       DOCKER_BUILD_CONTEXT: "."
-      DOCKERFILE: "services/4bytes/Dockerfile"
+      DOCKERFILE: "services/4byte/Dockerfile"
   # ARM64 builds
   build-push-monitor-arm64:
     <<: *build-base-arm64
@@ -208,12 +208,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
-  build-push-4bytes-arm64:
+  build-push-4byte-arm64:
     <<: *build-base-arm64
     environment:
-      SERVICE: "4bytes"
+      SERVICE: "4byte"
       DOCKER_BUILD_CONTEXT: "."
-      DOCKERFILE: "services/4bytes/Dockerfile"
+      DOCKERFILE: "services/4byte/Dockerfile"
   publish-multiarch-images:
     docker:
       - image: cimg/base:2024.12

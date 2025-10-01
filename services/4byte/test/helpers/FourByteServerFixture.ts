@@ -20,7 +20,7 @@ export class FourByteServerFixture {
 
   // Getters for type safety
   get server(): FourByteServer {
-    if (!this._server) throw new Error("4Bytes server not initialized!");
+    if (!this._server) throw new Error("4byte server not initialized!");
     return this._server;
   }
 
@@ -58,14 +58,14 @@ export class FourByteServerFixture {
 
       // Start the server
       await this.server.listen();
-      console.log(`4Bytes server listening on port ${this.port}!`);
+      console.log(`4byte server listening on port ${this.port}!`);
     });
 
     beforeEach(async () => {
       if (!fixtureOptions?.skipDatabaseReset) {
         await this.resetDatabase();
         await this.insertTestSignatures(FourByteServerFixture.testSignatures);
-        console.log("Resetting 4Bytes database");
+        console.log("Resetting 4byte database");
       }
     });
 

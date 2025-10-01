@@ -14,15 +14,15 @@
       "problemMatcher": []
     },
     {
-      "label": "4bytes:database-test:up",
+      "label": "4byte:database-test:up",
       "type": "shell",
-      "command": "cd services/4bytes && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5433} && npm run postgres-test:start && sleep 3 && npm run postgres-test:migrate",
+      "command": "cd services/4byte && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5433} && npm run postgres-test:start && sleep 3 && npm run postgres-test:migrate",
       "problemMatcher": []
     },
     {
-      "label": "4bytes:database-test:down",
+      "label": "4byte:database-test:down",
       "type": "shell",
-      "command": "cd services/4bytes && npm run postgres-test:stop",
+      "command": "cd services/4byte && npm run postgres-test:stop",
       "problemMatcher": []
     }
   ]

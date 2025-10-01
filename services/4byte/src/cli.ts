@@ -35,9 +35,9 @@ server.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 server
   .listen()
   .then(() => {
-    logger.info("4bytes API server started successfully");
+    logger.info("4byte API server started successfully");
   })
   .catch((error) => {
-    logger.error("Failed to start 4bytes API server", { error });
+    logger.error("Failed to start 4byte API server", { error });
     process.exit(1);
   });

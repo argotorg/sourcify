@@ -1,6 +1,6 @@
 -- migrate:up
 
--- Remove dependency on compiled_contracts table for 4bytes service
+-- Remove dependency on compiled_contracts table for 4byte service
 
 -- Drop the foreign key constraint (keep the column for mock data)
 ALTER TABLE compiled_contracts_signatures

@@ -1,5 +1,5 @@
 {
-  "name": "sourcify-4bytes",
+  "name": "sourcify-4byte",
   "version": "1.0.0",
   "private": true,
   "description": "Standalone service exposing Sourcify signature database endpoints",
@@ -14,7 +14,7 @@
     "postgres-test:stop": "docker-compose -f test/docker-compose.yml rm -fsv",
     "postgres-test:migrate": "export DATABASE_URL=postgres://fourbytes:fourbytes@${FOURBYTES_POSTGRES_HOST:-fourbytes-db}:${FOURBYTES_POSTGRES_PORT:-5432}/fourbytes_test_db?sslmode=disable && export DBMATE_MIGRATIONS_DIR=./test/migrations && npx dbmate up",
     "test:unit": "mocha test/unit/**/*.spec.ts",
-    "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha test/unit/**/*.spec.ts test/integration/4bytes-api.spec.ts",
+    "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha test/unit/**/*.spec.ts test/integration/4byte-api.spec.ts",
     "test-local": "npm run postgres-test:start && sleep 3 && FOURBYTES_POSTGRES_HOST=localhost FOURBYTES_POSTGRES_PORT=5433 npm run postgres-test:migrate && FOURBYTES_POSTGRES_HOST=localhost FOURBYTES_POSTGRES_PORT=5433 npm run test; status=$?; npm run postgres-test:stop; exit $status",
     "fix": "run-s fix:*",
     "fix:prettier": "prettier \"./**/*.ts\" --write",
