@@ -57,7 +57,7 @@ describe('SourcifyChain', () => {
     });
 
     it('should extract creation bytecode from parity traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -77,7 +77,7 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error if no create trace is found', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox
         .stub(mockProvider, 'send')
         .resolves([{ type: 'call' }, { type: 'suicide' }]);
@@ -92,18 +92,17 @@ describe('SourcifyChain', () => {
         {
           rpc: 'http://localhost:8545',
           traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
         },
         {
           rpc: 'http://localhost:8546',
           traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8546'),
         },
       ];
-      sourcifyChain.providers.push(
-        new JsonRpcProvider('http://localhost:8546'),
-      );
 
-      const mockProvider1 = sourcifyChain.providers[0] as JsonRpcProvider;
-      const mockProvider2 = sourcifyChain.providers[1] as JsonRpcProvider;
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
 
       sandbox.stub(mockProvider1, 'send').rejects(new Error('RPC error'));
       sandbox.stub(mockProvider2, 'send').resolves([
@@ -128,9 +127,10 @@ describe('SourcifyChain', () => {
         {
           rpc: 'http://localhost:8545',
           traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
         },
       ];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -157,9 +157,10 @@ describe('SourcifyChain', () => {
         {
           rpc: 'http://localhost:8545',
           traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
         },
       ];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -182,9 +183,10 @@ describe('SourcifyChain', () => {
         {
           rpc: 'http://localhost:8545',
           traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
         },
       ];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -205,7 +207,7 @@ describe('SourcifyChain', () => {
 
   describe('extractFromParityTraceProvider', () => {
     it('should throw an error if the contract address does not match', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -218,7 +220,7 @@ describe('SourcifyChain', () => {
         sourcifyChain.extractFromParityTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith(
         `Provided tx 0xhash does not create the expected contract 0xaddress. Created contracts by this tx: 0xdifferentAddress`,
@@ -226,7 +228,7 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error when .action.init is not found', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -239,7 +241,7 @@ describe('SourcifyChain', () => {
         sourcifyChain.extractFromParityTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('.action.init not found');
     });
@@ -249,7 +251,7 @@ describe('SourcifyChain', () => {
 
   describe('extractFromGethTraceProvider', () => {
     it('should extract creation bytecode from geth traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -263,13 +265,13 @@ describe('SourcifyChain', () => {
       const result = await sourcifyChain.extractFromGethTraceProvider(
         '0xhash',
         '0xaddress',
-        mockProvider,
+        sourcifyChain.rpcs[0],
       );
       expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should handle nested CREATE calls in geth traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -288,20 +290,20 @@ describe('SourcifyChain', () => {
       const result = await sourcifyChain.extractFromGethTraceProvider(
         '0xhash',
         '0xaddress',
-        mockProvider,
+        sourcifyChain.rpcs[0],
       );
       expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should throw an error if traces response is empty or malformed', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({});
 
       await expect(
         sourcifyChain.extractFromGethTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('received empty or malformed response');
     });

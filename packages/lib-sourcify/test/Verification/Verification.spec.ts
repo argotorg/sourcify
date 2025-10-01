@@ -152,7 +152,7 @@ describe('Verification Class Tests', () => {
 
   before(async () => {
     hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
-    signer = await sourcifyChainHardhat.providers[0].getSigner();
+    signer = await sourcifyChainHardhat.rpcs[0].provider!.getSigner();
   });
 
   beforeEach(() => {
