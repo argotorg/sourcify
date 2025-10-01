@@ -308,6 +308,185 @@ describe('SourcifyChain', () => {
       ).to.be.rejectedWith('received empty or malformed response');
     });
   });
+
+  describe('Circuit Breaker Pattern', () => {
+    let clock: sinon.SinonFakeTimers;
+
+    beforeEach(() => {
+      clock = sandbox.useFakeTimers();
+    });
+
+    it('should skip blocked RPCs and not call them', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+          {
+            rpc: 'http://localhost:8546',
+          },
+        ],
+        supported: true,
+      });
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
+      const getBlockNumberStub1 = sandbox
+        .stub(mockProvider1, 'getBlockNumber')
+        .rejects(new Error('RPC 1 failed'));
+      const getBlockNumberStub2 = sandbox
+        .stub(mockProvider2, 'getBlockNumber')
+        .resolves(100);
+
+      // First call - both RPCs should be tried
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledOnce;
+      expect(getBlockNumberStub2).to.have.been.calledOnce;
+      // Second call - both RPCs should be tried because one retry is allowed
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledTwice;
+      expect(getBlockNumberStub2).to.have.been.calledTwice;
+      // Third call - first RPC should be skipped
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledTwice;
+      expect(getBlockNumberStub2).to.have.been.calledThrice;
+    });
+
+    it('should record RPC health correctly after failures', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+      expect(sourcifyChain.rpcs[0].health).to.be.undefined;
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox
+        .stub(mockProvider, 'getBlockNumber')
+        .rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+      expect(sourcifyChain.rpcs[0].health?.nextRetryTime).to.be.a('number');
+    });
+
+    it('should use exponential backoff for consecutive failures', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+          {
+            rpc: 'http://localhost:8546',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
+      sandbox
+        .stub(mockProvider1, 'getBlockNumber')
+        .rejects(new Error('RPC 1 failed'));
+      sandbox.stub(mockProvider2, 'getBlockNumber').resolves(100);
+
+      const startTime = Date.now();
+      // One retry is always allowed
+      await sourcifyChain.getBlockNumber();
+      await sourcifyChain.getBlockNumber();
+      const retryTime = sourcifyChain.rpcs[0].health!.nextRetryTime!;
+      expect(retryTime - startTime).to.equal(10_000);
+    });
+
+    it('should reset health after successful RPC call', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
+      getBlockNumberStub.onFirstCall().rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+
+      getBlockNumberStub.onSecondCall().resolves(100);
+      await sourcifyChain.getBlockNumber();
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(0);
+      expect(sourcifyChain.rpcs[0].health?.nextRetryTime).to.be.undefined;
+    });
+
+    it('should retry blocked RPC after backoff period expires', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
+      getBlockNumberStub.rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+
+      // One retry is always allowed
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(2);
+
+      // Call should now fail without calling provider
+      const callCountBefore = getBlockNumberStub.callCount;
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(getBlockNumberStub.callCount).to.equal(callCountBefore);
+
+      clock.tick(10_001);
+
+      // Now it should retry
+      getBlockNumberStub.resolves(100);
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub.callCount).to.equal(callCountBefore + 1);
+    });
+  });
 });
 
 describe('SourcifyChain unit tests', () => {
@@ -365,7 +544,7 @@ describe('SourcifyChain unit tests', () => {
     } catch (err) {
       if (err instanceof Error) {
         expect(err.message).to.equal(
-          `None of the RPCs responded fetching tx 0x79ab5d59fcb70ca3f290aa39ed3f156a5c4b3897176aebd455cd20b6a30b107a on chain ${sourcifyChain.chainId}`,
+          `All RPCs failed or are blocked for getTx(0x79ab5d59fcb70ca3f290aa39ed3f156a5c4b3897176aebd455cd20b6a30b107a) on chain ${sourcifyChain.chainId}`,
         );
       } else {
         throw err;

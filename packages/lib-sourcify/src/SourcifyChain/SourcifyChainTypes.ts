@@ -96,6 +96,14 @@ export interface SourcifyRpc {
 
   /** Optional trace support type if this RPC supports trace/debug methods */
   traceSupport?: TraceSupport;
+
+  /** RPC health tracking for circuit breaker pattern */
+  health?: {
+    /** Number of consecutive failures */
+    consecutiveFailures: number;
+    /** Timestamp when this RPC can be retried in milliseconds */
+    nextRetryTime?: number;
+  };
 }
 
 export type TraceSupportedRPC = {

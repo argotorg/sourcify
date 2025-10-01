@@ -5,6 +5,7 @@ import {
   TransactionReceipt,
   TransactionResponse,
   getAddress,
+  EthersError,
 } from 'ethers';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import {
@@ -124,6 +125,112 @@ export class SourcifyChain {
     };
   };
 
+  private isRpcBlocked(rpc: SourcifyRpcWithProvider): boolean {
+    if (!rpc.health || rpc.health.consecutiveFailures === 0) {
+      return false;
+    }
+    const now = Date.now();
+    return (
+      rpc.health.nextRetryTime !== undefined && now < rpc.health.nextRetryTime
+    );
+  }
+
+  private recordRpcSuccess(rpc: SourcifyRpcWithProvider): void {
+    if (rpc.health && rpc.health.consecutiveFailures > 0) {
+      logInfo('RPC recovered', {
+        maskedUrl: rpc.maskedUrl,
+        chainId: this.chainId,
+        previousFailures: rpc.health.consecutiveFailures,
+      });
+    }
+    rpc.health = {
+      consecutiveFailures: 0,
+      nextRetryTime: undefined,
+    };
+  }
+
+  private recordRpcFailure(rpc: SourcifyRpcWithProvider): void {
+    const BACKOFF_SCHEDULE = [
+      // allow one retry immediately
+      0,
+      10_000, // 10 seconds
+      60_000, // 1 minute
+      600_000, // 10 minutes
+      3_600_000, // 1 hour
+      86_400_000, // 24 hours
+    ];
+
+    if (!rpc.health) {
+      rpc.health = { consecutiveFailures: 0 };
+    }
+    rpc.health.consecutiveFailures++;
+
+    const now = Date.now();
+    const backoffIndex = Math.min(
+      rpc.health.consecutiveFailures - 1,
+      BACKOFF_SCHEDULE.length - 1,
+    );
+    const backoffMs = BACKOFF_SCHEDULE[backoffIndex];
+    rpc.health.nextRetryTime = now + backoffMs;
+  }
+
+  private async executeWithCircuitBreaker<T>(
+    operation: (rpc: SourcifyRpcWithProvider) => Promise<{
+      result?: T;
+      rpcFailed?: boolean;
+      tryNext?: boolean;
+    }>,
+    operationName: string,
+  ): Promise<T> {
+    for (const rpc of this.rpcs) {
+      if (!rpc.provider || this.isRpcBlocked(rpc)) {
+        continue;
+      }
+
+      try {
+        const { result, rpcFailed, tryNext } = await operation(rpc);
+
+        if (rpcFailed) {
+          logWarn('RPC operation failed, marking as unhealthy', {
+            operation: operationName,
+            maskedUrl: rpc.maskedUrl,
+            chainId: this.chainId,
+          });
+          this.recordRpcFailure(rpc);
+          continue;
+          // In some cases, the RPC is successful but does not return the desired data
+        } else if (tryNext) {
+          logDebug('RPC successful but did not return data, trying next RPC', {
+            operation: operationName,
+            maskedUrl: rpc.maskedUrl,
+            chainId: this.chainId,
+          });
+          this.recordRpcSuccess(rpc);
+          continue;
+        }
+
+        this.recordRpcSuccess(rpc);
+        return result as T;
+      } catch (err) {
+        logError('RPC operation threw error', {
+          operation: operationName,
+          error: err,
+          maskedUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        throw err;
+      }
+    }
+
+    logError('All RPCs failed or are blocked', {
+      operation: operationName,
+      chainId: this.chainId,
+    });
+    throw new Error(
+      `All RPCs failed or are blocked for ${operationName} on chain ${this.chainId}`,
+    );
+  }
+
   rejectInMs = (host?: string) =>
     new Promise<never>((_resolve, reject) => {
       setTimeout(
@@ -133,96 +240,76 @@ export class SourcifyChain {
     });
 
   getTx = async (creatorTxHash: string) => {
-    // Try sequentially all RPCs
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
+      logInfo('Fetching tx', {
+        creatorTxHash,
+        maskedProviderUrl: rpc.maskedUrl,
+      });
+      let tx: TransactionResponse | null;
       try {
-        logInfo('Fetching tx', {
+        tx = await Promise.race([
+          rpc.provider.getTransaction(creatorTxHash),
+          this.rejectInMs(rpc.maskedUrl),
+        ]);
+      } catch (err) {
+        return { rpcFailed: true };
+      }
+
+      if (tx instanceof TransactionResponse) {
+        logInfo('Fetched tx', {
           creatorTxHash,
           maskedProviderUrl: rpc.maskedUrl,
         });
-        // Race the RPC call with a timeout
-        const tx = await Promise.race([
-          provider.getTransaction(creatorTxHash),
-          this.rejectInMs(rpc.maskedUrl),
-        ]);
-        if (tx instanceof TransactionResponse) {
-          logInfo('Fetched tx', {
-            creatorTxHash,
-            maskedProviderUrl: rpc.maskedUrl,
-          });
-          return tx;
-        } else {
-          throw new Error(
-            `Transaction ${creatorTxHash} not found on RPC ${rpc.maskedUrl} and chain ${this.chainId}`,
-          );
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch tx', {
-            creatorTxHash,
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-            error: err.message,
-          });
-          continue;
-        } else {
-          throw err;
-        }
+        return { result: tx };
+      } else {
+        // RPC did not fail but tx not found
+        logWarn('Transaction not found on this RPC', {
+          creatorTxHash,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        return { tryNext: true };
       }
-    }
-    throw new Error(
-      'None of the RPCs responded fetching tx ' +
-        creatorTxHash +
-        ' on chain ' +
-        this.chainId,
-    );
+    }, `getTx(${creatorTxHash})`);
   };
 
   getTxReceipt = async (creatorTxHash: string) => {
-    // Try sequentially all RPCs
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
+      let receipt: TransactionReceipt | null;
       try {
-        // Race the RPC call with a timeout
-        const tx = await Promise.race([
-          provider.getTransactionReceipt(creatorTxHash),
+        receipt = await Promise.race([
+          rpc.provider.getTransactionReceipt(creatorTxHash),
           this.rejectInMs(rpc.maskedUrl),
         ]);
-        if (tx instanceof TransactionReceipt) {
-          logInfo('Fetched tx receipt', {
-            creatorTxHash,
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-          });
-          return tx;
-        } else {
-          throw new Error(
-            `Transaction's receipt ${creatorTxHash} not found on RPC ${rpc.maskedUrl} and chain ${this.chainId}`,
-          );
-        }
       } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch tx receipt', {
-            creatorTxHash,
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-            error: err.message,
-          });
-          continue;
-        } else {
-          throw err;
-        }
+        return { rpcFailed: true };
       }
-    }
-    throw new Error(
-      'None of the RPCs responded fetching tx ' +
-        creatorTxHash +
-        ' on chain ' +
-        this.chainId,
-    );
+
+      if (receipt instanceof TransactionReceipt) {
+        logInfo('Fetched tx receipt', {
+          creatorTxHash,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        return { result: receipt };
+      } else {
+        // RPC did not fail but tx receipt not found
+        logWarn('Transaction receipt not found on this RPC', {
+          creatorTxHash,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        return { tryNext: true };
+      }
+    }, `getTxReceipt(${creatorTxHash})`);
   };
 
   /**
@@ -445,64 +532,49 @@ export class SourcifyChain {
   ): Promise<string> => {
     address = getAddress(address);
 
-    // Request sequentially. Custom node is always before ALCHEMY so we don't waste resources if succeeds.
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
-      try {
+    return this.executeWithCircuitBreaker(
+      async (rpc) => {
+        if (!rpc.provider) {
+          throw new Error('No provider configured for this RPC');
+        }
+
         logDebug('Fetching bytecode', {
           address,
           blockNumber,
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
-        // Race the RPC call with a timeout
-        const bytecode = await Promise.race([
-          provider.getCode(address, blockNumber),
-          this.rejectInMs(rpc.maskedUrl),
-        ]);
-        logInfo('Fetched bytecode', {
-          address,
-          blockNumber,
-          bytecodeLength: bytecode.length,
-          bytecodeStart: bytecode.slice(0, 32),
-          maskedProviderUrl: rpc.maskedUrl,
-          chainId: this.chainId,
-        });
-        return bytecode;
-      } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch bytecode', {
+        try {
+          const bytecode = await Promise.race([
+            rpc.provider.getCode(address, blockNumber),
+            this.rejectInMs(rpc.maskedUrl),
+          ]);
+          logInfo('Fetched bytecode', {
             address,
             blockNumber,
+            bytecodeLength: bytecode.length,
+            bytecodeStart: bytecode.slice(0, 32),
             maskedProviderUrl: rpc.maskedUrl,
             chainId: this.chainId,
-            error: err.message,
           });
-          continue;
-        } else {
-          throw err;
+          return { result: bytecode };
+        } catch (err) {
+          return { rpcFailed: true };
         }
-      }
-    }
-    throw new Error(
-      'None of the RPCs responded fetching bytecode for ' +
-        address +
-        (blockNumber ? ` at block ${blockNumber}` : '') +
-        ' on chain ' +
-        this.chainId,
+      },
+      `getBytecode(${address}${blockNumber ? ` at block ${blockNumber}` : ''})`,
     );
   };
 
   getBlock = async (blockNumber: number, preFetchTxs = true) => {
-    // Request sequentially. Custom node is always before ALCHEMY so we don't waste resources if succeeds.
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
       try {
-        // Race the RPC call with a timeout
         const block = await Promise.race([
-          provider.getBlock(blockNumber, preFetchTxs),
+          rpc.provider.getBlock(blockNumber, preFetchTxs),
           this.rejectInMs(rpc.maskedUrl),
         ]);
         if (block) {
@@ -519,75 +591,45 @@ export class SourcifyChain {
             chainId: this.chainId,
           });
         }
-        return block;
-      } catch (err: any) {
-        logWarn('Failed to fetch the block', {
-          blockNumber,
-          maskedProviderUrl: rpc.maskedUrl,
-          chainId: this.chainId,
-          error: err.message,
-        });
-        continue;
+        return { result: block };
+      } catch (err) {
+        return { rpcFailed: true };
       }
-    }
-    logError('None of the RPCs responded for fetching block', {
-      blockNumber,
-      rpcs: this.rpcs.map((r) => r.maskedUrl),
-      chainId: this.chainId,
-    });
-    throw new Error(
-      'None of the RPCs responded fetching block ' +
-        blockNumber +
-        ' on chain ' +
-        this.chainId,
-    );
+    }, `getBlock(${blockNumber})`);
   };
 
   getBlockNumber = async () => {
-    // Request sequentially. Custom node is always before ALCHEMY so we don't waste resources if succeeds.
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
       try {
-        // Race the RPC call with a timeout
-        const block = await Promise.race([
-          provider.getBlockNumber(),
+        const blockNumber = await Promise.race([
+          rpc.provider.getBlockNumber(),
           this.rejectInMs(rpc.maskedUrl),
         ]);
         logInfo('Fetched eth_blockNumber', {
-          blockNumber: block,
+          blockNumber,
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
-        return block;
+        return { result: blockNumber };
       } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch eth_blockNumber', {
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-            error: err.message,
-          });
-          continue;
-        } else {
-          throw err;
-        }
+        return { rpcFailed: true };
       }
-    }
-    throw new Error(
-      'None of the RPCs responded fetching the blocknumber on chain ' +
-        this.chainId,
-    );
+    }, 'getBlockNumber');
   };
 
   getStorageAt = async (address: string, position: number | string) => {
-    // Request sequentially. Custom node is always before ALCHEMY so we don't waste resources if succeeds.
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
       try {
-        // Race the RPC call with a timeout
         const data = await Promise.race([
-          provider.getStorage(address, position),
+          rpc.provider.getStorage(address, position),
           this.rejectInMs(rpc.maskedUrl),
         ]);
         logInfo('Fetched eth_getStorageAt', {
@@ -596,35 +638,22 @@ export class SourcifyChain {
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
-        return data;
+        return { result: data };
       } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch eth_getStorageAt', {
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-            error: err.message,
-          });
-          continue;
-        } else {
-          throw err;
-        }
+        return { rpcFailed: true };
       }
-    }
-    throw new Error(
-      'None of the RPCs responded fetching the storage slot on chain ' +
-        this.chainId,
-    );
+    }, `getStorageAt(${address}, ${position})`);
   };
 
   call = async (transaction: { to: string; data: string }) => {
-    // Request sequentially. Custom node is always before ALCHEMY so we don't waste resources if succeeds.
-    for (const rpc of this.rpcs) {
-      if (!rpc.provider) continue;
-      const provider = rpc.provider;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+
       try {
-        // Race the RPC call with a timeout
         const callResult = await Promise.race([
-          provider.call(transaction),
+          rpc.provider.call(transaction),
           this.rejectInMs(rpc.maskedUrl),
         ]);
         logInfo('Fetched eth_call result', {
@@ -632,24 +661,15 @@ export class SourcifyChain {
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
-        return callResult;
+
+        return { result: callResult };
       } catch (err) {
-        if (err instanceof Error) {
-          logWarn('Failed to fetch eth_call result', {
-            maskedProviderUrl: rpc.maskedUrl,
-            chainId: this.chainId,
-            error: err.message,
-          });
-          continue;
-        } else {
+        if ((err as EthersError)?.code === 'CALL_EXCEPTION') {
           throw err;
         }
+        return { rpcFailed: true };
       }
-    }
-    throw new Error(
-      'None of the RPCs responded with eth_call result on chain ' +
-        this.chainId,
-    );
+    }, `call(${transaction.to})`);
   };
 
   getContractCreationBytecodeAndReceipt = async (
