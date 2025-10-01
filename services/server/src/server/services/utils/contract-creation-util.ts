@@ -25,6 +25,8 @@ const ROUTESCAN_API_URL =
 const VECHAIN_API_URL =
   "https://api.vechainstats.com/v2/contract/info?address=${ADDRESS}&expanded=true&VCS_API_KEY=";
 
+export const BINARY_SEARCH_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
 function getApiContractCreationFetcher(
   url: string,
   responseParser: Function,
@@ -387,11 +389,10 @@ export const getCreatorTx = async (
     }
   }
 
-  // Try binary search as last resort
   logger.debug("Trying binary search to find contract creation transaction", {
     contractAddress,
   });
-  const result = await findContractCreationTxByBinarySearch(
+  const result = await findContractCreationTxByBinarySearchWithTimeout(
     sourcifyChain,
     contractAddress,
   );
@@ -582,4 +583,29 @@ export async function findContractCreationTxByBinarySearch(
     });
     return null;
   }
+}
+
+export async function findContractCreationTxByBinarySearchWithTimeout(
+  sourcifyChain: SourcifyChain,
+  contractAddress: string,
+  binarySearchTimeoutMs = BINARY_SEARCH_TIMEOUT_MS,
+): Promise<string | null> {
+  const timeoutPromise = new Promise<null>((resolve) =>
+    setTimeout(() => {
+      logger.warn(
+        `Binary search for contract creation tx timed out after ${binarySearchTimeoutMs} ms`,
+        {
+          chainId: sourcifyChain.chainId,
+          contractAddress,
+          timeoutMs: binarySearchTimeoutMs,
+        },
+      );
+      resolve(null);
+    }, binarySearchTimeoutMs),
+  );
+
+  return Promise.race([
+    findContractCreationTxByBinarySearch(sourcifyChain, contractAddress),
+    timeoutPromise,
+  ]);
 }
