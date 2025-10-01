@@ -35,9 +35,11 @@ LABEL org.opencontainers.image.licenses MIT
 
 # Set default value for ARG
 ARG NODE_ENV=production
+ARG PORT=80
 
 # Set environment variable
 ENV NODE_ENV=${NODE_ENV}
+ENV PORT=${PORT}
 
 WORKDIR /home/app/services/4bytes
 # node command has to be used directly for SIGTERM handling (NOT npm start)
