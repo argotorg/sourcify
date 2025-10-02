@@ -1,5 +1,9 @@
 import chai from "chai";
-import { getCreatorTx } from "../../../src/server/services/utils/contract-creation-util";
+import {
+  BINARY_SEARCH_TIMEOUT_MS,
+  findContractCreationTxByBinarySearchWithTimeout,
+  getCreatorTx,
+} from "../../../src/server/services/utils/contract-creation-util";
 import { sourcifyChainsMap } from "../../../src/sourcify-chains";
 import { ChainRepository } from "../../../src/sourcify-chain-repository";
 import { FetchContractCreationTxMethod } from "@ethereum-sourcify/lib-sourcify";
@@ -236,6 +240,7 @@ describe("contract creation util", function () {
 
   describe("findContractCreationTxByBinarySearch", function () {
     let mockSourcifyChain: SourcifyChain;
+    const sandbox = sinon.createSandbox();
 
     beforeEach(() => {
       // Create a mock SourcifyChain instance
@@ -246,6 +251,10 @@ describe("contract creation util", function () {
         getTxReceipt: sinon.stub(),
         chainId: 1,
       } as any;
+    });
+
+    afterEach(() => {
+      sandbox.restore();
     });
 
     // Not a unit test fetches from live chain, but it's useful for debugging
@@ -417,6 +426,26 @@ describe("contract creation util", function () {
         contractAddress,
       );
 
+      chai.expect(result).to.be.null;
+    });
+
+    it("should timeout when binary search takes too long", async function () {
+      const clock = sandbox.useFakeTimers();
+      const contractAddress = "0x1234567890123456789012345678901234567890";
+
+      // This will never resolve, forcing the timeout to trigger
+      (mockSourcifyChain.getBlockNumber as sinon.SinonStub).returns(
+        new Promise(() => {}),
+      );
+
+      const resultPromise = findContractCreationTxByBinarySearchWithTimeout(
+        mockSourcifyChain,
+        contractAddress,
+      );
+
+      await clock.tickAsync(BINARY_SEARCH_TIMEOUT_MS);
+
+      const result = await resultPromise;
       chai.expect(result).to.be.null;
     });
   });
