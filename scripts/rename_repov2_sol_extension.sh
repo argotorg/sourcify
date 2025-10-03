@@ -16,6 +16,7 @@ remove_sol_extension() {
 # Recursive function to process directories
 process_directory() {
     local dir="$1"
+    shopt -s nullglob
     for item in "$dir"/*; do
         if [[ -d "$item" ]]; then
             process_directory "$item"
@@ -23,6 +24,7 @@ process_directory() {
             remove_sol_extension "$item"
         fi
     done
+    shopt -u nullglob
 }
 
 
