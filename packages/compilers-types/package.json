@@ -33,7 +33,7 @@
   "bugs": {
     "url": "https://github.com/argotorg/sourcify/issues"
   },
-  "homepage": "https://github.com/argotorg/sourcify/tree/main/packages/compilers-types#readme",
+  "homepage": "https://github.com/argotorg/sourcify/tree/staging/packages/compilers-types",
   "devDependencies": {
     "typescript": "5.9.2"
   },
