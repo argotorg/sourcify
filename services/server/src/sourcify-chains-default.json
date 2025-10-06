@@ -59,6 +59,33 @@
       "blockscoutApi": { "url": "https://testnet.privixscan.io" }
     }
   },
+  "1135": {
+    "sourcifyName": "Lisk Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.lisk.com/api"
+      }
+    }
+  },
+  "130": {
+    "sourcifyName": "Unichain",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://unichain.blockscout.com/api"
+      }
+    }
+  },
+  "167000": {
+    "sourcifyName": "Taiko Aleshia",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.mainnet.taiko.xyz/api"
+      }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": true,
