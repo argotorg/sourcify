@@ -260,6 +260,15 @@ describe("Test Supported Chains", function () {
     "partial",
   );
 
+  // Blast Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "81457",
+    "Blast",
+    "multicall-src/",
+    "partial",
+  );
+
   // verifyContract(
   //   "0x5D40b45C202531d040e0CCD51C48554109197cD3",
   //   "80001",
