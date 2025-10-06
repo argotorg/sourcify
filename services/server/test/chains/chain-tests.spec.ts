@@ -120,6 +120,15 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Lisk Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "1135",
+    "Lisk Mainnet",
+    "multicall-src/",
+    "partial",
+  );
+
   verifyContract(
     "0x801f3983c7baBF5E6ae192c84E1257844aDb4b4D",
     "1",
@@ -240,6 +249,15 @@ describe("Test Supported Chains", function () {
     "137",
     "Polygon (Matic)",
     "137/",
+  );
+
+  // Unichain Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "130",
+    "Unichain",
+    "multicall-src/",
+    "partial",
   );
 
   // verifyContract(
@@ -1012,6 +1030,15 @@ describe("Test Supported Chains", function () {
   //   "shared/",
   //   "partial"
   // );
+
+  // Taiko Aleshia
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "167000",
+    "Taiko Aleshia",
+    "multicall-src/",
+    "partial",
+  );
 
   // ZORA Mainnet
   verifyContract(
