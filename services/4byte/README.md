@@ -18,7 +18,7 @@ The 4byte service provides API endpoints to lookup and search contract signature
 
 ### GET `/signature-database/v1/lookup`
 
-Lookup signatures by hash.xxw
+Lookup signatures by hash.
 
 **Query Parameters:**
 
