@@ -39,5 +39,5 @@ server
   })
   .catch((error) => {
     logger.error("Failed to start 4byte API server", { error });
-    process.exit(1);
+    server.shutdown();
   });
