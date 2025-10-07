@@ -57,7 +57,7 @@ npm install
 npm run build
 
 # Run tests
-npm run test
+npm run test-local
 
 # Start development server
 npm run dev
