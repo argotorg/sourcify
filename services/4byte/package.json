@@ -12,7 +12,7 @@
     "dev": "ts-node src/cli.ts",
     "postgres-test:start": "docker-compose -f test/docker-compose.yml up -d",
     "postgres-test:stop": "docker-compose -f test/docker-compose.yml rm -fsv",
-    "postgres-test:migrate": "export DATABASE_URL=postgres://fourbytes:fourbytes@${FOURBYTES_POSTGRES_HOST:-fourbytes-db}:${FOURBYTES_POSTGRES_PORT:-5432}/fourbytes_test_db?sslmode=disable && export DBMATE_MIGRATIONS_DIR=./test/migrations && npx dbmate --no-dump-schema up",
+    "postgres-test:migrate": "cd ../database && git submodule update --init && export DATABASE_URL=postgres://fourbytes:fourbytes@${FOURBYTES_POSTGRES_HOST:-fourbytes-db}:${FOURBYTES_POSTGRES_PORT:-5432}/fourbytes_test_db?sslmode=disable && export DBMATE_SCHEMA_FILE=./sourcify-database.sql && npm run migrate:up-no-dump",
     "test:unit": "mocha test/unit/**/*.spec.ts",
     "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha test/unit/**/*.spec.ts test/integration/**/*.spec.ts",
     "test-local": "npm run postgres-test:start && sleep 3 && FOURBYTES_POSTGRES_HOST=localhost FOURBYTES_POSTGRES_PORT=5433 npm run postgres-test:migrate && FOURBYTES_POSTGRES_HOST=localhost FOURBYTES_POSTGRES_PORT=5433 npm run test; status=$?; npm run postgres-test:stop; exit $status",

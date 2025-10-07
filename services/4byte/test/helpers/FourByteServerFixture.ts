@@ -105,6 +105,11 @@ export class FourByteServerFixture {
     try {
       await client.query("BEGIN");
 
+      // Drop the foreign key constraint to be able to insert mock data
+      await client.query(
+        "ALTER TABLE compiled_contracts_signatures DROP CONSTRAINT IF EXISTS compiled_contracts_signatures_compilation_id_fkey;",
+      );
+
       // Insert signatures
       for (const sig of signatures) {
         const hash32 = keccak256str(sig.signature);
