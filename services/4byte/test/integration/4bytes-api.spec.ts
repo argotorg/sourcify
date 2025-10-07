@@ -352,10 +352,7 @@ describe("4byte API End-to-End Tests", function () {
         .get("/health");
 
       chai.expect(res).to.have.status(200);
-      chai.expect(res.body).to.deep.equal({
-        status: "ok",
-        service: "4byte-api",
-      });
+      chai.expect(res.text).to.equal("Alive and kicking!");
     });
   });
 

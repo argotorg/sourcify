@@ -55,8 +55,13 @@ export class FourByteServer {
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
 
     this.app.get("/health", async (_req, res) => {
-      await this.database.checkDatabaseHealth();
-      res.status(200).json({ status: "ok", service: "4byte-api" });
+      try {
+        await this.database.checkDatabaseHealth();
+      } catch (error) {
+        logger.error("Error checking database health", { error });
+        res.status(500).send("Error checking database health");
+      }
+      res.status(200).send("Alive and kicking!");
     });
     process.on("SIGTERM", () => this.shutdown("SIGTERM"));
     process.on("SIGINT", () => this.shutdown("SIGINT"));

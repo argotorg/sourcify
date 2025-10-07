@@ -172,6 +172,27 @@ paths:
                     function: 125847
                     event: 8329
                     error: 2156
+  /health:
+    get:
+      summary: Check server health
+      description: Check if the server is running
+      responses:
+        "200":
+          description: The server is running
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                Alive and kicking!
+        "500":
+          description: Error checking health
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                Error checking database health
 
 components:
   schemas:
