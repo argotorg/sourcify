@@ -1,14 +1,11 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Logger } from "winston";
-import {
-  SignatureDataProvider,
-  SignatureLookupRow,
-  SignatureStatsRow,
-} from "../SignatureDatabase";
+import { SignatureLookupRow, SignatureStatsRow } from "../SignatureDatabase";
 import { SignatureType, getCanonicalSignatures } from "../utils/signature-util";
 import { bytesFromString } from "../utils/database-util";
 import { sendSignatureApiFailure } from "./validation";
+import { SignatureDatabase } from "../SignatureDatabase";
 
 interface SignatureItem {
   name: string;
@@ -91,7 +88,7 @@ export interface SignatureHandlers {
 }
 
 export function createSignatureHandlers(
-  database: SignatureDataProvider,
+  database: SignatureDatabase,
   logger: Logger,
 ): SignatureHandlers {
   return {

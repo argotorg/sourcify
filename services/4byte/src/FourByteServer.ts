@@ -25,7 +25,6 @@ export interface ServerOptions {
 export class FourByteServer {
   app: express.Application;
   port: string | number;
-  pool: Pool;
   database: SignatureDatabase;
   httpServer?: http.Server;
 
@@ -33,13 +32,10 @@ export class FourByteServer {
     this.app = express();
     this.port = options.port;
     logger.info("4Byte Server port set", { port: this.port });
-    this.pool = new Pool(options.databaseConfig);
-    this.database = new SignatureDatabase(this.pool, {
-      schema: options.databaseConfig.schema,
-    });
+    this.database = new SignatureDatabase(options.databaseConfig);
 
     // Check database health during initialization
-    this.checkDatabaseHealth();
+    this.database.checkDatabaseHealth();
 
     this.app.use(cors());
     this.app.use(express.json());
@@ -59,7 +55,7 @@ export class FourByteServer {
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
 
     this.app.get("/health", async (_req, res) => {
-      await this.pool.query("SELECT 1;");
+      await this.database.checkDatabaseHealth();
       res.status(200).json({ status: "ok", service: "4byte-api" });
     });
 
@@ -71,7 +67,7 @@ export class FourByteServer {
             logger.error("Error while closing HTTP server", { error });
             process.exitCode = 1;
           }
-          await this.pool.end();
+          await this.database.close();
           process.exit(0);
         });
       }
@@ -79,29 +75,6 @@ export class FourByteServer {
 
     process.on("SIGTERM", shutdown);
     process.on("SIGINT", shutdown);
-  }
-
-  async checkDatabaseHealth(): Promise<void> {
-    // Checking pool health before continuing
-    try {
-      logger.debug("Checking database pool health for 4byte service");
-      await this.pool.query("SELECT 1;");
-      logger.info("Database connection healthy", {
-        host: this.pool.options.host,
-        port: this.pool.options.port,
-        database: this.pool.options.database,
-        user: this.pool.options.user,
-      });
-    } catch (error) {
-      logger.error("Cannot connect to 4byte database", {
-        host: this.pool.options.host,
-        port: this.pool.options.port,
-        database: this.pool.options.database,
-        user: this.pool.options.user,
-        error,
-      });
-      throw new Error("Cannot connect to 4byte database");
-    }
   }
 
   async listen(): Promise<void> {
@@ -131,7 +104,7 @@ export class FourByteServer {
         });
       });
     }
-    await this.pool.end();
+    await this.database.close();
     logger.info("4byte database connection closed");
   }
 }

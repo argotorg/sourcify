@@ -1,5 +1,7 @@
 import { Pool } from "pg";
 import { SignatureType } from "./utils/signature-util";
+import { DatabaseConfig } from "./FourByteServer";
+import logger from "./logger";
 
 export interface SignatureLookupRow {
   signature: string;
@@ -17,35 +19,24 @@ export interface SignatureStatsRow {
   refreshed_at: Date;
 }
 
-export interface SignatureDataProvider {
-  getSignatureByHash32AndType(
-    hash: Buffer,
-    type: SignatureType,
-  ): Promise<SignatureLookupRow[]>;
-  getSignatureByHash4AndType(
-    hash: Buffer,
-    type: SignatureType,
-  ): Promise<SignatureLookupRow[]>;
-  searchSignaturesByPatternAndType(
-    pattern: string,
-    type: SignatureType,
-    limit?: number,
-  ): Promise<SignatureSearchRow[]>;
-  getSignatureCounts(): Promise<SignatureStatsRow[]>;
-}
-
 export interface SignatureDatabaseOptions {
   schema?: string;
 }
 
-export class SignatureDatabase implements SignatureDataProvider {
+export class SignatureDatabase {
   private readonly schema: string;
+  private readonly pool: Pool;
 
-  constructor(
-    private readonly pool: Pool,
-    options: SignatureDatabaseOptions = {},
-  ) {
-    this.schema = options.schema ?? "public";
+  constructor(databaseConfig: DatabaseConfig) {
+    this.schema = databaseConfig.schema ?? "public";
+    this.pool = new Pool({
+      host: databaseConfig.host,
+      port: databaseConfig.port,
+      database: databaseConfig.database,
+      user: databaseConfig.user,
+      password: databaseConfig.password,
+      max: databaseConfig.max,
+    });
   }
 
   private qualify(table: string): string {
@@ -142,5 +133,32 @@ export class SignatureDatabase implements SignatureDataProvider {
 
     const result = await this.pool.query<SignatureStatsRow>(query);
     return result.rows;
+  }
+
+  async checkDatabaseHealth(): Promise<void> {
+    // Checking pool health before continuing
+    try {
+      logger.debug("Checking database pool health for 4byte service");
+      await this.pool.query("SELECT 1;");
+      logger.info("Database connection healthy", {
+        host: this.pool.options.host,
+        port: this.pool.options.port,
+        database: this.pool.options.database,
+        user: this.pool.options.user,
+      });
+    } catch (error) {
+      logger.error("Cannot connect to 4byte database", {
+        host: this.pool.options.host,
+        port: this.pool.options.port,
+        database: this.pool.options.database,
+        user: this.pool.options.user,
+        error,
+      });
+      throw new Error("Cannot connect to 4byte database");
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
   }
 }
