@@ -96,7 +96,20 @@
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
     },
-    "rpc": ["https://blast-rpc.publicnode.com", "https://blast.drpc.org"]
+    "rpc": [
+      {
+        "type": "APIKeyRPC",
+        "url": "https://blast-mainnet.g.alchemy.com/v2/{API_KEY}",
+        "apiKeyEnvName": "ALCHEMY_API_KEY"
+      },
+      {
+        "type": "APIKeyRPC",
+        "url": "https://{SUBDOMAIN}.blast-mainnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
+        "traceSupport": "debug_traceTransaction"
+      }
+    ]
   },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
