@@ -319,6 +319,9 @@ jobs:
           name: lint
           command: npx lerna run check
       - run:
+          name: init the database submodule
+          command: cd services/database && git submodule update --init
+      - run:
           name: test
           command: npx lerna run test --stream
           environment:
