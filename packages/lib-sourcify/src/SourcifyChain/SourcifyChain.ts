@@ -177,7 +177,7 @@ export class SourcifyChain {
   private async executeWithCircuitBreaker<T>(
     operation: (rpc: SourcifyRpcWithProvider) => Promise<{
       result?: T;
-      rpcFailed?: boolean;
+      error?: Error;
       tryNext?: boolean;
     }>,
     operationName: string,
@@ -188,13 +188,14 @@ export class SourcifyChain {
       }
 
       try {
-        const { result, rpcFailed, tryNext } = await operation(rpc);
+        const { result, error, tryNext } = await operation(rpc);
 
-        if (rpcFailed) {
+        if (error) {
           logWarn('RPC operation failed, marking as unhealthy', {
             operation: operationName,
             maskedUrl: rpc.maskedUrl,
             chainId: this.chainId,
+            error,
           });
           this.recordRpcFailure(rpc);
           continue;
@@ -256,7 +257,7 @@ export class SourcifyChain {
           this.rejectInMs(rpc.maskedUrl),
         ]);
       } catch (err) {
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
 
       if (tx instanceof TransactionResponse) {
@@ -290,7 +291,7 @@ export class SourcifyChain {
           this.rejectInMs(rpc.maskedUrl),
         ]);
       } catch (err) {
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
 
       if (receipt instanceof TransactionReceipt) {
@@ -559,7 +560,7 @@ export class SourcifyChain {
           });
           return { result: bytecode };
         } catch (err) {
-          return { rpcFailed: true };
+          return { error: err as Error };
         }
       },
       `getBytecode(${address}${blockNumber ? ` at block ${blockNumber}` : ''})`,
@@ -593,7 +594,7 @@ export class SourcifyChain {
         }
         return { result: block };
       } catch (err) {
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
     }, `getBlock(${blockNumber})`);
   };
@@ -616,7 +617,7 @@ export class SourcifyChain {
         });
         return { result: blockNumber };
       } catch (err) {
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
     }, 'getBlockNumber');
   };
@@ -640,7 +641,7 @@ export class SourcifyChain {
         });
         return { result: data };
       } catch (err) {
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
     }, `getStorageAt(${address}, ${position})`);
   };
@@ -667,7 +668,7 @@ export class SourcifyChain {
         if ((err as EthersError)?.code === 'CALL_EXCEPTION') {
           throw err;
         }
-        return { rpcFailed: true };
+        return { error: err as Error };
       }
     }, `call(${transaction.to})`);
   };
