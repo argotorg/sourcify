@@ -445,5 +445,17 @@
       "type": "single",
       "expectedStatus": "partial"
     }
+  ],
+  "81457": [
+    {
+      "address": "0x13ce2ca4602d5d1dd323014cd5a4E8414D310A06",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    },
+    {
+      "address": "0xCc20a2a0558c4C8D04266AE66F8acdB575E9d9ED",
+      "type": "single",
+      "expectedStatus": "perfect"
+    }
   ]
 }
