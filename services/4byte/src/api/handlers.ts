@@ -25,21 +25,25 @@ interface SignatureResult {
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   const canonicalSignatures = getCanonicalSignatures();
 
-  for (const hash in response.function) {
-    const expectedCanonical = canonicalSignatures[hash];
-    if (expectedCanonical !== undefined) {
-      for (const signatureItem of response.function[hash]) {
-        signatureItem.filtered =
-          signatureItem.name !== expectedCanonical.signature;
+  for (const type of Object.values(SignatureType)) {
+    for (const hash in response[type]) {
+      const expectedCanonical = canonicalSignatures[hash];
+      if (expectedCanonical !== undefined) {
+        for (const signatureItem of response[type][hash]) {
+          signatureItem.filtered =
+            signatureItem.name !== expectedCanonical.signature;
+        }
       }
     }
   }
 
   if (shouldFilter) {
-    for (const hash in response.function) {
-      response.function[hash] = response.function[hash].filter(
-        (signatureItem) => !signatureItem.filtered,
-      );
+    for (const type of Object.values(SignatureType)) {
+      for (const hash in response[type]) {
+        response[type][hash] = response[type][hash].filter(
+          (signatureItem) => !signatureItem.filtered,
+        );
+      }
     }
   }
 }
@@ -68,12 +72,18 @@ function sanitizeFilter(filter: string | undefined): boolean {
   return filter === "true";
 }
 
-type LookupSignaturesRequest = Request<
-  unknown,
-  unknown,
-  unknown,
-  { function?: string; event?: string; error?: string; filter?: string }
->;
+type LookupSignaturesRequest = Omit<Request, "query"> & {
+  query: {
+    function?: string;
+    event?: string;
+    error?: string;
+    filter?: "true" | "false";
+  };
+};
+
+type SearchSignaturesRequest = Omit<Request, "query"> & {
+  query: { query: string; filter?: "true" | "false" };
+};
 
 export interface SignatureHandlers {
   lookupSignatures: (
@@ -81,7 +91,7 @@ export interface SignatureHandlers {
     res: Response,
   ) => Promise<void>;
   searchSignatures: (
-    req: Request<unknown, unknown, unknown, { query: string; filter?: string }>,
+    req: SearchSignaturesRequest,
     res: Response,
   ) => Promise<void>;
   getSignaturesStats: (req: Request, res: Response) => Promise<void>;
