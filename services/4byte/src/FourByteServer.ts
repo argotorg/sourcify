@@ -58,23 +58,8 @@ export class FourByteServer {
       await this.database.checkDatabaseHealth();
       res.status(200).json({ status: "ok", service: "4byte-api" });
     });
-
-    const shutdown = async (signal: NodeJS.Signals) => {
-      logger.info(`Received ${signal}. Shutting down gracefully...`);
-      if (this.httpServer) {
-        this.httpServer.close(async (error) => {
-          if (error) {
-            logger.error("Error while closing HTTP server", { error });
-            process.exitCode = 1;
-          }
-          await this.database.close();
-          process.exit(0);
-        });
-      }
-    };
-
-    process.on("SIGTERM", shutdown);
-    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", () => this.shutdown("SIGTERM"));
+    process.on("SIGINT", () => this.shutdown("SIGINT"));
   }
 
   async listen(): Promise<void> {
@@ -90,8 +75,8 @@ export class FourByteServer {
     });
   }
 
-  async shutdown(): Promise<void> {
-    logger.info("Shutting down 4byte server");
+  async shutdown(signal?: NodeJS.Signals): Promise<void> {
+    logger.info(`Shutting down 4byte server ${signal ? `on ${signal}` : ""}`);
     if (this.httpServer) {
       await new Promise<void>((resolve) => {
         this.httpServer!.close((error?: Error) => {
@@ -106,5 +91,6 @@ export class FourByteServer {
     }
     await this.database.close();
     logger.info("4byte database connection closed");
+    process.exit(0);
   }
 }
