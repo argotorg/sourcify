@@ -32,6 +32,8 @@ export function createFetchRequest(rpc: FetchRequestRPC): FetchRequest {
   return ethersFetchReq;
 }
 
+class RpcFailure extends Error {}
+
 export type SourcifyChainMap = {
   [chainId: string]: SourcifyChain;
 };
@@ -206,12 +208,12 @@ export class SourcifyChain {
             maskedUrl: rpc.maskedUrl,
             chainId: this.chainId,
           });
-          this.recordRpcSuccess(rpc);
+          // Don't record success here, as RPC might have been skipped in this case
           continue;
+        } else if (result !== undefined) {
+          this.recordRpcSuccess(rpc);
+          return result as T;
         }
-
-        this.recordRpcSuccess(rpc);
-        return result as T;
       } catch (err) {
         logError('RPC operation threw error', {
           operation: operationName,
@@ -329,9 +331,13 @@ export class SourcifyChain {
       );
     }
 
-    // Try sequentially all RPCs with trace support
-    for (const rpc of this.rpcs) {
-      if (!rpc.traceSupport || !rpc.provider) continue;
+    return this.executeWithCircuitBreaker(async (rpc) => {
+      if (!rpc.provider) {
+        throw new Error('No provider configured for this RPC');
+      }
+      if (!rpc.traceSupport) {
+        return { tryNext: true };
+      }
 
       const { traceSupport: type } = rpc;
 
@@ -349,9 +355,12 @@ export class SourcifyChain {
             address,
             rpc,
           );
-          return creationBytecode;
+          return { result: creationBytecode };
         } catch (e: any) {
-          // Catch to continue with the next provider
+          // Only RpcFailure errors indicate an unhealthy RPC
+          if (e instanceof RpcFailure) {
+            return { error: e as Error };
+          }
           logWarn('Failed to fetch creation bytecode from parity traces', {
             creatorTxHash,
             address,
@@ -359,7 +368,7 @@ export class SourcifyChain {
             chainId: this.chainId,
             error: e.message,
           });
-          continue;
+          return { tryNext: true };
         }
       }
       // Geth type `debug_traceTransaction`
@@ -376,9 +385,12 @@ export class SourcifyChain {
             address,
             rpc,
           );
-          return creationBytecode;
+          return { result: creationBytecode };
         } catch (e: any) {
-          // Catch to continue with the next provider
+          // Only RpcFailure errors indicate an unhealthy RPC
+          if (e instanceof RpcFailure) {
+            return { error: e as Error };
+          }
           logWarn('Failed to fetch creation bytecode from geth traces', {
             creatorTxHash,
             address,
@@ -386,18 +398,12 @@ export class SourcifyChain {
             chainId: this.chainId,
             error: e.message,
           });
-          continue;
+          return { tryNext: true };
         }
       }
-    }
-    throw new Error(
-      'Couldnt get the creation bytecode for factory ' +
-        address +
-        ' with tx ' +
-        creatorTxHash +
-        ' on chain ' +
-        this.chainId,
-    );
+
+      return { tryNext: true };
+    }, `getCreationBytecodeForFactory(${creatorTxHash}, ${address})`);
   };
 
   /**
@@ -415,7 +421,9 @@ export class SourcifyChain {
     const traces = await Promise.race([
       provider.send('trace_transaction', [creatorTxHash]),
       this.rejectInMs(rpc.maskedUrl),
-    ]);
+    ]).catch((err) => {
+      throw new RpcFailure(err.message);
+    });
     if (traces instanceof Array && traces.length > 0) {
       logInfo('Fetched tx traces', {
         creatorTxHash,
@@ -465,7 +473,9 @@ export class SourcifyChain {
         { tracer: 'callTracer' },
       ]),
       this.rejectInMs(rpc.maskedUrl),
-    ]);
+    ]).catch((err) => {
+      throw new RpcFailure(err.message);
+    });
     if (traces?.calls instanceof Array && traces.calls.length > 0) {
       logInfo('Fetched tx traces', {
         creatorTxHash,
