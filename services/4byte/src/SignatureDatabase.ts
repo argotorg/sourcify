@@ -14,7 +14,6 @@ export interface SignatureSearchRow {
 export interface SignatureStatsRow {
   signature_type: SignatureType;
   count: string;
-  created_at: Date;
   refreshed_at: Date;
 }
 
