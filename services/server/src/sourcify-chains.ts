@@ -178,10 +178,43 @@ function buildCustomRpcs(
         type: "FetchRequest",
         url: sourcifyRpc.url,
         traceSupport: sourcifyRpc.traceSupport,
-        headers: sourcifyRpc.headers?.map(({ headerName, headerValue }) => ({
-          headerName,
-          headerValue: headerValue || "",
-        })),
+        headers: sourcifyRpc.headers?.map(
+          // Replace headerEnvName with headerValue in rpc
+          ({ headerName, headerValue, headerEnvName }) => {
+            if (headerValue) {
+              if (headerEnvName) {
+                logger.warn(
+                  `Header value already set for ${headerName} on ${sourcifyRpc.url}, ignoring headerEnvName`,
+                  {
+                    url: sourcifyRpc.url,
+                    headerName,
+                    headerEnvName,
+                  },
+                );
+              }
+              return {
+                headerName,
+                headerValue: headerValue,
+              };
+            }
+
+            const envValue = process.env[headerEnvName || ""] || "";
+            if (!envValue) {
+              logger.warn(
+                `No env value found for ${headerEnvName} on ${sourcifyRpc.url}, leaving value empty`,
+                {
+                  url: sourcifyRpc.url,
+                  headerName,
+                  headerEnvName,
+                },
+              );
+            }
+            return {
+              headerName,
+              headerValue: envValue,
+            };
+          },
+        ),
       };
       rpcs.push({
         rpc: fetchRequestRpc,
@@ -234,18 +267,6 @@ for (const chain of allChains) {
     if (!rpcs.length) {
       rpcs = buildCustomRpcs(chain.rpc);
     }
-
-    // Replace headerEnvName with headerValue in rpc
-    sourcifyExtension.rpc?.forEach((rpc) => {
-      if (typeof rpc === "object" && "headers" in rpc) {
-        rpc.headers?.forEach((header) => {
-          if (header.headerEnvName) {
-            header.headerValue = process.env[header.headerEnvName] || "";
-            delete header.headerEnvName;
-          }
-        });
-      }
-    });
 
     // sourcifyExtension is spread later to overwrite chains.json values
     // Exclude rpc from sourcifyExtension as we now use rpcs
