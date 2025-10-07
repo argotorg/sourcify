@@ -1329,14 +1329,7 @@
   },
   "25": {
     "sourcifyName": "Cronos Mainnet Beta",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_CRONOS"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    }
+    "supported": true
   },
   "1339": {
     "sourcifyName": "Elysium Mainnet Chain",
