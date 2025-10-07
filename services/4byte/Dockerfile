@@ -25,7 +25,6 @@ COPY package-lock.json ./package-lock.json
 COPY lerna.json ./lerna.json
 COPY nx.json ./nx.json
 
-COPY --from=builder /home/app/packages/ ./packages/
 COPY --from=builder /home/app/services/4byte/ ./services/4byte/
 
 RUN npm ci --workspace=sourcify-4byte --include-workspace-root --omit=dev
