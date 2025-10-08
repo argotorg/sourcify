@@ -30,7 +30,18 @@ const server = new FourByteServer({
 // Enable Swagger UI for CLI usage
 const apiSpecPath = path.join(__dirname, "openapi.yaml");
 const openApiSpec = yaml.load(apiSpecPath);
-server.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+server.app.get("/api-docs/swagger.json", (req, res) => {
+  res.json(openApiSpec);
+});
+server.app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(openApiSpec, {
+    customSiteTitle:
+      "Sourcify Ethereum Function, Event, and Error Signatures API",
+    customfavIcon: "https://sourcify.dev/favicon.ico",
+  }),
+);
 
 server
   .listen()
