@@ -27,10 +27,17 @@ jobs:
     docker:
       - image: cimg/node:22.5.1
       - image: postgres:15-alpine
+        name: sourcify-db
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
           POSTGRES_PASSWORD: sourcify
+      - image: postgres:15-alpine
+        name: fourbytes-db
+        environment:
+          POSTGRES_DB: fourbytes_test_db
+          POSTGRES_USER: fourbytes
+          POSTGRES_PASSWORD: fourbytes
 
     working_directory: ~/sourcify
     parameters:
@@ -52,15 +59,23 @@ jobs:
           name: lint
           command: npx lerna run check
       - run:
+          name: init the database submodule
+          command: cd services/database && git submodule update --init
+      - run:
           name: test
           command: npx lerna run test --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
-            SOURCIFY_POSTGRES_HOST: "localhost"
+            SOURCIFY_POSTGRES_HOST: "sourcify-db"
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432
+            SOURCIFY_POSTGRES_PORT: 5432 # On it's own db container
+            FOURBYTES_POSTGRES_HOST: "fourbytes-db"
+            FOURBYTES_POSTGRES_DB: "fourbytes_test_db"
+            FOURBYTES_POSTGRES_USER: "fourbytes"
+            FOURBYTES_POSTGRES_PASSWORD: "fourbytes"
+            FOURBYTES_POSTGRES_PORT: 5432 # On it's own db container
       - run:
           name: create lcov reports
           command: npx lerna run cov:lcov
@@ -70,6 +85,7 @@ jobs:
     docker:
       - image: cimg/node:22.5.1
       - image: postgres:15-alpine
+        name: sourcify-db
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
@@ -94,7 +110,7 @@ jobs:
           command: npm install && npx lerna run build --scope=sourcify-server && cd services/server && npm run test:chains
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
-            SOURCIFY_POSTGRES_HOST: "localhost"
+            SOURCIFY_POSTGRES_HOST: "sourcify-db"
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"

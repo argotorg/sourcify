@@ -1,0 +1,8 @@
+{
+  "extension": [".spec.ts"],
+  "require": [
+    "ts-node/register",
+    "./test/load-env.js"
+  ],
+  "timeout": 30000
+}

@@ -1,5 +1,4 @@
 import { id as keccak256str, Fragment, JsonFragment } from "ethers";
-import canonicalSignaturesData from "./canonical-signatures.json";
 
 export enum SignatureType {
   Function = "function",
@@ -43,8 +42,4 @@ function getSignatureData(fragment: Fragment): SignatureData {
     signatureHash32: keccak256str(signature),
     signatureType: fragment.type as SignatureType,
   };
-}
-
-export function getCanonicalSignatures() {
-  return canonicalSignaturesData as Record<string, { signature?: string }>;
 }

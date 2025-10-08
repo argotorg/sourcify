@@ -1,8 +1,22 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  title: Signature Database API
-  description: API for signature database lookup, search, and statistics
+  title: Sourcify Ethereum Function, Event, and Error Signatures API
+  description: API for Ethereum function, event, and error signatures lookup, search, and statistics
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://github.com/argotorg/sourcify/blob/master/LICENSE
+  contact:
+    name: Sourcify
+    url: "https://sourcify.dev"
+    email: hello@sourcify.dev
+servers:
+  - url: https://api.4byte.sourcify.dev
+    description: Production server
+  - url: https://api.4byte.staging.sourcify.dev
+    description: Staging server
+  - url: http://localhost:4444
+    description: Local development server address on default port 4444.
 
 paths:
   /signature-database/v1/lookup:
@@ -158,6 +172,27 @@ paths:
                     function: 125847
                     event: 8329
                     error: 2156
+  /health:
+    get:
+      summary: Check server health
+      description: Check if the server is running
+      responses:
+        "200":
+          description: The server is running
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                Alive and kicking!
+        "500":
+          description: Error checking health
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:
+                Error checking database health
 
 components:
   schemas:
