@@ -35,7 +35,10 @@ export class FourByteServer {
     this.database = new SignatureDatabase(options.databaseConfig);
 
     // Check database health during initialization
-    this.database.checkDatabaseHealth();
+    this.database.checkDatabaseHealth().catch((error) => {
+      logger.error("Error checking database health", { error });
+      process.exit(1);
+    });
 
     this.app.use(cors());
     this.app.use(express.json());
