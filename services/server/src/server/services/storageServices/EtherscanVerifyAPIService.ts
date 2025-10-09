@@ -2,6 +2,8 @@ import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
+import { Database } from "../utils/Database";
+import { SourcifyDatabaseService } from "./SourcifyDatabaseService";
 
 export type EtherscanVerifyAPIIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -262,16 +264,18 @@ export interface EtherscanVerifyAPIServiceOptions {
 }
 
 export class EtherscanVerifyAPIService implements WStorageService {
-  IDENTIFIER: WStorageIdentifiers;
+  IDENTIFIER: EtherscanVerifyAPIIdentifiers;
+  private database: Database;
 
   private readonly options: Required<EtherscanVerifyAPIServiceOptions>;
 
   constructor(
     identifier: EtherscanVerifyAPIIdentifiers,
-    _unused: unknown,
+    sourcifyDatabaseService: SourcifyDatabaseService,
     options: EtherscanVerifyAPIServiceOptions,
   ) {
     this.IDENTIFIER = identifier;
+    this.database = sourcifyDatabaseService.database;
     this.options = {
       chainApiUrls: options.chainApiUrls || {},
       apiKeys: options.apiKeys || {},
@@ -298,7 +302,13 @@ export class EtherscanVerifyAPIService implements WStorageService {
     return true;
   }
 
-  async storeVerification(verification: VerificationExport): Promise<void> {
+  async storeVerification(
+    verification: VerificationExport,
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<void> {
     const submissionContext = {
       identifier: this.IDENTIFIER,
       chainId: verification.chainId,
@@ -326,6 +336,27 @@ export class EtherscanVerifyAPIService implements WStorageService {
       ...submissionContext,
       receiptId: response.result,
     });
+
+    if (!jobData?.verificationId) {
+      return;
+    }
+
+    try {
+      await this.database.upsertExternalVerification(
+        jobData.verificationId,
+        this.IDENTIFIER,
+        {
+          verificationId: response.result,
+        },
+      );
+    } catch (error) {
+      logger.warn("Failed to record external verification receipt", {
+        ...submissionContext,
+        verificationJobId: jobData.verificationId,
+        receiptId: response.result,
+        error,
+      });
+    }
   }
 
   private async submitVerification(
