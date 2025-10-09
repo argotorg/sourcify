@@ -283,8 +283,8 @@ export class StorageService {
           options.etherscanVerifyAPIServiceOptions[identifier];
 
         if (etherscanVerifyOptions) {
-          etherscanVerifyOptions.identifier = identifier;
           const service = new EtherscanVerifyAPIService(
+            identifier,
             this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
             etherscanVerifyOptions,
           );

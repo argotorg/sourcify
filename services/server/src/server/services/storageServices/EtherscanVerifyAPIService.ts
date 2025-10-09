@@ -15,13 +15,11 @@ const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
-    endpoint:
-      "https://api.routescan.io/v2/network/mainnet/evm/all/blockchains",
+    endpoint: "https://api.routescan.io/v2/network/mainnet/evm/all/blockchains",
   },
   {
     workspace: "testnet",
-    endpoint:
-      "https://api.routescan.io/v2/network/testnet/evm/all/blockchains",
+    endpoint: "https://api.routescan.io/v2/network/testnet/evm/all/blockchains",
   },
 ] as const;
 
@@ -261,8 +259,6 @@ export interface EtherscanVerifyAPIServiceOptions {
   apiKeys?: Record<string, string>;
   /** Optional fallback API key when chain-specific key is missing */
   defaultApiKey?: string;
-  /** Override the identifier so the same service implementation can back different explorers */
-  identifier?: WStorageIdentifiers;
   /** Timeout for HTTP requests (defaults to 15s) */
   requestTimeoutMs?: number;
 }
@@ -272,15 +268,14 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 export class EtherscanVerifyAPIService implements WStorageService {
   IDENTIFIER: WStorageIdentifiers;
 
-  private readonly options: Required<
-    Pick<
-      EtherscanVerifyAPIServiceOptions,
-      "chainApiUrls" | "apiKeys" | "defaultApiKey" | "requestTimeoutMs"
-    >
-  >;
+  private readonly options: Required<EtherscanVerifyAPIServiceOptions>;
 
-  constructor(_unused: unknown, options: EtherscanVerifyAPIServiceOptions) {
-    this.IDENTIFIER = options.identifier ?? WStorageIdentifiers.EtherscanVerify;
+  constructor(
+    identifier: EtherscanVerifyAPIIdentifiers,
+    _unused: unknown,
+    options: EtherscanVerifyAPIServiceOptions,
+  ) {
+    this.IDENTIFIER = identifier;
     this.options = {
       chainApiUrls: options.chainApiUrls || {},
       apiKeys: options.apiKeys ?? {},
