@@ -259,11 +259,7 @@ export interface EtherscanVerifyAPIServiceOptions {
   apiKeys?: Record<string, string>;
   /** Optional fallback API key when chain-specific key is missing */
   defaultApiKey?: string;
-  /** Timeout for HTTP requests (defaults to 15s) */
-  requestTimeoutMs?: number;
 }
-
-const DEFAULT_TIMEOUT_MS = 15_000;
 
 export class EtherscanVerifyAPIService implements WStorageService {
   IDENTIFIER: WStorageIdentifiers;
@@ -278,9 +274,8 @@ export class EtherscanVerifyAPIService implements WStorageService {
     this.IDENTIFIER = identifier;
     this.options = {
       chainApiUrls: options.chainApiUrls || {},
-      apiKeys: options.apiKeys ?? {},
-      defaultApiKey: options.defaultApiKey ?? "",
-      requestTimeoutMs: options.requestTimeoutMs ?? DEFAULT_TIMEOUT_MS,
+      apiKeys: options.apiKeys || {},
+      defaultApiKey: options.defaultApiKey || "",
     };
   }
 
@@ -344,7 +339,7 @@ export class EtherscanVerifyAPIService implements WStorageService {
     );
     const body = this.buildVerificationPayload(verification);
 
-    const response = await this.fetchWithTimeout(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -371,7 +366,7 @@ export class EtherscanVerifyAPIService implements WStorageService {
     params.append("compilerversion", this.getCompilerVersion(verification));
 
     const constructorArgs = this.getConstructorArguments(verification);
-    params.append("constructorArguements", constructorArgs ?? "");
+    params.append("constructorArguements", constructorArgs || "");
 
     return params.toString();
   }
@@ -387,7 +382,7 @@ export class EtherscanVerifyAPIService implements WStorageService {
     const jsonInput = {
       language: verification.compilation.language,
       sources,
-      settings: verification.compilation.jsonInput.settings ?? {},
+      settings: verification.compilation.jsonInput.settings || {},
     };
 
     return JSON.stringify(jsonInput);
@@ -452,30 +447,6 @@ export class EtherscanVerifyAPIService implements WStorageService {
     }
 
     return url.toString();
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit,
-  ): Promise<Response> {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      this.options.requestTimeoutMs,
-    );
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal });
-    } catch (error: any) {
-      if (error?.name === "AbortError") {
-        throw new Error(
-          `Explorer request timed out after ${this.options.requestTimeoutMs} ms`,
-        );
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
   private getApiBaseUrl(chainId: number): string | undefined {
