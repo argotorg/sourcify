@@ -167,6 +167,7 @@ export class ServerFixture {
         await resetDatabase(this.sourcifyDatabase);
         console.log("Resetting SourcifyDatabase");
       }
+      this.resetChainHealthStates();
     });
 
     after(async () => {
@@ -175,5 +176,20 @@ export class ServerFixture {
       rimraf.sync(config.get("repositoryV2.path"));
       rimraf.sync(path.join(testS3Path, testS3Bucket));
     });
+  }
+
+  resetChainHealthStates(): void {
+    const chains = this.server.chainRepository.sourcifyChainMap;
+    for (const chain of Object.values(chains)) {
+      for (const rpc of chain.rpcs) {
+        if (rpc.health) {
+          rpc.health = {
+            consecutiveFailures: 0,
+            nextRetryTime: undefined,
+          };
+        }
+      }
+    }
+    console.log("Reset RPC health states for all chains");
   }
 }

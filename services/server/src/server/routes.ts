@@ -30,21 +30,19 @@ router.get("/chains", (_req, res) => {
   const chainRepository = _req.app.get("chainRepository") as ChainRepository;
   const sourcifyChainsArray = chainRepository.sourcifyChainsArray;
   const sourcifyChains = sourcifyChainsArray.map(
-    ({
-      rpcWithoutApiKeys,
-      name,
-      title,
-      chainId,
-      supported,
-      etherscanApi,
-      traceSupportedRPCs,
-    }) => {
+    ({ rpcs, name, title, chainId, supported, etherscanApi }) => {
       return {
         name,
         title,
         chainId,
-        rpc: rpcWithoutApiKeys,
-        traceSupportedRPCs,
+        rpc: rpcs
+          .map((r) => r.urlWithoutApiKey)
+          .filter((url) => url !== undefined),
+        traceSupportedRPCs: rpcs
+          .map((r, index) =>
+            r.traceSupport ? { type: r.traceSupport, index } : null,
+          )
+          .filter((r) => r !== null),
         supported,
         etherscanAPI: etherscanApi?.supported ?? false, // Needed in the UI
       };

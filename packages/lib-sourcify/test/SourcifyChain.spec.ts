@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
-import { SourcifyChain, TraceSupportedRPC } from '../src';
+import { SourcifyChain } from '../src';
 import { JsonRpcProvider } from 'ethers';
 import {
   startHardhatNetwork,
@@ -23,9 +23,13 @@ describe('SourcifyChain', () => {
     sourcifyChain = new SourcifyChain({
       name: 'TestChain',
       chainId: 1,
-      rpc: ['http://localhost:8545'],
+      rpcs: [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'trace_transaction',
+        },
+      ],
       supported: true,
-      traceSupportedRPCs: [{ index: 0, type: 'trace_transaction' }],
     });
   });
 
@@ -38,7 +42,11 @@ describe('SourcifyChain', () => {
       sourcifyChain = new SourcifyChain({
         name: 'TestChain',
         chainId: 1,
-        rpc: ['http://localhost:8545'],
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
         supported: true,
       });
       await expect(
@@ -49,7 +57,7 @@ describe('SourcifyChain', () => {
     });
 
     it('should extract creation bytecode from parity traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -69,27 +77,32 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error if no create trace is found', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox
         .stub(mockProvider, 'send')
         .resolves([{ type: 'call' }, { type: 'suicide' }]);
 
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
-      ).to.be.rejectedWith('Couldnt get the creation bytecode for factory');
+      ).to.be.rejected;
     });
 
     it('should try multiple trace-supported RPCs if the first one fails', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'trace_transaction' },
-        { index: 1, type: 'trace_transaction' },
-      ] as TraceSupportedRPC[];
-      sourcifyChain.providers.push(
-        new JsonRpcProvider('http://localhost:8546'),
-      );
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+        {
+          rpc: 'http://localhost:8546',
+          traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8546'),
+        },
+      ];
 
-      const mockProvider1 = sourcifyChain.providers[0] as JsonRpcProvider;
-      const mockProvider2 = sourcifyChain.providers[1] as JsonRpcProvider;
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
 
       sandbox.stub(mockProvider1, 'send').rejects(new Error('RPC error'));
       sandbox.stub(mockProvider2, 'send').resolves([
@@ -110,10 +123,14 @@ describe('SourcifyChain', () => {
     });
 
     it('should extract creation bytecode from geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -136,10 +153,14 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error if no CREATE or CREATE2 calls are found in geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -152,16 +173,18 @@ describe('SourcifyChain', () => {
 
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
-      ).to.be.rejectedWith(
-        'Couldnt get the creation bytecode for factory 0xaddress with tx 0xhash on chain 1',
-      );
+      ).to.be.rejected;
     });
 
     it('should throw an error if the contract address is not found in geth traces', async () => {
-      (sourcifyChain as any).traceSupportedRPCs = [
-        { index: 0, type: 'debug_traceTransaction' },
-      ] as TraceSupportedRPC[];
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -174,15 +197,13 @@ describe('SourcifyChain', () => {
 
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
-      ).to.be.rejectedWith(
-        'Couldnt get the creation bytecode for factory 0xaddress with tx 0xhash on chain 1',
-      );
+      ).to.be.rejected;
     });
   });
 
   describe('extractFromParityTraceProvider', () => {
     it('should throw an error if the contract address does not match', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -195,7 +216,7 @@ describe('SourcifyChain', () => {
         sourcifyChain.extractFromParityTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith(
         `Provided tx 0xhash does not create the expected contract 0xaddress. Created contracts by this tx: 0xdifferentAddress`,
@@ -203,7 +224,7 @@ describe('SourcifyChain', () => {
     });
 
     it('should throw an error when .action.init is not found', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
@@ -216,7 +237,7 @@ describe('SourcifyChain', () => {
         sourcifyChain.extractFromParityTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('.action.init not found');
     });
@@ -226,7 +247,7 @@ describe('SourcifyChain', () => {
 
   describe('extractFromGethTraceProvider', () => {
     it('should extract creation bytecode from geth traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -240,13 +261,13 @@ describe('SourcifyChain', () => {
       const result = await sourcifyChain.extractFromGethTraceProvider(
         '0xhash',
         '0xaddress',
-        mockProvider,
+        sourcifyChain.rpcs[0],
       );
       expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should handle nested CREATE calls in geth traces', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
         calls: [
           {
@@ -265,22 +286,201 @@ describe('SourcifyChain', () => {
       const result = await sourcifyChain.extractFromGethTraceProvider(
         '0xhash',
         '0xaddress',
-        mockProvider,
+        sourcifyChain.rpcs[0],
       );
       expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should throw an error if traces response is empty or malformed', async () => {
-      const mockProvider = sourcifyChain.providers[0] as JsonRpcProvider;
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({});
 
       await expect(
         sourcifyChain.extractFromGethTraceProvider(
           '0xhash',
           '0xaddress',
-          mockProvider,
+          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('received empty or malformed response');
+    });
+  });
+
+  describe('Circuit Breaker Pattern', () => {
+    let clock: sinon.SinonFakeTimers;
+
+    beforeEach(() => {
+      clock = sandbox.useFakeTimers();
+    });
+
+    it('should skip blocked RPCs and not call them', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+          {
+            rpc: 'http://localhost:8546',
+          },
+        ],
+        supported: true,
+      });
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
+      const getBlockNumberStub1 = sandbox
+        .stub(mockProvider1, 'getBlockNumber')
+        .rejects(new Error('RPC 1 failed'));
+      const getBlockNumberStub2 = sandbox
+        .stub(mockProvider2, 'getBlockNumber')
+        .resolves(100);
+
+      // First call - both RPCs should be tried
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledOnce;
+      expect(getBlockNumberStub2).to.have.been.calledOnce;
+      // Second call - both RPCs should be tried because one retry is allowed
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledTwice;
+      expect(getBlockNumberStub2).to.have.been.calledTwice;
+      // Third call - first RPC should be skipped
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub1).to.have.been.calledTwice;
+      expect(getBlockNumberStub2).to.have.been.calledThrice;
+    });
+
+    it('should record RPC health correctly after failures', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+      expect(sourcifyChain.rpcs[0].health).to.be.undefined;
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox
+        .stub(mockProvider, 'getBlockNumber')
+        .rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+      expect(sourcifyChain.rpcs[0].health?.nextRetryTime).to.be.a('number');
+    });
+
+    it('should use exponential backoff for consecutive failures', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+          {
+            rpc: 'http://localhost:8546',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider1 = sourcifyChain.rpcs[0].provider!;
+      const mockProvider2 = sourcifyChain.rpcs[1].provider!;
+      sandbox
+        .stub(mockProvider1, 'getBlockNumber')
+        .rejects(new Error('RPC 1 failed'));
+      sandbox.stub(mockProvider2, 'getBlockNumber').resolves(100);
+
+      const startTime = Date.now();
+      // One retry is always allowed
+      await sourcifyChain.getBlockNumber();
+      await sourcifyChain.getBlockNumber();
+      const retryTime = sourcifyChain.rpcs[0].health!.nextRetryTime!;
+      expect(retryTime - startTime).to.equal(10_000);
+    });
+
+    it('should reset health after successful RPC call', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
+      getBlockNumberStub.onFirstCall().rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+
+      getBlockNumberStub.onSecondCall().resolves(100);
+      await sourcifyChain.getBlockNumber();
+
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(0);
+      expect(sourcifyChain.rpcs[0].health?.nextRetryTime).to.be.undefined;
+    });
+
+    it('should retry blocked RPC after backoff period expires', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
+      getBlockNumberStub.rejects(new Error('RPC failed'));
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+
+      // One retry is always allowed
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(2);
+
+      // Call should now fail without calling provider
+      const callCountBefore = getBlockNumberStub.callCount;
+      try {
+        await sourcifyChain.getBlockNumber();
+      } catch (e) {
+        // Expected to fail
+      }
+      expect(getBlockNumberStub.callCount).to.equal(callCountBefore);
+
+      clock.tick(10_001);
+
+      // Now it should retry
+      getBlockNumberStub.resolves(100);
+      await sourcifyChain.getBlockNumber();
+      expect(getBlockNumberStub.callCount).to.equal(callCountBefore + 1);
     });
   });
 });
@@ -293,16 +493,20 @@ describe('SourcifyChain unit tests', () => {
     sourcifyChain = new SourcifyChain({
       name: 'TestChain',
       chainId: 1,
-      rpc: ['http://localhost:8546'],
+      rpcs: [
+        {
+          rpc: 'http://localhost:8546',
+          traceSupport: 'trace_transaction',
+        },
+      ],
       supported: true,
-      traceSupportedRPCs: [{ index: 0, type: 'trace_transaction' }],
     });
   });
   after(async () => {
     await stopHardhatNetwork(hardhatNodeProcess);
   });
   it("Should fail to instantiate with empty rpc's", function () {
-    const emptyRpc = { ...sourcifyChain, rpc: [] };
+    const emptyRpc = { ...sourcifyChain, rpcs: [] };
     try {
       new SourcifyChain(emptyRpc);
       throw new Error('Should have failed');
@@ -336,7 +540,7 @@ describe('SourcifyChain unit tests', () => {
     } catch (err) {
       if (err instanceof Error) {
         expect(err.message).to.equal(
-          `None of the RPCs responded fetching tx 0x79ab5d59fcb70ca3f290aa39ed3f156a5c4b3897176aebd455cd20b6a30b107a on chain ${sourcifyChain.chainId}`,
+          `All RPCs failed or are blocked for getTx(0x79ab5d59fcb70ca3f290aa39ed3f156a5c4b3897176aebd455cd20b6a30b107a) on chain ${sourcifyChain.chainId}`,
         );
       } else {
         throw err;

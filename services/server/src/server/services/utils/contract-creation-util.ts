@@ -1,7 +1,4 @@
-import {
-  ContractCreationFetcher,
-  SourcifyChain,
-} from "@ethereum-sourcify/lib-sourcify";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
 import logger from "../../../common/logger";
 
@@ -26,6 +23,14 @@ const VECHAIN_API_URL =
   "https://api.vechainstats.com/v2/contract/info?address=${ADDRESS}&expanded=true&VCS_API_KEY=";
 
 export const BINARY_SEARCH_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
+interface ContractCreationFetcher {
+  type: "scrape" | "api";
+  url: string;
+  maskedUrl?: string;
+  responseParser?: Function;
+  scrapeRegex?: string[];
+}
 
 function getApiContractCreationFetcher(
   url: string,
