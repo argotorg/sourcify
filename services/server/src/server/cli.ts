@@ -160,6 +160,18 @@ const server = new Server(
         ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
         : undefined,
     },
+    // TODO: add api keys for each chain
+    etherscanVerifyAPIServiceOptions: {
+      EtherscanVerify: {
+        defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
+      },
+      BlockscoutVerify: {
+        defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
+      },
+      RoutescanVerify: {
+        defaultApiKey: process.env.ROUTESCAN_API_KEY as string,
+      },
+    },
   },
 );
 

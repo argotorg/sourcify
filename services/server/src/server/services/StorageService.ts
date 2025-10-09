@@ -41,6 +41,11 @@ import {
 import { DatabaseOptions } from "./utils/Database";
 import { Field } from "./utils/database-util";
 import { VerifyErrorExport } from "./workers/workerTypes";
+import {
+  EtherscanVerifyAPIIdentifiers,
+  EtherscanVerifyAPIService,
+  EtherscanVerifyAPIServiceOptions,
+} from "./storageServices/EtherscanVerifyAPIService";
 
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
@@ -128,6 +133,11 @@ export interface StorageServiceOptions {
   sourcifyDatabaseServiceOptions?: DatabaseOptions;
   allianceDatabaseServiceOptions?: DatabaseOptions;
   s3RepositoryServiceOptions?: S3RepositoryServiceOptions;
+  etherscanVerifyAPIServiceOptions?: {
+    [WStorageIdentifiers.EtherscanVerify]?: EtherscanVerifyAPIServiceOptions;
+    [WStorageIdentifiers.BlockscoutVerify]?: EtherscanVerifyAPIServiceOptions;
+    [WStorageIdentifiers.RoutescanVerify]?: EtherscanVerifyAPIServiceOptions;
+  };
 }
 
 export class StorageService {
@@ -255,6 +265,41 @@ export class StorageService {
         );
       }
     }
+
+    // EtherscanVerifyAPIService
+    (
+      [
+        WStorageIdentifiers.EtherscanVerify,
+        WStorageIdentifiers.BlockscoutVerify,
+        WStorageIdentifiers.RoutescanVerify,
+      ] as Array<EtherscanVerifyAPIIdentifiers>
+    ).forEach((identifier) => {
+      if (
+        enabledServicesArray.includes(identifier) &&
+        enabledServicesArray.includes(RWStorageIdentifiers.SourcifyDatabase) &&
+        options.etherscanVerifyAPIServiceOptions
+      ) {
+        const etherscanVerifyOptions =
+          options.etherscanVerifyAPIServiceOptions[identifier];
+
+        if (etherscanVerifyOptions) {
+          etherscanVerifyOptions.identifier = identifier;
+          const service = new EtherscanVerifyAPIService(
+            this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
+            etherscanVerifyOptions,
+          );
+          this.wServices[service.IDENTIFIER] = service;
+        } else {
+          logger.error(
+            `${identifier} enabled, but options are not fully set`,
+            etherscanVerifyOptions,
+          );
+          throw new Error(
+            `${identifier} enabled, but options are not fully set`,
+          );
+        }
+      }
+    });
   }
 
   getRWServiceByConfigKey(configKey: RWStorageIdentifiers): RWStorageService {
