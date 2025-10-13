@@ -10,6 +10,7 @@ import { SignatureDatabase } from "../SignatureDatabase";
 interface SignatureItem {
   name: string;
   filtered: boolean;
+  hasVerifiedContract: boolean;
 }
 
 export interface SignatureHashMapping {
@@ -19,7 +20,6 @@ export interface SignatureHashMapping {
 interface SignatureResult {
   function: SignatureHashMapping;
   event: SignatureHashMapping;
-  error: SignatureHashMapping;
 }
 
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
@@ -52,6 +52,7 @@ function mapLookupResult(rows: SignatureLookupRow[]): SignatureItem[] {
   return rows.map((row) => ({
     name: row.signature,
     filtered: false,
+    hasVerifiedContract: row.has_verified_contract,
   }));
 }
 
@@ -76,7 +77,6 @@ type LookupSignaturesRequest = Omit<Request, "query"> & {
   query: {
     function?: string;
     event?: string;
-    error?: string;
     filter?: "true" | "false";
   };
 };
@@ -106,38 +106,27 @@ export function createSignatureHandlers(
       try {
         const functionHashes = sanitizeHashes(req.query.function);
         const eventHashes = sanitizeHashes(req.query.event);
-        const errorHashes = sanitizeHashes(req.query.error);
         const shouldFilter = sanitizeFilter(req.query.filter);
 
-        const result: SignatureResult = { function: {}, event: {}, error: {} };
+        const result: SignatureResult = { function: {}, event: {} };
 
-        /* eslint-disable indent */
-        const getSignatures = async (hash: string, type: SignatureType) => {
+        const getFunctionSignatures = async (hash: string) => {
           const rows =
             hash.length === 66
-              ? await database.getSignatureByHash32AndType(
-                  bytesFromString(hash)!,
-                  type,
-                )
-              : await database.getSignatureByHash4AndType(
-                  bytesFromString(hash)!,
-                  type,
-                );
+              ? await database.getSignatureByHash32(bytesFromString(hash)!)
+              : await database.getSignatureByHash4(bytesFromString(hash)!);
 
-          result[type][hash] = mapLookupResult(rows);
+          result.function[hash] = mapLookupResult(rows);
         };
-        /* eslint-enable indent */
+
+        const getEventSignatures = async (hash: string) => {
+          const rows = await database.getSignatureByHash32(bytesFromString(hash)!);
+          result.event[hash] = mapLookupResult(rows);
+        };
 
         await Promise.all([
-          ...functionHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Function),
-          ),
-          ...eventHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Event),
-          ),
-          ...errorHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Error),
-          ),
+          ...functionHashes.map(getFunctionSignatures),
+          ...eventHashes.map(getEventSignatures),
         ]);
 
         filterResponse(result, shouldFilter);
@@ -160,39 +149,31 @@ export function createSignatureHandlers(
         const searchQuery = req.query.query;
         const shouldFilter = sanitizeFilter(req.query.filter);
 
-        const result: SignatureResult = { function: {}, event: {}, error: {} };
+        const result: SignatureResult = { function: {}, event: {} };
 
-        const searchSignaturesInDb = async (
-          pattern: string,
-          type: SignatureType,
-        ) => {
-          const rows = await database.searchSignaturesByPatternAndType(
-            pattern,
-            type,
-          );
+        const rows = await database.searchSignaturesByPattern(searchQuery);
 
-          for (const row of rows) {
-            const hash =
-              type === SignatureType.Event
-                ? row.signature_hash_32
-                : row.signature_hash_4;
+        for (const row of rows) {
+          // Add signatures to both function and event categories since we can't reliably
+          // determine the type from signature text alone
+          const signatureItem = {
+            name: row.signature,
+            filtered: false,
+            hasVerifiedContract: row.has_verified_contract,
+          };
 
-            if (!result[type][hash]) {
-              result[type][hash] = [];
-            }
-
-            result[type][hash].push({
-              name: row.signature,
-              filtered: false,
-            });
+          // Add to function category using 4-byte hash
+          if (!result.function[row.signature_hash_4]) {
+            result.function[row.signature_hash_4] = [];
           }
-        };
+          result.function[row.signature_hash_4].push(signatureItem);
 
-        await Promise.all(
-          Object.values(SignatureType).map((type) =>
-            searchSignaturesInDb(searchQuery, type),
-          ),
-        );
+          // Add to event category using 32-byte hash
+          if (!result.event[row.signature_hash_32]) {
+            result.event[row.signature_hash_32] = [];
+          }
+          result.event[row.signature_hash_32].push(signatureItem);
+        }
 
         filterResponse(result, shouldFilter);
 

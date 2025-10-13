@@ -29,7 +29,7 @@ paths:
         - in: query
           name: function
           required: false
-          description: A comma-delimited list of function hashes with leading 0x prefix
+          description: A comma-delimited list of function or error hashes with leading 0x prefix. Since the original openchain.xyz API didn't support error signatures, we treat error signatures as function signatures. They are both 4 byte hashes.
           schema:
             type: string
           allowReserved: true
@@ -37,13 +37,6 @@ paths:
           name: event
           required: false
           description: A comma-delimited list of event hashes with leading 0x prefix
-          schema:
-            type: string
-          allowReserved: true
-        - in: query
-          name: error
-          required: false
-          description: A comma-delimited list of error hashes with leading 0x prefix
           schema:
             type: string
           allowReserved: true
@@ -73,20 +66,20 @@ paths:
                     "0xa9059cbb":
                       - name: "transfer(address,uint256)"
                         filtered: false
+                        hasVerifiedContract: true
                     "0x095ea7b3":
                       - name: "approve(address,uint256)"
                         filtered: false
+                        hasVerifiedContract: true
                   event:
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
                       - name: "Transfer(address,address,uint256)"
                         filtered: false
+                        hasVerifiedContract: true
                     "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
                       - name: "Approval(address,address,uint256)"
                         filtered: false
-                  error:
-                    "0x356680b7":
-                      - name: "InsufficientBalance(uint256,uint256)"
-                        filtered: false
+                        hasVerifiedContract: true
 
   /signature-database/v1/search:
     get:
@@ -112,7 +105,7 @@ paths:
           allowReserved: true
       responses:
         "200":
-          description: The resulting signatures
+          description: The resulting signatures. Note that error signatures are treated as function signatures.
           content:
             application/json:
               schema:
@@ -129,13 +122,15 @@ paths:
                     "0xa9059cbb":
                       - name: "transfer(address,uint256)"
                         filtered: false
+                        hasVerifiedContract: true
                       - name: "transferToken(address,uint256)"
                         filtered: true
+                        hasVerifiedContract: false
                   event:
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
                       - name: "Transfer(address,address,uint256)"
                         filtered: false
-                  error: {}
+                        hasVerifiedContract: true
 
   /signature-database/v1/stats:
     get:
@@ -163,15 +158,12 @@ paths:
                             type: number
                           event:
                             type: number
-                          error:
-                            type: number
               example:
                 ok: true
                 result:
                   count:
                     function: 125847
                     event: 8329
-                    error: 2156
   /health:
     get:
       summary: Check server health
@@ -208,6 +200,8 @@ components:
                   type: string
                 filtered:
                   type: boolean
+                hasVerifiedContract:
+                  type: boolean
         event:
           additionalProperties:
             type: array
@@ -218,13 +212,5 @@ components:
                   type: string
                 filtered:
                   type: boolean
-        error:
-          additionalProperties:
-            type: array
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                filtered:
+                hasVerifiedContract:
                   type: boolean
