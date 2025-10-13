@@ -91,5 +91,13 @@ export interface DatabaseOptions extends Options {
 }
 
 export function loadConfig(): Config {
-  return defaultConfig as Config;
+  const config = (defaultConfig as any) as Config;
+
+  for (const [chainId, chain] of Object.entries(config.chains)) {
+    if (!chain.chainId) {
+      chain.chainId = parseInt(chainId);
+    }
+  }
+
+  return config;
 }
