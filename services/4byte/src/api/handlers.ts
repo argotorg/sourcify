@@ -1,8 +1,16 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Logger } from "winston";
-import { SignatureLookupRow, SignatureStatsRow } from "../SignatureDatabase";
-import { SignatureType, getCanonicalSignatures } from "../utils/signature-util";
+import {
+  SignatureLookupRow,
+  SignatureStatsRow,
+  SignatureInsertResult,
+} from "../SignatureDatabase";
+import {
+  SignatureType,
+  getCanonicalSignatures,
+  validateSignature,
+} from "../utils/signature-util";
 import { bytesFromString } from "../utils/database-util";
 import { sendSignatureApiFailure } from "./validation";
 import { SignatureDatabase } from "../SignatureDatabase";
@@ -20,6 +28,12 @@ export interface SignatureHashMapping {
 interface SignatureResult {
   function: SignatureHashMapping;
   event: SignatureHashMapping;
+}
+
+interface ImportResult {
+  imported: { [signature: string]: string };
+  duplicated: { [signature: string]: string };
+  invalid: string[];
 }
 
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
@@ -85,6 +99,13 @@ type SearchSignaturesRequest = Omit<Request, "query"> & {
   query: { query: string; filter?: "true" | "false" };
 };
 
+type ImportSignaturesRequest = Omit<Request, "body"> & {
+  body: {
+    function?: string[];
+    event?: string[];
+  };
+};
+
 export interface SignatureHandlers {
   lookupSignatures: (
     req: LookupSignaturesRequest,
@@ -92,6 +113,10 @@ export interface SignatureHandlers {
   ) => Promise<void>;
   searchSignatures: (
     req: SearchSignaturesRequest,
+    res: Response,
+  ) => Promise<void>;
+  importSignatures: (
+    req: ImportSignaturesRequest,
     res: Response,
   ) => Promise<void>;
   getSignaturesStats: (req: Request, res: Response) => Promise<void>;
@@ -120,7 +145,9 @@ export function createSignatureHandlers(
         };
 
         const getEventSignatures = async (hash: string) => {
-          const rows = await database.getSignatureByHash32(bytesFromString(hash)!);
+          const rows = await database.getSignatureByHash32(
+            bytesFromString(hash)!,
+          );
           result.event[hash] = mapLookupResult(rows);
         };
 
@@ -190,6 +217,89 @@ export function createSignatureHandlers(
       }
     },
 
+    importSignatures: async (req, res) => {
+      try {
+        const functionSignatures = req.body.function || [];
+        const eventSignatures = req.body.event || [];
+
+        if (functionSignatures.length === 0 && eventSignatures.length === 0) {
+          res.status(StatusCodes.BAD_REQUEST).json({
+            ok: false,
+            error: "No signatures provided",
+          });
+          return;
+        }
+
+        // Process function and event signatures
+        const functionResults: ImportResult = {
+          imported: {},
+          duplicated: {},
+          invalid: [],
+        };
+        const eventResults: ImportResult = {
+          imported: {},
+          duplicated: {},
+          invalid: [],
+        };
+
+        const signatureTypes = [
+          // We'll iterate over once for function and once for event signatures. Same logic with different hash selectors (4byte and 32byte)
+          {
+            signatures: functionSignatures,
+            hashSelector: (r: SignatureInsertResult) => r.signature_hash_4,
+            results: functionResults,
+          },
+          {
+            signatures: eventSignatures,
+            hashSelector: (r: SignatureInsertResult) => r.signature_hash_32,
+            results: eventResults,
+          },
+        ];
+
+        for (const { signatures, hashSelector, results } of signatureTypes) {
+          if (signatures.length > 0) {
+            // Validate signatures
+            const validSigs: string[] = [];
+            for (const sig of signatures) {
+              if (validateSignature(sig)) {
+                validSigs.push(sig);
+              } else {
+                results.invalid.push(sig);
+              }
+            }
+
+            // Insert valid signatures and process results
+            if (validSigs.length > 0) {
+              const insertResults = await database.insertSignatures(validSigs);
+              for (const result of insertResults) {
+                const hash = hashSelector(result);
+
+                if (result.was_inserted) {
+                  results.imported[result.signature] = hash;
+                } else {
+                  results.duplicated[result.signature] = hash;
+                }
+              }
+            }
+          }
+        }
+
+        res.status(StatusCodes.OK).json({
+          ok: true,
+          result: {
+            function: functionResults,
+            event: eventResults,
+          },
+        });
+      } catch (error) {
+        logger.error("Error in importSignatures", { error });
+        sendSignatureApiFailure(
+          res,
+          "Unexpected failure during signature import",
+        );
+      }
+    },
+
     getSignaturesStats: async (_req, res) => {
       try {
         const rows: SignatureStatsRow[] = await database.getSignatureCounts();
@@ -200,9 +310,9 @@ export function createSignatureHandlers(
         };
 
         for (const row of rows) {
-          if ((row.signature_type as string) === 'unknown') {
+          if ((row.signature_type as string) === "unknown") {
             stats.count.unknown = parseInt(row.count, 10);
-          } else if ((row.signature_type as string) === 'total') {
+          } else if ((row.signature_type as string) === "total") {
             stats.count.total = parseInt(row.count, 10);
           } else {
             stats.count[row.signature_type] = parseInt(row.count, 10);

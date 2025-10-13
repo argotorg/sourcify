@@ -55,6 +55,10 @@ export class FourByteServer {
       validateSearchQuery,
       handlers.searchSignatures,
     );
+    this.app.post(
+      "/signature-database/v1/import",
+      handlers.importSignatures,
+    );
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
 
     this.app.get("/health", async (_req, res) => {
