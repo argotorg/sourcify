@@ -64,7 +64,7 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://blockscout.lisk.com/api"
+        "url": "https://blockscout.lisk.com"
       }
     }
   },
@@ -73,7 +73,7 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://unichain.blockscout.com/api"
+        "url": "https://unichain.blockscout.com"
       }
     }
   },
@@ -82,7 +82,7 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://blockscout.mainnet.taiko.xyz/api"
+        "url": "https://blockscout.mainnet.taiko.xyz"
       }
     }
   },
