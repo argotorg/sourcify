@@ -251,23 +251,6 @@
       "expectedStatus": "perfect"
     }
   ],
-  "25": [
-    {
-      "address": "0xE3023cd45E2Bc9Dd0e9a3F0484e4fBf40b4DF108",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xc6Cfb3f2D9D33FF1D0B77cE78c5dD6f790B5605A",
-      "type": "multiple",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x17eC36E07897612441463e85E9413891Dc06c1DC",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
   "252": [
     {
       "address": "0xEe44D634f97d8eE09850Ed04559E068D30276FE7",
