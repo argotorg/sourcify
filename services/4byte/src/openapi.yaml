@@ -135,7 +135,7 @@ paths:
   /signature-database/v1/stats:
     get:
       summary: Show database stats
-      description: Show the number of function, event and error signatures that the database has
+      description: function, event and error fields show the number of signatures that are associated with a verified contract and the respective type. unknown shows the number of signatures that are not associated with a verified contract, hence no type can be assigned. total shows the total number of signatures in the database.
       tags:
         - Signature Database
       responses:
@@ -158,12 +158,21 @@ paths:
                             type: number
                           event:
                             type: number
+                          error:
+                            type: number
+                          unknown:
+                            type: number
+                          total:
+                            type: number
               example:
                 ok: true
                 result:
                   count:
                     function: 125847
                     event: 8329
+                    error: 2156
+                    unknown: 15432
+                    total: 151764
   /health:
     get:
       summary: Check server health

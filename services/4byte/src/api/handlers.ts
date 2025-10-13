@@ -195,12 +195,18 @@ export function createSignatureHandlers(
         const rows: SignatureStatsRow[] = await database.getSignatureCounts();
 
         const stats = {
-          count: { function: 0, event: 0, error: 0 },
+          count: { function: 0, event: 0, error: 0, unknown: 0, total: 0 },
           metadata: { refreshed_at: "" },
         };
 
         for (const row of rows) {
-          stats.count[row.signature_type] = parseInt(row.count, 10);
+          if ((row.signature_type as string) === 'unknown') {
+            stats.count.unknown = parseInt(row.count, 10);
+          } else if ((row.signature_type as string) === 'total') {
+            stats.count.total = parseInt(row.count, 10);
+          } else {
+            stats.count[row.signature_type] = parseInt(row.count, 10);
+          }
 
           if (stats.metadata.refreshed_at === "") {
             stats.metadata.refreshed_at = row.refreshed_at.toISOString();
