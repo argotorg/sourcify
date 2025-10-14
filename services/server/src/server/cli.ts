@@ -22,6 +22,7 @@ import { LibSourcifyConfig, Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
+import { getEtherscanApiKeyEnvironmentVariables } from "./services/storageServices/EtherscanVerifyAPIService";
 
 // lib-sourcify configuration
 const libSourcifyConfig: LibSourcifyConfig = {};
@@ -160,10 +161,20 @@ const server = new Server(
         ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
         : undefined,
     },
-    // TODO: add api keys for each chain
     etherscanVerifyAPIServiceOptions: {
       EtherscanVerify: {
         defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
+        // Extract the etherscanApiKey env vars from the supported chains
+        apiKeys: Object.entries(
+          getEtherscanApiKeyEnvironmentVariables(),
+        ).reduce(
+          (acc, [chainId, envName]) => {
+            const value = process.env[envName];
+            if (value) acc[chainId] = value;
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
       },
       BlockscoutVerify: {
         defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
