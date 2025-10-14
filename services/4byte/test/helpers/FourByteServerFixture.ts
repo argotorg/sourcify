@@ -5,7 +5,7 @@ import { SignatureType } from "../../src/utils/signature-util";
 
 export interface TestSignature {
   signature: string;
-  type: SignatureType;
+  type?: SignatureType;
 }
 
 export type FourByteServerFixtureOptions = {
@@ -121,12 +121,14 @@ export class FourByteServerFixture {
           [sig.signature, hash32Buffer],
         );
 
-        // Insert compiled contract signature with mock compilation_id
-        const mockCompilationId = `00000000-0000-0000-0000-${hash32.slice(2, 14)}`;
-        await client.query(
-          "INSERT INTO compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-          [mockCompilationId, hash32Buffer, sig.type],
-        );
+        if (sig.type) {
+          // Insert compiled contract signature with mock compilation_id
+          const mockCompilationId = `00000000-0000-0000-0000-${hash32.slice(2, 14)}`;
+          await client.query(
+            "INSERT INTO compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+            [mockCompilationId, hash32Buffer, sig.type],
+          );
+        }
       }
 
       // Refresh the materialized view for stats
@@ -165,6 +167,9 @@ export class FourByteServerFixture {
     },
     { signature: "test_underscore()", type: SignatureType.Function },
     { signature: "testtunderscore()", type: SignatureType.Function },
+    { signature: "funcWithoutType()" },
+    { signature: "bothEventAndFunc()", type: SignatureType.Function },
+    { signature: "bothEventAndFunc()", type: SignatureType.Event },
     { signature: "allowance(address,address)", type: SignatureType.Function },
     {
       signature: "Transfer(address,address,uint256)",

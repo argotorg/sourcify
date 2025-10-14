@@ -559,6 +559,49 @@ describe("4byte API End-to-End Tests", function () {
       chai.expect(res.body.result).to.have.property("count");
       chai.expect(res.body.result.count).to.have.property("function");
       chai.expect(res.body.result.count).to.have.property("event");
+      chai.expect(res.body.result.count).to.have.property("error");
+      chai.expect(res.body.result.count).to.have.property("unknown");
+      chai.expect(res.body.result.count).to.have.property("total");
+
+      // total should be the number of unique signatures in the database
+      chai.expect(res.body.result.count.total).to.be.equal(
+        new Set( // Use a set to count unique signatures
+          FourByteServerFixture.testSignatures.map((sig) => sig.signature),
+        ).size,
+      );
+      // unknown should be the number of signatures that are not associated with a verified contract
+      chai
+        .expect(res.body.result.count.unknown)
+        .to.be.equal(
+          FourByteServerFixture.testSignatures.filter(
+            (sig) => sig.type === undefined,
+          ).length,
+        );
+      // error should be the number of error signatures
+      chai
+        .expect(res.body.result.count.error)
+        .to.be.equal(
+          FourByteServerFixture.testSignatures.filter(
+            (sig) => sig.type === SignatureType.Error,
+          ).length,
+        );
+      // function should be the number of function signatures
+      chai
+        .expect(res.body.result.count.function)
+        .to.be.equal(
+          FourByteServerFixture.testSignatures.filter(
+            (sig) => sig.type === SignatureType.Function,
+          ).length,
+        );
+      // event should be the number of event signatures
+      chai
+        .expect(res.body.result.count.event)
+        .to.be.equal(
+          FourByteServerFixture.testSignatures.filter(
+            (sig) => sig.type === SignatureType.Event,
+          ).length,
+        );
+
       // refreshed_at
       chai.expect(res.body.result).to.have.property("metadata");
       chai.expect(res.body.result.metadata).to.have.property("refreshed_at");

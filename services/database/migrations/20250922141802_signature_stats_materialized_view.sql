@@ -16,7 +16,7 @@ $$;
 -- Includes both signatures with types (from compiled_contracts_signatures) and unknown signatures
 CREATE MATERIALIZED VIEW signature_stats AS
 SELECT
-  signature_type,
+  signature_type::text,
   COUNT(DISTINCT signature_hash_32) AS count,
   now() AS refreshed_at
 FROM compiled_contracts_signatures
@@ -25,7 +25,7 @@ GROUP BY signature_type
 UNION ALL
 
 SELECT
-  'unknown' AS signature_type,
+  'unknown'::text AS signature_type,
   COUNT(*) AS count,
   now() AS refreshed_at
 FROM signatures s
@@ -38,7 +38,7 @@ WHERE NOT EXISTS (
 UNION ALL
 
 SELECT
-  'total' AS signature_type,
+  'total'::text AS signature_type,
   COUNT(*) AS count,
   now() AS refreshed_at
 FROM signatures;
