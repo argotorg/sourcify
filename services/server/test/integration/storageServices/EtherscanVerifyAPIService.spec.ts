@@ -13,7 +13,7 @@ import type { Database } from "../../../src/server/services/utils/Database";
 
 use(chaiAsPromised);
 
-describe.only("EtherscanVerifyAPIService", function () {
+describe("EtherscanVerifyAPIService", function () {
   const sandbox = sinon.createSandbox();
 
   const explorers: Array<{
@@ -146,7 +146,7 @@ describe.only("EtherscanVerifyAPIService", function () {
           finishTime: new Date(),
         };
         const fetchPayload = {
-          status: "1" as const,
+          status: "0" as const,
           message: "NOTOK",
           result: "Explorer rejected submission",
         };
@@ -157,11 +157,15 @@ describe.only("EtherscanVerifyAPIService", function () {
             structuredClone(MockVerificationExport),
             jobData,
           ),
-        ).to.be.rejectedWith(
-          "Failed to submit verification to explorer: NOTOK (Explorer rejected submission)",
+        ).to.eventually.be.fulfilled;
+        sinon.assert.calledOnceWithExactly(
+          upsertStub,
+          jobData.verificationId,
+          identifier,
+          {
+            error: fetchPayload.result,
+          },
         );
-
-        sinon.assert.notCalled(upsertStub);
       });
     });
   });

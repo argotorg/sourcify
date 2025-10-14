@@ -326,12 +326,6 @@ export class EtherscanVerifyAPIService implements WStorageService {
 
     const response = await this.submitVerification(verification, apiBaseUrl);
 
-    if (response.status !== "1" || response.message !== "OK") {
-      throw new Error(
-        `Failed to submit verification to explorer: ${response.message} (${response.result})`,
-      );
-    }
-
     logger.info("Submitted verification to explorer", {
       ...submissionContext,
       receiptId: response.result,
@@ -341,6 +335,24 @@ export class EtherscanVerifyAPIService implements WStorageService {
       return;
     }
 
+    // Record the result of the failed submission by storing the error message
+    if (response.status !== "1" || response.message !== "OK") {
+      logger.warn("Explorer rejected verification submission", {
+        ...submissionContext,
+        verificationJobId: jobData.verificationId,
+        error: response.result,
+      });
+      await this.database.upsertExternalVerification(
+        jobData.verificationId,
+        this.IDENTIFIER,
+        {
+          error: response.result,
+        },
+      );
+      return;
+    }
+
+    // Record the result of the successful submission
     try {
       await this.database.upsertExternalVerification(
         jobData.verificationId,
