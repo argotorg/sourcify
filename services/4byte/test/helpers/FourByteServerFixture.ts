@@ -164,6 +164,7 @@ export class FourByteServerFixture {
       type: SignatureType.Function,
     },
     { signature: "test_underscore()", type: SignatureType.Function },
+    { signature: "testtunderscore()", type: SignatureType.Function },
     { signature: "allowance(address,address)", type: SignatureType.Function },
     {
       signature: "Transfer(address,address,uint256)",
@@ -174,9 +175,9 @@ export class FourByteServerFixture {
       type: SignatureType.Event,
     },
     {
-      signature: "InsufficientBalance(uint256,uint256)",
-      type: SignatureType.Error,
+      signature: "InsufficientBalance(uint256,uint256)", // Error signature but we classify it as a function signature
+      type: SignatureType.Function,
     },
-    { signature: "UnauthorizedAccess(address)", type: SignatureType.Error },
+    { signature: "UnauthorizedAccess(address)", type: SignatureType.Function }, // Error signature but we classify it as a function signature
   ];
 }
