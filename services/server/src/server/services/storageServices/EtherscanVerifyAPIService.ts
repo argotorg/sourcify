@@ -1,4 +1,8 @@
-import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import {
+  CompilationLanguage,
+  VerificationExport,
+  VyperSettings,
+} from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
@@ -309,6 +313,23 @@ export class EtherscanVerifyAPIService implements WStorageService {
       finishTime: Date;
     },
   ): Promise<void> {
+    if (
+      verification.compilation.language === "Vyper" &&
+      (this.IDENTIFIER === WStorageIdentifiers.RoutescanVerify ||
+        this.IDENTIFIER === WStorageIdentifiers.BlockscoutVerify)
+    ) {
+      logger.info(
+        `${this.IDENTIFIER} does not support Etherscan API Vyper contract verification`,
+        {
+          chainId: verification.chainId,
+          address: verification.address,
+        },
+      );
+      throw new Error(
+        `${this.IDENTIFIER} does not support Etherscan API Vyper contract verification`,
+      );
+    }
+
     const submissionContext = {
       identifier: this.IDENTIFIER,
       chainId: verification.chainId,
@@ -402,7 +423,10 @@ export class EtherscanVerifyAPIService implements WStorageService {
 
   private buildVerificationPayload(verification: VerificationExport): string {
     const params = new URLSearchParams();
-    params.append("codeformat", "solidity-standard-json-input");
+    params.append(
+      "codeformat",
+      this.getCodeFormat(verification.compilation.language),
+    );
     params.append("sourceCode", this.buildStandardJsonInput(verification));
     params.append("contractaddress", verification.address);
     params.append("contractname", this.buildContractName(verification));
@@ -410,6 +434,11 @@ export class EtherscanVerifyAPIService implements WStorageService {
 
     const constructorArgs = this.getConstructorArguments(verification);
     params.append("constructorArguements", constructorArgs || "");
+
+    if (verification.compilation.language === "Vyper") {
+      const vyperOptimization = this.getVyperOptimizationFlag(verification);
+      params.append("optimizationUsed", vyperOptimization ? "1" : "0");
+    }
 
     return params.toString();
   }
@@ -446,15 +475,15 @@ export class EtherscanVerifyAPIService implements WStorageService {
   }
 
   private getCompilerVersion(verification: VerificationExport): string {
-    const metadataVersion =
-      verification.compilation.metadata?.compiler?.version;
-    const fallback = verification.compilation.compilerVersion;
-    const version = metadataVersion || fallback;
+    const version = verification.compilation.compilerVersion;
 
     if (!version) {
       throw new Error("Missing compiler version in verification export");
     }
 
+    if (verification.compilation.language === "Vyper") {
+      return `vyper:${version.split("+")[0]}`;
+    }
     return version.startsWith("v") ? version : `v${version}`;
   }
 
@@ -507,5 +536,33 @@ export class EtherscanVerifyAPIService implements WStorageService {
       return this.options.defaultApiKey;
     }
     return undefined;
+  }
+
+  private getCodeFormat(language: CompilationLanguage): string {
+    if (language === "Vyper") {
+      return "vyper-standard-json-input";
+    }
+    return "solidity-standard-json-input";
+  }
+
+  private getVyperOptimizationFlag(verification: VerificationExport): boolean {
+    if (verification.compilation.language !== "Vyper") {
+      return false;
+    }
+
+    const settings = verification.compilation.jsonInput
+      .settings as VyperSettings;
+
+    const optimize = settings?.optimize;
+
+    if (typeof optimize === "string") {
+      return optimize === "none" ? false : true;
+    }
+
+    if (typeof optimize === "boolean") {
+      return optimize;
+    }
+
+    return false;
   }
 }

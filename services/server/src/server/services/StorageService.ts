@@ -274,30 +274,37 @@ export class StorageService {
         WStorageIdentifiers.RoutescanVerify,
       ] as Array<EtherscanVerifyAPIIdentifiers>
     ).forEach((identifier) => {
-      if (
-        enabledServicesArray.includes(identifier) &&
-        enabledServicesArray.includes(RWStorageIdentifiers.SourcifyDatabase) &&
-        options.etherscanVerifyAPIServiceOptions
-      ) {
-        const etherscanVerifyOptions =
-          options.etherscanVerifyAPIServiceOptions[identifier];
-
-        if (etherscanVerifyOptions) {
-          const service = new EtherscanVerifyAPIService(
-            identifier,
-            this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
-            etherscanVerifyOptions,
+      if (enabledServicesArray.includes(identifier)) {
+        if (
+          !enabledServicesArray.includes(RWStorageIdentifiers.SourcifyDatabase)
+        ) {
+          logger.error(
+            `${identifier} enabled, but SourcifyDatabase storage service is not configured`,
           );
-          this.wServices[service.IDENTIFIER] = service;
-        } else {
+          throw new Error(
+            `${identifier} enabled, but SourcifyDatabase storage service is not configured`,
+          );
+        }
+
+        if (
+          !options.etherscanVerifyAPIServiceOptions ||
+          !options.etherscanVerifyAPIServiceOptions[identifier]
+        ) {
           logger.error(
             `${identifier} enabled, but options are not fully set`,
-            etherscanVerifyOptions,
+            options.etherscanVerifyAPIServiceOptions,
           );
           throw new Error(
             `${identifier} enabled, but options are not fully set`,
           );
         }
+
+        const service = new EtherscanVerifyAPIService(
+          identifier,
+          this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
+          options.etherscanVerifyAPIServiceOptions[identifier],
+        );
+        this.wServices[service.IDENTIFIER] = service;
       }
     });
   }

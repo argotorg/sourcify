@@ -169,4 +169,43 @@ describe("EtherscanVerifyAPIService", function () {
       });
     });
   });
+
+  it("uses vyper codeformat when verification is for a Vyper contract", async () => {
+    const baseUrl = "https://etherscan.example/api";
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.EtherscanVerify,
+      baseUrl,
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+
+    const vyperVerification = structuredClone(MockVerificationExport);
+    vyperVerification.compilation.language = "Vyper";
+    vyperVerification.compilation.compilerVersion = "0.3.10";
+    vyperVerification.compilation.metadata = {
+      ...(vyperVerification.compilation.metadata || {}),
+      compiler: {
+        ...(vyperVerification.compilation.metadata?.compiler || {}),
+        version: "0.3.10",
+      },
+    } as typeof vyperVerification.compilation.metadata;
+
+    const fetchPayload = {
+      status: "1" as const,
+      message: "OK",
+      result: "receipt-456",
+    };
+    fetchStub.resolves(mockFetchResponse(fetchPayload));
+
+    await expect(service.storeVerification(vyperVerification, jobData)).to
+      .eventually.be.fulfilled;
+
+    const [, requestInit] = fetchStub.firstCall.args;
+    const body = (requestInit as RequestInit).body as string;
+    expect(body).to.include("codeformat=vyper-standard-json-input");
+  });
 });
