@@ -15,7 +15,7 @@
     "start": "node ./dist/server/cli.js",
     "postgres-test:start": "docker-compose -f test/docker-compose.yml up -d",
     "postgres-test:stop": "docker-compose -f test/docker-compose.yml rm -fsv",
-    "postgres-test:migrate": "cd ../database && git submodule update --init && export DATABASE_URL=postgres://sourcify:sourcify@${SOURCIFY_POSTGRES_HOST:-sourcify-db}:${DOCKER_HOST_POSTGRES_TEST_PORT:-5432}/sourcify?sslmode=disable && export DBMATE_SCHEMA_FILE=./sourcify-database.sql && npm run migrate:up-no-dump",
+    "postgres-test:migrate": "cd ../database && git submodule update --init && export SOURCIFY_POSTGRES_HOST=${SOURCIFY_POSTGRES_HOST:-localhost} && export DATABASE_URL=postgres://sourcify:sourcify@${SOURCIFY_POSTGRES_HOST}:${DOCKER_HOST_POSTGRES_TEST_PORT:-5432}/sourcify?sslmode=disable && export DBMATE_SCHEMA_FILE=./sourcify-database.sql && npm run migrate:up-no-dump",
     "test:unit": "mocha  --exit --recursive test/unit/**",
     "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha --exit --recursive test/unit/** test/integration/**",
     "test:chains": "npm run postgres-test:migrate && mocha test/chains/chain-tests.spec.ts --reporter mochawesome --reporter-options reportDir=chain-tests-report,reportFilename=report --exit",
