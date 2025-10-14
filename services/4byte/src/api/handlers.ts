@@ -7,7 +7,6 @@ import {
   SignatureInsertResult,
 } from "../SignatureDatabase";
 import {
-  SignatureType,
   getCanonicalSignatures,
   validateSignature,
 } from "../utils/signature-util";
@@ -39,7 +38,7 @@ interface ImportResult {
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   const canonicalSignatures = getCanonicalSignatures();
 
-  for (const type of Object.values(SignatureType)) {
+  for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
     for (const hash in response[type]) {
       const expectedCanonical = canonicalSignatures[hash];
       if (expectedCanonical !== undefined) {
@@ -52,7 +51,7 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   }
 
   if (shouldFilter) {
-    for (const type of Object.values(SignatureType)) {
+    for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
       for (const hash in response[type]) {
         response[type][hash] = response[type][hash].filter(
           (signatureItem) => !signatureItem.filtered,

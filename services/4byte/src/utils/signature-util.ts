@@ -4,6 +4,7 @@ import { Fragment } from "ethers";
 export enum SignatureType {
   Function = "function",
   Event = "event",
+  Error = "error", // Keep error here. We don't have error in /import but it can come from verified contracts as compiled_contracts_signatures.signature_type
 }
 
 // prettier-ignore
