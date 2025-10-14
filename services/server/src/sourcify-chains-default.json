@@ -2350,5 +2350,15 @@
         "url": "https://scan.platon.network"
       }
     }
+  },
+  "1868": {
+    "sourcifyName": "Soneium",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://soneium.blockscout.com/"
+      }
+    },
+    "rpc": ["https://soneium.drpc.org"]
   }
 }
