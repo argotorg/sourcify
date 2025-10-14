@@ -1,5 +1,4 @@
 import http from "http";
-import { Pool } from "pg";
 import logger from "./logger";
 import { SignatureDatabase } from "./SignatureDatabase";
 import express from "express";
@@ -55,10 +54,7 @@ export class FourByteServer {
       validateSearchQuery,
       handlers.searchSignatures,
     );
-    this.app.post(
-      "/signature-database/v1/import",
-      handlers.importSignatures,
-    );
+    this.app.post("/signature-database/v1/import", handlers.importSignatures);
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
 
     this.app.get("/health", async (_req, res) => {
@@ -70,8 +66,14 @@ export class FourByteServer {
       }
       res.status(200).send("Alive and kicking!");
     });
-    process.on("SIGTERM", () => this.shutdown("SIGTERM"));
-    process.on("SIGINT", () => this.shutdown("SIGINT"));
+
+    const handleShutdownSignal = async (signal?: NodeJS.Signals) => {
+      await this.shutdown(signal);
+      process.exit(0);
+    };
+
+    process.on("SIGTERM", () => handleShutdownSignal("SIGTERM"));
+    process.on("SIGINT", () => handleShutdownSignal("SIGINT"));
   }
 
   async listen(): Promise<void> {
@@ -103,6 +105,5 @@ export class FourByteServer {
     }
     await this.database.close();
     logger.info("4byte database connection closed");
-    process.exit(0);
   }
 }
