@@ -15,14 +15,13 @@ Record<
   return canonicalSignaturesData as Record<string, { signature?: string }>;
 }
 
-// Unified signature validation using ethers.js Fragment.from()
+// Use ethers.js Fragment.from() to validate signature instead of custom parser.
 export function validateSignature(signature: string): boolean {
   try {
-    const fragment = Fragment.from(signature);
-    // Fragment.from() succeeds = valid signature
-    return ["function", "event", "error"].includes(fragment.type);
-  } catch (error) {
-    // Fragment.from() throws = invalid signature
+    const fullSignature = `function ${signature}`; // ethers uses "Human Readable ABI" for parsing and requires type keyword. Assume it's a function. https://docs.ethers.org/v5/api/utils/abi/formats/#abi-formats--human-readable-abi
+    Fragment.from(fullSignature);
+    return true;
+  } catch {
     return false;
   }
 }
