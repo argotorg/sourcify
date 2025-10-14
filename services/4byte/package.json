@@ -37,7 +37,7 @@
     "http-status-codes": "2.3.0",
     "pg": "8.16.3",
     "swagger-ui-express": "5.0.1",
-    "winston": "3.17.0",
+    "winston": "3.18.3",
     "yamljs": "0.3.0"
   },
   "devDependencies": {
@@ -45,7 +45,7 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.3",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.18.1",
+    "@types/node": "22.18.10",
     "@types/pg": "8.15.5",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
