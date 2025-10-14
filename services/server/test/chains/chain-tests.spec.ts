@@ -1928,6 +1928,7 @@ describe("Test Supported Chains", function () {
     "1868",
     "Soneium Mainnet",
     "multicall-src/",
+    "partial"
   );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
