@@ -4,7 +4,6 @@ import { Fragment } from "ethers";
 export enum SignatureType {
   Function = "function",
   Event = "event",
-  Error = "error",
 }
 
 // prettier-ignore
