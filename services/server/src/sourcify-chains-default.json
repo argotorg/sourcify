@@ -2360,5 +2360,15 @@
       }
     },
     "rpc": ["https://soneium.drpc.org"]
+  },
+  "480": {
+    "sourcifyName": "WorldChain",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": {
+        "supported": true,
+        "apiKeyEnvName": "ETHERSCAN_API_KEY_WORLDCHAIN"
+      }
+    }
   }
 }
