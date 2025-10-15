@@ -206,6 +206,8 @@
       "env": {
         // "NODE_ENV": "test"
         // "NODE_LOG_LEVEL": "debug"
+        "FOURBYTES_POSTGRES_HOST": "localhost",
+        "FOURBYTES_POSTGRES_PORT": "5433"
       },
       "smartStep": true,
       "console": "integratedTerminal"
