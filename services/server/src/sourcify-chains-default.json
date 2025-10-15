@@ -2369,6 +2369,12 @@
         "supported": true,
         "apiKeyEnvName": "ETHERSCAN_API_KEY_WORLDCHAIN"
       }
-    }
+    },
+    "rpc": [
+      "https://worldchain-mainnet.g.alchemy.com/public",
+      "https://worldchain.drpc.org",
+      "https://worldchain-mainnet.gateway.tenderly.co",
+      "https://480.rpc.thirdweb.com"
+    ]
   }
 }
