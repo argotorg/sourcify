@@ -338,7 +338,7 @@ export class EtherscanVerifyApiService implements WStorageService {
 
     const apiBaseUrl = this.getApiBaseUrl(verification.chainId);
     if (!apiBaseUrl) {
-      logger.warn(
+      logger.debug(
         "No Etherscan API endpoint configured for chain",
         submissionContext,
       );
@@ -383,7 +383,7 @@ export class EtherscanVerifyApiService implements WStorageService {
         },
       );
     } catch (error) {
-      logger.warn("Failed to record external verification receipt", {
+      logger.error("Failed to record external verification receipt", {
         ...submissionContext,
         verificationJobId: jobData.verificationId,
         receiptId: response.result,
@@ -477,10 +477,6 @@ export class EtherscanVerifyApiService implements WStorageService {
   private getCompilerVersion(verification: VerificationExport): string {
     const version = verification.compilation.compilerVersion;
 
-    if (!version) {
-      throw new Error("Missing compiler version in verification export");
-    }
-
     if (verification.compilation.language === "Vyper") {
       return `vyper:${version.split("+")[0]}`;
     }
@@ -502,7 +498,6 @@ export class EtherscanVerifyApiService implements WStorageService {
     apiBaseUrl: string,
     action: string,
     chainId: number,
-    extraParams: Record<string, string> = {},
   ): string {
     const url = new URL(apiBaseUrl);
 
@@ -512,10 +507,6 @@ export class EtherscanVerifyApiService implements WStorageService {
     const apiKey = this.getApiKey(chainId);
     if (apiKey) {
       url.searchParams.set("apikey", apiKey);
-    }
-
-    for (const [key, value] of Object.entries(extraParams)) {
-      url.searchParams.set(key, value);
     }
 
     return url.toString();

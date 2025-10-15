@@ -286,19 +286,6 @@ export class StorageService {
           );
         }
 
-        if (
-          !options.etherscanVerifyApiServiceOptions ||
-          !options.etherscanVerifyApiServiceOptions[identifier]
-        ) {
-          logger.error(
-            `${identifier} enabled, but options are not fully set`,
-            options.etherscanVerifyApiServiceOptions,
-          );
-          throw new Error(
-            `${identifier} enabled, but options are not fully set`,
-          );
-        }
-
         const service = new EtherscanVerifyApiService(
           identifier,
           this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
