@@ -8,7 +8,6 @@ import { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import { Database } from "../utils/Database";
 import { SourcifyDatabaseService } from "./SourcifyDatabaseService";
-import { sourcifyChainsMap } from "../../../sourcify-chains";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -251,23 +250,6 @@ const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
   }
 
   return apiUrls;
-};
-
-export const getEtherscanApiKeyEnvironmentVariables = (): Record<
-  string,
-  string
-> => {
-  const result: Record<string, string> = {};
-  for (const [chain, chainProperties] of Object.entries(sourcifyChainsMap)) {
-    if (
-      chainProperties.supported &&
-      chainProperties.etherscanApi &&
-      chainProperties.etherscanApi.apiKeyEnvName
-    ) {
-      result[chain] = chainProperties.etherscanApi.apiKeyEnvName;
-    }
-  }
-  return result;
 };
 
 interface EtherscanRpcResponse {
