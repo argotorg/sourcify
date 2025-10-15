@@ -23,22 +23,16 @@ import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
-export const getEtherscanApiKeyEnvironmentVariables = (): Record<
-  string,
-  string
-> => {
-  const result: Record<string, string> = {};
-  for (const [chain, chainProperties] of Object.entries(sourcifyChainsMap)) {
-    if (
-      chainProperties.supported &&
-      chainProperties.etherscanApi &&
-      chainProperties.etherscanApi.apiKeyEnvName
-    ) {
-      result[chain] = chainProperties.etherscanApi.apiKeyEnvName;
-    }
-  }
-  return result;
-};
+export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
+  Object.entries(sourcifyChainsMap).reduce<Record<string, string>>(
+    (acc, [chainId, { supported, etherscanApi }]) => {
+      const envName = supported ? etherscanApi?.apiKeyEnvName : undefined;
+      const value = envName ? process.env[envName] : undefined;
+      if (value) acc[chainId] = value;
+      return acc;
+    },
+    {},
+  );
 
 // lib-sourcify configuration
 const libSourcifyConfig: LibSourcifyConfig = {};
@@ -181,16 +175,7 @@ const server = new Server(
       EtherscanVerify: {
         defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
         // Extract the etherscanApiKey env vars from the supported chains
-        apiKeys: Object.entries(
-          getEtherscanApiKeyEnvironmentVariables(),
-        ).reduce(
-          (acc, [chainId, envName]) => {
-            const value = process.env[envName];
-            if (value) acc[chainId] = value;
-            return acc;
-          },
-          {} as Record<string, string>,
-        ),
+        apiKeys: getEtherscanApiKeyForEachChain(),
       },
       BlockscoutVerify: {
         defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
