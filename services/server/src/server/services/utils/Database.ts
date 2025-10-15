@@ -13,11 +13,12 @@ import {
   StoredProperties,
   Tables,
   GetSourcifyMatchesAllChainsResult,
+  ExternalVerification,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { EtherscanVerifyAPIIdentifiers } from "../storageServices/EtherscanVerifyApiService";
+import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {
@@ -999,8 +1000,8 @@ ${
 
   async upsertExternalVerification(
     verificationJobId: Tables.VerificationJob["id"],
-    verifierIdentifier: EtherscanVerifyAPIIdentifiers,
-    data: { verificationId?: string; error?: string },
+    verifierIdentifier: EtherscanVerifyApiIdentifiers,
+    data: ExternalVerification,
     poolClient?: PoolClient,
   ): Promise<void> {
     const payload: {
@@ -1026,7 +1027,7 @@ ${
          ARRAY[$2::text],
          $3::jsonb,
          true
-       )::json
+       )
        WHERE id = $1`,
       [verificationJobId, verifierIdentifier, JSON.stringify(payload)],
     );

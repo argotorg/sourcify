@@ -10,7 +10,7 @@ import { Database } from "../utils/Database";
 import { SourcifyDatabaseService } from "./SourcifyDatabaseService";
 import { sourcifyChainsMap } from "../../../sourcify-chains";
 
-export type EtherscanVerifyAPIIdentifiers =
+export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
   | WStorageIdentifiers.BlockscoutVerify
   | WStorageIdentifiers.RoutescanVerify;
@@ -286,13 +286,13 @@ export interface EtherscanVerifyApiServiceOptions {
 }
 
 export class EtherscanVerifyApiService implements WStorageService {
-  IDENTIFIER: EtherscanVerifyAPIIdentifiers;
+  IDENTIFIER: EtherscanVerifyApiIdentifiers;
   private database: Database;
 
   private readonly options: Required<EtherscanVerifyApiServiceOptions>;
 
   constructor(
-    identifier: EtherscanVerifyAPIIdentifiers,
+    identifier: EtherscanVerifyApiIdentifiers,
     sourcifyDatabaseService: SourcifyDatabaseService,
     options: EtherscanVerifyApiServiceOptions,
   ) {

@@ -161,7 +161,7 @@ const server = new Server(
         ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
         : undefined,
     },
-    etherscanVerifyAPIServiceOptions: {
+    etherscanVerifyApiServiceOptions: {
       EtherscanVerify: {
         defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
         // Extract the etherscanApiKey env vars from the supported chains

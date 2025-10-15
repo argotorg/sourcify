@@ -3,7 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import sinon from "sinon";
 import {
   EtherscanVerifyApiService,
-  type EtherscanVerifyAPIIdentifiers,
+  type EtherscanVerifyApiIdentifiers,
   type EtherscanVerifyApiServiceOptions,
 } from "../../../src/server/services/storageServices/EtherscanVerifyApiService";
 import { WStorageIdentifiers } from "../../../src/server/services/storageServices/identifiers";
@@ -18,7 +18,7 @@ describe("EtherscanVerifyApiService", function () {
 
   const explorers: Array<{
     label: string;
-    identifier: EtherscanVerifyAPIIdentifiers;
+    identifier: EtherscanVerifyApiIdentifiers;
     baseUrl: string;
   }> = [
     {
@@ -41,7 +41,7 @@ describe("EtherscanVerifyApiService", function () {
   let fetchStub: sinon.SinonStub;
 
   const createService = (
-    identifier: EtherscanVerifyAPIIdentifiers,
+    identifier: EtherscanVerifyApiIdentifiers,
     baseUrl: string,
     upsertStub: sinon.SinonStub,
     options: Partial<EtherscanVerifyApiServiceOptions> = {},

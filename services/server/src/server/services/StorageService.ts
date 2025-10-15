@@ -42,7 +42,7 @@ import { DatabaseOptions } from "./utils/Database";
 import { Field } from "./utils/database-util";
 import { VerifyErrorExport } from "./workers/workerTypes";
 import {
-  EtherscanVerifyAPIIdentifiers,
+  EtherscanVerifyApiIdentifiers,
   EtherscanVerifyApiService,
   EtherscanVerifyApiServiceOptions,
 } from "./storageServices/EtherscanVerifyApiService";
@@ -133,7 +133,7 @@ export interface StorageServiceOptions {
   sourcifyDatabaseServiceOptions?: DatabaseOptions;
   allianceDatabaseServiceOptions?: DatabaseOptions;
   s3RepositoryServiceOptions?: S3RepositoryServiceOptions;
-  etherscanVerifyAPIServiceOptions?: {
+  etherscanVerifyApiServiceOptions?: {
     [WStorageIdentifiers.EtherscanVerify]?: EtherscanVerifyApiServiceOptions;
     [WStorageIdentifiers.BlockscoutVerify]?: EtherscanVerifyApiServiceOptions;
     [WStorageIdentifiers.RoutescanVerify]?: EtherscanVerifyApiServiceOptions;
@@ -272,7 +272,7 @@ export class StorageService {
         WStorageIdentifiers.EtherscanVerify,
         WStorageIdentifiers.BlockscoutVerify,
         WStorageIdentifiers.RoutescanVerify,
-      ] as Array<EtherscanVerifyAPIIdentifiers>
+      ] as Array<EtherscanVerifyApiIdentifiers>
     ).forEach((identifier) => {
       if (enabledServicesArray.includes(identifier)) {
         if (
@@ -287,12 +287,12 @@ export class StorageService {
         }
 
         if (
-          !options.etherscanVerifyAPIServiceOptions ||
-          !options.etherscanVerifyAPIServiceOptions[identifier]
+          !options.etherscanVerifyApiServiceOptions ||
+          !options.etherscanVerifyApiServiceOptions[identifier]
         ) {
           logger.error(
             `${identifier} enabled, but options are not fully set`,
-            options.etherscanVerifyAPIServiceOptions,
+            options.etherscanVerifyApiServiceOptions,
           );
           throw new Error(
             `${identifier} enabled, but options are not fully set`,
@@ -302,7 +302,7 @@ export class StorageService {
         const service = new EtherscanVerifyApiService(
           identifier,
           this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
-          options.etherscanVerifyAPIServiceOptions[identifier],
+          options.etherscanVerifyApiServiceOptions[identifier],
         );
         this.wServices[service.IDENTIFIER] = service;
       }
