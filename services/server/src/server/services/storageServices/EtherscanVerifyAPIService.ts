@@ -285,7 +285,7 @@ export interface EtherscanVerifyAPIServiceOptions {
   defaultApiKey?: string;
 }
 
-export class EtherscanVerifyAPIService implements WStorageService {
+export class EtherscanVerifyApiService implements WStorageService {
   IDENTIFIER: EtherscanVerifyAPIIdentifiers;
   private database: Database;
 
