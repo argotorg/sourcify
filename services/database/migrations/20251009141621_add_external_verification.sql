@@ -1,6 +1,6 @@
 -- migrate:up
 
-ALTER TABLE verification_jobs ADD external_verification json NULL;
+ALTER TABLE verification_jobs ADD external_verification jsonb NULL;
 
 -- migrate:down
 
