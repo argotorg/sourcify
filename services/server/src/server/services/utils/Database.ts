@@ -17,7 +17,7 @@ import {
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { EtherscanVerifyAPIIdentifiers } from "../storageServices/EtherscanVerifyAPIService";
+import { EtherscanVerifyAPIIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {

@@ -43,9 +43,9 @@ import { Field } from "./utils/database-util";
 import { VerifyErrorExport } from "./workers/workerTypes";
 import {
   EtherscanVerifyAPIIdentifiers,
-  EtherscanVerifyAPIService,
-  EtherscanVerifyAPIServiceOptions,
-} from "./storageServices/EtherscanVerifyAPIService";
+  EtherscanVerifyApiService,
+  EtherscanVerifyApiServiceOptions,
+} from "./storageServices/EtherscanVerifyApiService";
 
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
@@ -134,9 +134,9 @@ export interface StorageServiceOptions {
   allianceDatabaseServiceOptions?: DatabaseOptions;
   s3RepositoryServiceOptions?: S3RepositoryServiceOptions;
   etherscanVerifyAPIServiceOptions?: {
-    [WStorageIdentifiers.EtherscanVerify]?: EtherscanVerifyAPIServiceOptions;
-    [WStorageIdentifiers.BlockscoutVerify]?: EtherscanVerifyAPIServiceOptions;
-    [WStorageIdentifiers.RoutescanVerify]?: EtherscanVerifyAPIServiceOptions;
+    [WStorageIdentifiers.EtherscanVerify]?: EtherscanVerifyApiServiceOptions;
+    [WStorageIdentifiers.BlockscoutVerify]?: EtherscanVerifyApiServiceOptions;
+    [WStorageIdentifiers.RoutescanVerify]?: EtherscanVerifyApiServiceOptions;
   };
 }
 
@@ -266,7 +266,7 @@ export class StorageService {
       }
     }
 
-    // EtherscanVerifyAPIService
+    // EtherscanVerifyApiService
     (
       [
         WStorageIdentifiers.EtherscanVerify,
@@ -299,7 +299,7 @@ export class StorageService {
           );
         }
 
-        const service = new EtherscanVerifyAPIService(
+        const service = new EtherscanVerifyApiService(
           identifier,
           this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
           options.etherscanVerifyAPIServiceOptions[identifier],

@@ -276,7 +276,7 @@ interface EtherscanRpcResponse {
   result: string;
 }
 
-export interface EtherscanVerifyAPIServiceOptions {
+export interface EtherscanVerifyApiServiceOptions {
   /** Mapping of chainId to the explorer API base URL */
   chainApiUrls?: ChainApiUrls;
   /** Optional mapping of chainId to API keys */
@@ -289,12 +289,12 @@ export class EtherscanVerifyApiService implements WStorageService {
   IDENTIFIER: EtherscanVerifyAPIIdentifiers;
   private database: Database;
 
-  private readonly options: Required<EtherscanVerifyAPIServiceOptions>;
+  private readonly options: Required<EtherscanVerifyApiServiceOptions>;
 
   constructor(
     identifier: EtherscanVerifyAPIIdentifiers,
     sourcifyDatabaseService: SourcifyDatabaseService,
-    options: EtherscanVerifyAPIServiceOptions,
+    options: EtherscanVerifyApiServiceOptions,
   ) {
     this.IDENTIFIER = identifier;
     this.database = sourcifyDatabaseService.database;

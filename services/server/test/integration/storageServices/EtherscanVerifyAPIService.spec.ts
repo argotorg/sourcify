@@ -2,10 +2,10 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import sinon from "sinon";
 import {
-  EtherscanVerifyAPIService,
+  EtherscanVerifyApiService,
   type EtherscanVerifyAPIIdentifiers,
-  type EtherscanVerifyAPIServiceOptions,
-} from "../../../src/server/services/storageServices/EtherscanVerifyAPIService";
+  type EtherscanVerifyApiServiceOptions,
+} from "../../../src/server/services/storageServices/EtherscanVerifyApiService";
 import { WStorageIdentifiers } from "../../../src/server/services/storageServices/identifiers";
 import { MockVerificationExport } from "../../helpers/mocks";
 import type { SourcifyDatabaseService } from "../../../src/server/services/storageServices/SourcifyDatabaseService";
@@ -13,7 +13,7 @@ import type { Database } from "../../../src/server/services/utils/Database";
 
 use(chaiAsPromised);
 
-describe("EtherscanVerifyAPIService", function () {
+describe("EtherscanVerifyApiService", function () {
   const sandbox = sinon.createSandbox();
 
   const explorers: Array<{
@@ -44,8 +44,8 @@ describe("EtherscanVerifyAPIService", function () {
     identifier: EtherscanVerifyAPIIdentifiers,
     baseUrl: string,
     upsertStub: sinon.SinonStub,
-    options: Partial<EtherscanVerifyAPIServiceOptions> = {},
-  ): EtherscanVerifyAPIService => {
+    options: Partial<EtherscanVerifyApiServiceOptions> = {},
+  ): EtherscanVerifyApiService => {
     const databaseStub = {
       upsertExternalVerification: upsertStub,
     } as unknown as Database;
@@ -54,7 +54,7 @@ describe("EtherscanVerifyAPIService", function () {
       database: databaseStub,
     } as unknown as SourcifyDatabaseService;
 
-    return new EtherscanVerifyAPIService(
+    return new EtherscanVerifyApiService(
       identifier,
       sourcifyDatabaseServiceStub,
       {

@@ -22,7 +22,7 @@ import { LibSourcifyConfig, Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
-import { getEtherscanApiKeyEnvironmentVariables } from "./services/storageServices/EtherscanVerifyAPIService";
+import { getEtherscanApiKeyEnvironmentVariables } from "./services/storageServices/EtherscanVerifyApiService";
 
 // lib-sourcify configuration
 const libSourcifyConfig: LibSourcifyConfig = {};
