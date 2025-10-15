@@ -14,6 +14,9 @@ module.exports = {
       WStorageIdentifiers.AllianceDatabase,
       // RWStorageIdentifiers.RepositoryV1, // We no longer write to the repositoryV1
       WStorageIdentifiers.S3Repository,
+      WStorageIdentifiers.EtherscanVerify,
+      WStorageIdentifiers.BlockscoutVerify,
+      WStorageIdentifiers.RoutescanVerify,
     ],
     writeOrErr: [
       // WStorageIdentifiers.RepositoryV2, // We no longer write to the repositoryV2
