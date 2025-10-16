@@ -93,16 +93,19 @@ paths:
                         "0x12345678": null
                       event:
                         "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef": []
-                invalid_hash_format:
-                  summary: Invalid hash format handling
-                  description: Invalid hash lengths are handled gracefully - short function hashes return null, short event hashes return empty arrays
-                  value:
-                    ok: true
-                    result:
-                      function:
-                        "0x123": null
-                      event:
-                        "0x123": []
+        "500":
+          description: Invalid hash format or length
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Invalid hash '0x123'. Hash must be 0x-prefixed and either be a 4 byte or 32 byte hex string."
 
   /signature-database/v1/search:
     get:
