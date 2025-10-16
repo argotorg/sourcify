@@ -125,11 +125,20 @@ describe("4byte API End-to-End Tests", function () {
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/lookup")
-        .query({ event: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" });
+        .query({
+          event:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        });
 
       chai.expect(res).to.have.status(200);
       // Openchain API returns null for functions with no matches, empty array for events
-      chai.expect(res.body.result.event["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"]).to.be.an("array").that.is.empty;
+      chai
+        .expect(
+          res.body.result.event[
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+          ],
+        )
+        .to.be.an("array").that.is.empty;
     });
 
     it("should return 500 for invalid function hash lengths", async function () {
@@ -148,7 +157,12 @@ describe("4byte API End-to-End Tests", function () {
     });
 
     it("should return 500 for invalid event hash lengths", async function () {
-      const testCases = ["0x123", "0x12345", "0x123456789abc", "0x123456789abcdef"]; // Various invalid lengths
+      const testCases = [
+        "0x123",
+        "0x12345",
+        "0x123456789abc",
+        "0x123456789abcdef",
+      ]; // Various invalid lengths
 
       for (const invalidHash of testCases) {
         const res = await chai
@@ -198,7 +212,8 @@ describe("4byte API End-to-End Tests", function () {
     it("should validate exact hash lengths correctly", async function () {
       // Test exact valid lengths
       const validFunctionHash = "0x12345678"; // 10 characters
-      const validEventHash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // 66 characters
+      const validEventHash =
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // 66 characters
 
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
@@ -208,7 +223,8 @@ describe("4byte API End-to-End Tests", function () {
       chai.expect(res).to.have.status(200);
       // Even though these hashes don't exist, they should return proper null/empty responses due to correct length
       chai.expect(res.body.result.function[validFunctionHash]).to.be.null;
-      chai.expect(res.body.result.event[validEventHash]).to.be.an("array").that.is.empty;
+      chai.expect(res.body.result.event[validEventHash]).to.be.an("array").that
+        .is.empty;
     });
   });
 
