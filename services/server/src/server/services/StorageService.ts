@@ -337,14 +337,16 @@ export class StorageService {
     });
 
     // Try to initialize used storage services
-    for (const service of enabledServicesArray) {
-      logger.debug(`Initializing storage service: ${service.IDENTIFIER}`);
-      if (!(await service.init())) {
-        throw new Error(
-          "Cannot initialize default storage service: " + service.IDENTIFIER,
-        );
-      }
-    }
+    await Promise.all(
+      enabledServicesArray.map(async (service) => {
+        logger.debug(`Initializing storage service: ${service.IDENTIFIER}`);
+        if (!(await service.init())) {
+          throw new Error(
+            "Cannot initialize default storage service: " + service.IDENTIFIER,
+          );
+        }
+      }),
+    );
   }
 
   async storeVerification(
