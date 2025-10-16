@@ -38,7 +38,86 @@ tags:
     description: API v1 - Access to already verified contracts and files. - Deprecated. Please use the API v2 Contract Lookup instead.
   - name: (Deprecated) Session Verification
     description: API v1 - Used by the Sourcify UI to verify contracts. Not intended for external usage. Will require CORS.
+  - name: Other
+    description: General server endpoints
 paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns server health status
+      tags:
+        - Other
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Alive and kicking!"
+  /chains:
+    get:
+      summary: Get supported blockchain chains
+      description: Returns a list of all blockchain networks supported by Sourcify
+      tags:
+        - Other
+      responses:
+        "200":
+          description: List of supported chains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Chain name
+                      example: "Ethereum Mainnet"
+                    title:
+                      type: string
+                      description: Chain title (optional)
+                      example: "Ethereum Mainnet"
+                    chainId:
+                      type: integer
+                      description: Chain ID
+                      example: 1
+                    rpc:
+                      type: array
+                      items:
+                        type: string
+                      description: List of RPC endpoints
+                      example: ["https://rpc.mainnet.ethpandaops.io"]
+                    traceSupportedRPCs:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            description: Type of trace support
+                            example: "trace_transaction"
+                          index:
+                            type: integer
+                            description: Index of the RPC in the rpc array
+                            example: 0
+                      description: RPCs that support tracing
+                    supported:
+                      type: boolean
+                      description: Whether the chain is supported for verification
+                      example: true
+                    etherscanAPI:
+                      type: boolean
+                      description: Whether Etherscan API is available for this chain
+                      example: true
+                  required:
+                    - name
+                    - chainId
+                    - rpc
+                    - traceSupportedRPCs
+                    - supported
+                    - etherscanAPI
   /private/verify-deprecated:
     $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
   /private/replace-contract:
