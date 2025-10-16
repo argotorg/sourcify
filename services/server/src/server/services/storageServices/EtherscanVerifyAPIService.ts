@@ -31,6 +31,12 @@ const ROUTESCAN_CHAINLIST_ENDPOINTS = [
 
 type ChainApiUrls = Record<string, string>;
 
+interface EtherscanChainListEntry {
+  chainid?: string;
+  apiurl?: string;
+  status?: number;
+}
+
 const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
   const targetEndpoint = DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT;
   let response: Response;
@@ -59,14 +65,8 @@ const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
     );
   }
 
-  interface ChainListEntry {
-    chainid?: string;
-    apiurl?: string;
-    status?: number;
-  }
-
   const payload = (await response.json()) as {
-    result?: ChainListEntry[];
+    result?: EtherscanChainListEntry[];
   };
 
   if (!Array.isArray(payload.result)) {
