@@ -276,14 +276,14 @@ export class EtherscanVerifyApiService implements WStorageService {
   constructor(
     identifier: EtherscanVerifyApiIdentifiers,
     sourcifyDatabaseService: SourcifyDatabaseService,
-    options: EtherscanVerifyApiServiceOptions,
+    options?: EtherscanVerifyApiServiceOptions,
   ) {
     this.IDENTIFIER = identifier;
     this.database = sourcifyDatabaseService.database;
     this.options = {
-      chainApiUrls: options.chainApiUrls || {},
-      apiKeys: options.apiKeys || {},
-      defaultApiKey: options.defaultApiKey || "",
+      chainApiUrls: options?.chainApiUrls || {},
+      apiKeys: options?.apiKeys || {},
+      defaultApiKey: options?.defaultApiKey || "",
     };
   }
 
