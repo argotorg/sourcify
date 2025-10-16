@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.3.21 - 2025-10-16
+
+- Use updated SourcifyChain() interface
+- Remove Celo testnets from monitored chains
+- Update dependencies
+
 ## sourcify-monitor@1.3.20 - 2025-09-18
 
 - Replace Blast API with Alchemy, add Celo Sepolia (#2372)

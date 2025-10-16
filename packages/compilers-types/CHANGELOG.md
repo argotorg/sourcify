@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers-types@1.0.9 - 2025-10-16
+
+- Update dependencies
+
 ## @ethereum-sourcify/compilers-types@1.0.8 - 2025-09-18
 
 - update repo links
