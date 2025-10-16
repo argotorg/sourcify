@@ -38,7 +38,7 @@ const buildExpectedStandardJsonInput = (
   });
 };
 
-describe.only("EtherscanVerifyApiService", function () {
+describe("EtherscanVerifyApiService", function () {
   const sandbox = sinon.createSandbox();
 
   const explorers: Array<{
