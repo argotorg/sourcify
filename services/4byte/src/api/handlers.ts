@@ -21,7 +21,7 @@ interface SignatureItem {
 }
 
 export interface SignatureHashMapping {
-  [hash: string]: SignatureItem[];
+  [hash: string]: SignatureItem[] | null;
 }
 
 interface SignatureResult {
@@ -41,7 +41,7 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
     for (const hash in response[type]) {
       const expectedCanonical = canonicalSignatures[hash];
-      if (expectedCanonical !== undefined) {
+      if (expectedCanonical !== undefined && response[type][hash] !== null) {
         for (const signatureItem of response[type][hash]) {
           signatureItem.filtered =
             signatureItem.name !== expectedCanonical.signature;
@@ -53,6 +53,9 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   if (shouldFilter) {
     for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
       for (const hash in response[type]) {
+        if (response[type][hash] === null) {
+          continue;
+        }
         response[type][hash] = response[type][hash].filter(
           (signatureItem) => !signatureItem.filtered,
         );
@@ -135,19 +138,29 @@ export function createSignatureHandlers(
         const result: SignatureResult = { function: {}, event: {} };
 
         const getFunctionSignatures = async (hash: string) => {
-          const rows =
-            hash.length === 66
-              ? await database.getSignatureByHash32(bytesFromString(hash)!)
-              : await database.getSignatureByHash4(bytesFromString(hash)!);
+          if (hash.length !== 10) {
+            result.function[hash] = null;
+            return;
+          }
+          const rows = await database.getSignatureByHash4(
+            bytesFromString(hash)!,
+          );
 
-          result.function[hash] = mapLookupResult(rows);
+          result.function[hash] =
+            rows.length > 0 ? mapLookupResult(rows) : null; // Weirdly, openchain API returns empty array for events, but null for functions
         };
 
         const getEventSignatures = async (hash: string) => {
+          if (hash.length !== 66) {
+            result.event[hash] = [];
+            return;
+          }
           const rows = await database.getSignatureByHash32(
             bytesFromString(hash)!,
           );
           result.event[hash] = mapLookupResult(rows);
+          // Weirdly, openchain API returns empty array for events, but null for functions
+          // result.event[hash] = rows.length > 0 ? mapLookupResult(rows) : null;
         };
 
         await Promise.all([
@@ -192,13 +205,13 @@ export function createSignatureHandlers(
           if (!result.function[row.signature_hash_4]) {
             result.function[row.signature_hash_4] = [];
           }
-          result.function[row.signature_hash_4].push(signatureItem);
+          result.function[row.signature_hash_4]!.push(signatureItem);
 
           // Add to event category using 32-byte hash
           if (!result.event[row.signature_hash_32]) {
             result.event[row.signature_hash_32] = [];
           }
-          result.event[row.signature_hash_32].push(signatureItem);
+          result.event[row.signature_hash_32]!.push(signatureItem);
         }
 
         filterResponse(result, shouldFilter);

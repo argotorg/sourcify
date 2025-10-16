@@ -22,21 +22,21 @@ paths:
   /signature-database/v1/lookup:
     get:
       summary: Lookup signatures
-      description: Look up one or more function or event signatures by hash
+      description: Look up one or more function or event signatures by hash. This API maintains compatibility with openchain.xyz behavior - functions return null for no matches, events return empty arrays.
       tags:
         - Signature Database
       parameters:
         - in: query
           name: function
           required: false
-          description: A comma-delimited list of function or error hashes with leading 0x prefix. Since the original openchain.xyz API didn't support error signatures, we treat error signatures as function signatures. They are both 4 byte hashes.
+          description: A comma-delimited list of function or error hashes with leading 0x prefix. Must be exactly 10 characters (0x + 8 hex chars). Since the original openchain.xyz API didn't support error signatures, we treat error signatures as function signatures. They are both 4 byte hashes.
           schema:
             type: string
           allowReserved: true
         - in: query
           name: event
           required: false
-          description: A comma-delimited list of event hashes with leading 0x prefix
+          description: A comma-delimited list of event hashes with leading 0x prefix. Must be exactly 66 characters (0x + 64 hex chars).
           schema:
             type: string
           allowReserved: true
@@ -59,27 +59,50 @@ paths:
                     type: boolean
                   result:
                     $ref: "#/components/schemas/SignatureResponse"
-              example:
-                ok: true
-                result:
-                  function:
-                    "0xa9059cbb":
-                      - name: "transfer(address,uint256)"
-                        filtered: false
-                        hasVerifiedContract: true
-                    "0x095ea7b3":
-                      - name: "approve(address,uint256)"
-                        filtered: false
-                        hasVerifiedContract: true
-                  event:
-                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
-                      - name: "Transfer(address,address,uint256)"
-                        filtered: false
-                        hasVerifiedContract: true
-                    "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
-                      - name: "Approval(address,address,uint256)"
-                        filtered: false
-                        hasVerifiedContract: true
+              examples:
+                successful_lookup:
+                  summary: Successful lookup with results
+                  value:
+                    ok: true
+                    result:
+                      function:
+                        "0xa9059cbb":
+                          - name: "transfer(address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                        "0x095ea7b3":
+                          - name: "approve(address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                      event:
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                          - name: "Transfer(address,address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                        "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
+                          - name: "Approval(address,address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                no_results_openchain_compatible:
+                  summary: No results found (openchain.xyz compatible behavior)
+                  description: Functions return null for no matches, events return empty arrays - this matches openchain.xyz API behavior
+                  value:
+                    ok: true
+                    result:
+                      function:
+                        "0x12345678": null
+                      event:
+                        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef": []
+                invalid_hash_format:
+                  summary: Invalid hash format handling
+                  description: Invalid hash lengths are handled gracefully - short function hashes return null, short event hashes return empty arrays
+                  value:
+                    ok: true
+                    result:
+                      function:
+                        "0x123": null
+                      event:
+                        "0x123": []
 
   /signature-database/v1/search:
     get:
@@ -289,8 +312,27 @@ paths:
 components:
   schemas:
     SignatureResponse:
+      type: object
       properties:
         function:
+          type: object
+          description: Function signatures by hash. Returns null for non-existent or invalid hashes (openchain.xyz compatible)
+          additionalProperties:
+            oneOf:
+              - type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    filtered:
+                      type: boolean
+                    hasVerifiedContract:
+                      type: boolean
+              - type: "null"
+        event:
+          type: object
+          description: Event signatures by hash. Returns empty array for non-existent or invalid hashes (openchain.xyz compatible)
           additionalProperties:
             type: array
             items:
