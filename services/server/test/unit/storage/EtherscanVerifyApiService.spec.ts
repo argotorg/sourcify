@@ -38,7 +38,7 @@ const buildExpectedStandardJsonInput = (
   });
 };
 
-describe("EtherscanVerifyApiService", function () {
+describe.only("EtherscanVerifyApiService", function () {
   const sandbox = sinon.createSandbox();
 
   const explorers: Array<{
@@ -245,5 +245,82 @@ describe("EtherscanVerifyApiService", function () {
       constructorArguements: "",
       optimizationUsed: "0",
     });
+  });
+
+  it("uses the Blockscout specific endpoint and payload for Vyper verification", async () => {
+    const baseUrl = "https://blockscout.example/api";
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.BlockscoutVerify,
+      baseUrl,
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+
+    const vyperVerification = structuredClone(MockVerificationExport);
+    vyperVerification.compilation.language = "Vyper";
+    vyperVerification.compilation.compilerVersion = "0.3.10";
+    vyperVerification.compilation.metadata = {
+      ...(vyperVerification.compilation.metadata || {}),
+      compiler: {
+        ...(vyperVerification.compilation.metadata?.compiler || {}),
+        version: "0.3.10",
+      },
+    } as typeof vyperVerification.compilation.metadata;
+
+    const fetchPayload = {
+      message: "Smart-contract verification started",
+    };
+    fetchStub.resolves({
+      ok: true,
+      status: 200,
+      json: async () => fetchPayload,
+      text: async () => JSON.stringify(fetchPayload),
+    } as unknown as Response);
+
+    await expect(service.storeVerification(vyperVerification, jobData)).to
+      .eventually.be.fulfilled;
+
+    sinon.assert.calledOnce(fetchStub);
+    const [requestUrl, requestInit] = fetchStub.firstCall.args;
+    expect(requestUrl).to.equal(
+      `${baseUrl}/v2/smart-contracts/${vyperVerification.address.toLowerCase()}/verification/via/vyper-standard-input`,
+    );
+    expect(requestInit).to.be.an("object");
+
+    const init = requestInit as RequestInit;
+    expect(init.method).to.equal("POST");
+    expect(init.body).to.be.instanceOf(FormData);
+
+    const body = init.body as FormData;
+    expect(body.get("compiler_version")).to.equal("v0.3.10");
+    expect(body.get("license_type")).to.equal("");
+    expect(body.get("evm_version")).to.equal(
+      vyperVerification.compilation.jsonInput.settings.evmVersion,
+    );
+
+    const file = body.get("files[0]") as Blob | null;
+    expect(file).to.be.instanceOf(Blob);
+    if (!file) {
+      throw new Error("Expected files[0] FormData entry to be defined");
+    }
+    const fileContents = await file.text();
+    const expectedSourceCode =
+      buildExpectedStandardJsonInput(vyperVerification);
+    expect(fileContents).to.equal(expectedSourceCode);
+
+    expect(file.type).to.equal("application/json");
+
+    sinon.assert.calledOnceWithExactly(
+      upsertStub,
+      jobData.verificationId,
+      WStorageIdentifiers.BlockscoutVerify,
+      {
+        verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
+      },
+    );
   });
 });

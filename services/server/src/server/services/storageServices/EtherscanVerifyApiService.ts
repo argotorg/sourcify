@@ -319,8 +319,7 @@ export class EtherscanVerifyApiService implements WStorageService {
   ): Promise<void> {
     if (
       verification.compilation.language === "Vyper" &&
-      (this.IDENTIFIER === WStorageIdentifiers.RoutescanVerify ||
-        this.IDENTIFIER === WStorageIdentifiers.BlockscoutVerify)
+      this.IDENTIFIER === WStorageIdentifiers.RoutescanVerify
     ) {
       logger.info(
         `${this.IDENTIFIER} does not support Etherscan API Vyper contract verification`,
@@ -345,6 +344,21 @@ export class EtherscanVerifyApiService implements WStorageService {
       logger.debug(
         "No Etherscan API endpoint configured for chain",
         submissionContext,
+      );
+      return;
+    }
+
+    // Special handling for Blockscout Vyper verification
+    // Blockscout uses a different endpoint and payload for Vyper contracts
+    if (
+      this.IDENTIFIER === WStorageIdentifiers.BlockscoutVerify &&
+      verification.compilation.language === "Vyper"
+    ) {
+      await this.handleBlockscoutVyperVerification(
+        verification,
+        apiBaseUrl,
+        submissionContext,
+        jobData,
       );
       return;
     }
@@ -444,6 +458,66 @@ export class EtherscanVerifyApiService implements WStorageService {
     return (await response.json()) as EtherscanRpcResponse;
   }
 
+  private async handleBlockscoutVyperVerification(
+    verification: VerificationExport,
+    apiBaseUrl: string,
+    submissionContext: {
+      identifier: string;
+      chainId: number;
+      address: string;
+    },
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<void> {
+    const url = this.buildBlockscoutVyperUrl(apiBaseUrl, verification.address);
+    const body = this.buildBlockscoutVyperPayload(verification);
+
+    const response = await fetch(url, {
+      method: "POST",
+      body,
+    });
+
+    // This case handles the Bad Requests cases or server errors
+    if (!response.ok) {
+      const responseText = await response.text();
+      if (jobData) {
+        this.storeExternalVerificationResult(jobData, {
+          error: responseText,
+        });
+      }
+      logger.warn("Blockscout Vyper verification request failed", {
+        status: response.status,
+        responseText,
+        apiBaseUrl,
+      });
+      throw new Error(
+        `Blockscout Vyper verification request failed (${response.status}): ${responseText}`,
+      );
+    }
+    const res = (await response.json()) as {
+      message: string;
+    };
+    if (jobData) {
+      // Blockscout does not return a verification ID,
+      // so we use a fixed string to indicate a successful submission
+      if (res.message === "Smart-contract verification started") {
+        this.storeExternalVerificationResult(jobData, {
+          verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
+        });
+      } else {
+        this.storeExternalVerificationResult(jobData, {
+          error: res.message,
+        });
+      }
+    }
+    logger.info("Submitted verification to explorer", {
+      ...submissionContext,
+      receiptId: res.message,
+    });
+  }
+
   private buildVerificationPayload(verification: VerificationExport): FormData {
     const formData = new FormData();
     formData.append(
@@ -466,6 +540,32 @@ export class EtherscanVerifyApiService implements WStorageService {
     return formData;
   }
 
+  private buildBlockscoutVyperPayload(
+    verification: VerificationExport,
+  ): FormData {
+    const formData = new FormData();
+    formData.append(
+      "compiler_version",
+      `v${verification.compilation.compilerVersion}`,
+    );
+    formData.append("license_type", "");
+    formData.append(
+      "evm_version",
+      verification.compilation.jsonInput.settings.evmVersion || "default",
+    );
+
+    const standardJsonInput = this.buildStandardJsonInput(verification);
+    formData.append(
+      "files[0]",
+      new Blob([standardJsonInput], {
+        type: "application/json",
+      }),
+      "vyper-standard-input.json",
+    );
+
+    return formData;
+  }
+
   private buildStandardJsonInput(verification: VerificationExport): string {
     const sources: Record<string, { content: string }> = {};
     for (const [path, content] of Object.entries(
@@ -481,6 +581,23 @@ export class EtherscanVerifyApiService implements WStorageService {
     };
 
     return JSON.stringify(jsonInput);
+  }
+
+  private buildBlockscoutVyperUrl(apiBaseUrl: string, address: string): string {
+    const url = new URL(apiBaseUrl);
+    const basePath = url.pathname.replace(/\/+$/, "");
+    const normalizedAddress = address.toLowerCase();
+    const fullPath =
+      `${basePath}/v2/smart-contracts/${normalizedAddress}/verification/via/vyper-standard-input`.replace(
+        /\/{2,}/g,
+        "/",
+      );
+
+    url.pathname = fullPath.startsWith("/") ? fullPath : `/${fullPath}`;
+    url.search = "";
+    url.hash = "";
+
+    return url.toString();
   }
 
   private buildContractName(verification: VerificationExport): string {
