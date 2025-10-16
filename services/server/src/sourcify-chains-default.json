@@ -4,7 +4,7 @@
     "supported": true,
     "etherscanApi": {
       "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY"
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_MAINNET"
     },
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
