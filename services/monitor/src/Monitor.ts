@@ -61,7 +61,9 @@ export default class Monitor extends EventEmitter {
       } else {
         return new SourcifyChain({
           chainId: chain.chainId,
-          rpc: authenticateRpcs(chain),
+          rpcs: authenticateRpcs(chain).map((rpc) => ({
+            rpc,
+          })),
           name: chain.name,
           supported: true,
         });

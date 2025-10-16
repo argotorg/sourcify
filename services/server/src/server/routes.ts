@@ -3,7 +3,6 @@ import logger, { setLogLevel } from "../common/logger";
 import { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
 import apiV1Routes from "./apiv1/routes";
-import signatureApiRoutes from "./signature-api/routes";
 
 const router: Router = Router();
 
@@ -31,21 +30,19 @@ router.get("/chains", (_req, res) => {
   const chainRepository = _req.app.get("chainRepository") as ChainRepository;
   const sourcifyChainsArray = chainRepository.sourcifyChainsArray;
   const sourcifyChains = sourcifyChainsArray.map(
-    ({
-      rpcWithoutApiKeys,
-      name,
-      title,
-      chainId,
-      supported,
-      etherscanApi,
-      traceSupportedRPCs,
-    }) => {
+    ({ rpcs, name, title, chainId, supported, etherscanApi }) => {
       return {
         name,
         title,
         chainId,
-        rpc: rpcWithoutApiKeys,
-        traceSupportedRPCs,
+        rpc: rpcs
+          .map((r) => r.urlWithoutApiKey)
+          .filter((url) => url !== undefined),
+        traceSupportedRPCs: rpcs
+          .map((r, index) =>
+            r.traceSupport ? { type: r.traceSupport, index } : null,
+          )
+          .filter((r) => r !== null),
         supported,
         etherscanAPI: etherscanApi?.supported ?? false, // Needed in the UI
       };
@@ -57,6 +54,4 @@ router.get("/chains", (_req, res) => {
 
 router.use("/", apiV1Routes);
 router.use("/v2", apiV2Routes);
-router.use("/signature-database", signatureApiRoutes);
-
 export default router;

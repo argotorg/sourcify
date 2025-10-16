@@ -135,7 +135,11 @@ const hardhatChain = {
   nativeCurrency: { name: 'localETH', symbol: 'localETH', decimals: 18 },
   network: 'testnet',
   networkId: 31337,
-  rpc: [`http://localhost:${HARDHAT_PORT}`],
+  rpcs: [
+    {
+      rpc: `http://localhost:${HARDHAT_PORT}`,
+    },
+  ],
   supported: true,
 };
 
@@ -148,7 +152,7 @@ describe('Verification Class Tests', () => {
 
   before(async () => {
     hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
-    signer = await sourcifyChainHardhat.providers[0].getSigner();
+    signer = await sourcifyChainHardhat.rpcs[0].provider!.getSigner();
   });
 
   beforeEach(() => {
@@ -588,7 +592,13 @@ describe('Verification Class Tests', () => {
       // Create a chain with invalid RPC to simulate unavailability
       const unavailableChain = new SourcifyChain({
         ...hardhatChain,
-        rpc: ['http://localhost:1234'],
+        rpcs: [
+          {
+            rpc: 'http://localhost:1234',
+            urlWithoutApiKey: 'http://localhost:1234',
+            maskedUrl: 'http://localhost:1234',
+          },
+        ],
       });
 
       const compilation = await getCompilationFromMetadata(contractFolderPath);

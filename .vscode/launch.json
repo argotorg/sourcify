@@ -35,6 +35,23 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "4Byte - without build",
+      "program": "${workspaceFolder}/services/4byte/dist/cli.js",
+      "envFile": "${workspaceFolder}/services/4byte/.env",
+      "outFiles": [
+        "${workspaceFolder}/services/4byte/dist/**/*.js",
+        "${workspaceFolder}/packages/**/build/**/*.js"
+      ],
+      "env": {
+        // "NODE_ENV": "production"
+      },
+      "smartStep": true,
+      "console": "integratedTerminal",
+      "outputCapture": "std"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Monitor - without build",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "dist/index.js",
@@ -73,8 +90,8 @@
       "env": {
         // "DEBUG": "express:*", // Debug all express modules *
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/integration/**/*.spec.ts",
         "-r",
@@ -97,8 +114,8 @@
       "env": {
         // "TEST_CHAIN": "84532",
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/chains/etherscan-instances.spec.ts",
         "-r",
@@ -173,6 +190,32 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Mocha - 4Byte",
+      "cwd": "${workspaceFolder}/services/4byte",
+      "program": "${workspaceRoot}/node_modules/.bin/mocha",
+      "preLaunchTask": "4byte:database-test:up",
+      "postDebugTask": "4byte:database-test:down",
+      "args": [
+        "--require", "ts-node/register",
+        "--exit",
+        "--recursive",
+        "test/**/*.spec.ts"
+        // Run a single test when debugging
+        // "--grep=should lookup signatures"
+      ],
+      "env": {
+        // "NODE_ENV": "test"
+        // "NODE_LOG_LEVEL": "debug"
+        "FOURBYTES_POSTGRES_HOST": "localhost",
+        "FOURBYTES_POSTGRES_PORT": "5433"
+      },
+      "smartStep": true,
+      "console": "integratedTerminal"
+      // "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Mocha - Monitor",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
@@ -196,8 +239,8 @@
       "env": {
         // "NEW_CHAIN_ID": "333000333"
       },
-      "preLaunchTask": "database-test:up",
-      "postDebugTask": "database-test:down",
+      "preLaunchTask": "server:database-test:up",
+      "postDebugTask": "server:database-test:down",
       "args": [
         "${workspaceFolder}/services/server/test/chains/chain-tests.spec.ts",
         "-r",

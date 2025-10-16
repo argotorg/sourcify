@@ -55,6 +55,9 @@ parameters:
   run-build-monitor:
     type: boolean
     default: false
+  run-build-4byte:
+    type: boolean
+    default: false
   run-build-packages:
     type: boolean
     default: false
@@ -152,24 +155,33 @@ workflows:
         #     ]
     jobs:
       - tests-node-v22
+      # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
       - build-push-server-amd64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
+      - build-push-4byte-amd64:
+          run-build: << pipeline.parameters.run-build-4byte >>
+          run-build-2: false # 4byte does not depend on packages
       - build-push-monitor-arm64:
           run-build: << pipeline.parameters.run-build-monitor >>
           run-build-2: << pipeline.parameters.run-build-packages >> # monitor depends on packages
       - build-push-server-arm64:
           run-build: << pipeline.parameters.run-build-server >>
           run-build-2: << pipeline.parameters.run-build-packages >> # server depends on packages
+      - build-push-4byte-arm64:
+          run-build: << pipeline.parameters.run-build-4byte >>
+          run-build-2: false # 4byte does not depend on packages
       - publish-multiarch-images:
           requires:
             - build-push-monitor-amd64
             - build-push-server-amd64
+            - build-push-4byte-amd64
             - build-push-monitor-arm64
             - build-push-server-arm64
+            - build-push-4byte-arm64
       - deploy:
           requires:
             - publish-multiarch-images
@@ -179,13 +191,19 @@ workflows:
       - monitor-e2e-holesky:
           requires:
             - deploy
+      - monitor-e2e-hoodi:
+          requires:
+            - deploy
       - verification-e2e-sepolia:
           requires:
             - deploy
       - verification-e2e-holesky:
           requires:
-            - deploy # Tests workflow for not staging or master
-  tests:
+            - deploy
+      - verification-e2e-hoodi:
+          requires:
+            - deploy 
+  tests: # Tests workflow for not staging or master
     when:
       and:
         - not:
@@ -211,6 +229,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
+  build-push-4byte-amd64:
+    <<: *build-base
+    environment:
+      SERVICE: "4byte"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE: "services/4byte/Dockerfile"
   # ARM64 builds
   build-push-monitor-arm64:
     <<: *build-base-arm64
@@ -224,6 +248,12 @@ jobs:
       SERVICE: "server"
       DOCKER_BUILD_CONTEXT: "."
       DOCKERFILE: "services/server/Dockerfile"
+  build-push-4byte-arm64:
+    <<: *build-base-arm64
+    environment:
+      SERVICE: "4byte"
+      DOCKER_BUILD_CONTEXT: "."
+      DOCKERFILE: "services/4byte/Dockerfile"
   publish-multiarch-images:
     docker:
       - image: cimg/base:2024.12
@@ -256,11 +286,18 @@ jobs:
   tests-node-v22:
     docker:
       - image: cimg/node:22.5.1
-      - image: postgres:16-alpine
+      - image: postgres:15-alpine
+        name: sourcify-db
         environment:
           POSTGRES_DB: sourcify
           POSTGRES_USER: sourcify
           POSTGRES_PASSWORD: sourcify
+      - image: postgres:15-alpine
+        name: fourbytes-db
+        environment:
+          POSTGRES_DB: fourbytes_test_db
+          POSTGRES_USER: fourbytes
+          POSTGRES_PASSWORD: fourbytes
     resource_class: large
     working_directory: ~/sourcify
     parameters:
@@ -282,15 +319,23 @@ jobs:
           name: lint
           command: npx lerna run check
       - run:
+          name: init the database submodule
+          command: cd services/database && git submodule update --init
+      - run:
           name: test
           command: npx lerna run test --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
-            SOURCIFY_POSTGRES_HOST: "localhost"
+            SOURCIFY_POSTGRES_HOST: "sourcify-db"
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432
+            SOURCIFY_POSTGRES_PORT: 5432 # On it's own db container
+            FOURBYTES_POSTGRES_HOST: "fourbytes-db"
+            FOURBYTES_POSTGRES_DB: "fourbytes_test_db"
+            FOURBYTES_POSTGRES_USER: "fourbytes"
+            FOURBYTES_POSTGRES_PASSWORD: "fourbytes"
+            FOURBYTES_POSTGRES_PORT: 5432 # On it's own db container
       - run:
           name: create lcov reports
           command: npx lerna run cov:lcov
@@ -305,6 +350,11 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  monitor-e2e-hoodi:
+    <<: *monitor-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi
   verification-e2e-sepolia:
     <<: *verification-e2e-base
     environment:
@@ -315,3 +365,8 @@ jobs:
     environment:
       CHAIN_ID: "17000"
       CHAIN_NAME: holesky
+  verification-e2e-hoodi:
+    <<: *verification-e2e-base
+    environment:
+      CHAIN_ID: "560048"
+      CHAIN_NAME: hoodi

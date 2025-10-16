@@ -136,6 +136,9 @@ const server = new Server(
         port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
       },
       schema: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
+      maxConnections: process.env.SOURCIFY_POSTGRES_MAX_CONNECTIONS
+        ? parseInt(process.env.SOURCIFY_POSTGRES_MAX_CONNECTIONS)
+        : undefined,
     },
     allianceDatabaseServiceOptions: {
       googleCloudSql: {
@@ -153,6 +156,9 @@ const server = new Server(
         port: parseInt(process.env.ALLIANCE_POSTGRES_PORT || "5432"),
       },
       schema: process.env.ALLIANCE_POSTGRES_SCHEMA as string,
+      maxConnections: process.env.ALLIANCE_DB_MAX_CONNECTIONS
+        ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
+        : undefined,
     },
   },
 );

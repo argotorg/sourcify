@@ -9,6 +9,8 @@ A complete dump of the Sourcify database schema can be found in `./sourcify-data
 
 ## Running the database
 
+We use PostgreSQL 15.13 for the database. Higher versions should also work but are not tested.
+
 ### Run with Docker
 
 For convenience, you can run the Postgres container in `docker-compose.yml` with
@@ -36,6 +38,14 @@ Please initialize the Verifier Alliance [database-specs](https://github.com/veri
 ```bash
 git submodule update --init
 ```
+
+**Extensions**
+
+- `pg_cron`: used to schedule the refresh of the signature stats materialized view. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
+  - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron job will be skipped in the migration.
+  - In Google Cloud SQL, you can install the extension by setting the flag `cloudsql.enable_pg_cron` to `true`, and setting the `cron.database_name` flag to the name of the database you are using.
+- `pg_trgm`: used to create the index on the `signatures` table.
+- `pgcrypto`: used to create the `signature_type_enum` type.
 
 dbmate is used to manage the database migrations.
 A local installation of dbmate comes with `npm i`.
@@ -77,7 +87,7 @@ Please follow these steps:
 
 1. Create a new migration file: `npm run migrate:new <migration_name>`
 2. Add the required SQL for the schema change to the generated migration file (e.g., `./migrations/20250717103432_<migration_name>.sql`).
-3. Apply the new migration to a local database to generate the updated `sourcify-database.sql` dump: `npm run migrate:up`
+3. Apply the new migration to a local database: `npm run migrate:up`. `dbmate` automatically generates the updated `sourcify-database.sql` dump. There won't be an error if the dump cannot be generated. You can run `dbmate dump` to generate the dump manually or see the errors.
 4. Commit both the new migration file and the updated `sourcify-database.sql` to the repository.
 
 Important: Since the schema dump should be committed, ensure that the connected database does not contain any custom schema changes that are not part of the migrations.

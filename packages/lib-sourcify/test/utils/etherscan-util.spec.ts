@@ -7,9 +7,10 @@ import {
   SolidityJsonInput,
   VyperCompilation,
   VyperJsonInput,
-  SourcifyChain,
   EtherscanUtils,
 } from '../../src';
+// Import SourcifyChain from built package to match the type expected by mockEtherscanApi
+import { SourcifyChain } from '@ethereum-sourcify/lib-sourcify';
 import { solc, vyperCompiler } from '../utils';
 // Here we import the mock responses directly from server to avoid duplication
 // and ensure consistency across lib-sourcify and server tests.
@@ -33,10 +34,10 @@ function makeChain(chainId: number): SourcifyChain {
   return new SourcifyChain({
     name: 'Test',
     chainId,
-    rpc: [],
+    rpcs: [],
     supported: false, // avoid provider initialization
     etherscanApi: { supported: true },
-  } as any);
+  });
 }
 
 describe('etherscan util (lib)', function () {

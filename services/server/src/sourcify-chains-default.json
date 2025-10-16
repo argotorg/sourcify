@@ -59,6 +59,58 @@
       "blockscoutApi": { "url": "https://testnet.privixscan.io" }
     }
   },
+  "1135": {
+    "sourcifyName": "Lisk Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.lisk.com"
+      }
+    }
+  },
+  "130": {
+    "sourcifyName": "Unichain",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://unichain.blockscout.com"
+      }
+    }
+  },
+  "167000": {
+    "sourcifyName": "Taiko Aleshia",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.mainnet.taiko.xyz"
+      }
+    }
+  },
+  "81457": {
+    "sourcifyName": "Blast",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_BLAST"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    },
+    "rpc": [
+      {
+        "type": "APIKeyRPC",
+        "url": "https://blast-mainnet.g.alchemy.com/v2/{API_KEY}",
+        "apiKeyEnvName": "ALCHEMY_API_KEY"
+      },
+      {
+        "type": "APIKeyRPC",
+        "url": "https://{SUBDOMAIN}.blast-mainnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
+        "traceSupport": "debug_traceTransaction"
+      }
+    ]
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": true,
@@ -390,24 +442,18 @@
   },
   "44787": {
     "sourcifyName": "Celo Alfajores Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_CELO"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true,
-      "blockscoutScrape": {
-        "url": "https://explorer.celo.org/alfajores/"
-      }
-    }
+    "supported": false
   },
   "62320": {
     "sourcifyName": "Celo Baklava Testnet",
+    "supported": false
+  },
+  "11142220": {
+    "sourcifyName": "Celo Sepolia Testnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://baklava-blockscout.celo-testnet.org/"
+      "blockscoutApi": {
+        "url": "https://celo-sepolia.blockscout.com/"
       }
     }
   },
@@ -1308,14 +1354,7 @@
   },
   "25": {
     "sourcifyName": "Cronos Mainnet Beta",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_CRONOS"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    }
+    "supported": true
   },
   "1339": {
     "sourcifyName": "Elysium Mainnet Chain",
@@ -1386,7 +1425,7 @@
   },
   "33101": {
     "sourcifyName": "Zilliqa EVM Testnet",
-    "supported": false
+    "supported": true
   },
   "32770": {
     "sourcifyName": "Zilliqa 2 EVM proto-mainnet",

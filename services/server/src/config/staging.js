@@ -13,19 +13,19 @@ module.exports = {
     writeOrWarn: [
       WStorageIdentifiers.AllianceDatabase,
       WStorageIdentifiers.S3Repository,
-      RWStorageIdentifiers.RepositoryV1,
+      // RWStorageIdentifiers.RepositoryV1, // We no longer write to the repositoryV1
     ],
     writeOrErr: [
-      WStorageIdentifiers.RepositoryV2,
+      // WStorageIdentifiers.RepositoryV2, // We no longer write to the repositoryV2
       RWStorageIdentifiers.SourcifyDatabase,
     ],
   },
-  repositoryV1: {
-    path: "/home/app/data/repository",
-  },
-  repositoryV2: {
-    path: "/home/app/data/repositoryV2",
-  },
+  // repositoryV1: {
+  //   path: "/home/app/data/repository",
+  // },
+  // repositoryV2: {
+  //   path: "/home/app/data/repositoryV2",
+  // },
   solcRepo: "/home/app/data/compilers/solc",
   solJsonRepo: "/home/app/data/compilers/soljson",
   vyperRepo: "/home/app/data/compilers/vyper",

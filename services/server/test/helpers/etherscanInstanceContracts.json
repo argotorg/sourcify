@@ -113,18 +113,6 @@
       "expectedStatus": "perfect"
     }
   ],
-  "44787": [
-    {
-      "address": "0xfb1bffC9d739B8D520DaF37dF666da4C687191EA",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x1ff8030705dB05DcDEbEA2BF0f8CDAd1966A71C6",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
   "42220": [
     {
       "address": "0x8084936982D089130e001b470eDf58faCA445008",
@@ -259,23 +247,6 @@
     },
     {
       "address": "0x8517d3E3801F69c1F446dd41E71B37E8b8598367",
-      "type": "standard-json",
-      "expectedStatus": "perfect"
-    }
-  ],
-  "25": [
-    {
-      "address": "0xE3023cd45E2Bc9Dd0e9a3F0484e4fBf40b4DF108",
-      "type": "single",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0xc6Cfb3f2D9D33FF1D0B77cE78c5dD6f790B5605A",
-      "type": "multiple",
-      "expectedStatus": "partial"
-    },
-    {
-      "address": "0x17eC36E07897612441463e85E9413891Dc06c1DC",
       "type": "standard-json",
       "expectedStatus": "perfect"
     }
@@ -456,6 +427,18 @@
       "address": "0x0178DaECcbA08EF6bfbac16490AEFBDF84D46B65",
       "type": "single",
       "expectedStatus": "partial"
+    }
+  ],
+  "81457": [
+    {
+      "address": "0x13ce2ca4602d5d1dd323014cd5a4E8414D310A06",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    },
+    {
+      "address": "0xCc20a2a0558c4C8D04266AE66F8acdB575E9d9ED",
+      "type": "single",
+      "expectedStatus": "perfect"
     }
   ]
 }

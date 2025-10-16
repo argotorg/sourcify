@@ -16,8 +16,8 @@ config["session"].storeType = "memory";
 
 type ChainApiResponse = Pick<
   SourcifyChain,
-  "name" | "title" | "chainId" | "rpc" | "supported"
-> & { etherscanAPI: boolean };
+  "name" | "title" | "chainId" | "supported"
+> & { etherscanAPI: boolean; rpc?: string[] };
 
 const TEST_TIME = process.env.TEST_TIME || "120000"; // 2 minutes
 const CUSTOM_PORT = 5556;
@@ -118,6 +118,15 @@ describe("Test Supported Chains", function () {
     "1149",
     "Symplexia Smart Chain",
     "shared/",
+  );
+
+  // Lisk Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "1135",
+    "Lisk Mainnet",
+    "multicall-src/",
+    "partial",
   );
 
   verifyContract(
@@ -229,13 +238,6 @@ describe("Test Supported Chains", function () {
   );
 
   verifyContract(
-    "0x8F78b9c92a68DdF719849a40702cFBfa4EB60dD0",
-    "44787",
-    "Celo Alfajores Testnet",
-    "shared/",
-  );
-
-  verifyContract(
     "0xd46fd24ea21F04459407Fb0B518451e54d0b07a1",
     "97",
     "Binance Smart Chain Testnet",
@@ -249,6 +251,24 @@ describe("Test Supported Chains", function () {
     "137/",
   );
 
+  // Unichain Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "130",
+    "Unichain",
+    "multicall-src/",
+    "partial",
+  );
+
+  // Blast Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "81457",
+    "Blast",
+    "multicall-src/",
+    "partial",
+  );
+
   // verifyContract(
   //   "0x5D40b45C202531d040e0CCD51C48554109197cD3",
   //   "80001",
@@ -257,17 +277,10 @@ describe("Test Supported Chains", function () {
   // );
 
   verifyContract(
-    "0x03943C3ef00d92e130185CeBC0bcc435Def2cC94",
-    "42220",
-    "Celo Mainnet",
-    "42220/",
-  );
-
-  verifyContract(
-    "0xdd5FFA1DF887D5A42931a746BaAd62574501A5Aa",
-    "62320",
-    "Celo Baklava Testnet",
-    "62320/",
+    "0x0Ec727eD4b65Ca0e2D80A6a9fdA73D4d3bb042A6",
+    "11142220",
+    "Celo Sepolia Testnet",
+    "shared/",
   );
 
   verifyContract(
@@ -1026,6 +1039,15 @@ describe("Test Supported Chains", function () {
   //   "shared/",
   //   "partial"
   // );
+
+  // Taiko Aleshia
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "167000",
+    "Taiko Aleshia",
+    "multicall-src/",
+    "partial",
+  );
 
   // ZORA Mainnet
   verifyContract(

@@ -1,8 +1,3 @@
-\restrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
-
--- Dumped from database version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
--- Dumped by pg_dump version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -13,6 +8,34 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
+
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
 
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
@@ -1008,6 +1031,32 @@ CREATE TABLE public.signatures (
 
 
 --
+-- Name: signature_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW public.signature_stats AS
+ SELECT (compiled_contracts_signatures.signature_type)::text AS signature_type,
+    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count,
+    now() AS refreshed_at
+   FROM public.compiled_contracts_signatures
+  GROUP BY compiled_contracts_signatures.signature_type
+UNION ALL
+ SELECT 'unknown'::text AS signature_type,
+    count(*) AS count,
+    now() AS refreshed_at
+   FROM public.signatures s
+  WHERE (NOT (EXISTS ( SELECT 1
+           FROM public.compiled_contracts_signatures ccs
+          WHERE (ccs.signature_hash_32 = s.signature_hash_32))))
+UNION ALL
+ SELECT 'total'::text AS signature_type,
+    count(*) AS count,
+    now() AS refreshed_at
+   FROM public.signatures
+  WITH NO DATA;
+
+
+--
 -- Name: sources; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1496,10 +1545,24 @@ CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtim
 
 
 --
+-- Name: signature_stats_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX signature_stats_type_idx ON public.signature_stats USING btree (signature_type);
+
+
+--
 -- Name: signatures_hash_4_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX signatures_hash_4_idx ON public.signatures USING btree (signature_hash_4);
+
+
+--
+-- Name: signatures_signature_trgm_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX signatures_signature_trgm_idx ON public.signatures USING gin (signature public.gin_trgm_ops);
 
 
 --
@@ -1989,8 +2052,6 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict TnBpHlrqaAKIKzkVi8UXta6dKKilKvtqbOUl1OV1fco96HyAydsxcgxnhLcaLzA
-
 
 --
 -- Dbmate schema migrations
@@ -2000,4 +2061,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
     ('20250722133557'),
     ('20250723145429'),
-    ('20250828092603');
+    ('20250828092603'),
+    ('20250922140427'),
+    ('20250922141802');

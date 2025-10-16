@@ -16,7 +16,11 @@ export default class SourcifyChainMock extends SourcifyChain {
     super({
       name: "SourcifyChainMock",
       chainId: chainId,
-      rpc: ["http://mock"],
+      rpcs: [
+        {
+          rpc: "http://mock",
+        },
+      ],
       supported: true,
     });
   }
