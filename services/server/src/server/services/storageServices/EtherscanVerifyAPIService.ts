@@ -476,16 +476,7 @@ export class EtherscanVerifyApiService implements WStorageService {
 
   private buildContractName(verification: VerificationExport): string {
     const target = verification.compilation.compilationTarget;
-
-    if (target?.path && target?.name) {
-      return `${target.path}:${target.name}`;
-    }
-
-    if (target?.name) {
-      return target.name;
-    }
-
-    return "Contract";
+    return `${target.path}:${target.name}`;
   }
 
   private getCompilerVersion(verification: VerificationExport): string {
