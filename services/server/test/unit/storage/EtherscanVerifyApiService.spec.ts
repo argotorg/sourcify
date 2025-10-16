@@ -13,6 +13,31 @@ import type { Database } from "../../../src/server/services/utils/Database";
 
 use(chaiAsPromised);
 
+const formDataToObject = (formData: FormData): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    result[key] = value.toString();
+  }
+  return result;
+};
+
+const buildExpectedStandardJsonInput = (
+  verification: typeof MockVerificationExport,
+): string => {
+  const sources: Record<string, { content: string }> = {};
+  for (const [path, content] of Object.entries(
+    verification.compilation.sources,
+  )) {
+    sources[path] = { content };
+  }
+
+  return JSON.stringify({
+    language: verification.compilation.language,
+    sources,
+    settings: verification.compilation.jsonInput.settings,
+  });
+};
+
 describe.only("EtherscanVerifyApiService", function () {
   const sandbox = sinon.createSandbox();
 
@@ -119,14 +144,16 @@ describe.only("EtherscanVerifyApiService", function () {
         expect(init.body).to.be.instanceOf(FormData);
 
         const body = init.body as FormData;
-        expect(body.get("codeformat")).to.equal(
-          "solidity-standard-json-input",
-        );
-        expect(body.get("contractaddress")).to.equal(verification.address);
-        expect(body.get("contractname")).to.equal(
-          `${verification.compilation.compilationTarget?.path}:${verification.compilation.compilationTarget?.name}`,
-        );
-        expect(body.get("constructorArguements")).to.equal("");
+        const formData = formDataToObject(body);
+        const expectedSourceCode = buildExpectedStandardJsonInput(verification);
+        expect(formData).to.deep.equal({
+          codeformat: "solidity-standard-json-input",
+          sourceCode: expectedSourceCode,
+          contractaddress: verification.address,
+          contractname: `${verification.compilation.compilationTarget?.path}:${verification.compilation.compilationTarget?.name}`,
+          compilerversion: `v${verification.compilation.compilerVersion}`,
+          constructorArguements: "",
+        });
 
         sinon.assert.calledOnceWithExactly(
           upsertStub,
@@ -206,6 +233,17 @@ describe.only("EtherscanVerifyApiService", function () {
 
     const [, requestInit] = fetchStub.firstCall.args;
     const body = (requestInit as RequestInit).body as FormData;
-    expect(body.get("codeformat")).to.equal("vyper-standard-json-input");
+    const formData = formDataToObject(body);
+    const expectedSourceCode =
+      buildExpectedStandardJsonInput(vyperVerification);
+    expect(formData).to.deep.equal({
+      codeformat: "vyper-standard-json-input",
+      sourceCode: expectedSourceCode,
+      contractaddress: vyperVerification.address,
+      contractname: `${vyperVerification.compilation.compilationTarget?.path}:${vyperVerification.compilation.compilationTarget?.name}`,
+      compilerversion: "vyper:0.3.10",
+      constructorArguements: "",
+      optimizationUsed: "0",
+    });
   });
 });
