@@ -13,7 +13,7 @@ import type { Database } from "../../../src/server/services/utils/Database";
 
 use(chaiAsPromised);
 
-describe("EtherscanVerifyApiService", function () {
+describe.only("EtherscanVerifyApiService", function () {
   const sandbox = sinon.createSandbox();
 
   const explorers: Array<{
@@ -110,23 +110,23 @@ describe("EtherscanVerifyApiService", function () {
         sinon.assert.calledOnce(fetchStub);
         const [requestUrl, requestInit] = fetchStub.firstCall.args;
         expect(requestUrl).to.equal(
-          `${baseUrl}?module=contract&action=verifysourcecode`,
+          `${baseUrl}?module=contract&action=verifysourcecode&chainid=${verification.chainId}`,
         );
 
         expect(requestInit).to.be.an("object");
         const init = requestInit as RequestInit;
         expect(init.method).to.equal("POST");
-        expect(
-          (init.headers as Record<string, string>)["Content-Type"],
-        ).to.equal("application/x-www-form-urlencoded");
-        expect(init.body).to.be.a("string");
+        expect(init.body).to.be.instanceOf(FormData);
 
-        const body = init.body as string;
-        expect(body).to.include("codeformat=solidity-standard-json-input");
-        expect(body).to.include(
-          `contractaddress=${encodeURIComponent(verification.address)}`,
+        const body = init.body as FormData;
+        expect(body.get("codeformat")).to.equal(
+          "solidity-standard-json-input",
         );
-        expect(body).to.include("constructorArguements=");
+        expect(body.get("contractaddress")).to.equal(verification.address);
+        expect(body.get("contractname")).to.equal(
+          `${verification.compilation.compilationTarget?.path}:${verification.compilation.compilationTarget?.name}`,
+        );
+        expect(body.get("constructorArguements")).to.equal("");
 
         sinon.assert.calledOnceWithExactly(
           upsertStub,
@@ -205,7 +205,7 @@ describe("EtherscanVerifyApiService", function () {
       .eventually.be.fulfilled;
 
     const [, requestInit] = fetchStub.firstCall.args;
-    const body = (requestInit as RequestInit).body as string;
-    expect(body).to.include("codeformat=vyper-standard-json-input");
+    const body = (requestInit as RequestInit).body as FormData;
+    expect(body.get("codeformat")).to.equal("vyper-standard-json-input");
   });
 });
