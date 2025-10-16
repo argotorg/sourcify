@@ -20,7 +20,7 @@
     "test": "npm run postgres-test:migrate & npx c8 --reporter=none mocha --exit --recursive test/unit/** test/integration/**",
     "test:chains": "npm run postgres-test:migrate && mocha test/chains/chain-tests.spec.ts --reporter mochawesome --reporter-options reportDir=chain-tests-report,reportFilename=report --exit",
     "test:etherscan-instances": "npm run postgres-test:migrate && mocha --exit test/chains/etherscan-instances.spec.ts ",
-    "test-local": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run test; status=$?; npm run postgres-test:stop; exit $status",
+    "test-local": "npm run check && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run test; status=$?; npm run postgres-test:stop; exit $status",
     "test-local:chains": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run test:chains; status=$?; npm run postgres-test:stop; exit $status",
     "test-local:etherscan-instances": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run test:etherscan-instances; status=$?; npm run postgres-test:stop; exit $status",
     "fix": "run-s fix:*",

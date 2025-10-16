@@ -12,6 +12,14 @@ chai.use(chaiHttp);
 describe("4byte API End-to-End Tests", function () {
   const serverFixture = new FourByteServerFixture();
 
+  /**
+   * API Compatibility Note:
+   * This API maintains compatibility with openchain.xyz behavior:
+   * - Function signatures return null for no matches or invalid hashes
+   * - Event signatures return empty arrays for no matches or invalid hashes
+   * - Hash validation: functions must be exactly 10 chars (0x + 8 hex), events must be exactly 66 chars (0x + 64 hex)
+   */
+
   describe("GET /signature-database/v1/lookup", function () {
     it("should lookup function signatures by 4-byte hash and filter by default", async function () {
       const signature = "transfer(address,uint256)";
@@ -32,7 +40,7 @@ describe("4byte API End-to-End Tests", function () {
       });
     });
 
-    it("should lookup function signatures by 32-byte hash", async function () {
+    it("should return null for function signatures when using 32-byte hash (openchain.xyz compatible)", async function () {
       const signature = "balanceOf(address)";
       const hash32 = keccak256str(signature);
 
@@ -42,10 +50,8 @@ describe("4byte API End-to-End Tests", function () {
         .query({ function: hash32 });
 
       chai.expect(res).to.have.status(200);
-      chai.expect(res.body.result.function[hash32][0]).to.deep.include({
-        name: signature,
-        filtered: false,
-      });
+      // Function lookup with 32-byte hash should return null due to length validation (openchain.xyz compatible)
+      chai.expect(res.body.result.function[hash32]).to.be.null;
     });
 
     it("should lookup event signatures by 32-byte hash", async function () {
@@ -104,15 +110,70 @@ describe("4byte API End-to-End Tests", function () {
       chai.expect(res.body.result.function[hash2][0].name).to.equal(sig2);
     });
 
-    it("should return empty result for non-existent signatures", async function () {
+    it("should return null for non-existent function signatures (openchain.xyz compatible)", async function () {
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/lookup")
         .query({ function: "0x12345678" });
 
       chai.expect(res).to.have.status(200);
-      chai.expect(res.body.result.function["0x12345678"]).to.be.an("array").that
-        .is.empty;
+      // Openchain API returns null for functions with no matches, empty array for events
+      chai.expect(res.body.result.function["0x12345678"]).to.be.null;
+    });
+
+    it("should return empty array for non-existent event signatures (openchain.xyz compatible)", async function () {
+      const res = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({
+          event:
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        });
+
+      chai.expect(res).to.have.status(200);
+      // Openchain API returns null for functions with no matches, empty array for events
+      chai
+        .expect(
+          res.body.result.event[
+            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+          ],
+        )
+        .to.be.an("array").that.is.empty;
+    });
+
+    it("should return 500 for invalid function hash lengths", async function () {
+      const testCases = ["0x123", "0x12345", "0x123456789", "0x123456789abc"]; // Various invalid lengths
+
+      for (const invalidHash of testCases) {
+        const res = await chai
+          .request(`http://localhost:${serverFixture.port}`)
+          .get("/signature-database/v1/lookup")
+          .query({ function: invalidHash });
+
+        chai.expect(res).to.have.status(500);
+        chai.expect(res.body).to.have.property("ok", false);
+        chai.expect(res.body.error).to.include("Invalid hash");
+      }
+    });
+
+    it("should return 500 for invalid event hash lengths", async function () {
+      const testCases = [
+        "0x123",
+        "0x12345",
+        "0x123456789abc",
+        "0x123456789abcdef",
+      ]; // Various invalid lengths
+
+      for (const invalidHash of testCases) {
+        const res = await chai
+          .request(`http://localhost:${serverFixture.port}`)
+          .get("/signature-database/v1/lookup")
+          .query({ event: invalidHash });
+
+        chai.expect(res).to.have.status(500);
+        chai.expect(res.body).to.have.property("ok", false);
+        chai.expect(res.body.error).to.include("Invalid hash");
+      }
     });
 
     it("should handle filter parameter to be false", async function () {
@@ -130,13 +191,14 @@ describe("4byte API End-to-End Tests", function () {
         .query({ function: hash4, filter: "false" });
 
       chai.expect(res).to.have.status(200);
+      // With filter=false, we should get both canonical and non-canonical signatures
       chai.expect(res.body.result.function[hash4]).to.have.deep.members([
         { name: signature, filtered: false, hasVerifiedContract: true },
         { name: collusionSignature, filtered: true, hasVerifiedContract: true },
       ]);
     });
 
-    it("should handle invalid hash format with proper error", async function () {
+    it("should return 500 for invalid hash format", async function () {
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/lookup")
@@ -144,6 +206,25 @@ describe("4byte API End-to-End Tests", function () {
 
       chai.expect(res).to.have.status(500);
       chai.expect(res.body).to.have.property("ok", false);
+      chai.expect(res.body.error).to.include("Invalid hash");
+    });
+
+    it("should validate exact hash lengths correctly", async function () {
+      // Test exact valid lengths
+      const validFunctionHash = "0x12345678"; // 10 characters
+      const validEventHash =
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // 66 characters
+
+      const res = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: validFunctionHash, event: validEventHash });
+
+      chai.expect(res).to.have.status(200);
+      // Even though these hashes don't exist, they should return proper null/empty responses due to correct length
+      chai.expect(res.body.result.function[validFunctionHash]).to.be.null;
+      chai.expect(res.body.result.event[validEventHash]).to.be.an("array").that
+        .is.empty;
     });
   });
 
@@ -655,7 +736,7 @@ describe("4byte API End-to-End Tests", function () {
       chai.expect(res).to.have.status(404);
     });
 
-    it("should handle malformed requests gracefully", async function () {
+    it("should return 500 for malformed hash requests", async function () {
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/lookup")
@@ -663,6 +744,7 @@ describe("4byte API End-to-End Tests", function () {
 
       chai.expect(res).to.have.status(500);
       chai.expect(res.body).to.have.property("ok", false);
+      chai.expect(res.body.error).to.include("Invalid hash");
     });
   });
 
