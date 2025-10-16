@@ -32,8 +32,6 @@ tags:
     description: API v2 - Submit a contract for verification
   - name: Verification Jobs
     description: API v2 - Check the status of a verification job
-  - name: Signature Database
-    description: Lookup, search and get statistics for function, event and error signatures
   - name: (Deprecated) Stateless Verification
     description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
   - name: (Deprecated) Repository
