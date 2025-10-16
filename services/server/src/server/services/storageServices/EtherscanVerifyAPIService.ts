@@ -31,10 +31,12 @@ const ROUTESCAN_CHAINLIST_ENDPOINTS = [
 
 type ChainApiUrls = Record<string, string>;
 
-interface EtherscanChainListEntry {
-  chainid?: string;
-  apiurl?: string;
-  status?: number;
+interface EtherscanChainApiResult {
+  result?: {
+    chainid?: string;
+    apiurl?: string;
+    status?: number;
+  }[];
 }
 
 const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
@@ -65,9 +67,7 @@ const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
     );
   }
 
-  const payload = (await response.json()) as {
-    result?: EtherscanChainListEntry[];
-  };
+  const payload = (await response.json()) as EtherscanChainApiResult;
 
   if (!Array.isArray(payload.result)) {
     throw new Error("Invalid Etherscan chain list payload");
@@ -100,6 +100,12 @@ const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
   return apiUrls;
 };
 
+interface BlockscoutChainApiResult {
+  [chainId: string]: {
+    explorers?: { url?: string; hostedBy?: string }[];
+  };
+}
+
 const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
   let response: Response;
   const endpoint = DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT;
@@ -123,12 +129,7 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
       `Failed to load Blockscout chain list (${response.status}): ${body}`,
     );
   }
-  const payload = (await response.json()) as Record<
-    string,
-    {
-      explorers?: Array<{ url?: string; hostedBy?: string }>;
-    }
-  >;
+  const payload = (await response.json()) as BlockscoutChainApiResult;
   const apiUrls: Record<string, string> = {};
   for (const [chainId, chainData] of Object.entries(payload)) {
     const explorers = chainData?.explorers;
@@ -159,12 +160,14 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
   return apiUrls;
 };
 
-const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
-  type RoutescanEntry = {
-    chainId?: string | number;
-    evmChainId?: string | number;
-  };
+interface RoutescanChainApiResult {
+  items: {
+    chainId: string | number;
+    evmChainId: string | number;
+  }[];
+}
 
+const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
   const apiUrls: ChainApiUrls = {};
 
   for (const { workspace, endpoint } of ROUTESCAN_CHAINLIST_ENDPOINTS) {
@@ -196,9 +199,7 @@ const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
       );
     }
 
-    const payload = (await response.json()) as {
-      items?: RoutescanEntry[];
-    };
+    const payload = (await response.json()) as RoutescanChainApiResult;
 
     if (!Array.isArray(payload.items)) {
       throw new Error(
@@ -405,9 +406,6 @@ export class EtherscanVerifyApiService implements WStorageService {
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
       body,
     });
 
@@ -421,26 +419,26 @@ export class EtherscanVerifyApiService implements WStorageService {
     return (await response.json()) as EtherscanRpcResponse;
   }
 
-  private buildVerificationPayload(verification: VerificationExport): string {
-    const params = new URLSearchParams();
-    params.append(
+  private buildVerificationPayload(verification: VerificationExport): FormData {
+    const formData = new FormData();
+    formData.append(
       "codeformat",
       this.getCodeFormat(verification.compilation.language),
     );
-    params.append("sourceCode", this.buildStandardJsonInput(verification));
-    params.append("contractaddress", verification.address);
-    params.append("contractname", this.buildContractName(verification));
-    params.append("compilerversion", this.getCompilerVersion(verification));
+    formData.append("sourceCode", this.buildStandardJsonInput(verification));
+    formData.append("contractaddress", verification.address);
+    formData.append("contractname", this.buildContractName(verification));
+    formData.append("compilerversion", this.getCompilerVersion(verification));
 
     const constructorArgs = this.getConstructorArguments(verification);
-    params.append("constructorArguements", constructorArgs || "");
+    formData.append("constructorArguements", constructorArgs || "");
 
     if (verification.compilation.language === "Vyper") {
       const vyperOptimization = this.getVyperOptimizationFlag(verification);
-      params.append("optimizationUsed", vyperOptimization ? "1" : "0");
+      formData.append("optimizationUsed", vyperOptimization ? "1" : "0");
     }
 
-    return params.toString();
+    return formData;
   }
 
   private buildStandardJsonInput(verification: VerificationExport): string {
@@ -503,6 +501,7 @@ export class EtherscanVerifyApiService implements WStorageService {
 
     url.searchParams.set("module", "contract");
     url.searchParams.set("action", action);
+    url.searchParams.set("chainid", String(chainId));
 
     const apiKey = this.getApiKey(chainId);
     if (apiKey) {
