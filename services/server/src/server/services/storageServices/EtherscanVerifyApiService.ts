@@ -349,17 +349,16 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
-    if (!jobData?.verificationId) {
-      return;
-    }
-
     let response: EtherscanRpcResponse;
     try {
       response = await this.submitVerification(verification, apiBaseUrl);
     } catch (error: any) {
-      this.storeExternalVerificationResult(jobData, {
-        error: error.message,
-      });
+      // Store the external verification result if we have job data
+      if (jobData) {
+        this.storeExternalVerificationResult(jobData, {
+          error: error.message,
+        });
+      }
       logger.error("Failed to submit verification to explorer", {
         ...submissionContext,
         error,
@@ -372,6 +371,11 @@ export class EtherscanVerifyApiService implements WStorageService {
       ...submissionContext,
       receiptId: response.result,
     });
+
+    // If we don't have job data, we cannot store the result
+    if (!jobData?.verificationId) {
+      return;
+    }
 
     // Record the result of the failed submission by storing the error message
     if (response.status !== "1" || response.message !== "OK") {
