@@ -137,9 +137,7 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
   for (const [chainId, chainData] of Object.entries(payload)) {
     const explorers = chainData?.explorers;
     if (!Array.isArray(explorers)) continue;
-    const blockscoutExplorer = explorers.find(
-      (explorer) => explorer?.hostedBy === "blockscout" && explorer.url,
-    );
+    const blockscoutExplorer = explorers.find((explorer) => explorer.url);
     if (!blockscoutExplorer?.url) continue;
     try {
       const explorerUrl = new URL(blockscoutExplorer.url);
