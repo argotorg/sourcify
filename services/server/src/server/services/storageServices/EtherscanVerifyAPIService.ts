@@ -8,6 +8,7 @@ import { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import { Database } from "../utils/Database";
 import { SourcifyDatabaseService } from "./SourcifyDatabaseService";
+import { ExternalVerification } from "../utils/database-util";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -346,7 +347,17 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
-    const response = await this.submitVerification(verification, apiBaseUrl);
+    let response: EtherscanRpcResponse;
+    try {
+      response = await this.submitVerification(verification, apiBaseUrl);
+    } catch (error) {
+      logger.error("Failed to submit verification to explorer", {
+        ...submissionContext,
+        error,
+        apiBaseUrl,
+      });
+      throw error;
+    }
 
     logger.info("Submitted verification to explorer", {
       ...submissionContext,
@@ -364,30 +375,35 @@ export class EtherscanVerifyApiService implements WStorageService {
         verificationJobId: jobData.verificationId,
         error: response.result,
       });
-      await this.database.upsertExternalVerification(
-        jobData.verificationId,
-        this.IDENTIFIER,
-        {
-          error: response.result,
-        },
-      );
+      this.storeExternalVerificationResult(jobData, {
+        error: response.result,
+      });
       return;
     }
 
+    // Record the result of the successful submission
+    this.storeExternalVerificationResult(jobData, {
+      verificationId: response.result,
+    });
+  }
+
+  private async storeExternalVerificationResult(
+    jobData: {
+      verificationId: string;
+      finishTime: Date;
+    },
+    response: ExternalVerification,
+  ): Promise<void> {
     // Record the result of the successful submission
     try {
       await this.database.upsertExternalVerification(
         jobData.verificationId,
         this.IDENTIFIER,
-        {
-          verificationId: response.result,
-        },
+        response,
       );
     } catch (error) {
       logger.error("Failed to record external verification receipt", {
-        ...submissionContext,
         verificationJobId: jobData.verificationId,
-        receiptId: response.result,
         error,
       });
     }
