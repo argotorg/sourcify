@@ -29,6 +29,8 @@ const ROUTESCAN_CHAINLIST_ENDPOINTS = [
     endpoint: "https://api.routescan.io/v2/network/testnet/evm/all/blockchains",
   },
 ] as const;
+const ROUTESCAN_API_URL_TEMPLATE =
+  "https://api.routescan.io/v2/network/${WORKSPACE}/evm/${CHAIN_ID}/etherscan/api";
 
 type ChainApiUrls = Record<string, string>;
 
@@ -227,10 +229,12 @@ const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
       }
 
       try {
-        const url = new URL("https://api.routescan.io/");
-        url.pathname = `/v2/network/${encodeURIComponent(
-          workspace,
-        )}/evm/${encodeURIComponent(String(chainId))}/etherscan/api`;
+        const url = new URL(
+          ROUTESCAN_API_URL_TEMPLATE.replace(
+            "${WORKSPACE}",
+            encodeURIComponent(workspace),
+          ).replace("${CHAIN_ID}", encodeURIComponent(String(chainId))),
+        );
         url.search = "";
         url.hash = "";
 
