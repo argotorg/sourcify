@@ -750,7 +750,7 @@ export type GetVerificationJobsByChainAndAddressResult = {
 };
 
 const sourcesAggregation =
-  "json_objectagg(compiled_contracts_sources.path, json_object('content', CONVERT(sources.content USING utf8)))";
+  "json_objectagg(compiled_contracts_sources.path, json_object('content', CONVERT(sources.content USING utf8mb4)))";
 
 export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
