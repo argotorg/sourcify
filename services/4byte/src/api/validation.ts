@@ -30,22 +30,16 @@ export function validateHashQueries(
     {
       function?: string;
       event?: string;
-      error?: string;
     }
   >,
   res: Response,
   next: NextFunction,
 ): void {
-  const {
-    function: functionQuery,
-    event: eventQuery,
-    error: errorQuery,
-  } = req.query;
+  const { function: functionQuery, event: eventQuery } = req.query;
 
   const hashes = [
     ...(functionQuery?.split(",") || []),
     ...(eventQuery?.split(",") || []),
-    ...(errorQuery?.split(",") || []),
   ];
 
   for (const hash of hashes) {
