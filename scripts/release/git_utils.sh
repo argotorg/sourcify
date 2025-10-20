@@ -152,6 +152,19 @@ open_pr_to_staging() {
   local branch_name=$1
   local title=$2
   echo "Opening PR to staging..."
-  gh pr create --title "$title" --body "" --head "$branch_name" --base staging
+  
+  # Create PR body with clear instructions about merge strategy
+  local pr_body="🚨 **CRITICAL: USE MERGE COMMIT, NOT SQUASH** 🚨
+
+**IMPORTANT:** This PR contains release commits with git tags that point to specific commit hashes in this branch. 
+
+**YOU MUST USE \"CREATE A MERGE COMMIT\" WHEN MERGING THIS PR.**
+
+❌ **DO NOT** use \"Squash and merge\" - this will break the git tags and release history.
+✅ **DO** use \"Create a merge commit\" to preserve the commit history and tag references.
+
+The tags in this branch point to specific commits, and squashing would invalidate these references."
+
+  gh pr create --title "$title" --body "$pr_body" --head "$branch_name" --base staging
   echo "Opened PR to staging"
 }

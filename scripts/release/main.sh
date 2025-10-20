@@ -34,7 +34,7 @@ prompt_execute_or_skip "commiting the changelogs" commit_changelogs
 prompt_execute_or_skip "choosing same versions in lerna to create git tags and updating dependencies" run_lerna_version
 prompt_execute_or_skip "publishing the branch" publish_branch_and_open_pr_to_staging
 
-prompt_execute_or_skip "asking if release PR is merged" ask_if_release_pr_merged
+prompt_execute_or_skip "asking if release PR is merged (Do a MERGE COMMIT not SQUASH)" ask_if_release_pr_merged
 prompt_execute_or_skip "pushing the tags to GitHub" push_tags_in_order
 prompt_execute_or_skip "creating GitHub releases" create_github_releases
 

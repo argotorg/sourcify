@@ -13,13 +13,35 @@ $$;
 
 -- Create materialized view for signature statistics
 -- This pre-computes the counts that the /stats endpoint needs
+-- Includes both signatures with types (from compiled_contracts_signatures) and unknown signatures
 CREATE MATERIALIZED VIEW signature_stats AS
 SELECT
-  signature_type,
+  signature_type::text,
   COUNT(DISTINCT signature_hash_32) AS count,
   now() AS refreshed_at
 FROM compiled_contracts_signatures
-GROUP BY signature_type;
+GROUP BY signature_type
+
+UNION ALL
+
+SELECT
+  'unknown'::text AS signature_type,
+  COUNT(*) AS count,
+  now() AS refreshed_at
+FROM signatures s
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM compiled_contracts_signatures ccs
+  WHERE ccs.signature_hash_32 = s.signature_hash_32
+)
+
+UNION ALL
+
+SELECT
+  'total'::text AS signature_type,
+  COUNT(*) AS count,
+  now() AS refreshed_at
+FROM signatures;
 
 -- Add index for fast lookups
 CREATE UNIQUE INDEX signature_stats_type_idx ON signature_stats (signature_type);

@@ -22,28 +22,21 @@ paths:
   /signature-database/v1/lookup:
     get:
       summary: Lookup signatures
-      description: Look up one or more function or event signatures by hash
+      description: Look up one or more function or event signatures by hash. This API maintains compatibility with openchain.xyz behavior - functions return null for no matches, events return empty arrays.
       tags:
         - Signature Database
       parameters:
         - in: query
           name: function
           required: false
-          description: A comma-delimited list of function hashes with leading 0x prefix
+          description: A comma-delimited list of function or error hashes with leading 0x prefix. Must be exactly 10 characters (0x + 8 hex chars). Since the original openchain.xyz API didn't support error signatures, we treat error signatures as function signatures. They are both 4 byte hashes.
           schema:
             type: string
           allowReserved: true
         - in: query
           name: event
           required: false
-          description: A comma-delimited list of event hashes with leading 0x prefix
-          schema:
-            type: string
-          allowReserved: true
-        - in: query
-          name: error
-          required: false
-          description: A comma-delimited list of error hashes with leading 0x prefix
+          description: A comma-delimited list of event hashes with leading 0x prefix. Must be exactly 66 characters (0x + 64 hex chars).
           schema:
             type: string
           allowReserved: true
@@ -66,27 +59,53 @@ paths:
                     type: boolean
                   result:
                     $ref: "#/components/schemas/SignatureResponse"
-              example:
-                ok: true
-                result:
-                  function:
-                    "0xa9059cbb":
-                      - name: "transfer(address,uint256)"
-                        filtered: false
-                    "0x095ea7b3":
-                      - name: "approve(address,uint256)"
-                        filtered: false
-                  event:
-                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
-                      - name: "Transfer(address,address,uint256)"
-                        filtered: false
-                    "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
-                      - name: "Approval(address,address,uint256)"
-                        filtered: false
+              examples:
+                successful_lookup:
+                  summary: Successful lookup with results
+                  value:
+                    ok: true
+                    result:
+                      function:
+                        "0xa9059cbb":
+                          - name: "transfer(address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                        "0x095ea7b3":
+                          - name: "approve(address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                      event:
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
+                          - name: "Transfer(address,address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                        "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925":
+                          - name: "Approval(address,address,uint256)"
+                            filtered: false
+                            hasVerifiedContract: true
+                no_results_openchain_compatible:
+                  summary: No results found (openchain.xyz compatible behavior)
+                  description: Functions return null for no matches, events return empty arrays - this matches openchain.xyz API behavior
+                  value:
+                    ok: true
+                    result:
+                      function:
+                        "0x12345678": null
+                      event:
+                        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef": []
+        "500":
+          description: Invalid hash format or length
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
                   error:
-                    "0x356680b7":
-                      - name: "InsufficientBalance(uint256,uint256)"
-                        filtered: false
+                    type: string
+                    example: "Invalid hash '0x123'. Hash must be 0x-prefixed and either be a 4 byte or 32 byte hex string."
 
   /signature-database/v1/search:
     get:
@@ -112,7 +131,7 @@ paths:
           allowReserved: true
       responses:
         "200":
-          description: The resulting signatures
+          description: The resulting signatures. Note that error signatures are treated as function signatures.
           content:
             application/json:
               schema:
@@ -129,18 +148,111 @@ paths:
                     "0xa9059cbb":
                       - name: "transfer(address,uint256)"
                         filtered: false
+                        hasVerifiedContract: true
                       - name: "transferToken(address,uint256)"
                         filtered: true
+                        hasVerifiedContract: false
                   event:
                     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef":
                       - name: "Transfer(address,address,uint256)"
                         filtered: false
-                  error: {}
+                        hasVerifiedContract: true
+
+  /signature-database/v1/import:
+    post:
+      summary: Import new signatures
+      description: Import signatures by the raw function signature string. Note that we don't distinguish between signature types function/event/error. Any signature string submitted will be added to the database, and can be retrieved as both function (4byte) and event (32byte). The function/event fields are there for backwards compatibility.
+      tags:
+        - Signature Database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                function:
+                  type: array
+                  description: A list of function signatures, like 'transfer(address,uint256)'
+                  items:
+                    type: string
+                event:
+                  type: array
+                  description: A list of event signatures, like 'Transfer(address,address,uint256)'
+                  items:
+                    type: string
+            example:
+              function:
+                - "transfer(address,uint256)"
+                - "approve(address,uint256)"
+                - "balanceOf(address)"
+              event:
+                - "Transfer(address,address,uint256)"
+                - "Approval(address,address,uint256)"
+      responses:
+        "200":
+          description: The status of the import
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      function:
+                        $ref: "#/components/schemas/ImportResponseDetails"
+                      event:
+                        $ref: "#/components/schemas/ImportResponseDetails"
+              example:
+                ok: true
+                result:
+                  function:
+                    imported:
+                      "transfer(address,uint256)": "0xa9059cbb"
+                      "balanceOf(address)": "0x70a08231"
+                    duplicated:
+                      "approve(address,uint256)": "0x095ea7b3"
+                    invalid: ["invalid_function_sig", "malformed("]
+                  event:
+                    imported:
+                      "Transfer(address,address,uint256)": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                    duplicated:
+                      "Approval(address,address,uint256)": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+                    invalid: ["BadEvent(uint256", "not_a_signature"]
+        "400":
+          description: Bad request - no signatures provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "No signatures provided"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Unexpected failure during signature import"
 
   /signature-database/v1/stats:
     get:
       summary: Show database stats
-      description: Show the number of function, event and error signatures that the database has
+      description: function, event and error fields show the number of signatures that are associated with a verified contract and the respective type. unknown shows the number of signatures that are not associated with a verified contract, hence no type can be assigned. total shows the total number of signatures in the database.
       tags:
         - Signature Database
       responses:
@@ -165,6 +277,10 @@ paths:
                             type: number
                           error:
                             type: number
+                          unknown:
+                            type: number
+                          total:
+                            type: number
               example:
                 ok: true
                 result:
@@ -172,6 +288,8 @@ paths:
                     function: 125847
                     event: 8329
                     error: 2156
+                    unknown: 15432
+                    total: 151764
   /health:
     get:
       summary: Check server health
@@ -197,18 +315,27 @@ paths:
 components:
   schemas:
     SignatureResponse:
+      type: object
       properties:
         function:
+          type: object
+          description: Function signatures by hash. Returns null for non-existent or invalid hashes (openchain.xyz compatible)
           additionalProperties:
-            type: array
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                filtered:
-                  type: boolean
+            oneOf:
+              - type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    filtered:
+                      type: boolean
+                    hasVerifiedContract:
+                      type: boolean
+              - type: "null"
         event:
+          type: object
+          description: Event signatures by hash. Returns empty array for non-existent or invalid hashes (openchain.xyz compatible)
           additionalProperties:
             type: array
             items:
@@ -218,13 +345,24 @@ components:
                   type: string
                 filtered:
                   type: boolean
-        error:
-          additionalProperties:
-            type: array
-            items:
-              type: object
-              properties:
-                name:
-                  type: string
-                filtered:
+                hasVerifiedContract:
                   type: boolean
+
+    ImportResponseDetails:
+      type: object
+      properties:
+        imported:
+          type: object
+          additionalProperties:
+            type: string
+            description: A map of imported signature to hash
+        duplicated:
+          type: object
+          additionalProperties:
+            type: string
+            description: A map of duplicated signature to hash
+        invalid:
+          type: array
+          description: A list of invalid signatures
+          items:
+            type: string

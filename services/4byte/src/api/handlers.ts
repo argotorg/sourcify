@@ -1,8 +1,15 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Logger } from "winston";
-import { SignatureLookupRow, SignatureStatsRow } from "../SignatureDatabase";
-import { SignatureType, getCanonicalSignatures } from "../utils/signature-util";
+import {
+  SignatureLookupRow,
+  SignatureStatsRow,
+  SignatureInsertResult,
+} from "../SignatureDatabase";
+import {
+  getCanonicalSignatures,
+  validateSignature,
+} from "../utils/signature-util";
 import { bytesFromString } from "../utils/database-util";
 import { sendSignatureApiFailure } from "./validation";
 import { SignatureDatabase } from "../SignatureDatabase";
@@ -10,25 +17,31 @@ import { SignatureDatabase } from "../SignatureDatabase";
 interface SignatureItem {
   name: string;
   filtered: boolean;
+  hasVerifiedContract: boolean;
 }
 
 export interface SignatureHashMapping {
-  [hash: string]: SignatureItem[];
+  [hash: string]: SignatureItem[] | null;
 }
 
 interface SignatureResult {
   function: SignatureHashMapping;
   event: SignatureHashMapping;
-  error: SignatureHashMapping;
+}
+
+interface ImportResult {
+  imported: { [signature: string]: string };
+  duplicated: { [signature: string]: string };
+  invalid: string[];
 }
 
 function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   const canonicalSignatures = getCanonicalSignatures();
 
-  for (const type of Object.values(SignatureType)) {
+  for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
     for (const hash in response[type]) {
       const expectedCanonical = canonicalSignatures[hash];
-      if (expectedCanonical !== undefined) {
+      if (expectedCanonical !== undefined && response[type][hash] !== null) {
         for (const signatureItem of response[type][hash]) {
           signatureItem.filtered =
             signatureItem.name !== expectedCanonical.signature;
@@ -38,8 +51,11 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   }
 
   if (shouldFilter) {
-    for (const type of Object.values(SignatureType)) {
+    for (const type of Object.keys(response) as (keyof SignatureResult)[]) {
       for (const hash in response[type]) {
+        if (response[type][hash] === null) {
+          continue;
+        }
         response[type][hash] = response[type][hash].filter(
           (signatureItem) => !signatureItem.filtered,
         );
@@ -52,6 +68,7 @@ function mapLookupResult(rows: SignatureLookupRow[]): SignatureItem[] {
   return rows.map((row) => ({
     name: row.signature,
     filtered: false,
+    hasVerifiedContract: row.has_verified_contract,
   }));
 }
 
@@ -76,13 +93,19 @@ type LookupSignaturesRequest = Omit<Request, "query"> & {
   query: {
     function?: string;
     event?: string;
-    error?: string;
     filter?: "true" | "false";
   };
 };
 
 type SearchSignaturesRequest = Omit<Request, "query"> & {
   query: { query: string; filter?: "true" | "false" };
+};
+
+type ImportSignaturesRequest = Omit<Request, "body"> & {
+  body: {
+    function?: string[];
+    event?: string[];
+  };
 };
 
 export interface SignatureHandlers {
@@ -92,6 +115,10 @@ export interface SignatureHandlers {
   ) => Promise<void>;
   searchSignatures: (
     req: SearchSignaturesRequest,
+    res: Response,
+  ) => Promise<void>;
+  importSignatures: (
+    req: ImportSignaturesRequest,
     res: Response,
   ) => Promise<void>;
   getSignaturesStats: (req: Request, res: Response) => Promise<void>;
@@ -106,38 +133,39 @@ export function createSignatureHandlers(
       try {
         const functionHashes = sanitizeHashes(req.query.function);
         const eventHashes = sanitizeHashes(req.query.event);
-        const errorHashes = sanitizeHashes(req.query.error);
         const shouldFilter = sanitizeFilter(req.query.filter);
 
-        const result: SignatureResult = { function: {}, event: {}, error: {} };
+        const result: SignatureResult = { function: {}, event: {} };
 
-        /* eslint-disable indent */
-        const getSignatures = async (hash: string, type: SignatureType) => {
-          const rows =
-            hash.length === 66
-              ? await database.getSignatureByHash32AndType(
-                  bytesFromString(hash)!,
-                  type,
-                )
-              : await database.getSignatureByHash4AndType(
-                  bytesFromString(hash)!,
-                  type,
-                );
+        const getFunctionSignatures = async (hash: string) => {
+          if (hash.length !== 10) {
+            result.function[hash] = null;
+            return;
+          }
+          const rows = await database.getSignatureByHash4(
+            bytesFromString(hash)!,
+          );
 
-          result[type][hash] = mapLookupResult(rows);
+          result.function[hash] =
+            rows.length > 0 ? mapLookupResult(rows) : null; // Weirdly, openchain API returns empty array for events, but null for functions
         };
-        /* eslint-enable indent */
+
+        const getEventSignatures = async (hash: string) => {
+          if (hash.length !== 66) {
+            result.event[hash] = [];
+            return;
+          }
+          const rows = await database.getSignatureByHash32(
+            bytesFromString(hash)!,
+          );
+          result.event[hash] = mapLookupResult(rows);
+          // Weirdly, openchain API returns empty array for events, but null for functions
+          // result.event[hash] = rows.length > 0 ? mapLookupResult(rows) : null;
+        };
 
         await Promise.all([
-          ...functionHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Function),
-          ),
-          ...eventHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Event),
-          ),
-          ...errorHashes.map((hash) =>
-            getSignatures(hash, SignatureType.Error),
-          ),
+          ...functionHashes.map(getFunctionSignatures),
+          ...eventHashes.map(getEventSignatures),
         ]);
 
         filterResponse(result, shouldFilter);
@@ -160,39 +188,31 @@ export function createSignatureHandlers(
         const searchQuery = req.query.query;
         const shouldFilter = sanitizeFilter(req.query.filter);
 
-        const result: SignatureResult = { function: {}, event: {}, error: {} };
+        const result: SignatureResult = { function: {}, event: {} };
 
-        const searchSignaturesInDb = async (
-          pattern: string,
-          type: SignatureType,
-        ) => {
-          const rows = await database.searchSignaturesByPatternAndType(
-            pattern,
-            type,
-          );
+        const rows = await database.searchSignaturesByPattern(searchQuery);
 
-          for (const row of rows) {
-            const hash =
-              type === SignatureType.Event
-                ? row.signature_hash_32
-                : row.signature_hash_4;
+        for (const row of rows) {
+          // Add signatures to both function and event categories since we can't reliably
+          // determine the type from signature text alone
+          const signatureItem = {
+            name: row.signature,
+            filtered: false,
+            hasVerifiedContract: row.has_verified_contract,
+          };
 
-            if (!result[type][hash]) {
-              result[type][hash] = [];
-            }
-
-            result[type][hash].push({
-              name: row.signature,
-              filtered: false,
-            });
+          // Add to function category using 4-byte hash
+          if (!result.function[row.signature_hash_4]) {
+            result.function[row.signature_hash_4] = [];
           }
-        };
+          result.function[row.signature_hash_4]!.push(signatureItem);
 
-        await Promise.all(
-          Object.values(SignatureType).map((type) =>
-            searchSignaturesInDb(searchQuery, type),
-          ),
-        );
+          // Add to event category using 32-byte hash
+          if (!result.event[row.signature_hash_32]) {
+            result.event[row.signature_hash_32] = [];
+          }
+          result.event[row.signature_hash_32]!.push(signatureItem);
+        }
 
         filterResponse(result, shouldFilter);
 
@@ -209,17 +229,106 @@ export function createSignatureHandlers(
       }
     },
 
+    importSignatures: async (req, res) => {
+      try {
+        const functionSignatures = req.body.function || [];
+        const eventSignatures = req.body.event || [];
+
+        if (functionSignatures.length === 0 && eventSignatures.length === 0) {
+          res.status(StatusCodes.BAD_REQUEST).json({
+            ok: false,
+            error: "No signatures provided",
+          });
+          return;
+        }
+
+        // Process function and event signatures
+        const functionResults: ImportResult = {
+          imported: {},
+          duplicated: {},
+          invalid: [],
+        };
+        const eventResults: ImportResult = {
+          imported: {},
+          duplicated: {},
+          invalid: [],
+        };
+
+        const signatureTypes = [
+          // We'll iterate over once for function and once for event signatures. Same logic with different hash selectors (4byte and 32byte)
+          {
+            signatures: functionSignatures,
+            hashSelector: (r: SignatureInsertResult) => r.signature_hash_4,
+            results: functionResults,
+          },
+          {
+            signatures: eventSignatures,
+            hashSelector: (r: SignatureInsertResult) => r.signature_hash_32,
+            results: eventResults,
+          },
+        ];
+
+        for (const { signatures, hashSelector, results } of signatureTypes) {
+          if (signatures.length > 0) {
+            // Validate signatures
+            const validSigs: string[] = [];
+            for (const sig of signatures) {
+              if (validateSignature(sig)) {
+                validSigs.push(sig);
+              } else {
+                results.invalid.push(sig);
+              }
+            }
+
+            // Insert valid signatures and process results
+            if (validSigs.length > 0) {
+              const insertResults = await database.insertSignatures(validSigs);
+              for (const result of insertResults) {
+                const hash = hashSelector(result);
+
+                if (result.was_inserted) {
+                  results.imported[result.signature] = hash;
+                } else {
+                  results.duplicated[result.signature] = hash;
+                }
+              }
+            }
+          }
+        }
+
+        res.status(StatusCodes.OK).json({
+          ok: true,
+          result: {
+            function: functionResults,
+            event: eventResults,
+          },
+        });
+      } catch (error) {
+        logger.error("Error in importSignatures", { error });
+        sendSignatureApiFailure(
+          res,
+          "Unexpected failure during signature import",
+        );
+      }
+    },
+
     getSignaturesStats: async (_req, res) => {
       try {
         const rows: SignatureStatsRow[] = await database.getSignatureCounts();
 
         const stats = {
-          count: { function: 0, event: 0, error: 0 },
+          count: { function: 0, event: 0, error: 0, unknown: 0, total: 0 },
           metadata: { refreshed_at: "" },
         };
 
         for (const row of rows) {
-          stats.count[row.signature_type] = parseInt(row.count, 10);
+          if ((row.signature_type as string) === "unknown") {
+            stats.count.unknown = parseInt(row.count, 10);
+          } else if ((row.signature_type as string) === "total") {
+            stats.count.total = parseInt(row.count, 10);
+          } else {
+            stats.count[row.signature_type] = parseInt(row.count, 10);
+          }
 
           if (stats.metadata.refreshed_at === "") {
             stats.metadata.refreshed_at = row.refreshed_at.toISOString();

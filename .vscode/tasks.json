@@ -4,7 +4,7 @@
     {
       "label": "server:database-test:up",
       "type": "shell",
-      "command": "cd services/server && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && npm run postgres-test:migrate",
+      "command": "cd services/server && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && SOURCIFY_POSTGRES_HOST=localhost npm run postgres-test:migrate",
       "problemMatcher": []
     },
     {
@@ -16,7 +16,7 @@
     {
       "label": "4byte:database-test:up",
       "type": "shell",
-      "command": "cd services/4byte && export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5433} && npm run postgres-test:start && sleep 3 && npm run postgres-test:migrate",
+      "command": "cd services/4byte && npm run postgres-test:start && sleep 3 && FOURBYTES_POSTGRES_HOST=localhost FOURBYTES_POSTGRES_PORT=5433 npm run postgres-test:migrate",
       "problemMatcher": []
     },
     {
