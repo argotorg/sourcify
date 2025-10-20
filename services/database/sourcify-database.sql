@@ -1019,19 +1019,6 @@ CREATE TABLE public.session (
 
 
 --
--- Name: signature_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: -
---
-
-CREATE MATERIALIZED VIEW public.signature_stats AS
- SELECT compiled_contracts_signatures.signature_type,
-    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count,
-    now() AS refreshed_at
-   FROM public.compiled_contracts_signatures
-  GROUP BY compiled_contracts_signatures.signature_type
-  WITH NO DATA;
-
-
---
 -- Name: signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1041,6 +1028,32 @@ CREATE TABLE public.signatures (
     signature character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: signature_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW public.signature_stats AS
+ SELECT (compiled_contracts_signatures.signature_type)::text AS signature_type,
+    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count,
+    now() AS refreshed_at
+   FROM public.compiled_contracts_signatures
+  GROUP BY compiled_contracts_signatures.signature_type
+UNION ALL
+ SELECT 'unknown'::text AS signature_type,
+    count(*) AS count,
+    now() AS refreshed_at
+   FROM public.signatures s
+  WHERE (NOT (EXISTS ( SELECT 1
+           FROM public.compiled_contracts_signatures ccs
+          WHERE (ccs.signature_hash_32 = s.signature_hash_32))))
+UNION ALL
+ SELECT 'total'::text AS signature_type,
+    count(*) AS count,
+    now() AS refreshed_at
+   FROM public.signatures
+  WITH NO DATA;
 
 
 --

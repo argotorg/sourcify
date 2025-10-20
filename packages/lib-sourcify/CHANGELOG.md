@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.0 - 2025-10-16
+
+- Introduce Circuit Breaker pattern for failing rpcs on SourcifyChain and restructure rpc properties (#2404)
+  - This changes the new SourcifyChain() contrcutor and requires a major release
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@2.3.1 - 2025-09-18
 
 - Fix empty Vyper settings in json (#2346)
