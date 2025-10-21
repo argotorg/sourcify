@@ -41,6 +41,11 @@ import {
 import { DatabaseOptions } from "./utils/Database";
 import { Field } from "./utils/database-util";
 import { VerifyErrorExport } from "./workers/workerTypes";
+import {
+  EtherscanVerifyApiIdentifiers,
+  EtherscanVerifyApiService,
+  EtherscanVerifyApiServiceOptions,
+} from "./storageServices/EtherscanVerifyApiService";
 
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
@@ -128,6 +133,11 @@ export interface StorageServiceOptions {
   sourcifyDatabaseServiceOptions?: DatabaseOptions;
   allianceDatabaseServiceOptions?: DatabaseOptions;
   s3RepositoryServiceOptions?: S3RepositoryServiceOptions;
+  etherscanVerifyApiServiceOptions?: {
+    [WStorageIdentifiers.EtherscanVerify]?: EtherscanVerifyApiServiceOptions;
+    [WStorageIdentifiers.BlockscoutVerify]?: EtherscanVerifyApiServiceOptions;
+    [WStorageIdentifiers.RoutescanVerify]?: EtherscanVerifyApiServiceOptions;
+  };
 }
 
 export class StorageService {
@@ -255,6 +265,35 @@ export class StorageService {
         );
       }
     }
+
+    // EtherscanVerifyApiService
+    (
+      [
+        WStorageIdentifiers.EtherscanVerify,
+        WStorageIdentifiers.BlockscoutVerify,
+        WStorageIdentifiers.RoutescanVerify,
+      ] as Array<EtherscanVerifyApiIdentifiers>
+    ).forEach((identifier) => {
+      if (enabledServicesArray.includes(identifier)) {
+        if (
+          !enabledServicesArray.includes(RWStorageIdentifiers.SourcifyDatabase)
+        ) {
+          logger.error(
+            `${identifier} enabled, but SourcifyDatabase storage service is not configured`,
+          );
+          throw new Error(
+            `${identifier} enabled, but SourcifyDatabase storage service is not configured`,
+          );
+        }
+
+        const service = new EtherscanVerifyApiService(
+          identifier,
+          this.rwServices["SourcifyDatabase"] as SourcifyDatabaseService,
+          options.etherscanVerifyApiServiceOptions?.[identifier],
+        );
+        this.wServices[service.IDENTIFIER] = service;
+      }
+    });
   }
 
   getRWServiceByConfigKey(configKey: RWStorageIdentifiers): RWStorageService {
@@ -298,14 +337,16 @@ export class StorageService {
     });
 
     // Try to initialize used storage services
-    for (const service of enabledServicesArray) {
-      logger.debug(`Initializing storage service: ${service.IDENTIFIER}`);
-      if (!(await service.init())) {
-        throw new Error(
-          "Cannot initialize default storage service: " + service.IDENTIFIER,
-        );
-      }
-    }
+    await Promise.all(
+      enabledServicesArray.map(async (service) => {
+        logger.debug(`Initializing storage service: ${service.IDENTIFIER}`);
+        if (!(await service.init())) {
+          throw new Error(
+            "Cannot initialize default storage service: " + service.IDENTIFIER,
+          );
+        }
+      }),
+    );
   }
 
   async storeVerification(

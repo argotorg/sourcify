@@ -34,6 +34,7 @@ import { keccak256, JsonFragment } from "ethers";
 import { Database } from "./Database";
 import logger from "../../../common/logger";
 import { SignatureType } from "./signature-util";
+import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
@@ -156,6 +157,9 @@ export namespace Tables {
     verification_endpoint: string;
     hardware: Nullable<string>;
     compilation_time: Nullable<string>;
+    external_verification: Nullable<
+      Record<EtherscanVerifyApiIdentifiers, ExternalVerification>
+    >;
   }
 
   export interface VerificationJobEphemeral {
@@ -179,6 +183,10 @@ export namespace Tables {
     signature_hash_32: BytesKeccak;
     signature_type: "function" | "event" | "error";
   }
+}
+export interface ExternalVerification {
+  verificationId?: string;
+  error?: string;
 }
 
 export interface SourceInformation {

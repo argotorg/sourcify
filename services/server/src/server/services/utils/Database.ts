@@ -13,10 +13,12 @@ import {
   StoredProperties,
   Tables,
   GetSourcifyMatchesAllChainsResult,
+  ExternalVerification,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
+import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {
@@ -994,6 +996,47 @@ ${
         error_data,
       ],
     );
+  }
+
+  async upsertExternalVerification(
+    verificationJobId: Tables.VerificationJob["id"],
+    verifierIdentifier: EtherscanVerifyApiIdentifiers,
+    data: ExternalVerification,
+    poolClient?: PoolClient,
+  ): Promise<void> {
+    const payload: {
+      verificationId?: string;
+      error?: string;
+    } = {};
+
+    if (data.verificationId) {
+      payload.verificationId = data.verificationId;
+    }
+    if (data.error) {
+      payload.error = data.error;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return;
+    }
+
+    const result = await (poolClient || this.pool).query(
+      `UPDATE ${this.schema}.verification_jobs
+       SET external_verification = jsonb_set(
+         COALESCE(external_verification::jsonb, '{}'::jsonb),
+         ARRAY[$2::text],
+         $3::jsonb,
+         true
+       )
+       WHERE id = $1`,
+      [verificationJobId, verifierIdentifier, JSON.stringify(payload)],
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(
+        `Verification job ${verificationJobId} not found while updating external verification`,
+      );
+    }
   }
 
   async insertVerificationJobEphemeral({
