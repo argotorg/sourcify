@@ -18,7 +18,7 @@ const AVALANCHE_SUBNET_SUFFIX =
   "contracts/${ADDRESS}/transactions:getDeployment";
 const NEXUS_SUFFIX = "v1/${RUNTIME}/accounts/${ADDRESS}";
 const ROUTESCAN_API_URL =
-  "https://api.routescan.io/v2/network/${CHAIN_TYPE}/evm/${CHAIN_ID}/etherscan?module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}";
+  "https://api.routescan.io/v2/network/${CHAIN_TYPE}/evm/${CHAIN_ID}/etherscan/api?module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}";
 const VECHAIN_API_URL =
   "https://api.vechainstats.com/v2/contract/info?address=${ADDRESS}&expanded=true&VCS_API_KEY=";
 

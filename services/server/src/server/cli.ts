@@ -23,6 +23,17 @@ import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
+export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
+  Object.entries(sourcifyChainsMap).reduce<Record<string, string>>(
+    (acc, [chainId, { supported, etherscanApi }]) => {
+      const envName = supported ? etherscanApi?.apiKeyEnvName : undefined;
+      const value = envName ? process.env[envName] : undefined;
+      if (value) acc[chainId] = value;
+      return acc;
+    },
+    {},
+  );
+
 // lib-sourcify configuration
 const libSourcifyConfig: LibSourcifyConfig = {};
 if (process.env.IPFS_GATEWAY || process.env.IPFS_GATEWAY_HEADERS) {
@@ -159,6 +170,19 @@ const server = new Server(
       maxConnections: process.env.ALLIANCE_DB_MAX_CONNECTIONS
         ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
         : undefined,
+    },
+    etherscanVerifyApiServiceOptions: {
+      EtherscanVerify: {
+        defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
+        // Extract the etherscanApiKey env vars from the supported chains
+        apiKeys: getEtherscanApiKeyForEachChain(),
+      },
+      BlockscoutVerify: {
+        defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
+      },
+      RoutescanVerify: {
+        defaultApiKey: process.env.ROUTESCAN_API_KEY as string,
+      },
     },
   },
 );

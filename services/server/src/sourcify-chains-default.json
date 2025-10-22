@@ -4,7 +4,7 @@
     "supported": true,
     "etherscanApi": {
       "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY"
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_MAINNET"
     },
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
@@ -2350,6 +2350,24 @@
         "url": "https://scan.platon.network"
       }
     }
+  },
+  "1868": {
+    "sourcifyName": "Soneium",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://soneium.blockscout.com/"
+      }
+    },
+    "rpc": [
+      {
+        "type": "APIKeyRPC",
+        "url": "https://{SUBDOMAIN}.soneium-mainnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
+        "traceSupport": "trace_transaction"
+      }
+    ]
   },
   "480": {
     "sourcifyName": "WorldChain",

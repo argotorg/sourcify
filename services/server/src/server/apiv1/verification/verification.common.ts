@@ -132,10 +132,6 @@ export const saveFilesToSession = (
   return newFilesCount;
 };
 
-type Mutable<Type> = {
-  -readonly [Key in keyof Type]: Type[Key];
-};
-
 // Contract object in the server response.
 export type SendableContract = ContractMeta & {
   files: {
