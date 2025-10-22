@@ -440,5 +440,17 @@
       "type": "single",
       "expectedStatus": "perfect"
     }
+  ],
+  "480": [
+    {
+      "address": "0x4695BE08F95C8f81BC5110B4D2bA57741A044040",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    },
+    {
+      "address": "0x0934a011870Fa13Ff57BaBb5B2FbA78b8dcc42Dd",
+      "type": "single",
+      "expectedStatus": "partial"
+    }
   ]
 }

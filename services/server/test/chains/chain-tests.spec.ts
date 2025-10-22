@@ -1922,13 +1922,23 @@ describe("Test Supported Chains", function () {
     "PlatON Mainnet",
     "shared/",
   );
+
   // soneium Mainnet
   verifyContract(
     "0xcA11bde05977b3631167028862bE2a173976CA11",
     "1868",
     "Soneium Mainnet",
     "multicall-src/",
-    "partial"
+    "partial",
+  );
+
+  // WorldChain
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "480",
+    "WorldChain",
+    "multicall-src/",
+    "partial",
   );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
