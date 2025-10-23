@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import { ChildProcess } from 'child_process';
-import { JsonRpcSigner } from 'ethers';
+import { ContractFactory, JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
   deployFromAbiAndBytecode,
@@ -14,7 +14,12 @@ import {
   stopHardhatNetwork,
 } from '../hardhat-network-helper';
 import { SolidityMetadataContract } from '../../src/Validation/SolidityMetadataContract';
-import { SolidityOutput } from '@ethereum-sourcify/compilers-types';
+import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
+import {
+  Metadata,
+  SolidityOutput,
+  SolidityOutputContract,
+} from '@ethereum-sourcify/compilers-types';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import { PathContent } from '../../src/Validation/ValidationTypes';
@@ -27,6 +32,36 @@ import { ISolidityCompiler, SourcifyChain } from '../../src';
 import Sinon from 'sinon';
 
 use(chaiAsPromised);
+
+type MetadataMutator = (metadata: Metadata) => void;
+
+const STORAGE_CONTRACT_FOLDER = path.join(
+  __dirname,
+  '..',
+  'sources',
+  'Storage',
+);
+const NESTED_CBOR_FACTORY_FOLDER = path.join(
+  __dirname,
+  '..',
+  'sources',
+  'CBORInTheMiddleFactory',
+);
+const APPEND_CBOR_SUPPORTED_VERSION = '0.8.28+commit.7893614a';
+
+function assertCborTransformations(transformations?: any[]) {
+  expect(transformations, 'Expected CBOR transformations').to.not.be.undefined;
+  if (!transformations) {
+    throw new Error('Expected CBOR transformations');
+  }
+
+  expect(transformations.length).to.be.greaterThan(0);
+  expect(
+    transformations.every(
+      (transformation) => transformation.reason === 'cborAuxdata',
+    ),
+  ).to.equal(true);
+}
 
 class TestSolidityCompiler implements ISolidityCompiler {
   async compile(
@@ -47,11 +82,18 @@ class TestSolidityCompiler implements ISolidityCompiler {
 }
 
 // Helper function to get compilation from metadata
-async function getCompilationFromMetadata(contractFolderPath: string) {
+async function getCompilationFromMetadata(
+  contractFolderPath: string,
+  metadataMutator?: MetadataMutator,
+) {
   // Read metadata.json directly
   const metadataPath = path.join(contractFolderPath, 'metadata.json');
   const metadataRaw = fs.readFileSync(metadataPath, 'utf8');
-  const metadata = JSON.parse(metadataRaw);
+  const metadata: Metadata = JSON.parse(metadataRaw);
+
+  if (metadataMutator) {
+    metadataMutator(metadata);
+  }
 
   // Read source files from the sources directory
   const sourcesPath = path.join(contractFolderPath, 'sources');
@@ -82,6 +124,46 @@ async function getCompilationFromMetadata(contractFolderPath: string) {
 
   // Create compilation
   return await metadataContract.createCompilation(new TestSolidityCompiler());
+}
+
+async function compileContractWithMetadata(
+  contractFolderPath: string,
+  metadataMutator?: MetadataMutator,
+) {
+  const compilation = await getCompilationFromMetadata(
+    contractFolderPath,
+    metadataMutator,
+  );
+  await compilation.compile();
+  return compilation;
+}
+
+async function deployCompiledContract(
+  signer: JsonRpcSigner,
+  compilation: SolidityCompilation,
+  constructorArgs: unknown[] = [],
+) {
+  const contractOutput =
+    compilation.contractCompilerOutput as SolidityOutputContract;
+  const contractFactory = new ContractFactory(
+    contractOutput.abi,
+    compilation.creationBytecode,
+    signer,
+  );
+  const deployment = await contractFactory.deploy(...constructorArgs);
+  await deployment.waitForDeployment();
+
+  const contractAddress = await deployment.getAddress();
+  const creationTx = deployment.deploymentTransaction();
+
+  if (!creationTx) {
+    throw new Error('Deployment transaction not found.');
+  }
+
+  return {
+    contractAddress,
+    txHash: creationTx.hash,
+  };
 }
 
 // Helper function to create Vyper compilation
@@ -730,6 +812,165 @@ describe('Verification Class Tests', () => {
             },
           },
         },
+      });
+    });
+
+    describe('Support contracts deployed with missing metadata hash (#2374)', () => {
+      it('should partially match when deployed bytecodeHash none is verified with standard metadata', async () => {
+        const deploymentCompilation = await compileContractWithMetadata(
+          STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.settings.metadata = {
+              ...(metadata.settings.metadata ?? {}),
+              bytecodeHash: 'none',
+            };
+            delete metadata.settings.metadata.appendCBOR;
+          },
+        );
+        const { contractAddress } = await deployCompiledContract(
+          signer,
+          deploymentCompilation,
+        );
+
+        const verificationCompilation = await getCompilationFromMetadata(
+          STORAGE_CONTRACT_FOLDER,
+        );
+
+        const verification = new Verification(
+          verificationCompilation,
+          sourcifyChainHardhat,
+          contractAddress,
+        );
+        await verification.verify();
+
+        expectVerification(verification, {
+          status: {
+            runtimeMatch: 'partial',
+            creationMatch: null,
+          },
+        });
+        assertCborTransformations(verification.transformations.runtime?.list);
+      });
+
+      it('should partially match when deployed appendCBOR false is verified with standard metadata', async () => {
+        const deploymentCompilation = await compileContractWithMetadata(
+          STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+            metadata.settings.metadata = {
+              ...(metadata.settings.metadata ?? {}),
+              appendCBOR: false,
+            };
+            delete metadata.settings.metadata.bytecodeHash;
+          },
+        );
+        const { contractAddress } = await deployCompiledContract(
+          signer,
+          deploymentCompilation,
+        );
+
+        const verificationCompilation = await getCompilationFromMetadata(
+          STORAGE_CONTRACT_FOLDER,
+        );
+
+        const verification = new Verification(
+          verificationCompilation,
+          sourcifyChainHardhat,
+          contractAddress,
+        );
+        await verification.verify();
+
+        expectVerification(verification, {
+          status: {
+            runtimeMatch: 'partial',
+            creationMatch: null,
+          },
+        });
+        assertCborTransformations(verification.transformations.runtime?.list);
+      });
+
+      it('should partially match when deployed appendCBOR false is verified with metadata bytecodeHash none', async () => {
+        const deploymentCompilation = await compileContractWithMetadata(
+          STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+            metadata.settings.metadata = {
+              ...(metadata.settings.metadata ?? {}),
+              appendCBOR: false,
+            };
+            delete metadata.settings.metadata.bytecodeHash;
+          },
+        );
+        const { contractAddress } = await deployCompiledContract(
+          signer,
+          deploymentCompilation,
+        );
+
+        const verificationCompilation = await getCompilationFromMetadata(
+          STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+            metadata.settings.metadata = {
+              ...(metadata.settings.metadata ?? {}),
+              bytecodeHash: 'none',
+            };
+            delete metadata.settings.metadata.appendCBOR;
+          },
+        );
+
+        const verification = new Verification(
+          verificationCompilation,
+          sourcifyChainHardhat,
+          contractAddress,
+        );
+        await verification.verify();
+
+        expectVerification(verification, {
+          status: {
+            runtimeMatch: 'partial',
+            creationMatch: null,
+          },
+        });
+        assertCborTransformations(verification.transformations.runtime?.list);
+      });
+
+      it('should partially match when deployed bytecodeHash none factory is verified with standard metadata (nested CBOR)', async () => {
+        const deploymentCompilation = await compileContractWithMetadata(
+          NESTED_CBOR_FACTORY_FOLDER,
+          (metadata) => {
+            metadata.settings.metadata = {
+              ...(metadata.settings.metadata ?? {}),
+              bytecodeHash: 'none',
+            };
+            delete metadata.settings.metadata.appendCBOR;
+          },
+        );
+        const { contractAddress, txHash } = await deployCompiledContract(
+          signer,
+          deploymentCompilation,
+          [await signer.getAddress()],
+        );
+
+        const verificationCompilation = await getCompilationFromMetadata(
+          NESTED_CBOR_FACTORY_FOLDER,
+        );
+
+        const verification = new Verification(
+          verificationCompilation,
+          sourcifyChainHardhat,
+          contractAddress,
+          txHash,
+        );
+        await verification.verify();
+
+        expectVerification(verification, {
+          status: {
+            runtimeMatch: 'partial',
+            creationMatch: 'partial',
+          },
+        });
+        assertCborTransformations(verification.transformations.runtime?.list);
+        assertCborTransformations(verification.transformations.creation?.list);
       });
     });
   });
