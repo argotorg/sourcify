@@ -145,6 +145,12 @@ const server = new Server(
         user: process.env.SOURCIFY_POSTGRES_USER as string,
         password: process.env.SOURCIFY_POSTGRES_PASSWORD as string,
         port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+        ssl: process.env.SOURCIFY_POSTGRES_SSL === "true"
+          ? {
+              rejectUnauthorized:
+                process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
+            }
+          : undefined,
       },
       schema: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
       maxConnections: process.env.SOURCIFY_POSTGRES_MAX_CONNECTIONS
@@ -227,6 +233,12 @@ function initDatabaseStore() {
     user: process.env.SOURCIFY_POSTGRES_USER,
     password: process.env.SOURCIFY_POSTGRES_PASSWORD,
     port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+    ssl: process.env.SOURCIFY_POSTGRES_SSL === "true"
+      ? {
+          rejectUnauthorized:
+            process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
+        }
+      : undefined,
   });
 
   // This listener is necessary otherwise the sourcify process crashes if the database is closed

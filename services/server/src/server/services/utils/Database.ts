@@ -33,6 +33,9 @@ export interface DatabaseOptions {
     database: string;
     user: string;
     password: string;
+    ssl?: {
+      rejectUnauthorized: boolean;
+    };
   };
   schema?: string;
   maxConnections?: number;
@@ -50,6 +53,9 @@ export class Database {
   private postgresDatabase?: string;
   private postgresUser?: string;
   private postgresPassword?: string;
+  private postgresSsl?: {
+    rejectUnauthorized: boolean;
+  };
   private maxConnections?: number;
   constructor(options: DatabaseOptions) {
     this.googleCloudSqlInstanceName = options.googleCloudSql?.instanceName;
@@ -61,6 +67,7 @@ export class Database {
     this.postgresDatabase = options.postgres?.database;
     this.postgresUser = options.postgres?.user;
     this.postgresPassword = options.postgres?.password;
+    this.postgresSsl = options.postgres?.ssl;
     if (options.schema) {
       this.schema = options.schema;
     }
@@ -105,6 +112,7 @@ export class Database {
         user: this.postgresUser,
         password: this.postgresPassword,
         max: this.maxConnections || 15,
+        ssl: this.postgresSsl,
       });
     } else {
       throw new Error("Alliance Database is disabled");
