@@ -148,10 +148,10 @@ const server = new Server(
         ssl:
           process.env.SOURCIFY_POSTGRES_SSL === "true"
             ? {
-              rejectUnauthorized:
-                process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED ===
-                "true",
-            }
+                rejectUnauthorized:
+                  process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED ===
+                  "true",
+              }
             : undefined,
       },
       schema: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
@@ -238,9 +238,9 @@ function initDatabaseStore() {
     ssl:
       process.env.SOURCIFY_POSTGRES_SSL === "true"
         ? {
-          rejectUnauthorized:
-            process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
-        }
+            rejectUnauthorized:
+              process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
+          }
         : undefined,
   });
 
