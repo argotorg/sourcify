@@ -80,10 +80,15 @@
   "167000": {
     "sourcifyName": "Taiko Aleshia",
     "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_TAIKO"
+    },
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://blockscout.mainnet.taiko.xyz"
-      }
+      },
+      "etherscanApi": true
     }
   },
   "81457": {
