@@ -2397,5 +2397,15 @@
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
     }
+  },
+  "1597": {
+    "sourcifyName": "Reactive Network Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": false,
+      "blockscoutApi": {
+        "url": "https://mainnet-api.reactscan.net"
+      }
+    }
   }
 }
