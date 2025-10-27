@@ -11,12 +11,6 @@ ALTER TABLE contract_deployments ALTER COLUMN deployer DROP NOT NULL;
 ALTER TABLE contract_deployments DROP CONSTRAINT IF EXISTS contract_deployments_pseudo_pkey;
 ALTER TABLE contract_deployments ADD CONSTRAINT contract_deployments_pseudo_pkey UNIQUE (chain_id, address, transaction_hash, contract_id);
 
--- Allow nullable columns in compiled_contracts and update constraints
-ALTER TABLE compiled_contracts ALTER COLUMN creation_code_hash DROP NOT NULL;
-ALTER TABLE compiled_contracts ALTER COLUMN creation_code_artifacts DROP NOT NULL;
-ALTER TABLE compiled_contracts DROP CONSTRAINT compiled_contracts_pseudo_pkey;
-ALTER TABLE compiled_contracts ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE NULLS NOT DISTINCT (compiler, language, creation_code_hash, runtime_code_hash);
-
 -- Create sourcify_matches table
 CREATE TABLE sourcify_matches (
     id BIGSERIAL NOT NULL,
