@@ -10,20 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
-
-
---
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -1174,7 +1160,8 @@ CREATE TABLE public.verification_jobs (
     error_data json,
     verification_endpoint character varying NOT NULL,
     hardware character varying,
-    compilation_time bigint
+    compilation_time bigint,
+    external_verification jsonb
 );
 
 
@@ -1290,7 +1277,7 @@ ALTER TABLE ONLY public.compiled_contracts
 --
 
 ALTER TABLE ONLY public.compiled_contracts
-    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE NULLS NOT DISTINCT (compiler, language, creation_code_hash, runtime_code_hash);
+    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, version, language, creation_code_hash, runtime_code_hash);
 
 
 --
@@ -2063,4 +2050,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250723145429'),
     ('20250828092603'),
     ('20250922140427'),
-    ('20250922141802');
+    ('20250922141802'),
+    ('20251009141621'),
+    ('20251023134207');
