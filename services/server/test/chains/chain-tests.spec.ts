@@ -1941,6 +1941,14 @@ describe("Test Supported Chains", function () {
     "partial",
   );
 
+  // Sonic
+  verifyContract(
+    "0xaEcac50ba44dc8Fa2a4c8410E5215315eD3CA4B4",
+    "146",
+    "Sonic Mainnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains
