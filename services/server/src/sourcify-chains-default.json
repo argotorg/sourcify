@@ -2386,5 +2386,16 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       }
     ]
+  },
+  "146": {
+    "sourcifyName": "Sonic Mainnet",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_SONIC"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    }
   }
 }
