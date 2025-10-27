@@ -1949,6 +1949,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Reactive Network
+  verifyContract(
+    "0xCBe2F4039A3990E17b206fad54Aa6fe1EFcdF35B",
+    "1597",
+    "Reactive Network Mainnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains
