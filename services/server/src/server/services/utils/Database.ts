@@ -617,7 +617,7 @@ ${
         runtime_code_hash,
         creation_code_artifacts,
         runtime_code_artifacts
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (compiler, language, creation_code_hash, runtime_code_hash) DO NOTHING RETURNING *
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (compiler, version, language, creation_code_hash, runtime_code_hash) DO NOTHING RETURNING *
     `,
       [
         compiler,
