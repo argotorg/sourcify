@@ -1923,6 +1923,40 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // soneium Mainnet
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "1868",
+    "Soneium Mainnet",
+    "multicall-src/",
+    "partial",
+  );
+
+  // WorldChain
+  verifyContract(
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "480",
+    "WorldChain",
+    "multicall-src/",
+    "partial",
+  );
+
+  // Sonic
+  verifyContract(
+    "0xaEcac50ba44dc8Fa2a4c8410E5215315eD3CA4B4",
+    "146",
+    "Sonic Mainnet",
+    "shared/",
+  );
+
+  // Reactive Network
+  verifyContract(
+    "0xCBe2F4039A3990E17b206fad54Aa6fe1EFcdF35B",
+    "1597",
+    "Reactive Network Mainnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains

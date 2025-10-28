@@ -440,5 +440,36 @@
       "type": "single",
       "expectedStatus": "perfect"
     }
+  ],
+  "480": [
+    {
+      "address": "0x4695BE08F95C8f81BC5110B4D2bA57741A044040",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    },
+    {
+      "address": "0x0934a011870Fa13Ff57BaBb5B2FbA78b8dcc42Dd",
+      "type": "single",
+      "expectedStatus": "partial"
+    }
+  ],
+  "146": [
+    {
+      "address": "0x29219dd400f2Bf60E5a23d13Be72B486D4038894",
+      "type": "standard-json",
+      "expectedStatus": "partial"
+    }
+  ],
+  "167000": [
+    {
+      "address": "0xc32777ABD72933ea91Ed92f531F0406af274bac7",
+      "type": "single",
+      "expectedStatus": "partial"
+    },
+    {
+      "address": "0x9ea42D6D3f10F3244c26efC6A210e7ddcb3498eE",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    }
   ]
 }

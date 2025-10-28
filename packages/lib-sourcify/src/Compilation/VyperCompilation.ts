@@ -232,6 +232,10 @@ export class VyperCompilation extends AbstractCompilation {
         this.auxdataStyle,
       );
 
+      if (!creationAuxdataCbor) {
+        this._creationBytecodeCborAuxdata = {};
+        return;
+      }
       this._creationBytecodeCborAuxdata = this.tryGenerateCborAuxdataPosition(
         this.creationBytecode,
         creationAuxdataCbor,

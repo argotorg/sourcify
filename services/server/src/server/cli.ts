@@ -23,6 +23,17 @@ import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
+export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
+  Object.entries(sourcifyChainsMap).reduce<Record<string, string>>(
+    (acc, [chainId, { supported, etherscanApi }]) => {
+      const envName = supported ? etherscanApi?.apiKeyEnvName : undefined;
+      const value = envName ? process.env[envName] : undefined;
+      if (value) acc[chainId] = value;
+      return acc;
+    },
+    {},
+  );
+
 // lib-sourcify configuration
 const libSourcifyConfig: LibSourcifyConfig = {};
 if (process.env.IPFS_GATEWAY || process.env.IPFS_GATEWAY_HEADERS) {
@@ -90,6 +101,8 @@ const server = new Server(
     sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
     logLevel,
     libSourcifyConfig,
+    sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
+    sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
   },
   {
     initCompilers: config.get("initCompilers") || false,
@@ -134,6 +147,14 @@ const server = new Server(
         user: process.env.SOURCIFY_POSTGRES_USER as string,
         password: process.env.SOURCIFY_POSTGRES_PASSWORD as string,
         port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+        ssl:
+          process.env.SOURCIFY_POSTGRES_SSL === "true"
+            ? {
+                rejectUnauthorized:
+                  process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED ===
+                  "true",
+              }
+            : undefined,
       },
       schema: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
       maxConnections: process.env.SOURCIFY_POSTGRES_MAX_CONNECTIONS
@@ -159,6 +180,19 @@ const server = new Server(
       maxConnections: process.env.ALLIANCE_DB_MAX_CONNECTIONS
         ? parseInt(process.env.ALLIANCE_DB_MAX_CONNECTIONS)
         : undefined,
+    },
+    etherscanVerifyApiServiceOptions: {
+      EtherscanVerify: {
+        defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
+        // Extract the etherscanApiKey env vars from the supported chains
+        apiKeys: getEtherscanApiKeyForEachChain(),
+      },
+      BlockscoutVerify: {
+        defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
+      },
+      RoutescanVerify: {
+        defaultApiKey: process.env.ROUTESCAN_API_KEY as string,
+      },
     },
   },
 );
@@ -203,6 +237,13 @@ function initDatabaseStore() {
     user: process.env.SOURCIFY_POSTGRES_USER,
     password: process.env.SOURCIFY_POSTGRES_PASSWORD,
     port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+    ssl:
+      process.env.SOURCIFY_POSTGRES_SSL === "true"
+        ? {
+            rejectUnauthorized:
+              process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
+          }
+        : undefined,
   });
 
   // This listener is necessary otherwise the sourcify process crashes if the database is closed

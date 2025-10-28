@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.3.22 - 2025-10-28
+
+- update dependencies
+
 ## sourcify-monitor@1.3.21 - 2025-10-16
 
 - Use updated SourcifyChain() interface

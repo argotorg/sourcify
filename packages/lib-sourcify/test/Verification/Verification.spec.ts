@@ -1108,6 +1108,53 @@ describe('Verification Class Tests', () => {
       });
     });
 
+    // See issue #2233 to learn more about this test case
+    it('should handle Vyper contracts <0.3.10 with constructor properties', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Vyper',
+        'constructorArguments_0_3_9',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const vyperCompilation = await createVyperCompilation(
+        contractFolderPath,
+        '0.3.9+commit.66b96705',
+        {
+          evmVersion: 'cancun',
+        },
+      );
+
+      const verification = new Verification(
+        vyperCompilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
+          creationMatch: 'partial',
+        },
+        cborAuxdata: {
+          runtime: {
+            '1': {
+              offset: 1844,
+              value: '0xa165767970657283000309000b',
+            },
+          },
+          creation: {},
+        },
+      });
+    });
+
     it('should verify a Vyper contract with immutables', async () => {
       const contractFolderPath = path.join(
         __dirname,
