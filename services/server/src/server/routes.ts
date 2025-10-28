@@ -52,6 +52,38 @@ router.get("/chains", (_req, res) => {
   res.status(200).json(sourcifyChains);
 });
 
+router.get("/verify-ui/*path", (req, res, next) => {
+  const sourcifyVerifyUi = req.app.get("sourcifyVerifyUi") as
+    | string
+    | undefined;
+  if (sourcifyVerifyUi) {
+    const pathAfterVerify = req.path.substring("/verify-ui".length);
+    const redirectUrl = `${sourcifyVerifyUi}${pathAfterVerify}`;
+    return res.redirect(redirectUrl);
+  }
+  // Fallback to API redirect
+  if (req.path.includes("/jobs")) {
+    let pathAfterVerify = req.path.substring("/verify-ui".length);
+    pathAfterVerify = pathAfterVerify.replace("/jobs", "");
+    const redirectUrl = `/v2/verify${pathAfterVerify}`;
+    return res.redirect(redirectUrl);
+  }
+  next();
+});
+
+router.get("/repo-ui/*path", (req, res) => {
+  const sourcifyRepoUi = req.app.get("sourcifyRepoUi") as string | undefined;
+  if (sourcifyRepoUi) {
+    const pathAfterContract = req.path.substring("/repo-ui".length);
+    const redirectUrl = `${sourcifyRepoUi}${pathAfterContract}`;
+    return res.redirect(redirectUrl);
+  }
+  // Fallback to API redirect
+  const pathAfterContract = req.path.substring("/repo-ui".length);
+  const redirectUrl = `/v2/contract${pathAfterContract}`;
+  return res.redirect(redirectUrl);
+});
+
 router.use("/", apiV1Routes);
 router.use("/v2", apiV2Routes);
 export default router;

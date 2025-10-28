@@ -61,6 +61,8 @@ export interface ServerOptions {
   sourcifyPrivateToken?: string;
   libSourcifyConfig?: LibSourcifyConfig;
   logLevel?: string;
+  sourcifyVerifyUi?: string;
+  sourcifyRepoUi?: string;
 }
 
 export class Server {
@@ -134,6 +136,8 @@ export class Server {
     this.app.set("verifyDeprecated", options.verifyDeprecated);
     this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);
+    this.app.set("sourcifyVerifyUi", options.sourcifyVerifyUi);
+    this.app.set("sourcifyRepoUi", options.sourcifyRepoUi);
 
     // Session API endpoints require non "*" origins because of the session cookies
     const sessionPaths = [
