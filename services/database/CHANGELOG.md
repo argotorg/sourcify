@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.10.0 - 2025-10-28
+
+- add external verification migration (#2430)
+- Add compiler version to unique constraint of compiled_contracts (#2464)
+
 ## sourcify-database@2.9.0 - 2025-10-16
 
 - Add signature tables and queries for the new 4byte service. Create a materialized view for the `/stats` endpoint.

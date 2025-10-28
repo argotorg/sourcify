@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.1 - 2025-10-28
+
+- support Vyper contract for version <0.3.10 with constructor properties (#2454)
+
 ## @ethereum-sourcify/lib-sourcify@3.0.0 - 2025-10-16
 
 - Introduce Circuit Breaker pattern for failing rpcs on SourcifyChain and restructure rpc properties (#2404)
