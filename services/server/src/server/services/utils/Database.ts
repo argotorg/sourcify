@@ -492,7 +492,10 @@ ${
     { bytecode_hash_keccak, bytecode }: Omit<Tables.Code, "bytecode_hash">,
   ): Promise<QueryResult<Pick<Tables.Code, "bytecode_hash">>> {
     let codeInsertResult = await poolClient.query(
-      `INSERT INTO ${this.schema}.code (code_hash, code, code_hash_keccak) VALUES (digest($1::bytea, 'sha256'), $1::bytea, $2) ON CONFLICT ON CONSTRAINT code_pkey DO NOTHING RETURNING code_hash as bytecode_hash`,
+      `INSERT INTO ${this.schema}.code (code_hash, code, code_hash_keccak)
+      VALUES (digest($1::bytea, 'sha256'), $1::bytea, $2)
+      ON CONFLICT ON CONSTRAINT code_pkey DO NOTHING
+      RETURNING code_hash as bytecode_hash`,
       [bytecode, bytecode_hash_keccak],
     );
 
@@ -517,7 +520,10 @@ ${
     }: Omit<Tables.Contract, "id">,
   ): Promise<QueryResult<Pick<Tables.Contract, "id">>> {
     let contractInsertResult = await poolClient.query(
-      `INSERT INTO ${this.schema}.contracts (creation_code_hash, runtime_code_hash) VALUES ($1, $2) ON CONFLICT ON CONSTRAINT contracts_pseudo_pkey DO NOTHING RETURNING *`,
+      `INSERT INTO ${this.schema}.contracts (creation_code_hash, runtime_code_hash)
+      VALUES ($1, $2)
+      ON CONFLICT ON CONSTRAINT contracts_pseudo_pkey DO NOTHING
+      RETURNING *`,
       [creation_bytecode_hash, runtime_bytecode_hash],
     );
 
@@ -557,7 +563,10 @@ ${
         block_number,
         transaction_index,
         deployer
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT ON CONSTRAINT contract_deployments_pseudo_pkey DO NOTHING RETURNING *`,
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT ON CONSTRAINT contract_deployments_pseudo_pkey DO NOTHING
+      RETURNING *`,
       [
         chain_id,
         address,
@@ -617,7 +626,10 @@ ${
         runtime_code_hash,
         creation_code_artifacts,
         runtime_code_artifacts
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT ON CONSTRAINT compiled_contracts_pseudo_pkey DO NOTHING RETURNING *
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT ON CONSTRAINT compiled_contracts_pseudo_pkey
+      DO NOTHING RETURNING *
     `,
       [
         compiler,
@@ -674,11 +686,14 @@ ${
       sourceCodesQueryValues.push(sourceCode.content);
       sourceCodesQueryValues.push(sourceCode.source_hash_keccak);
     });
-    const sourceCodesQuery = `INSERT INTO ${this.schema}.sources (
-    source_hash,
-    content,
-    source_hash_keccak
-  ) VALUES ${sourceCodesQueryIndexes.join(",")} ON CONFLICT ON CONSTRAINT sources_pkey DO NOTHING RETURNING *`;
+    const sourceCodesQuery = `
+      INSERT INTO ${this.schema}.sources (
+        source_hash,
+        content,
+        source_hash_keccak
+      ) VALUES ${sourceCodesQueryIndexes.join(",")}
+      ON CONFLICT ON CONSTRAINT sources_pkey 
+      DO NOTHING RETURNING *`;
     const sourceCodesQueryResult = await poolClient.query(
       sourceCodesQuery,
       sourceCodesQueryValues,
@@ -740,11 +755,14 @@ ${
       },
     );
 
-    const compiledContractsSourcesQuery = `INSERT INTO compiled_contracts_sources (
-    compilation_id,
-    source_hash,
-    path
-  ) VALUES ${compiledContractsSourcesQueryIndexes.join(",")} ON CONFLICT ON CONSTRAINT compiled_contracts_sources_pseudo_pkey DO NOTHING`;
+    const compiledContractsSourcesQuery = `
+      INSERT INTO compiled_contracts_sources (
+        compilation_id,
+        source_hash,
+        path
+      )
+      VALUES ${compiledContractsSourcesQueryIndexes.join(",")}
+      ON CONFLICT ON CONSTRAINT compiled_contracts_sources_pseudo_pkey DO NOTHING`;
     await poolClient.query(
       compiledContractsSourcesQuery,
       compiledContractsSourcesQueryValues,
