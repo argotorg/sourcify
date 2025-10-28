@@ -101,6 +101,8 @@ const server = new Server(
     sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
     logLevel,
     libSourcifyConfig,
+    sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
+    sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
   },
   {
     initCompilers: config.get("initCompilers") || false,
