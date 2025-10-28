@@ -133,5 +133,9 @@
   "0x8abf6077": {
     "signature": "proxyOwner()",
     "source": "generic:proxy"
+  },
+  "0x09b81346": {
+    "signature": "exactOutput((bytes,address,uint256,uint256))",
+    "source": "manual"
   }
 }
