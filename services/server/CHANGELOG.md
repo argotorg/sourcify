@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.6.0 - 2025-10-28
+
+- Implement EtherscanVerifyAPIService (#2430)
+  - sends verification requests to Etherscan, Blockscout and/or Routescan after verifying on Sourcify
+- Add SSL support for SOURCIFY_POSTGRES (#2458)
+- Add redirects from server to repo and verify UI (#2468)
+- Remove the signature database tag from server openapi.yaml (#2451) 
+- add chains:
+  - 1868 Soneium
+  - 480 WorldChain
+  - 146 Sonic Mainnet
+  - 1597 Reactive Network Mainnet
+- Enable fetching from Taiko Etherscan API (#2463)
+
 ## sourcify-server@3.5.0 - 2025-10-16
 
 - Remove the signature APIs from server, to be moved to the separate 4byte service
