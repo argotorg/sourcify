@@ -222,8 +222,8 @@ export class SourcifyChain {
           maskedUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
-        // Don't mark as unhealthy. This is an error that should be handled by the caller.
-        throw error;
+        // Don't mark as unhealthy, since this does not indicate an RPC failure.
+        continue;
       }
     }
 
