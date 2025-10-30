@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.2 - 2025-10-30
+
+- Only count timeouts and network errors as rpc failures (#2473)
+
+
 ## @ethereum-sourcify/lib-sourcify@3.0.1 - 2025-10-28
 
 - support Vyper contract for version <0.3.10 with constructor properties (#2454)

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.6.1 - 2025-10-30
+
+- Disable Holesky Testnet because of deprecation (#2477)
+
 ## sourcify-server@3.6.0 - 2025-10-28
 
 - Implement EtherscanVerifyAPIService (#2430)
