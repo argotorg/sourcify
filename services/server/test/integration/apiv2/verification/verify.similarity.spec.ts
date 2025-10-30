@@ -13,7 +13,7 @@ import { assertJobVerification } from "../../../helpers/assertions";
 
 chai.use(chaiHttp);
 
-describe.only("POST /v2/verify/similarity/:chainId/:address", function () {
+describe("POST /v2/verify/similarity/:chainId/:address", function () {
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
   const sandbox = sinon.createSandbox();
