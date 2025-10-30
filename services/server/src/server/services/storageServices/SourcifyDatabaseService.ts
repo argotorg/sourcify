@@ -53,7 +53,6 @@ import { PoolClient } from "pg";
 import { SimilarityCandidateCompilation } from "../workers/workerTypes";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
-const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
 export class SourcifyDatabaseService
   extends AbstractDatabaseService

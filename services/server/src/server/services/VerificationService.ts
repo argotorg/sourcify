@@ -39,11 +39,11 @@ import {
   type VerifyFromMetadataInput,
   type VerifyOutput,
   type VerifySimilarityInput,
-  type SimilarityCandidateCompilation,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
-import { ChainNotFoundError } from "../apiv2/errors";
 import { SourcifyDatabaseService } from "./storageServices/SourcifyDatabaseService";
+
+const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -379,7 +379,10 @@ export class VerificationService {
     ] as SourcifyDatabaseService;
 
     sourcifyDatabaseService
-      .getSimilarityCandidatesByRuntimeCode(runtimeBytecode, 20)
+      .getSimilarityCandidatesByRuntimeCode(
+        runtimeBytecode,
+        DEFAULT_SIMILARITY_CANDIDATE_LIMIT,
+      )
       .then(async (candidates) => {
         if (candidates.length === 0) {
           logger.info("No similarity candidates found", {
