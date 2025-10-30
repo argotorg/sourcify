@@ -118,34 +118,7 @@
   },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY"
-    },
-    "fetchContractCreationTxUsing": {
-      "blockscoutApi": {
-        "url": "https://eth-holesky.blockscout.com/"
-      },
-      "etherscanApi": true,
-      "routescanApi": {
-        "type": "testnet"
-      }
-    },
-    "rpc": [
-      {
-        "type": "APIKeyRPC",
-        "url": "https://eth-holesky.g.alchemy.com/v2/{API_KEY}",
-        "apiKeyEnvName": "ALCHEMY_API_KEY"
-      },
-      {
-        "type": "APIKeyRPC",
-        "url": "https://{SUBDOMAIN}.ethereum-holesky.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
-      }
-    ]
+    "supported": false
   },
   "5": {
     "sourcifyName": "Ethereum Goerli Testnet",

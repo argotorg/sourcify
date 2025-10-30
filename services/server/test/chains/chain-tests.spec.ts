@@ -159,12 +159,13 @@ describe("Test Supported Chains", function () {
   //   "shared/",
   // );
 
-  verifyContract(
-    "0x7ecedB5ca848e695ee8aB33cce9Ad1E1fe7865F8",
-    "17000",
-    "Holesky",
-    "shared/",
-  );
+  // Ethereum Holesky Testnet
+  // verifyContract(
+  //   "0x7ecedB5ca848e695ee8aB33cce9Ad1E1fe7865F8",
+  //   "17000",
+  //   "Holesky",
+  //   "shared/",
+  // );
 
   verifyContract(
     "0x8F78b9c92a68DdF719849a40702cFBfa4EB60dD0",

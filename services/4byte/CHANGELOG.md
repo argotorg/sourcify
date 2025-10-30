@@ -1,5 +1,9 @@
 
 
+## sourcify-4byte@1.1.2 - 2025-10-30
+
+- Add canonical signature (#2471)
+
 ## sourcify-4byte@1.1.1 - 2025-10-28
 
 - update dependencies

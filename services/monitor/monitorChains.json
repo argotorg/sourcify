@@ -25,20 +25,6 @@
     ]
   },
   {
-    "name": "Ethereum Testnet Holesky",
-    "title": "Ethereum Testnet Holesky",
-    "chainId": 17000,
-    "rpc": [
-      {
-        "type": "ApiKey",
-        "url": "https://eth-holesky.g.alchemy.com/v2/{API_KEY}",
-        "apiKeyEnvName": "ALCHEMY_API_KEY"
-      },
-      "https://holesky.drpc.org",
-      "https://1rpc.io/holesky"
-    ]
-  },
-  {
     "name": "Ethereum Testnet Hoodi",
     "title": "Ethereum Testnet Hoodi",
     "chainId": 560048,
