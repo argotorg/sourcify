@@ -270,9 +270,21 @@ async function _verifyFromEtherscan({
 function createPreRunCompilationFromCandidate(
   candidate: GetSourcifyMatchByChainAddressWithPropertiesResult,
 ): PreRunCompilation | null {
-  const language = candidate.std_json_input!.language;
+  if (
+    !candidate.std_json_input ||
+    !candidate.std_json_output ||
+    !candidate.version ||
+    !candidate.fully_qualified_name
+  ) {
+    logger.debug("Incomplete similarity candidate data", {
+      chainId: candidate.chain_id,
+      address: candidate.address,
+    });
+    return null;
+  }
+  const language = candidate.std_json_input.language;
   const { contractName, contractPath } = splitFullyQualifiedName(
-    candidate.fully_qualified_name!,
+    candidate.fully_qualified_name,
   );
 
   const compilationTarget = {
@@ -284,22 +296,22 @@ function createPreRunCompilationFromCandidate(
     if (language === "Solidity") {
       return new PreRunCompilation(
         solc,
-        candidate.version!,
-        candidate.std_json_input!,
-        candidate.std_json_output!,
+        candidate.version,
+        candidate.std_json_input,
+        candidate.std_json_output,
         compilationTarget,
-        candidate.creation_cbor_auxdata!,
-        candidate.runtime_cbor_auxdata!,
+        candidate.creation_cbor_auxdata || {},
+        candidate.runtime_cbor_auxdata || {},
       );
     } else if (language === "Vyper") {
       const compilation = new PreRunCompilation(
         vyper,
-        candidate.version!,
-        candidate.std_json_input!,
-        candidate.std_json_output!,
+        candidate.version,
+        candidate.std_json_input,
+        candidate.std_json_output,
         compilationTarget,
-        candidate.creation_cbor_auxdata!,
-        candidate.runtime_cbor_auxdata!,
+        candidate.creation_cbor_auxdata || {},
+        candidate.runtime_cbor_auxdata || {},
       );
       if (candidate.metadata) {
         compilation.setMetadata(candidate.metadata);
