@@ -146,3 +146,31 @@ export async function verifyFromEtherscanEndpoint(
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });
 }
+
+interface VerifySimilarityRequest extends Request {
+  params: {
+    chainId: string;
+    address: string;
+  };
+}
+
+export async function verifySimilarityEndpoint(
+  req: VerifySimilarityRequest,
+  res: VerifyResponse,
+) {
+  logger.debug("verifySimilarityEndpoint", {
+    chainId: req.params.chainId,
+    address: req.params.address,
+  });
+
+  const services = req.app.get("services") as Services;
+
+  const verificationId =
+    await services.verification.verifyFromSimilarityViaWorker(
+      req.baseUrl + req.path,
+      req.params.chainId,
+      req.params.address,
+    );
+
+  res.status(StatusCodes.ACCEPTED).json({ verificationId });
+}

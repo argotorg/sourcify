@@ -11,6 +11,7 @@ import {
   bytesFromString,
   Field,
   FIELDS_TO_STORED_PROPERTIES,
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
   StoredProperties,
   Tables,
 } from "../utils/database-util";
@@ -1052,5 +1053,60 @@ export class SourcifyDatabaseService
         verification,
       );
     });
+  }
+
+  async getSimilarityCandidatesByRuntimeCode(
+    runtimeBytecode: string,
+    limit: number,
+  ): Promise<GetSourcifyMatchByChainAddressWithPropertiesResult[]> {
+    await this.init();
+
+    const runtimeBuffer = bytesFromString(runtimeBytecode);
+    if (!runtimeBuffer || runtimeBuffer.length === 0) {
+      return [];
+    }
+
+    const prefixMatches =
+      await this.database.getVerifiedContractsByRuntimeCodePrefix(
+        runtimeBuffer,
+        limit,
+      );
+
+    if (prefixMatches.rows.length === 0) {
+      return [];
+    }
+
+    const results: GetSourcifyMatchByChainAddressWithPropertiesResult[] = [];
+
+    for (const row of prefixMatches.rows) {
+      const addressBuffer = bytesFromString(row.address);
+      if (!addressBuffer) {
+        continue;
+      }
+      const matchResult =
+        await this.database.getSourcifyMatchByChainAddressWithProperties(
+          row.chain_id,
+          addressBuffer,
+          [
+            "chain_id",
+            "address",
+            "std_json_input",
+            "std_json_output",
+            "fully_qualified_name",
+            "version",
+            "creation_cbor_auxdata",
+            "runtime_cbor_auxdata",
+            "metadata",
+          ],
+        );
+
+      if (matchResult.rows.length === 0) {
+        continue;
+      }
+
+      results.push(matchResult.rows[0]);
+    }
+
+    return results;
   }
 }

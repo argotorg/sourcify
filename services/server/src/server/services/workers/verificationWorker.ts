@@ -11,6 +11,8 @@ import {
   SourcifyChainMap,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
+  PreRunCompilation,
+  splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -29,13 +31,16 @@ import type {
 import logger, { setLogLevel } from "../../../common/logger";
 import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
+import SourcifyChainMock from "../utils/SourcifyChainMock";
+import { getAddress } from "ethers";
+import { VerifySimilarityInput } from "./workerTypes";
+import { GetSourcifyMatchByChainAddressWithPropertiesResult } from "../utils/database-util";
 
 export const filename = resolve(__filename);
 
 let chainRepository: ChainRepository;
 let solc: SolcLocal;
 let vyper: VyperLocal;
-
 const initWorker = () => {
   if (chainRepository && solc && vyper) {
     return;
@@ -88,6 +93,12 @@ export async function verifyFromEtherscan(
   input: VerifyFromEtherscanInput,
 ): Promise<VerifyOutput> {
   return runWorkerFunctionWithContext(_verifyFromEtherscan, input);
+}
+
+export async function verifySimilarity(
+  input: VerifySimilarityInput,
+): Promise<VerifyOutput> {
+  return runWorkerFunctionWithContext(_verifySimilarity, input);
 }
 
 async function _verifyFromJsonInput({
@@ -254,6 +265,219 @@ async function _verifyFromEtherscan({
     compilerVersion: compilation.compilerVersion,
     compilationTarget: compilation.compilationTarget,
   });
+}
+
+function createPreRunCompilationFromCandidate(
+  candidate: GetSourcifyMatchByChainAddressWithPropertiesResult,
+): PreRunCompilation | null {
+  if (
+    !candidate.std_json_input ||
+    !candidate.std_json_output ||
+    !candidate.version ||
+    !candidate.fully_qualified_name
+  ) {
+    logger.debug("Incomplete similarity candidate data", {
+      chainId: candidate.chain_id,
+      address: candidate.address,
+    });
+    return null;
+  }
+  const language = candidate.std_json_input.language;
+  const { contractName, contractPath } = splitFullyQualifiedName(
+    candidate.fully_qualified_name,
+  );
+
+  const compilationTarget = {
+    name: contractName,
+    path: contractPath,
+  };
+
+  try {
+    if (language === "Solidity") {
+      return new PreRunCompilation(
+        solc,
+        candidate.version,
+        candidate.std_json_input,
+        candidate.std_json_output,
+        compilationTarget,
+        candidate.creation_cbor_auxdata || {},
+        candidate.runtime_cbor_auxdata || {},
+      );
+    } else if (language === "Vyper") {
+      const compilation = new PreRunCompilation(
+        vyper,
+        candidate.version,
+        candidate.std_json_input,
+        candidate.std_json_output,
+        compilationTarget,
+        candidate.creation_cbor_auxdata || {},
+        candidate.runtime_cbor_auxdata || {},
+      );
+      if (candidate.metadata) {
+        compilation.setMetadata(candidate.metadata);
+      }
+      return compilation;
+    }
+  } catch (error: any) {
+    logger.debug("Failed to create PreRunCompilation for candidate", {
+      chainId: candidate.chain_id,
+      address: candidate.address,
+      language,
+      error: error?.message,
+    });
+    return null;
+  }
+
+  logger.debug("Unsupported language for similarity candidate", {
+    chainId: candidate.chain_id,
+    address: candidate.address,
+    language,
+  });
+  return null;
+}
+
+async function _verifySimilarity({
+  chainId,
+  address,
+  runtimeBytecode,
+  creatorTxHash,
+  candidates,
+}: VerifySimilarityInput): Promise<VerifyOutput> {
+  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+  if (!sourcifyChain) {
+    logger.warn("Similarity verification requested for unsupported chain", {
+      chainId,
+      address,
+    });
+    return {
+      errorExport: {
+        customCode: "internal_error",
+        errorId: uuidv4(),
+      },
+    };
+  }
+
+  const checksumAddress = getAddress(address);
+
+  if (!runtimeBytecode || runtimeBytecode.length <= 2) {
+    return {
+      errorExport: {
+        customCode: "cannot_fetch_bytecode",
+        errorId: uuidv4(),
+      },
+    };
+  }
+
+  if (runtimeBytecode === "0x") {
+    return {
+      errorExport: {
+        customCode: "contract_not_deployed",
+        errorId: uuidv4(),
+      },
+    };
+  }
+
+  // Fetch creation data to be used in the SourcifyChainMock
+  let creationData: {
+    creationBytecode?: string;
+    deployer?: string;
+    blockNumber?: number;
+    txIndex?: number;
+  } = {};
+  if (creatorTxHash) {
+    try {
+      const creatorTx = await sourcifyChain.getTx(creatorTxHash);
+      const { creationBytecode, txReceipt } =
+        await sourcifyChain.getContractCreationBytecodeAndReceipt(
+          checksumAddress,
+          creatorTxHash,
+          creatorTx,
+        );
+      creationData = {
+        creationBytecode,
+        deployer: creatorTx.from,
+        blockNumber: creatorTx.blockNumber ?? undefined,
+        txIndex: txReceipt.index ?? undefined,
+      };
+    } catch (error: any) {
+      logger.debug(
+        "Failed to fetch creation data for similarity verification",
+        {
+          chainId,
+          address: checksumAddress,
+          creatorTxHash: creatorTxHash,
+          error: error?.message,
+        },
+      );
+    }
+  }
+
+  const mockChain = new SourcifyChainMock(
+    {
+      onchain_runtime_code: runtimeBytecode,
+      onchain_creation_code: creationData.creationBytecode,
+      deployer: creationData.deployer,
+      block_number: creationData.blockNumber,
+      transaction_index: creationData.txIndex,
+      transaction_hash: creatorTxHash,
+      address: checksumAddress,
+    },
+    Number(chainId),
+    checksumAddress,
+  );
+
+  for (const candidate of candidates) {
+    const compilation = createPreRunCompilationFromCandidate(candidate);
+    if (!compilation) {
+      continue;
+    }
+
+    const verification = new Verification(
+      compilation,
+      mockChain,
+      checksumAddress,
+      creatorTxHash,
+    );
+
+    try {
+      await verification.verify();
+    } catch (error: any) {
+      if (error instanceof SourcifyLibError) {
+        logger.debug("Similarity candidate verification failed", {
+          chainId,
+          address: checksumAddress,
+          error: error.code,
+        });
+        continue;
+      }
+
+      return {
+        errorExport: {
+          customCode: "internal_error",
+          errorId: uuidv4(),
+        },
+      };
+    }
+
+    const { runtimeMatch, creationMatch } = verification.status;
+
+    if (runtimeMatch !== null || creationMatch !== null) {
+      logger.info("Similarity verification matched candidate", {
+        chainId,
+        address: checksumAddress,
+      });
+      return {
+        verificationExport: verification.export(),
+      };
+    }
+  }
+
+  return {
+    errorExport: {
+      customCode: "no_similar_match_found",
+      errorId: uuidv4(),
+    },
+  };
 }
 
 function createErrorExport(
