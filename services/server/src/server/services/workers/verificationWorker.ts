@@ -31,7 +31,7 @@ import type {
 import logger, { setLogLevel } from "../../../common/logger";
 import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
-import { SourcifyChainPreloaded } from "../utils/SourcifyChainPreloaded";
+import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { getAddress } from "ethers";
 import {
   SimilarityCandidateCompilation,
@@ -369,26 +369,54 @@ async function _verifySimilarity({
     };
   }
 
-  if (!candidates || candidates.length === 0) {
-    return {
-      errorExport: {
-        customCode: "no_similar_match_found",
-        errorId: uuidv4(),
-      },
-    };
+  // Fetch creation data to be used in the SourcifyChainMock
+  let creationData: {
+    creationBytecode?: string;
+    deployer?: string;
+    blockNumber?: number;
+    txIndex?: number;
+  } = {};
+  if (creatorTxHash) {
+    try {
+      const creatorTx = await sourcifyChain.getTx(creatorTxHash);
+      const { creationBytecode, txReceipt } =
+        await sourcifyChain.getContractCreationBytecodeAndReceipt(
+          checksumAddress,
+          creatorTxHash,
+          creatorTx,
+        );
+      creationData = {
+        creationBytecode,
+        deployer: creatorTx.from,
+        blockNumber: creatorTx.blockNumber ?? undefined,
+        txIndex: txReceipt.index ?? undefined,
+      };
+    } catch (error: any) {
+      logger.debug(
+        "Failed to fetch creation data for similarity verification",
+        {
+          chainId,
+          address: checksumAddress,
+          creatorTxHash: creatorTxHash,
+          error: error?.message,
+        },
+      );
+    }
   }
 
-  const preloadedChain = new SourcifyChainPreloaded(
-    sourcifyChain,
+  const mockChain = new SourcifyChainMock(
+    {
+      onchain_runtime_code: runtimeBytecode,
+      onchain_creation_code: creationData.creationBytecode,
+      deployer: creationData.deployer,
+      block_number: creationData.blockNumber,
+      transaction_index: creationData.txIndex,
+      transaction_hash: creatorTxHash,
+      address: checksumAddress,
+    },
+    Number(chainId),
     checksumAddress,
-    runtimeBytecode,
   );
-
-  let effectiveCreatorTxHash = creatorTxHash;
-  if (!effectiveCreatorTxHash) {
-    effectiveCreatorTxHash =
-      (await getCreatorTx(sourcifyChain, checksumAddress)) || undefined;
-  }
 
   for (const candidate of candidates) {
     const compilation = createPreRunCompilationFromCandidate(candidate);
@@ -398,9 +426,9 @@ async function _verifySimilarity({
 
     const verification = new Verification(
       compilation,
-      preloadedChain,
+      mockChain,
       checksumAddress,
-      effectiveCreatorTxHash,
+      creatorTxHash,
     );
 
     try {
