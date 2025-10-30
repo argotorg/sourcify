@@ -50,8 +50,10 @@ import {
 } from "../../apiv2/errors";
 import { VerifyErrorExport } from "../workers/workerTypes";
 import { PoolClient } from "pg";
+import { SimilarityCandidateCompilation } from "../workers/workerTypes";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
+const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
 export class SourcifyDatabaseService
   extends AbstractDatabaseService
@@ -841,6 +843,7 @@ export class SourcifyDatabaseService
     address: string,
     verificationEndpoint: string,
   ): Promise<VerificationJobId> {
+    return "ok";
     const hardwareInfo = process.env.K_REVISION
       ? `cloud_run:${process.env.K_REVISION}`
       : "unknown";
@@ -1052,5 +1055,95 @@ export class SourcifyDatabaseService
         verification,
       );
     });
+  }
+
+  async getSimilarityCandidatesByRuntimeCode(
+    runtimeBytecode: string,
+    limit: number,
+  ): Promise<SimilarityCandidateCompilation[]> {
+    await this.init();
+
+    const runtimeBuffer = bytesFromString(runtimeBytecode);
+    if (!runtimeBuffer || runtimeBuffer.length === 0) {
+      return [];
+    }
+
+    const prefixMatches =
+      await this.database.getVerifiedContractsByRuntimeCodePrefix(
+        runtimeBuffer,
+        limit,
+      );
+
+    if (prefixMatches.rows.length === 0) {
+      return [];
+    }
+
+    const results: SimilarityCandidateCompilation[] = [];
+    const seen = new Set<string>();
+
+    for (const row of prefixMatches.rows) {
+      const chainId = Number(row.chain_id);
+      const address = row.address;
+      const key = `${chainId}:${address?.toLowerCase?.() ?? address}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+
+      const addressBuffer = bytesFromString(address);
+      if (!addressBuffer) {
+        continue;
+      }
+
+      const matchResult =
+        await this.database.getSourcifyMatchByChainAddressWithProperties(
+          chainId,
+          addressBuffer,
+          [
+            "chain_id",
+            "address",
+            "std_json_input",
+            "std_json_output",
+            "fully_qualified_name",
+            "version",
+            "creation_cbor_auxdata",
+            "runtime_cbor_auxdata",
+            "metadata",
+          ],
+        );
+
+      if (matchResult.rows.length === 0) {
+        continue;
+      }
+
+      const candidate = matchResult.rows[0];
+
+      if (
+        !candidate.address ||
+        !candidate.std_json_input ||
+        !candidate.std_json_output ||
+        !candidate.fully_qualified_name ||
+        !candidate.version ||
+        !candidate.creation_cbor_auxdata ||
+        !candidate.runtime_cbor_auxdata
+      ) {
+        continue;
+      }
+
+      results.push({
+        chainId,
+        address: candidate.address,
+        compilationId: String(row.compilation_id),
+        jsonInput: candidate.std_json_input,
+        jsonOutput: candidate.std_json_output,
+        fullyQualifiedName: candidate.fully_qualified_name,
+        compilerVersion: candidate.version,
+        creationCborAuxdata: candidate.creation_cbor_auxdata,
+        runtimeCborAuxdata: candidate.runtime_cbor_auxdata,
+        metadata: candidate.metadata || undefined,
+      });
+    }
+
+    return results;
   }
 }

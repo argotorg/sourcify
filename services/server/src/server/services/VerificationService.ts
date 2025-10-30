@@ -13,6 +13,7 @@ import {
   CompilationTarget,
   Metadata,
   EtherscanResult,
+  VerificationError,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
 import { ContractIsAlreadyBeingVerifiedError } from "../../common/errors/ContractIsAlreadyBeingVerifiedError";
@@ -37,8 +38,12 @@ import {
   type VerifyFromJsonInput,
   type VerifyFromMetadataInput,
   type VerifyOutput,
+  type VerifySimilarityInput,
+  type SimilarityCandidateCompilation,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
+import { ChainNotFoundError } from "../apiv2/errors";
+import { SourcifyDatabaseService } from "./storageServices/SourcifyDatabaseService";
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -55,6 +60,7 @@ export class VerificationService {
   solcRepoPath: string;
   solJsonRepoPath: string;
   storageService: StorageService;
+  private sourcifyChainMap: SourcifyChainMap;
 
   activeVerificationsByChainIdAddress: {
     [chainIdAndAddress: string]: boolean;
@@ -71,6 +77,7 @@ export class VerificationService {
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
+    this.sourcifyChainMap = options.sourcifyChainMap;
 
     const sourcifyChainInstanceMap = Object.entries(
       options.sourcifyChainMap,
@@ -345,13 +352,93 @@ export class VerificationService {
     return verificationId;
   }
 
+  public async verifyFromSimilarityViaWorker(
+    verificationEndpoint: string,
+    chainId: string,
+    address: string,
+  ): Promise<VerificationJobId> {
+    let runtimeBytecode: string;
+    try {
+      runtimeBytecode =
+        await this.sourcifyChainMap[chainId].getBytecode(address);
+    } catch (error) {
+      throw new VerificationError({
+        code: "cannot_fetch_bytecode",
+        chainId,
+        address,
+      });
+    }
+
+    const verificationId = await this.storageService.performServiceOperation(
+      "storeVerificationJob",
+      [new Date(), chainId, address, verificationEndpoint],
+    );
+
+    const sourcifyDatabaseService = this.storageService.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+
+    sourcifyDatabaseService
+      .getSimilarityCandidatesByRuntimeCode(runtimeBytecode, 20)
+      .then(async (candidates) => {
+        if (candidates.length === 0) {
+          logger.info("No similarity candidates found", {
+            chainId,
+            address,
+          });
+          await this.storageService.performServiceOperation("setJobError", [
+            verificationId,
+            new Date(),
+            {
+              customCode: "no_similar_match_found",
+              errorId: uuidv4(),
+            },
+          ]);
+          return;
+        }
+
+        const creatorTxHash =
+          (await getCreatorTx(this.sourcifyChainMap[chainId], address)) ||
+          undefined;
+
+        const input: VerifySimilarityInput = {
+          chainId,
+          address,
+          runtimeBytecode,
+          creatorTxHash,
+          candidates,
+          traceId: asyncLocalStorage.getStore()?.traceId,
+        };
+
+        this.verifyViaWorker(verificationId, "verifySimilarity", input);
+      })
+      .catch(async (error) => {
+        logger.error("Failed to fetch similarity candidates", {
+          chainId,
+          address,
+          error,
+        });
+        await this.storageService.performServiceOperation("setJobError", [
+          verificationId,
+          new Date(),
+          {
+            customCode: "internal_error",
+            errorId: uuidv4(),
+          },
+        ]);
+      });
+
+    return verificationId;
+  }
+
   private verifyViaWorker(
     verificationId: VerificationJobId,
     functionName: string,
     input:
       | VerifyFromJsonInput
       | VerifyFromMetadataInput
-      | VerifyFromEtherscanInput,
+      | VerifyFromEtherscanInput
+      | VerifySimilarityInput,
   ): void {
     const task = this.workerPool
       .run(input, { name: functionName })

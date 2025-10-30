@@ -14,6 +14,7 @@ import {
   Tables,
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
+  CodePrefixMatchResult,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
@@ -247,6 +248,27 @@ ${
         ${groupByClause}
         `,
       [chain, address],
+    );
+  }
+
+  async getVerifiedContractsByRuntimeCodePrefix(
+    runtimeBytecode: Buffer,
+    limit: number = 20,
+  ): Promise<QueryResult<CodePrefixMatchResult>> {
+    return await this.pool.query(
+      `
+        SELECT
+          compiled_contracts.id as compilation_id,
+          contract_deployments.chain_id,
+          concat('0x', encode(contract_deployments.address, 'hex')) as address
+        FROM ${this.schema}.code code
+        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
+        JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
+        JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
+        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        LIMIT $2
+      `,
+      [runtimeBytecode, limit],
     );
   }
 

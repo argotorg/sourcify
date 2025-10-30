@@ -239,7 +239,8 @@ export type VerificationErrorCode =
   | SourcifyLibErrorCode
   | "unsupported_language"
   | "already_verified"
-  | "internal_error";
+  | "internal_error"
+  | "no_similar_match_found";
 
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
@@ -257,6 +258,8 @@ export function getVerificationErrorMessage(
       return "The contract is already verified and the job didn't yield a better match.";
     case "internal_error":
       return "The server encountered an unexpected error.";
+    case "no_similar_match_found":
+      return "No similar verified contracts were found in the database.";
     default:
       return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }

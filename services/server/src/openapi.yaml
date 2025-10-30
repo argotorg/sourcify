@@ -128,6 +128,8 @@ paths:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1metadata~1{chainId}~1{address}"
   /v2/verify/etherscan/{chainId}/{address}:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1etherscan~1{chainId}~1{address}"
+  /v2/verify/similarity/{chainId}/{address}:
+    $ref: "apiv2.yaml#/paths/~1v2~1verify~1similarity~1{chainId}~1{address}"
   /v2/verify/{verificationId}:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1{verificationId}"
   /v2/contract/{chainId}/{address}:

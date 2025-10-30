@@ -243,6 +243,12 @@ export type GetSourcifyMatchesByChainResult = Pick<
   "id" | "creation_match" | "runtime_match"
 > & { address: string; verified_at: string };
 
+export interface CodePrefixMatchResult {
+  compilation_id: Tables.VerifiedContract["compilation_id"];
+  chain_id: number;
+  address: string;
+}
+
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
   Pick<
     Tables.SourcifyMatch,
