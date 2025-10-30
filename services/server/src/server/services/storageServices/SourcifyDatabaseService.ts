@@ -843,7 +843,6 @@ export class SourcifyDatabaseService
     address: string,
     verificationEndpoint: string,
   ): Promise<VerificationJobId> {
-    return "ok";
     const hardwareInfo = process.env.K_REVISION
       ? `cloud_run:${process.env.K_REVISION}`
       : "unknown";
