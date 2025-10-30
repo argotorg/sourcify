@@ -33,10 +33,8 @@ import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { getAddress } from "ethers";
-import {
-  SimilarityCandidateCompilation,
-  VerifySimilarityInput,
-} from "./workerTypes";
+import { VerifySimilarityInput } from "./workerTypes";
+import { GetSourcifyMatchByChainAddressWithPropertiesResult } from "../utils/database-util";
 
 export const filename = resolve(__filename);
 
@@ -270,11 +268,11 @@ async function _verifyFromEtherscan({
 }
 
 function createPreRunCompilationFromCandidate(
-  candidate: SimilarityCandidateCompilation,
+  candidate: GetSourcifyMatchByChainAddressWithPropertiesResult,
 ): PreRunCompilation | null {
-  const language = candidate.jsonInput.language;
+  const language = candidate.std_json_input!.language;
   const { contractName, contractPath } = splitFullyQualifiedName(
-    candidate.fullyQualifiedName,
+    candidate.fully_qualified_name!,
   );
 
   const compilationTarget = {
@@ -286,22 +284,22 @@ function createPreRunCompilationFromCandidate(
     if (language === "Solidity") {
       return new PreRunCompilation(
         solc,
-        candidate.compilerVersion,
-        candidate.jsonInput,
-        candidate.jsonOutput,
+        candidate.version!,
+        candidate.std_json_input!,
+        candidate.std_json_output!,
         compilationTarget,
-        candidate.creationCborAuxdata,
-        candidate.runtimeCborAuxdata,
+        candidate.creation_cbor_auxdata!,
+        candidate.runtime_cbor_auxdata!,
       );
     } else if (language === "Vyper") {
       const compilation = new PreRunCompilation(
         vyper,
-        candidate.compilerVersion,
-        candidate.jsonInput,
-        candidate.jsonOutput,
+        candidate.version!,
+        candidate.std_json_input!,
+        candidate.std_json_output!,
         compilationTarget,
-        candidate.creationCborAuxdata,
-        candidate.runtimeCborAuxdata,
+        candidate.creation_cbor_auxdata!,
+        candidate.runtime_cbor_auxdata!,
       );
       if (candidate.metadata) {
         compilation.setMetadata(candidate.metadata);
@@ -310,8 +308,7 @@ function createPreRunCompilationFromCandidate(
     }
   } catch (error: any) {
     logger.debug("Failed to create PreRunCompilation for candidate", {
-      compilationId: candidate.compilationId,
-      chainId: candidate.chainId,
+      chainId: candidate.chain_id,
       address: candidate.address,
       language,
       error: error?.message,
@@ -320,8 +317,7 @@ function createPreRunCompilationFromCandidate(
   }
 
   logger.debug("Unsupported language for similarity candidate", {
-    compilationId: candidate.compilationId,
-    chainId: candidate.chainId,
+    chainId: candidate.chain_id,
     address: candidate.address,
     language,
   });
@@ -438,7 +434,6 @@ async function _verifySimilarity({
         logger.debug("Similarity candidate verification failed", {
           chainId,
           address: checksumAddress,
-          compilationId: candidate.compilationId,
           error: error.code,
         });
         continue;
@@ -458,7 +453,6 @@ async function _verifySimilarity({
       logger.info("Similarity verification matched candidate", {
         chainId,
         address: checksumAddress,
-        compilationId: candidate.compilationId,
       });
       return {
         verificationExport: verification.export(),

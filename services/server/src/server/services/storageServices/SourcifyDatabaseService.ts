@@ -11,6 +11,7 @@ import {
   bytesFromString,
   Field,
   FIELDS_TO_STORED_PROPERTIES,
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
   StoredProperties,
   Tables,
 } from "../utils/database-util";
@@ -50,7 +51,6 @@ import {
 } from "../../apiv2/errors";
 import { VerifyErrorExport } from "../workers/workerTypes";
 import { PoolClient } from "pg";
-import { SimilarityCandidateCompilation } from "../workers/workerTypes";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 
@@ -1058,7 +1058,7 @@ export class SourcifyDatabaseService
   async getSimilarityCandidatesByRuntimeCode(
     runtimeBytecode: string,
     limit: number,
-  ): Promise<SimilarityCandidateCompilation[]> {
+  ): Promise<GetSourcifyMatchByChainAddressWithPropertiesResult[]> {
     await this.init();
 
     const runtimeBuffer = bytesFromString(runtimeBytecode);
@@ -1076,26 +1076,16 @@ export class SourcifyDatabaseService
       return [];
     }
 
-    const results: SimilarityCandidateCompilation[] = [];
-    const seen = new Set<string>();
+    const results: GetSourcifyMatchByChainAddressWithPropertiesResult[] = [];
 
     for (const row of prefixMatches.rows) {
-      const chainId = Number(row.chain_id);
-      const address = row.address;
-      const key = `${chainId}:${address?.toLowerCase?.() ?? address}`;
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-
-      const addressBuffer = bytesFromString(address);
+      const addressBuffer = bytesFromString(row.address);
       if (!addressBuffer) {
         continue;
       }
-
       const matchResult =
         await this.database.getSourcifyMatchByChainAddressWithProperties(
-          chainId,
+          row.chain_id,
           addressBuffer,
           [
             "chain_id",
@@ -1114,32 +1104,7 @@ export class SourcifyDatabaseService
         continue;
       }
 
-      const candidate = matchResult.rows[0];
-
-      if (
-        !candidate.address ||
-        !candidate.std_json_input ||
-        !candidate.std_json_output ||
-        !candidate.fully_qualified_name ||
-        !candidate.version ||
-        !candidate.creation_cbor_auxdata ||
-        !candidate.runtime_cbor_auxdata
-      ) {
-        continue;
-      }
-
-      results.push({
-        chainId,
-        address: candidate.address,
-        compilationId: String(row.compilation_id),
-        jsonInput: candidate.std_json_input,
-        jsonOutput: candidate.std_json_output,
-        fullyQualifiedName: candidate.fully_qualified_name,
-        compilerVersion: candidate.version,
-        creationCborAuxdata: candidate.creation_cbor_auxdata,
-        runtimeCborAuxdata: candidate.runtime_cbor_auxdata,
-        metadata: candidate.metadata || undefined,
-      });
+      results.push(matchResult.rows[0]);
     }
 
     return results;

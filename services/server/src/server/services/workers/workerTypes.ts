@@ -5,12 +5,12 @@ import type {
   CompilationTarget,
   Metadata,
   EtherscanResult,
-  SolidityOutput,
-  VyperOutput,
-  CompiledContractCborAuxdata,
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
-import { JobErrorData } from "../utils/database-util";
+import {
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
+  JobErrorData,
+} from "../utils/database-util";
 
 export interface VerificationWorkerInput {
   traceId?: string;
@@ -39,25 +39,12 @@ export interface VerifyFromEtherscanInput extends VerificationWorkerInput {
   etherscanResult: EtherscanResult;
 }
 
-export interface SimilarityCandidateCompilation {
-  chainId: number;
-  address: string;
-  compilationId: string;
-  jsonInput: SolidityJsonInput | VyperJsonInput;
-  jsonOutput: SolidityOutput | VyperOutput;
-  fullyQualifiedName: string;
-  compilerVersion: string;
-  creationCborAuxdata: CompiledContractCborAuxdata;
-  runtimeCborAuxdata: CompiledContractCborAuxdata;
-  metadata?: Metadata;
-}
-
 export interface VerifySimilarityInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
   runtimeBytecode: string;
   creatorTxHash?: string;
-  candidates: SimilarityCandidateCompilation[];
+  candidates: GetSourcifyMatchByChainAddressWithPropertiesResult[];
 }
 
 export class VerifyError extends Error {
