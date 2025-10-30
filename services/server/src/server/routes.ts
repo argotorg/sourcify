@@ -1,4 +1,4 @@
-import { Router } from "express"; // static is a reserved word
+import { Router, Request, Response, NextFunction } from "express";
 import logger, { setLogLevel } from "../common/logger";
 import { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
@@ -52,7 +52,7 @@ router.get("/chains", (_req, res) => {
   res.status(200).json(sourcifyChains);
 });
 
-router.get("/verify-ui/*path", (req, res, next) => {
+const verifyUiHandler = (req: Request, res: Response, next: NextFunction) => {
   const sourcifyVerifyUi = req.app.get("sourcifyVerifyUi") as
     | string
     | undefined;
@@ -69,9 +69,11 @@ router.get("/verify-ui/*path", (req, res, next) => {
     return res.redirect(redirectUrl);
   }
   next();
-});
+};
+router.get("/verify-ui", verifyUiHandler);
+router.get("/verify-ui/*path", verifyUiHandler);
 
-router.get("/repo-ui/*path", (req, res) => {
+const repoUiHandler = (req: Request, res: Response) => {
   const sourcifyRepoUi = req.app.get("sourcifyRepoUi") as string | undefined;
   if (sourcifyRepoUi) {
     const pathAfterContract = req.path.substring("/repo-ui".length);
@@ -82,7 +84,9 @@ router.get("/repo-ui/*path", (req, res) => {
   const pathAfterContract = req.path.substring("/repo-ui".length);
   const redirectUrl = `/v2/contract${pathAfterContract}`;
   return res.redirect(redirectUrl);
-});
+};
+router.get("/repo-ui", repoUiHandler);
+router.get("/repo-ui/*path", repoUiHandler);
 
 router.use("/", apiV1Routes);
 router.use("/v2", apiV2Routes);
