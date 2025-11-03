@@ -111,6 +111,18 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequestResponse"
         "409":
+          description: The contract is already verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+              examples:
+                already_verified:
+                  value:
+                    customCode: already_verified
+                    message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is already verified with runtimeMatch and creationMatch both being exact matches.
+                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
+        "429":
           description: The contract is already being verified
           content:
             application/json:
@@ -120,7 +132,7 @@ paths:
                 duplicate_verification_request:
                   value:
                     customCode: duplicate_verification_request
-                    message: A verification job is already in progress for this contract.
+                    message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is already being verified.
                     errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
