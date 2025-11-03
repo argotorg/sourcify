@@ -3,11 +3,40 @@ import logger, { setLogLevel } from "../common/logger";
 import { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
 import apiV1Routes from "./apiv1/routes";
+import { readFileSync } from "fs";
+import { join } from "path";
+import packageJson from "../../package.json";
 
 const router: Router = Router();
 
 router.get("/health", (_req, res) => {
   res.status(200).send("Alive and kicking!");
+});
+
+router.get("/version", (_req, res) => {
+  let gitCommitHash = "unknown";
+  try {
+    gitCommitHash = readFileSync(
+      join(__dirname, "../git-commit-hash.txt"),
+      "utf-8",
+    ).trim();
+  } catch (error) {
+    logger.warn({
+      message: "Failed to read git commit hash",
+      error,
+    });
+  }
+
+  res.status(200).json({
+    sourcifyServerVersion: packageJson.version,
+    libSourcifyVersion:
+      packageJson.dependencies["@ethereum-sourcify/lib-sourcify"],
+    sourcifyCompilersVersion:
+      packageJson.dependencies["@ethereum-sourcify/compilers"],
+    bytecodeUtilsVersion:
+      packageJson.dependencies["@ethereum-sourcify/bytecode-utils"],
+    gitCommitHash,
+  });
 });
 
 // Authenticated route to change the logging level.

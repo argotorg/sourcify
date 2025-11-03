@@ -10,7 +10,7 @@
     "url": "git+https://github.com/argotorg/sourcify.git"
   },
   "scripts": {
-    "prebuild": "copyfiles -u 1 src/**/*.yaml src/*.json dist",
+    "prebuild": "copyfiles -u 1 src/**/*.yaml src/*.json dist && git rev-parse HEAD > dist/git-commit-hash.txt",
     "build": "tsc",
     "start": "node ./dist/server/cli.js",
     "postgres-test:start": "docker-compose -f test/docker-compose.yml up -d",
