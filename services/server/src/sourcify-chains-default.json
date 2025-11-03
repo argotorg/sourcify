@@ -345,6 +345,10 @@
     "sourcifyName": "Hedera Mainnet",
     "supported": true
   },
+  "296": {
+    "sourcifyName": "Hedera Testnet",
+    "supported": true
+  },
   "300": {
     "sourcifyName": "Optimism on GC",
     "supported": false
