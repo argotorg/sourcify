@@ -976,6 +976,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Hedera Testnet
+  verifyContract(
+    "0x8DdDA03161b1105Bc53A3C644B2967905d0eAe6e",
+    "296",
+    "Hedera Testnet",
+    "shared/",
+  );
+
   // DogeChain Mainnet
   verifyContract(
     "0x2a35F4AA0d3e417e8896E972f35dba4b39b6305e",
