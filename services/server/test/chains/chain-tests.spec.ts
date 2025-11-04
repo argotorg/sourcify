@@ -278,6 +278,13 @@ describe("Test Supported Chains", function () {
   // );
 
   verifyContract(
+    "0x03943C3ef00d92e130185CeBC0bcc435Def2cC94",
+    "42220",
+    "Celo Mainnet",
+    "42220/",
+  );
+
+  verifyContract(
     "0x0Ec727eD4b65Ca0e2D80A6a9fdA73D4d3bb042A6",
     "11142220",
     "Celo Sepolia Testnet",
