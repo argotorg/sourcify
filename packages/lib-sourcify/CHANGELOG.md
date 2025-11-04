@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.3 - 2025-11-04
+
+- update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.0.2 - 2025-10-30
 
 - Only count timeouts and network errors as rpc failures (#2473)
