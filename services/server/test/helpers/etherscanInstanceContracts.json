@@ -241,13 +241,6 @@
       "expectedStatus": "partial"
     }
   ],
-  "2522": [
-    {
-      "address": "0x31D982ebd82Ad900358984bd049207A4c2468640",
-      "type": "single",
-      "expectedStatus": "partial"
-    }
-  ],
   "534351": [
     {
       "address": "0xFc2bfE03d07eC96F62D6F209667A660e4BF65D74",

@@ -1258,17 +1258,7 @@
   },
   "2522": {
     "sourcifyName": "Fraxtal Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_FRAXTAL"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true,
-      "routescanApi": {
-        "type": "testnet"
-      }
-    }
+    "supported": false
   },
   "888": {
     "sourcifyName": "Wanchain Mainnet",
