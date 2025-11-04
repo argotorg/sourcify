@@ -152,6 +152,22 @@ paths:
                     - traceSupportedRPCs
                     - supported
                     - etherscanAPI
+  /verify-ui:
+    get:
+      summary: Redirect to verification UI
+      tags:
+        - Other
+      responses:
+        "302":
+          description: Redirect to verification UI
+  /repo-ui:
+    get:
+      summary: Redirect to repository UI
+      tags:
+        - Other
+      responses:
+        "302":
+          description: Redirect to repository UI
   /private/verify-deprecated:
     $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
   /private/replace-contract:
