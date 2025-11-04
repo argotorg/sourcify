@@ -2137,6 +2137,10 @@
     "sourcifyName": "OORT Mainnet",
     "supported": true
   },
+  "9700": {
+    "sourcifyName": "OORT Testnet",
+    "supported": true
+  },
   "223": {
     "sourcifyName": "B2 Mainnet",
     "supported": true,
