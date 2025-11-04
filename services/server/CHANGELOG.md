@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.7.0 - 2025-11-04
+
+- Add /version endpoint to server (#2489)
+- Redirect to repo and verify UI also without path (#2480)
+- Add chain 296 Hedera Testnet (#2486)
+
 ## sourcify-server@3.6.1 - 2025-10-30
 
 - Disable Holesky Testnet because of deprecation (#2477)
