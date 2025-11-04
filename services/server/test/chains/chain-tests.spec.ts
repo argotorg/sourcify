@@ -1774,6 +1774,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  //OORT Testnet
+  verifyContract(
+    "0x33A3Ce497309119533C4372e5eDb73cB6E8baA9c",
+    "9700",
+    "OORT Testnet",
+    "shared/",
+  );
+
   //B2 Mainnet
   verifyContract(
     "0x3A3a009856AC673D91892b05068EB82080ff8744",
