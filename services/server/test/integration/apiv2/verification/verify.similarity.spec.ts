@@ -53,7 +53,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .post(
         `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       )
-      .send();
+      .send({});
 
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(verifyRes.body).to.have.property("verificationId");
@@ -92,7 +92,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .post(
         `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       )
-      .send();
+      .send({});
 
     chai.expect(getBytecodeStub.calledOnce).to.be.true;
     chai.expect(verifyRes.status).to.equal(502);
@@ -119,7 +119,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .post(
         `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       )
-      .send();
+      .send({});
 
     chai.expect(getBytecodeStub.calledOnce).to.be.true;
     chai.expect(verifyRes.status).to.equal(404);
@@ -150,7 +150,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .post(
         `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       )
-      .send();
+      .send({});
 
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(verifyRes.body).to.have.property("verificationId");
