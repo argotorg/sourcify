@@ -7,6 +7,7 @@ import {
   AuxdataStyle,
   decode as decodeBytecode,
   SolidityDecodedObject,
+  decode,
 } from '@ethereum-sourcify/bytecode-utils';
 import {
   CompiledContractCborAuxdata,
@@ -131,9 +132,33 @@ export class Verification {
           });
         }
       }
-      throw new VerificationError({
-        code: 'bytecode_length_mismatch',
-      });
+
+      // If there is no metadata in the onchain bytecode, we can try to verify
+      let noOnchainMetadata = false;
+      if (this.compilation.language === 'Solidity') {
+        try {
+          const decodedOnchainAuxdata = decode(
+            this.onchainRuntimeBytecode,
+            AuxdataStyle.SOLIDITY,
+          );
+          if (
+            !decodedOnchainAuxdata.ipfs &&
+            !decodedOnchainAuxdata.bzzr0 &&
+            !decodedOnchainAuxdata.bzzr1
+          ) {
+            noOnchainMetadata = true;
+          }
+        } catch (err: any) {
+          noOnchainMetadata = true;
+        }
+      }
+
+      // we throw the bytecode length mismatch error only if there is onchain metadata
+      if (!noOnchainMetadata) {
+        throw new VerificationError({
+          code: 'bytecode_length_mismatch',
+        });
+      }
     }
 
     // We need to manually generate the auxdata positions because they are not automatically produced during compilation

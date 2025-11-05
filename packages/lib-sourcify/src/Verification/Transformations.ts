@@ -323,10 +323,20 @@ export function extractAuxdataTransformation(
         auxdataValues.offset * 2 + 2 + auxdataValues.value.length - 2;
       // Instead of zeroing out this segment, get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
-      populatedRecompiledBytecode =
-        populatedRecompiledBytecode.slice(0, offsetStart) +
-        onchainAuxdata +
-        populatedRecompiledBytecode.slice(offsetEnd);
+      if (
+        onchainAuxdata.length === 0
+        // TODO with this we could potentially support multiple auxdata sections, but needs more testing
+        // && (true || index === Object.values(cborAuxdataPositions).length - 1)
+      ) {
+        populatedRecompiledBytecode =
+          populatedRecompiledBytecode.slice(0, offsetStart - 2) +
+          populatedRecompiledBytecode.slice(offsetEnd);
+      } else {
+        populatedRecompiledBytecode =
+          populatedRecompiledBytecode.slice(0, offsetStart) +
+          onchainAuxdata +
+          populatedRecompiledBytecode.slice(offsetEnd);
+      }
       const transformationIndex = `${index + 1}`;
       transformations.push(
         AuxdataTransformation(auxdataValues.offset, transformationIndex),

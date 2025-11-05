@@ -869,8 +869,11 @@ describe('Verification Class Tests', () => {
           deploymentCompilation,
         );
 
-        const verificationCompilation = await getCompilationFromMetadata(
+        const verificationCompilation = await compileContractWithMetadata(
           STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+          },
         );
 
         const verification = new Verification(
