@@ -264,6 +264,7 @@ ${
         FROM ${this.schema}.code code
         JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
         JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
+        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
         JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
         WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
         LIMIT $2
