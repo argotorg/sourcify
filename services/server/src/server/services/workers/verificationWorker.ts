@@ -402,6 +402,7 @@ async function _verifySimilarity({
     errorExport: {
       customCode: "no_similar_match_found",
       errorId: uuidv4(),
+      errorData: undefined,
     },
   };
 }

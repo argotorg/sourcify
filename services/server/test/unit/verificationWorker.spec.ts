@@ -15,7 +15,6 @@ import {
   type SourcifyChainInstance,
   type SolidityJsonInput,
   type SoliditySettings,
-  SourcifyLibErrorCode,
   OutputError,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getAddress } from "ethers";
@@ -28,7 +27,7 @@ import { JobErrorData } from "../../src/server/services/utils/database-util";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import type { SolidityOutput } from "@ethereum-sourcify/lib-sourcify";
 import type { SimilarityCandidate } from "../../src/server/types";
-import * as contractCreationUtil from "../../src/server/services/utils/contract-creation-util";
+import { VerificationErrorCode } from "../../src/server/apiv2/errors";
 
 chai.use(chaiHttp);
 
@@ -177,7 +176,7 @@ describe("verificationWorker", function () {
 
   const assertErrorResponse = (
     result: VerifyOutput,
-    code: SourcifyLibErrorCode,
+    code: VerificationErrorCode,
     data?: JobErrorData,
   ) => {
     expect(result).to.not.have.property("verificationExport");
@@ -545,8 +544,7 @@ describe("verificationWorker", function () {
         candidates: [{} as SimilarityCandidate],
       });
 
-      console.log(result);
-      // assertErrorResponse(result, "no_similar_match_found");
+      assertErrorResponse(result, "no_similar_match_found");
     });
   });
 });
