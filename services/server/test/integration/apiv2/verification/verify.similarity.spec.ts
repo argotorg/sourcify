@@ -3,10 +3,7 @@ import chaiHttp from "chai-http";
 import sinon from "sinon";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
-import {
-  hookIntoVerificationWorkerRun,
-  waitSecs,
-} from "../../../helpers/helpers";
+import { hookIntoVerificationWorkerRun } from "../../../helpers/helpers";
 import { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
 import { MockVerificationExport } from "../../../helpers/mocks";
 import { assertJobVerification } from "../../../helpers/assertions";
@@ -131,9 +128,6 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
 
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(verifyRes.body).to.have.property("verificationId");
-
-    // We need to wait because `getSimilarityCandidatesByRuntimeCode` is delaying the job push to the queue
-    await waitSecs(1);
 
     await assertJobVerification(
       serverFixture,

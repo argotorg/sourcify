@@ -13,7 +13,6 @@ import {
   CompilationTarget,
   Metadata,
   EtherscanResult,
-  VerificationError,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
 import { ContractIsAlreadyBeingVerifiedError } from "../../common/errors/ContractIsAlreadyBeingVerifiedError";
@@ -382,7 +381,7 @@ export class VerificationService {
       [new Date(), chainId, address, verificationEndpoint],
     );
 
-    this.storageService
+    const similarityLookupTask = this.storageService
       .performServiceOperation("getSimilarityCandidatesByRuntimeCode", [
         runtimeBytecode,
         DEFAULT_SIMILARITY_CANDIDATE_LIMIT,
@@ -430,6 +429,11 @@ export class VerificationService {
           },
         ]);
       });
+
+    this.runningTasks.add(similarityLookupTask);
+    similarityLookupTask.finally(() => {
+      this.runningTasks.delete(similarityLookupTask);
+    });
 
     return verificationId;
   }
