@@ -400,15 +400,10 @@ export class VerificationService {
           return;
         }
 
-        const creatorTxHash =
-          (await getCreatorTx(this.sourcifyChainMap[chainId], address)) ||
-          undefined;
-
         const input: VerifySimilarityInput = {
           chainId,
           address,
           runtimeBytecode,
-          creatorTxHash,
           candidates,
           traceId: asyncLocalStorage.getStore()?.traceId,
         };

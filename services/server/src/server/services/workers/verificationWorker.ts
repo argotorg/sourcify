@@ -340,7 +340,6 @@ async function _verifySimilarity({
   chainId,
   address,
   runtimeBytecode,
-  creatorTxHash,
   candidates,
 }: VerifySimilarityInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
@@ -376,6 +375,9 @@ async function _verifySimilarity({
       },
     };
   }
+
+  const creatorTxHash =
+    (await getCreatorTx(sourcifyChain, address)) || undefined;
 
   // Fetch creation data to be used in the SourcifyChainMock
   let creationData: {
