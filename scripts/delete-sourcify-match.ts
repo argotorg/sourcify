@@ -106,20 +106,44 @@ class PostgresClient implements DatabaseClient {
 // BigQuery client wrapper
 class BigQueryClient implements DatabaseClient {
   private bigquery: any;
-  private session: any;
+  private sessionId: string | null = null;
   private dataset: string;
+  private location: string;
 
-  constructor(bigquery: any, dataset: string) {
+  constructor(bigquery: any, dataset: string, location: string) {
     this.bigquery = bigquery;
     this.dataset = dataset;
+    this.location = location;
   }
 
   async init(): Promise<void> {
-    const [session] = await this.bigquery.createSession();
-    this.session = session;
+    // Create a session by running a simple query with createSession: true
+    const [job] = await this.bigquery.createQueryJob({
+      query: "SELECT 1",
+      createSession: true,
+      useLegacySql: false,
+      location: this.location,
+    });
+
+    // Wait for the job to complete to get session info
+    await job.getQueryResults();
+
+    // Extract session ID from job metadata
+    const [metadata] = await job.getMetadata();
+    this.sessionId = metadata.statistics?.sessionInfo?.sessionId;
+
+    if (!this.sessionId) {
+      throw new Error("Failed to create BigQuery session");
+    }
+
+    console.log(`✓ BigQuery session created: ${this.sessionId}`);
   }
 
   async query(sql: string, params?: any[]): Promise<any> {
+    if (!this.sessionId) {
+      throw new Error("BigQuery session not initialized");
+    }
+
     // Convert PostgreSQL $1, $2 to BigQuery @param0, @param1
     let convertedSql = sql;
     const namedParams: Record<string, any> = {};
@@ -127,20 +151,41 @@ class BigQueryClient implements DatabaseClient {
     if (params && params.length > 0) {
       params.forEach((param, index) => {
         const paramName = `param${index}`;
-        convertedSql = convertedSql.replace(`$${index + 1}`, `@${paramName}`);
-        namedParams[paramName] = param;
+        const paramPlaceholder = `@${paramName}`;
+        const dollarPlaceholder = `$${index + 1}`;
+
+        // For BigQuery BYTES type, we need to use FROM_HEX() function
+        if (Buffer.isBuffer(param)) {
+          // Convert Buffer to hex string (without 0x prefix)
+          const hexString = param.toString("hex");
+          // Replace all occurrences of $N with FROM_HEX(@paramN) for BYTES parameters
+          const regex = new RegExp(`\\${dollarPlaceholder}\\b`, "g");
+          convertedSql = convertedSql.replace(
+            regex,
+            `FROM_HEX(${paramPlaceholder})`,
+          );
+          namedParams[paramName] = hexString;
+        } else {
+          // Replace all occurrences of $N with @paramN
+          const regex = new RegExp(`\\${dollarPlaceholder}\\b`, "g");
+          convertedSql = convertedSql.replace(regex, paramPlaceholder);
+          namedParams[paramName] = param;
+        }
       });
     }
 
-    // Add dataset prefix to table names (basic implementation)
+    // Add dataset prefix to table names
     convertedSql = this.addDatasetPrefix(convertedSql);
 
-    const [rows] = await this.session.query({
+    // Execute query within the session
+    const [job] = await this.bigquery.createQueryJob({
       query: convertedSql,
       params: namedParams,
       useLegacySql: false,
+      connectionProperties: [{ key: "session_id", value: this.sessionId }],
     });
 
+    const [rows] = await job.getQueryResults();
     return rows || [];
   }
 
@@ -171,28 +216,27 @@ class BigQueryClient implements DatabaseClient {
       }
       // Match table names with word boundaries
       const regex = new RegExp(`\\b${table}\\b`, "g");
-      result = result.replace(regex, `\`${this.dataset}.${table}\``);
+      result = result.replace(regex, `\`${this.dataset}.public_${table}\``);
     }
 
     return result;
   }
 
   async beginTransaction(): Promise<void> {
-    await this.session.query("BEGIN TRANSACTION");
+    await this.query("BEGIN TRANSACTION");
   }
 
   async commitTransaction(): Promise<void> {
-    await this.session.query("COMMIT TRANSACTION");
+    await this.query("COMMIT TRANSACTION");
   }
 
   async rollbackTransaction(): Promise<void> {
-    await this.session.query("ROLLBACK TRANSACTION");
+    await this.query("ROLLBACK TRANSACTION");
   }
 
   async close(): Promise<void> {
-    if (this.session) {
-      await this.session.close();
-    }
+    // Session cleanup is handled by BigQuery automatically
+    // when the connection/job completes
   }
 }
 
@@ -215,7 +259,8 @@ async function createDatabaseClient(
       projectId: process.env.BIGQUERY_PROJECT_ID,
     });
     const dataset = process.env.BIGQUERY_DATASET || "sourcify";
-    const client = new BigQueryClient(bigquery, dataset);
+    const location = process.env.BIGQUERY_LOCATION || "europe-west1";
+    const client = new BigQueryClient(bigquery, dataset, location);
     await client.init();
     return client;
   }
@@ -351,15 +396,16 @@ async function tableExists(
     );
     return result[0].exists;
   } else {
-    // BigQuery
+    // BigQuery - check for public_ prefixed table name
     const dataset = process.env.BIGQUERY_DATASET || "sourcify";
     const projectId = process.env.BIGQUERY_PROJECT_ID;
+    const prefixedTableName = `public_${tableName}`;
     try {
       const result = await client.query(
         `SELECT COUNT(*) > 0 as table_exists
          FROM \`${projectId}.${dataset}.INFORMATION_SCHEMA.TABLES\`
          WHERE table_name = $1`,
-        [tableName],
+        [prefixedTableName],
       );
       return result[0]?.table_exists === true;
     } catch (error) {
@@ -489,34 +535,41 @@ async function deleteVerifiedContracts(
     }
 
     // 3. Delete sourcify_matches for all verified_contracts (if table exists)
-    const sourcifyMatchesTableExists = await tableExists(
-      client,
-      "sourcify_matches",
-      dbType,
-    );
-
-    if (sourcifyMatchesTableExists) {
-      // Query sourcify_match_ids for each verified_contract
-      for (const verifiedContractId of verifiedContractIds) {
-        const sourcifyMatchResult = await client.query(
-          `SELECT id FROM sourcify_matches WHERE verified_contract_id = $1`,
-          [verifiedContractId],
-        );
-
-        if (sourcifyMatchResult.length > 0) {
-          for (const match of sourcifyMatchResult) {
-            await client.query(`DELETE FROM sourcify_matches WHERE id = $1`, [
-              match.id,
-            ]);
-            stats.sourcifyMatchesDeleted++;
-          }
-        }
-      }
+    // Skip for BigQuery - it's a CDC table that gets automatically updated from PostgreSQL
+    if (dbType === "bigquery") {
       console.log(
-        `✓ Deleted ${stats.sourcifyMatchesDeleted} sourcify_match(es)`,
+        `⊘ Skipped sourcify_matches (BigQuery CDC table - automatically updated from PostgreSQL)`,
       );
     } else {
-      console.log(`⊘ Skipped sourcify_matches (table does not exist)`);
+      const sourcifyMatchesTableExists = await tableExists(
+        client,
+        "sourcify_matches",
+        dbType,
+      );
+
+      if (sourcifyMatchesTableExists) {
+        // Query sourcify_match_ids for each verified_contract
+        for (const verifiedContractId of verifiedContractIds) {
+          const sourcifyMatchResult = await client.query(
+            `SELECT id FROM sourcify_matches WHERE verified_contract_id = $1`,
+            [verifiedContractId],
+          );
+
+          if (sourcifyMatchResult.length > 0) {
+            for (const match of sourcifyMatchResult) {
+              await client.query(`DELETE FROM sourcify_matches WHERE id = $1`, [
+                match.id,
+              ]);
+              stats.sourcifyMatchesDeleted++;
+            }
+          }
+        }
+        console.log(
+          `✓ Deleted ${stats.sourcifyMatchesDeleted} sourcify_match(es)`,
+        );
+      } else {
+        console.log(`⊘ Skipped sourcify_matches (table does not exist)`);
+      }
     }
 
     // 4. Delete all verified_contracts
