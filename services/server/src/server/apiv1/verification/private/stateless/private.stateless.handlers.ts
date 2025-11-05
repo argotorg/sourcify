@@ -28,7 +28,6 @@ import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
 import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
-import { extractCompilationFromDatabase } from "../../../../services/utils/database-util";
 import { CustomReplaceMethod, REPLACE_METHODS } from "./customReplaceMethods";
 
 export async function verifyDeprecated(
@@ -216,12 +215,12 @@ export async function replaceContract(
         solc,
         vyper,
       };
-      compilation = await extractCompilationFromDatabase(
-        sourcifyDatabaseService.database,
-        compilers,
-        address,
-        chainId,
-      );
+      compilation =
+        await sourcifyDatabaseService.getPreRunCompilationFromDatabase(
+          chainId,
+          address,
+          compilers,
+        );
     } else {
       // Create a SolidityCompilation object and compile it if forceCompilation is true
       if (

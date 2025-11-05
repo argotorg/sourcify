@@ -3,6 +3,9 @@ import {
   StringMap,
   VerificationExport,
   splitFullyQualifiedName,
+  ISolidityCompiler,
+  IVyperCompiler,
+  PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
@@ -14,6 +17,7 @@ import {
   GetSourcifyMatchByChainAddressWithPropertiesResult,
   StoredProperties,
   Tables,
+  createPreRunCompilationFromStoredCandidate,
 } from "../utils/database-util";
 import {
   ContractData,
@@ -1121,5 +1125,71 @@ export class SourcifyDatabaseService
     }
 
     return results as SimilarityCandidate[];
+  }
+
+  async getPreRunCompilationFromDatabase(
+    chainId: number,
+    address: string,
+    compilers: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+  ): Promise<PreRunCompilation> {
+    await this.init();
+
+    const addressBuffer = bytesFromString(address);
+    if (!addressBuffer) {
+      logger.error(
+        "getPreRunCompilationFromDatabase: invalid address provided",
+        {
+          chainId,
+          address,
+        },
+      );
+      throw new Error("Invalid address");
+    }
+
+    try {
+      const verifiedContractResult =
+        await this.database.getSourcifyMatchByChainAddressWithProperties(
+          chainId,
+          addressBuffer,
+          [
+            "std_json_input",
+            "std_json_output",
+            "runtime_cbor_auxdata",
+            "creation_cbor_auxdata",
+            "fully_qualified_name",
+            "version",
+            "metadata",
+          ],
+        );
+
+      if (verifiedContractResult.rows.length === 0) {
+        logger.error(
+          "getPreRunCompilationFromDatabase: verified contract not found",
+          {
+            chainId,
+            address,
+          },
+        );
+        throw new Error("Verified contract not found");
+      }
+
+      const candidate = verifiedContractResult
+        .rows[0] as GetSourcifyMatchByChainAddressWithPropertiesResult;
+
+      return createPreRunCompilationFromStoredCandidate(
+        compilers,
+        candidate as SimilarityCandidate,
+      );
+    } catch (error) {
+      logger.error(
+        "getPreRunCompilationFromDatabase: error extracting compilation properties",
+        {
+          error,
+          chainId,
+          address,
+        },
+      );
+      throw error;
+    }
   }
 }

@@ -12,7 +12,6 @@ import {
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
   PreRunCompilation,
-  splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -35,6 +34,7 @@ import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { getAddress } from "ethers";
 import type { SimilarityCandidate } from "../../types";
+import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
 
 export const filename = resolve(__filename);
 
@@ -270,48 +270,16 @@ async function _verifyFromEtherscan({
 function createPreRunCompilationFromCandidate(
   candidate: SimilarityCandidate,
 ): PreRunCompilation {
-  const language = candidate.std_json_input.language;
-  const { contractName, contractPath } = splitFullyQualifiedName(
-    candidate.fully_qualified_name,
-  );
-
-  const compilationTarget = {
-    name: contractName,
-    path: contractPath,
-  };
-
   try {
-    if (language === "Solidity") {
-      return new PreRunCompilation(
-        solc,
-        candidate.version,
-        candidate.std_json_input,
-        candidate.std_json_output,
-        compilationTarget,
-        candidate.creation_cbor_auxdata || {},
-        candidate.runtime_cbor_auxdata || {},
-      );
-    } else if (language === "Vyper") {
-      const compilation = new PreRunCompilation(
-        vyper,
-        candidate.version,
-        candidate.std_json_input,
-        candidate.std_json_output,
-        compilationTarget,
-        candidate.creation_cbor_auxdata || {},
-        candidate.runtime_cbor_auxdata || {},
-      );
-      if (candidate.metadata) {
-        compilation.setMetadata(candidate.metadata);
-      }
-      return compilation;
-    }
+    return createPreRunCompilationFromStoredCandidate(
+      { solc, vyper },
+      candidate,
+    );
   } catch (error: any) {
     throw new Error(
       `Failed to create PreRunCompilation from similarity candidate: ${error.message}`,
     );
   }
-  throw new Error(`Unsupported language '${language}' in similarity candidate`);
 }
 
 async function _verifySimilarity({
