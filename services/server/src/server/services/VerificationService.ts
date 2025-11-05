@@ -355,6 +355,7 @@ export class VerificationService {
     verificationEndpoint: string,
     chainId: string,
     address: string,
+    creationTransactionHash?: string,
   ): Promise<VerificationJobId> {
     let runtimeBytecode: string;
     try {
@@ -408,6 +409,7 @@ export class VerificationService {
           chainId,
           address,
           runtimeBytecode,
+          creatorTxHash: creationTransactionHash,
           candidates,
           traceId: asyncLocalStorage.getStore()?.traceId,
         };

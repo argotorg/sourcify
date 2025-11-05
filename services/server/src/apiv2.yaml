@@ -105,6 +105,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/chainId"
         - $ref: "#/components/parameters/address"
+      requestBody:
+        $ref: "#/components/requestBodies/SimilarityVerificationRequest"
       responses:
         "202":
           $ref: "#/components/responses/ReturnVerificationJob"
@@ -488,6 +490,16 @@ components:
               apiKey:
                 type: string
                 description: API key to use when importing from the Etherscan instance or Etherscan-alike API.
+    SimilarityVerificationRequest:
+      description: ""
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              creationTransactionHash:
+                $ref: "#/components/schemas/Keccak256"
+                description: The hash of the transaction that created this contract. Optional.
   responses:
     VerificationJobResponse:
       description: |-

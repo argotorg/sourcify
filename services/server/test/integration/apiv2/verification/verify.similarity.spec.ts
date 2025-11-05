@@ -19,6 +19,32 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
   afterEach(() => {
     sandbox.restore();
   });
+  it("should forward creationTransactionHash to the worker", async () => {
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const verification = structuredClone(MockVerificationExport);
+    verification.address = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF";
+    await databaseService.storeVerification(verification);
+
+    const { resolveWorkers, runTaskStub } = makeWorkersWait();
+    const customCreationHash = "0x" + "1".repeat(64);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({ creationTransactionHash: customCreationHash });
+
+    await resolveWorkers();
+    chai.expect(verifyRes.status).to.equal(202);
+    chai.expect(runTaskStub.calledOnce).to.be.true;
+    const [workerInput] = runTaskStub.firstCall.args;
+    chai.expect(workerInput).to.include({
+      creatorTxHash: customCreationHash,
+    });
+  });
   it("should store a job error when no candidates are found", async () => {
     const { resolveWorkers } = makeWorkersWait();
 

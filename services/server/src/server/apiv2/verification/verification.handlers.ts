@@ -152,6 +152,9 @@ interface VerifySimilarityRequest extends Request {
     chainId: string;
     address: string;
   };
+  body: {
+    creationTransactionHash?: string;
+  };
 }
 
 export async function verifySimilarityEndpoint(
@@ -161,6 +164,7 @@ export async function verifySimilarityEndpoint(
   logger.debug("verifySimilarityEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
+    creationTransactionHash: req.body.creationTransactionHash,
   });
 
   const services = req.app.get("services") as Services;
@@ -170,6 +174,7 @@ export async function verifySimilarityEndpoint(
       req.baseUrl + req.path,
       req.params.chainId,
       req.params.address,
+      req.body.creationTransactionHash,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });

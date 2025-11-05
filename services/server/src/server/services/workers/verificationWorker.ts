@@ -286,13 +286,16 @@ async function _verifySimilarity({
   chainId,
   address,
   runtimeBytecode,
+  creatorTxHash,
   candidates,
 }: VerifySimilarityInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
-  const checksumAddress = getAddress(address);
 
-  const creatorTxHash =
-    (await getCreatorTx(sourcifyChain, address)) || undefined;
+  let resolvedCreatorTxHash = creatorTxHash || undefined;
+  if (!resolvedCreatorTxHash) {
+    resolvedCreatorTxHash =
+      (await getCreatorTx(sourcifyChain, address)) || undefined;
+  }
 
   // Fetch creation data to be used in the SourcifyChainMock
   let creationData: {
@@ -301,13 +304,13 @@ async function _verifySimilarity({
     blockNumber?: number;
     txIndex?: number;
   } = {};
-  if (creatorTxHash) {
+  if (resolvedCreatorTxHash) {
     try {
-      const creatorTx = await sourcifyChain.getTx(creatorTxHash);
+      const creatorTx = await sourcifyChain.getTx(resolvedCreatorTxHash);
       const { creationBytecode, txReceipt } =
         await sourcifyChain.getContractCreationBytecodeAndReceipt(
-          checksumAddress,
-          creatorTxHash,
+          address,
+          resolvedCreatorTxHash,
           creatorTx,
         );
       creationData = {
@@ -321,8 +324,8 @@ async function _verifySimilarity({
         "Failed to fetch creation data for similarity verification",
         {
           chainId,
-          address: checksumAddress,
-          creatorTxHash: creatorTxHash,
+          address: address,
+          creatorTxHash: resolvedCreatorTxHash,
           error: error?.message,
         },
       );
@@ -336,10 +339,10 @@ async function _verifySimilarity({
       deployer: creationData.deployer,
       block_number: creationData.blockNumber,
       transaction_index: creationData.txIndex,
-      transaction_hash: creatorTxHash,
+      transaction_hash: resolvedCreatorTxHash,
     },
     Number(chainId),
-    checksumAddress,
+    address,
   );
 
   for (const candidate of candidates) {
@@ -349,7 +352,7 @@ async function _verifySimilarity({
     } catch (error: any) {
       logger.warn("Failed to create compilation from similarity candidate", {
         chainId,
-        address: checksumAddress,
+        address: address,
         error: error.message,
       });
       continue;
@@ -358,8 +361,8 @@ async function _verifySimilarity({
     const verification = new Verification(
       compilation,
       mockChain,
-      checksumAddress,
-      creatorTxHash,
+      address,
+      resolvedCreatorTxHash,
     );
 
     try {
@@ -368,7 +371,7 @@ async function _verifySimilarity({
       if (error instanceof SourcifyLibError) {
         logger.debug("Similarity candidate verification failed", {
           chainId,
-          address: checksumAddress,
+          address: address,
           error: error.code,
         });
         continue;
@@ -376,7 +379,7 @@ async function _verifySimilarity({
 
       logger.warn("Unexpected error during similarity candidate verification", {
         chainId,
-        address: checksumAddress,
+        address: address,
         error: error?.message,
       });
       throw new Error(
@@ -389,7 +392,7 @@ async function _verifySimilarity({
     if (runtimeMatch !== null || creationMatch !== null) {
       logger.info("Similarity verification matched candidate", {
         chainId,
-        address: checksumAddress,
+        address: address,
       });
       return {
         verificationExport: verification.export(),
