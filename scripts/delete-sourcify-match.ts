@@ -147,20 +147,29 @@ class BigQueryClient implements DatabaseClient {
     // Add dataset prefix to table names
     // This is a simple implementation - matches table names after FROM, JOIN, UPDATE, DELETE FROM, INSERT INTO
     const tables = [
-      'sourcify_matches', 'verified_contracts', 'contract_deployments',
-      'compiled_contracts', 'compiled_contracts_sources', 'compiled_contracts_signatures',
-      'sources', 'signatures', 'code', 'contracts', 'verification_jobs',
-      'verification_jobs_ephemeral', 'INFORMATION_SCHEMA.TABLES'
+      "sourcify_matches",
+      "verified_contracts",
+      "contract_deployments",
+      "compiled_contracts",
+      "compiled_contracts_sources",
+      "compiled_contracts_signatures",
+      "sources",
+      "signatures",
+      "code",
+      "contracts",
+      "verification_jobs",
+      "verification_jobs_ephemeral",
+      "INFORMATION_SCHEMA.TABLES",
     ];
 
     let result = sql;
     for (const table of tables) {
-      if (table === 'INFORMATION_SCHEMA.TABLES') {
+      if (table === "INFORMATION_SCHEMA.TABLES") {
         // Don't prefix INFORMATION_SCHEMA
         continue;
       }
       // Match table names with word boundaries
-      const regex = new RegExp(`\\b${table}\\b`, 'g');
+      const regex = new RegExp(`\\b${table}\\b`, "g");
       result = result.replace(regex, `\`${this.dataset}.${table}\``);
     }
 
@@ -168,15 +177,15 @@ class BigQueryClient implements DatabaseClient {
   }
 
   async beginTransaction(): Promise<void> {
-    await this.session.query('BEGIN TRANSACTION');
+    await this.session.query("BEGIN TRANSACTION");
   }
 
   async commitTransaction(): Promise<void> {
-    await this.session.query('COMMIT TRANSACTION');
+    await this.session.query("COMMIT TRANSACTION");
   }
 
   async rollbackTransaction(): Promise<void> {
-    await this.session.query('ROLLBACK TRANSACTION');
+    await this.session.query("ROLLBACK TRANSACTION");
   }
 
   async close(): Promise<void> {
@@ -186,7 +195,9 @@ class BigQueryClient implements DatabaseClient {
   }
 }
 
-async function createDatabaseClient(dbType: DatabaseType): Promise<DatabaseClient> {
+async function createDatabaseClient(
+  dbType: DatabaseType,
+): Promise<DatabaseClient> {
   if (dbType === "postgres") {
     const pool = new Pool({
       host: process.env.SOURCIFY_POSTGRES_HOST || "localhost",
@@ -268,8 +279,7 @@ async function deleteCompiledContractSignatures(
       [signatureHash, compilationId],
     );
 
-    const canDeleteSignature =
-      parseInt(otherSigRefsResult[0].count) === 0;
+    const canDeleteSignature = parseInt(otherSigRefsResult[0].count) === 0;
 
     // Delete the compiled_contracts_signatures entry
     await client.query(
@@ -320,7 +330,11 @@ async function deleteCodeIfOrphaned(
   }
 }
 
-async function tableExists(client: DatabaseClient, tableName: string, dbType: DatabaseType): Promise<boolean> {
+async function tableExists(
+  client: DatabaseClient,
+  tableName: string,
+  dbType: DatabaseType,
+): Promise<boolean> {
   if (dbType === "postgres") {
     const result = await client.query(
       `SELECT EXISTS (
@@ -328,7 +342,7 @@ async function tableExists(client: DatabaseClient, tableName: string, dbType: Da
         WHERE table_schema = 'public'
         AND table_name = $1
       )`,
-      [tableName]
+      [tableName],
     );
     return result[0].exists;
   } else {
@@ -340,7 +354,7 @@ async function tableExists(client: DatabaseClient, tableName: string, dbType: Da
         `SELECT COUNT(*) > 0 as table_exists
          FROM \`${projectId}.${dataset}.INFORMATION_SCHEMA.TABLES\`
          WHERE table_name = $1`,
-        [tableName]
+        [tableName],
       );
       return result[0]?.table_exists === true;
     } catch (error) {
@@ -407,7 +421,9 @@ async function deleteVerifiedContracts(
     }
 
     stats.verifiedContractsFound = verifiedContractsResult.length;
-    console.log(`✓ Found ${stats.verifiedContractsFound} verified_contract(s)\n`);
+    console.log(
+      `✓ Found ${stats.verifiedContractsFound} verified_contract(s)\n`,
+    );
 
     // Track unique IDs to avoid redundant deletions and checks
     const verifiedContractIds = new Set<string>();
@@ -430,7 +446,11 @@ async function deleteVerifiedContracts(
     });
 
     // 2. Delete verification_jobs for all verified_contracts (if table exists)
-    const verificationJobsTableExists = await tableExists(client, 'verification_jobs', dbType);
+    const verificationJobsTableExists = await tableExists(
+      client,
+      "verification_jobs",
+      dbType,
+    );
 
     if (verificationJobsTableExists) {
       for (const verifiedContractId of verifiedContractIds) {
@@ -456,13 +476,19 @@ async function deleteVerifiedContracts(
         // For BigQuery, rowCount might not be available, so we use the jobs length
         stats.verificationJobsDeleted += jobsResult.length;
       }
-      console.log(`✓ Deleted ${stats.verificationJobsDeleted} verification_job(s) and ephemeral data`);
+      console.log(
+        `✓ Deleted ${stats.verificationJobsDeleted} verification_job(s) and ephemeral data`,
+      );
     } else {
       console.log(`⊘ Skipped verification_jobs (table does not exist)`);
     }
 
     // 3. Delete sourcify_matches for all verified_contracts (if table exists)
-    const sourcifyMatchesTableExists = await tableExists(client, 'sourcify_matches', dbType);
+    const sourcifyMatchesTableExists = await tableExists(
+      client,
+      "sourcify_matches",
+      dbType,
+    );
 
     if (sourcifyMatchesTableExists) {
       // Query sourcify_match_ids for each verified_contract
@@ -481,7 +507,9 @@ async function deleteVerifiedContracts(
           }
         }
       }
-      console.log(`✓ Deleted ${stats.sourcifyMatchesDeleted} sourcify_match(es)`);
+      console.log(
+        `✓ Deleted ${stats.sourcifyMatchesDeleted} sourcify_match(es)`,
+      );
     } else {
       console.log(`⊘ Skipped sourcify_matches (table does not exist)`);
     }
@@ -493,10 +521,15 @@ async function deleteVerifiedContracts(
       ]);
       stats.verifiedContractsDeleted++;
     }
-    console.log(`✓ Deleted ${stats.verifiedContractsDeleted} verified_contract(s)`);
+    console.log(
+      `✓ Deleted ${stats.verifiedContractsDeleted} verified_contract(s)`,
+    );
 
     // 5. Get code hashes from compiled_contracts before deleting
-    const compilationCodeHashes = new Map<string, { creation: Buffer | null; runtime: Buffer }>();
+    const compilationCodeHashes = new Map<
+      string,
+      { creation: Buffer | null; runtime: Buffer }
+    >();
     for (const compilationId of compilationIds) {
       const codeHashResult = await client.query(
         `SELECT creation_code_hash, runtime_code_hash FROM compiled_contracts WHERE id = $1`,
@@ -508,7 +541,9 @@ async function deleteVerifiedContracts(
           runtime: codeHashResult[0].runtime_code_hash,
         });
       } else {
-        console.error(`⚠️  Warning: compiled_contract with id ${compilationId} not found`);
+        console.error(
+          `⚠️  Warning: compiled_contract with id ${compilationId} not found`,
+        );
       }
     }
 
@@ -524,8 +559,12 @@ async function deleteVerifiedContracts(
         await deleteCompiledContractSources(client, compilationId, stats);
       }
     }
-    console.log(`✓ Deleted ${stats.compiledContractsSourcesDeleted} compiled_contracts_sources`);
-    console.log(`✓ Deleted ${stats.sourcesDeleted} source(s) (not referenced elsewhere)`);
+    console.log(
+      `✓ Deleted ${stats.compiledContractsSourcesDeleted} compiled_contracts_sources`,
+    );
+    console.log(
+      `✓ Deleted ${stats.sourcesDeleted} source(s) (not referenced elsewhere)`,
+    );
 
     // 7. Delete compiled_contracts_signatures and orphaned signatures
     for (const compilationId of compilationIds) {
@@ -539,8 +578,12 @@ async function deleteVerifiedContracts(
         await deleteCompiledContractSignatures(client, compilationId, stats);
       }
     }
-    console.log(`✓ Deleted ${stats.compiledContractsSignaturesDeleted} compiled_contracts_signatures`);
-    console.log(`✓ Deleted ${stats.signaturesDeleted} signature(s) (not referenced elsewhere)`);
+    console.log(
+      `✓ Deleted ${stats.compiledContractsSignaturesDeleted} compiled_contracts_signatures`,
+    );
+    console.log(
+      `✓ Deleted ${stats.signaturesDeleted} signature(s) (not referenced elsewhere)`,
+    );
 
     // 8. Delete compiled_contracts if not referenced by other verified_contracts
     for (const compilationId of compilationIds) {
@@ -556,10 +599,15 @@ async function deleteVerifiedContracts(
         stats.compiledContractsDeleted++;
       }
     }
-    console.log(`✓ Deleted ${stats.compiledContractsDeleted} compiled_contract(s)`);
+    console.log(
+      `✓ Deleted ${stats.compiledContractsDeleted} compiled_contract(s)`,
+    );
 
     // 9. Get code hashes from contracts before potentially deleting
-    const contractCodeHashes = new Map<string, { creation: Buffer | null; runtime: Buffer }>();
+    const contractCodeHashes = new Map<
+      string,
+      { creation: Buffer | null; runtime: Buffer }
+    >();
     for (const contractId of contractIds) {
       const contractCodeHashResult = await client.query(
         `SELECT creation_code_hash, runtime_code_hash FROM contracts WHERE id = $1`,
@@ -589,7 +637,9 @@ async function deleteVerifiedContracts(
         stats.contractDeploymentsDeleted++;
       }
     }
-    console.log(`✓ Deleted ${stats.contractDeploymentsDeleted} contract_deployment(s)`);
+    console.log(
+      `✓ Deleted ${stats.contractDeploymentsDeleted} contract_deployment(s)`,
+    );
 
     // 11. Delete contracts if not referenced by other contract_deployments
     for (const contractId of contractIds) {
@@ -623,7 +673,9 @@ async function deleteVerifiedContracts(
     for (const codeHash of codeHashesToCheck) {
       await deleteCodeIfOrphaned(client, codeHash, stats);
     }
-    console.log(`✓ Deleted ${stats.codeEntriesDeleted} code entrie(s) (not referenced elsewhere)`);
+    console.log(
+      `✓ Deleted ${stats.codeEntriesDeleted} code entrie(s) (not referenced elsewhere)`,
+    );
 
     await client.commitTransaction();
     console.log("\n✅ Transaction committed successfully\n");
@@ -670,7 +722,9 @@ async function main() {
   const dbType = (process.env.DATABASE_TYPE || "postgres") as DatabaseType;
 
   if (dbType !== "postgres" && dbType !== "bigquery") {
-    console.error("Error: DATABASE_TYPE must be either 'postgres' or 'bigquery'");
+    console.error(
+      "Error: DATABASE_TYPE must be either 'postgres' or 'bigquery'",
+    );
     process.exit(1);
   }
 
@@ -685,18 +739,40 @@ async function main() {
     console.log("═══════════════════════════════════════════════════════");
     console.log("  Deletion Summary");
     console.log("═══════════════════════════════════════════════════════");
-    console.log(`Verified Contracts Found:           ${stats.verifiedContractsFound}`);
-    console.log(`Sourcify Matches Deleted:           ${stats.sourcifyMatchesDeleted}`);
-    console.log(`Verified Contracts Deleted:         ${stats.verifiedContractsDeleted}`);
-    console.log(`Verification Jobs Deleted:          ${stats.verificationJobsDeleted}`);
-    console.log(`Contract Deployments Deleted:       ${stats.contractDeploymentsDeleted}`);
-    console.log(`Compiled Contracts Deleted:         ${stats.compiledContractsDeleted}`);
-    console.log(`Contracts Deleted:                  ${stats.contractsDeleted}`);
-    console.log(`Compiled Contracts Sources Deleted: ${stats.compiledContractsSourcesDeleted}`);
+    console.log(
+      `Verified Contracts Found:           ${stats.verifiedContractsFound}`,
+    );
+    console.log(
+      `Sourcify Matches Deleted:           ${stats.sourcifyMatchesDeleted}`,
+    );
+    console.log(
+      `Verified Contracts Deleted:         ${stats.verifiedContractsDeleted}`,
+    );
+    console.log(
+      `Verification Jobs Deleted:          ${stats.verificationJobsDeleted}`,
+    );
+    console.log(
+      `Contract Deployments Deleted:       ${stats.contractDeploymentsDeleted}`,
+    );
+    console.log(
+      `Compiled Contracts Deleted:         ${stats.compiledContractsDeleted}`,
+    );
+    console.log(
+      `Contracts Deleted:                  ${stats.contractsDeleted}`,
+    );
+    console.log(
+      `Compiled Contracts Sources Deleted: ${stats.compiledContractsSourcesDeleted}`,
+    );
     console.log(`Sources Deleted:                    ${stats.sourcesDeleted}`);
-    console.log(`Compiled Contracts Sigs Deleted:    ${stats.compiledContractsSignaturesDeleted}`);
-    console.log(`Signatures Deleted:                 ${stats.signaturesDeleted}`);
-    console.log(`Code Entries Deleted:               ${stats.codeEntriesDeleted}`);
+    console.log(
+      `Compiled Contracts Sigs Deleted:    ${stats.compiledContractsSignaturesDeleted}`,
+    );
+    console.log(
+      `Signatures Deleted:                 ${stats.signaturesDeleted}`,
+    );
+    console.log(
+      `Code Entries Deleted:               ${stats.codeEntriesDeleted}`,
+    );
     console.log("═══════════════════════════════════════════════════════\n");
   } catch (error) {
     console.error("Error:", error instanceof Error ? error.message : error);
