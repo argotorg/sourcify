@@ -27,14 +27,14 @@ import type {
   VerifyFromMetadataInput,
   VerifyOutput,
   VerificationWorkerInput,
+  VerifySimilarityInput,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
 import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { getAddress } from "ethers";
-import { VerifySimilarityInput } from "./workerTypes";
-import { GetSourcifyMatchByChainAddressWithPropertiesResult } from "../utils/database-util";
+import type { SimilarityCandidate } from "../../types";
 
 export const filename = resolve(__filename);
 
@@ -268,20 +268,8 @@ async function _verifyFromEtherscan({
 }
 
 function createPreRunCompilationFromCandidate(
-  candidate: GetSourcifyMatchByChainAddressWithPropertiesResult,
-): PreRunCompilation | null {
-  if (
-    !candidate.std_json_input ||
-    !candidate.std_json_output ||
-    !candidate.version ||
-    !candidate.fully_qualified_name
-  ) {
-    logger.debug("Incomplete similarity candidate data", {
-      chainId: candidate.chain_id,
-      address: candidate.address,
-    });
-    return null;
-  }
+  candidate: SimilarityCandidate,
+): PreRunCompilation {
   const language = candidate.std_json_input.language;
   const { contractName, contractPath } = splitFullyQualifiedName(
     candidate.fully_qualified_name,
@@ -319,21 +307,11 @@ function createPreRunCompilationFromCandidate(
       return compilation;
     }
   } catch (error: any) {
-    logger.debug("Failed to create PreRunCompilation for candidate", {
-      chainId: candidate.chain_id,
-      address: candidate.address,
-      language,
-      error: error?.message,
-    });
-    return null;
+    throw new Error(
+      `Failed to create PreRunCompilation from similarity candidate: ${error.message}`,
+    );
   }
-
-  logger.debug("Unsupported language for similarity candidate", {
-    chainId: candidate.chain_id,
-    address: candidate.address,
-    language,
-  });
-  return null;
+  throw new Error(`Unsupported language '${language}' in similarity candidate`);
 }
 
 async function _verifySimilarity({
@@ -343,38 +321,7 @@ async function _verifySimilarity({
   candidates,
 }: VerifySimilarityInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
-  if (!sourcifyChain) {
-    logger.warn("Similarity verification requested for unsupported chain", {
-      chainId,
-      address,
-    });
-    return {
-      errorExport: {
-        customCode: "internal_error",
-        errorId: uuidv4(),
-      },
-    };
-  }
-
   const checksumAddress = getAddress(address);
-
-  if (!runtimeBytecode || runtimeBytecode.length <= 2) {
-    return {
-      errorExport: {
-        customCode: "cannot_fetch_bytecode",
-        errorId: uuidv4(),
-      },
-    };
-  }
-
-  if (runtimeBytecode === "0x") {
-    return {
-      errorExport: {
-        customCode: "contract_not_deployed",
-        errorId: uuidv4(),
-      },
-    };
-  }
 
   const creatorTxHash =
     (await getCreatorTx(sourcifyChain, address)) || undefined;
@@ -429,8 +376,15 @@ async function _verifySimilarity({
   );
 
   for (const candidate of candidates) {
-    const compilation = createPreRunCompilationFromCandidate(candidate);
-    if (!compilation) {
+    let compilation;
+    try {
+      compilation = createPreRunCompilationFromCandidate(candidate);
+    } catch (error: any) {
+      logger.warn("Failed to create compilation from similarity candidate", {
+        chainId,
+        address: checksumAddress,
+        error: error.message,
+      });
       continue;
     }
 
@@ -453,12 +407,14 @@ async function _verifySimilarity({
         continue;
       }
 
-      return {
-        errorExport: {
-          customCode: "internal_error",
-          errorId: uuidv4(),
-        },
-      };
+      logger.warn("Unexpected error during similarity candidate verification", {
+        chainId,
+        address: checksumAddress,
+        error: error?.message,
+      });
+      throw new Error(
+        `Unexpected error during similarity candidate verification: ${error.message}`,
+      );
     }
 
     const { runtimeMatch, creationMatch } = verification.status;

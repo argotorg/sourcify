@@ -31,6 +31,7 @@ import {
   Match,
   VerificationJobId,
   BytesKeccak,
+  SimilarityCandidate,
 } from "../../types";
 import Path from "path";
 import {
@@ -1058,12 +1059,12 @@ export class SourcifyDatabaseService
   async getSimilarityCandidatesByRuntimeCode(
     runtimeBytecode: string,
     limit: number,
-  ): Promise<GetSourcifyMatchByChainAddressWithPropertiesResult[]> {
+  ): Promise<SimilarityCandidate[]> {
     await this.init();
 
     const runtimeBuffer = bytesFromString(runtimeBytecode);
     if (!runtimeBuffer || runtimeBuffer.length === 0) {
-      return [];
+      throw new Error("Invalid runtime bytecode");
     }
 
     const prefixMatches =
@@ -1078,35 +1079,47 @@ export class SourcifyDatabaseService
 
     const results: GetSourcifyMatchByChainAddressWithPropertiesResult[] = [];
 
-    for (const row of prefixMatches.rows) {
-      const addressBuffer = bytesFromString(row.address);
-      if (!addressBuffer) {
+    const matchRows = await Promise.all(
+      prefixMatches.rows.map(async (row) => {
+        const addressBuffer = bytesFromString(row.address);
+        if (!addressBuffer) {
+          return null;
+        }
+        const matchResult =
+          await this.database.getSourcifyMatchByChainAddressWithProperties(
+            parseInt(row.chain_id),
+            addressBuffer,
+            [
+              "std_json_input",
+              "std_json_output",
+              "fully_qualified_name",
+              "version",
+              "creation_cbor_auxdata",
+              "runtime_cbor_auxdata",
+              "metadata",
+            ],
+          );
+
+        if (matchResult.rows.length === 0) {
+          logger.warn("Prefix match found but no sourcify match for contract", {
+            chainId: row.chain_id,
+            address: row.address,
+          });
+          return null;
+        }
+
+        return matchResult.rows[0];
+      }),
+    );
+
+    for (const matchRow of matchRows) {
+      if (!matchRow) {
         continue;
       }
-      const matchResult =
-        await this.database.getSourcifyMatchByChainAddressWithProperties(
-          row.chain_id,
-          addressBuffer,
-          [
-            "chain_id",
-            "address",
-            "std_json_input",
-            "std_json_output",
-            "fully_qualified_name",
-            "version",
-            "creation_cbor_auxdata",
-            "runtime_cbor_auxdata",
-            "metadata",
-          ],
-        );
 
-      if (matchResult.rows.length === 0) {
-        continue;
-      }
-
-      results.push(matchResult.rows[0]);
+      results.push(matchRow);
     }
 
-    return results;
+    return results as SimilarityCandidate[];
   }
 }

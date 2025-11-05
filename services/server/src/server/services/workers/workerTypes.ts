@@ -7,10 +7,8 @@ import type {
   EtherscanResult,
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
-import {
-  GetSourcifyMatchByChainAddressWithPropertiesResult,
-  JobErrorData,
-} from "../utils/database-util";
+import { JobErrorData } from "../utils/database-util";
+import type { SimilarityCandidate } from "../../types";
 
 export interface VerificationWorkerInput {
   traceId?: string;
@@ -44,7 +42,7 @@ export interface VerifySimilarityInput extends VerificationWorkerInput {
   address: string;
   runtimeBytecode: string;
   creatorTxHash?: string;
-  candidates: GetSourcifyMatchByChainAddressWithPropertiesResult[];
+  candidates: SimilarityCandidate[];
 }
 
 export class VerifyError extends Error {

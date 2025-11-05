@@ -36,6 +36,7 @@ export type VerificationErrorCode =
   | 'cannot_fetch_bytecode'
   | 'contract_not_deployed'
   | 'compiled_bytecode_is_zero'
+  | 'onchain_bytecode_is_zero'
   | 'extra_file_input_bug'
   | 'creation_bytecode_match_error'
   | 'no_match'

@@ -245,7 +245,7 @@ export type GetSourcifyMatchesByChainResult = Pick<
 
 export interface CodePrefixMatchResult {
   compilation_id: Tables.VerifiedContract["compilation_id"];
-  chain_id: Pick<Tables.ContractDeployment, "chain_id">;
+  chain_id: Tables.ContractDeployment["chain_id"];
   address: string;
 }
 

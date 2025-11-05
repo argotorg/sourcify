@@ -54,6 +54,56 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     });
   });
 
+  it("should return an error when fetching the runtime bytecode fails", async () => {
+    const getBytecodeStub = sandbox
+      .stub(
+        serverFixture.server.chainRepository.sourcifyChainMap[
+          chainFixture.chainId
+        ],
+        "getBytecode",
+      )
+      .rejects(new Error("RPC failure"));
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send();
+
+    chai.expect(getBytecodeStub.calledOnce).to.be.true;
+    chai.expect(verifyRes.status).to.equal(500);
+    chai
+      .expect(verifyRes.body.message)
+      .to.equal("The server encountered an unexpected error.");
+    chai.expect(verifyRes.body).to.not.have.property("verificationId");
+  });
+
+  it.only("should return an error when fetching the runtime bytecode fails", async () => {
+    const getBytecodeStub = sandbox
+      .stub(
+        serverFixture.server.chainRepository.sourcifyChainMap[
+          chainFixture.chainId
+        ],
+        "getBytecode",
+      )
+      .resolves("0x");
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send();
+
+    chai.expect(getBytecodeStub.calledOnce).to.be.true;
+    chai.expect(verifyRes.status).to.equal(500);
+    chai
+      .expect(verifyRes.body.message)
+      .to.equal("The server encountered an unexpected error.");
+    chai.expect(verifyRes.body).to.not.have.property("verificationId");
+  });
+
   it("should verify using a similar candidate stored in the database", async () => {
     const databaseService = serverFixture.server.services.storage.rwServices[
       "SourcifyDatabase"

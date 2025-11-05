@@ -26,6 +26,7 @@ import {
   VerificationJob,
   Match,
   VerificationJobId,
+  SimilarityCandidate,
 } from "../types";
 import {
   RWStorageIdentifiers,
@@ -117,6 +118,10 @@ export interface RWStorageService extends WStorageService {
     chainId: string,
     address: string,
   ): Promise<Pick<VerificationJob, "isJobCompleted">[]>;
+  getSimilarityCandidatesByRuntimeCode?(
+    runtimeBytecode: string,
+    limit: number,
+  ): Promise<SimilarityCandidate[]>;
 }
 
 export interface EnabledServices {

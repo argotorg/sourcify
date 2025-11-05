@@ -369,20 +369,28 @@ export class VerificationService {
       });
     }
 
+    if (
+      !runtimeBytecode ||
+      runtimeBytecode === "0x" ||
+      runtimeBytecode === ""
+    ) {
+      throw new VerificationError({
+        code: "contract_not_deployed",
+        chainId,
+        address,
+      });
+    }
+
     const verificationId = await this.storageService.performServiceOperation(
       "storeVerificationJob",
       [new Date(), chainId, address, verificationEndpoint],
     );
 
-    const sourcifyDatabaseService = this.storageService.rwServices[
-      "SourcifyDatabase"
-    ] as SourcifyDatabaseService;
-
-    sourcifyDatabaseService
-      .getSimilarityCandidatesByRuntimeCode(
+    this.storageService
+      .performServiceOperation("getSimilarityCandidatesByRuntimeCode", [
         runtimeBytecode,
         DEFAULT_SIMILARITY_CANDIDATE_LIMIT,
-      )
+      ])
       .then(async (candidates) => {
         if (candidates.length === 0) {
           logger.info("No similarity candidates found", {
