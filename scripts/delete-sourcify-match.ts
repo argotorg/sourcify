@@ -9,8 +9,9 @@
  * Example:
  *   npx tsx scripts/delete-sourcify-match.ts 1 0x1234567890123456789012345678901234567890
  *
- * Configuration:
- *   Set DATABASE_TYPE=postgres or DATABASE_TYPE=bigquery in scripts/.env
+ * Configuration (in scripts/.env):
+ *   DATABASE_TYPE=postgres or bigquery
+ *   DRY_RUN=true (to preview changes without committing) or false (to commit changes)
  *
  * This script will:
  * 1. Find ALL verified_contracts for the given chain_id and contract_address
@@ -268,6 +269,10 @@ async function deleteCompiledContractSignatures(
   const signaturesResult = await client.query(
     `SELECT signature_hash_32 FROM compiled_contracts_signatures WHERE compilation_id = $1`,
     [compilationId],
+  );
+
+  console.log(
+    `⏱️  Processing ${signaturesResult.length} signatures for compilation ${compilationId}. For many signatures this may take 10-20 minutes...`,
   );
 
   for (const row of signaturesResult) {
@@ -566,24 +571,41 @@ async function deleteVerifiedContracts(
       `✓ Deleted ${stats.sourcesDeleted} source(s) (not referenced elsewhere)`,
     );
 
-    // 7. Delete compiled_contracts_signatures and orphaned signatures
-    for (const compilationId of compilationIds) {
-      // Check if this compilation is referenced by other verified_contracts
-      const otherVerifiedContractsResult = await client.query(
-        `SELECT COUNT(*) as count FROM verified_contracts WHERE compilation_id = $1`,
-        [compilationId],
-      );
+    // 7. Delete compiled_contracts_signatures and orphaned signatures (if tables exist)
+    const compiledContractsSignaturesTableExists = await tableExists(
+      client,
+      "compiled_contracts_signatures",
+      dbType,
+    );
+    const signaturesTableExists = await tableExists(
+      client,
+      "signatures",
+      dbType,
+    );
 
-      if (parseInt(otherVerifiedContractsResult[0].count) === 0) {
-        await deleteCompiledContractSignatures(client, compilationId, stats);
+    if (compiledContractsSignaturesTableExists && signaturesTableExists) {
+      for (const compilationId of compilationIds) {
+        // Check if this compilation is referenced by other verified_contracts
+        const otherVerifiedContractsResult = await client.query(
+          `SELECT COUNT(*) as count FROM verified_contracts WHERE compilation_id = $1`,
+          [compilationId],
+        );
+
+        if (parseInt(otherVerifiedContractsResult[0].count) === 0) {
+          await deleteCompiledContractSignatures(client, compilationId, stats);
+        }
       }
+      console.log(
+        `✓ Deleted ${stats.compiledContractsSignaturesDeleted} compiled_contracts_signatures`,
+      );
+      console.log(
+        `✓ Deleted ${stats.signaturesDeleted} signature(s) (not referenced elsewhere)`,
+      );
+    } else {
+      console.log(
+        `⊘ Skipped compiled_contracts_signatures and signatures (table(s) do not exist)`,
+      );
     }
-    console.log(
-      `✓ Deleted ${stats.compiledContractsSignaturesDeleted} compiled_contracts_signatures`,
-    );
-    console.log(
-      `✓ Deleted ${stats.signaturesDeleted} signature(s) (not referenced elsewhere)`,
-    );
 
     // 8. Delete compiled_contracts if not referenced by other verified_contracts
     for (const compilationId of compilationIds) {
@@ -677,8 +699,19 @@ async function deleteVerifiedContracts(
       `✓ Deleted ${stats.codeEntriesDeleted} code entrie(s) (not referenced elsewhere)`,
     );
 
-    await client.commitTransaction();
-    console.log("\n✅ Transaction committed successfully\n");
+    // Check if this is a dry run
+    const isDryRun = process.env.DRY_RUN === "true";
+
+    if (isDryRun) {
+      await client.rollbackTransaction();
+      console.log(
+        "\n🔄 DRY RUN MODE: Transaction rolled back (no changes committed)\n",
+      );
+      console.log("💡 Set DRY_RUN=false in .env to commit changes\n");
+    } else {
+      await client.commitTransaction();
+      console.log("\n✅ Transaction committed successfully\n");
+    }
 
     return stats;
   } catch (error) {
@@ -728,9 +761,14 @@ async function main() {
     process.exit(1);
   }
 
+  const isDryRun = process.env.DRY_RUN === "true";
+
   console.log("═══════════════════════════════════════════════════════");
   console.log("  Sourcify Match Deletion Script");
   console.log(`  Database: ${dbType.toUpperCase()}`);
+  console.log(
+    `  Mode: ${isDryRun ? "DRY RUN (no changes will be committed)" : "LIVE (changes will be committed)"}`,
+  );
   console.log("═══════════════════════════════════════════════════════");
 
   try {
