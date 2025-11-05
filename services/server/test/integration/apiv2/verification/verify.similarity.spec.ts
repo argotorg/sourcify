@@ -72,14 +72,16 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .send();
 
     chai.expect(getBytecodeStub.calledOnce).to.be.true;
-    chai.expect(verifyRes.status).to.equal(500);
+    chai.expect(verifyRes.status).to.equal(502);
     chai
       .expect(verifyRes.body.message)
-      .to.equal("The server encountered an unexpected error.");
+      .to.equal(
+        `Failed to get bytecode for chain ${chainFixture.chainId} and address ${chainFixture.defaultContractAddress}.`,
+      );
     chai.expect(verifyRes.body).to.not.have.property("verificationId");
   });
 
-  it.only("should return an error when fetching the runtime bytecode fails", async () => {
+  it("should return an error when fetching the runtime bytecode fails", async () => {
     const getBytecodeStub = sandbox
       .stub(
         serverFixture.server.chainRepository.sourcifyChainMap[
@@ -97,10 +99,12 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .send();
 
     chai.expect(getBytecodeStub.calledOnce).to.be.true;
-    chai.expect(verifyRes.status).to.equal(500);
+    chai.expect(verifyRes.status).to.equal(404);
     chai
       .expect(verifyRes.body.message)
-      .to.equal("The server encountered an unexpected error.");
+      .to.equal(
+        `There is no bytecode at address ${chainFixture.defaultContractAddress} on chain ${chainFixture.chainId}.`,
+      );
     chai.expect(verifyRes.body).to.not.have.property("verificationId");
   });
 

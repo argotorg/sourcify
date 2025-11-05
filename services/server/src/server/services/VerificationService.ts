@@ -41,7 +41,7 @@ import {
   type VerifySimilarityInput,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
-import { SourcifyDatabaseService } from "./storageServices/SourcifyDatabaseService";
+import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
@@ -362,11 +362,9 @@ export class VerificationService {
       runtimeBytecode =
         await this.sourcifyChainMap[chainId].getBytecode(address);
     } catch (error) {
-      throw new VerificationError({
-        code: "cannot_fetch_bytecode",
-        chainId,
-        address,
-      });
+      throw new GetBytecodeError(
+        `Failed to get bytecode for chain ${chainId} and address ${address}.`,
+      );
     }
 
     if (
@@ -374,11 +372,9 @@ export class VerificationService {
       runtimeBytecode === "0x" ||
       runtimeBytecode === ""
     ) {
-      throw new VerificationError({
-        code: "contract_not_deployed",
-        chainId,
-        address,
-      });
+      throw new ContractNotDeployedError(
+        `There is no bytecode at address ${address} on chain ${chainId}.`,
+      );
     }
 
     const verificationId = await this.storageService.performServiceOperation(

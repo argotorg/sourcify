@@ -30,7 +30,8 @@ export type ErrorCode =
   | "etherscan_request_failed"
   | "etherscan_limit"
   | "not_etherscan_verified"
-  | "malformed_etherscan_response";
+  | "malformed_etherscan_response"
+  | "failed_to_get_bytecode";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -198,6 +199,31 @@ export class InvalidJsonError extends BadRequestError {
     super(message);
     this.payload = {
       customCode: "invalid_json",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+export class ContractNotDeployedError extends NotFoundError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "cannot_fetch_bytecode",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class GetBytecodeError extends BadGatewayError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "failed_to_get_bytecode",
       message,
       errorId: uuidv4(),
     };

@@ -452,7 +452,7 @@ describe("verificationWorker", function () {
     });
   });
 
-  describe.only("verifySimilarity", function () {
+  describe("verifySimilarity", function () {
     let solcLocal: SolcLocal;
     let stdJsonInput: SolidityJsonInput;
     let stdJsonOutput: SolidityOutput;
