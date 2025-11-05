@@ -1546,6 +1546,13 @@ CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtim
 
 
 --
+-- Name: idx_code_code_first_75; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_code_code_first_75 ON public.code USING btree (SUBSTRING(code FROM 1 FOR 75));
+
+
+--
 -- Name: signature_stats_type_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2066,4 +2073,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250922140427'),
     ('20250922141802'),
     ('20251009141621'),
-    ('20251023134207');
+    ('20251023134207'),
+    ('20251101120000');
