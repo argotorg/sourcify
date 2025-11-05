@@ -337,7 +337,6 @@ async function _verifySimilarity({
       block_number: creationData.blockNumber,
       transaction_index: creationData.txIndex,
       transaction_hash: creatorTxHash,
-      address: checksumAddress,
     },
     Number(chainId),
     checksumAddress,
