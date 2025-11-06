@@ -498,8 +498,9 @@ components:
             type: object
             properties:
               creationTransactionHash:
-                $ref: "#/components/schemas/Keccak256"
-                description: The hash of the transaction that created this contract. Optional.
+                allOf:
+                  - $ref: "#/components/schemas/Keccak256"
+                  - description: The hash of the transaction that created this contract. Optional.
   responses:
     VerificationJobResponse:
       description: |-
