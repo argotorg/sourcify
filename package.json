@@ -37,6 +37,7 @@
   },
   "homepage": "https://sourcify.dev",
   "devDependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.57.1",
