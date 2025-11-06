@@ -32,7 +32,6 @@ import logger, { setLogLevel } from "../../../common/logger";
 import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
-import { getAddress } from "ethers";
 import type { SimilarityCandidate } from "../../types";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
 
