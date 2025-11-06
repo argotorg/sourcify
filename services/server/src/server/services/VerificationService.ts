@@ -296,7 +296,9 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromJsonInput", input);
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
+    );
 
     return verificationId;
   }
@@ -323,8 +325,9 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromMetadata", input);
-
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromMetadata", input),
+    );
     return verificationId;
   }
 
@@ -346,7 +349,9 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromEtherscan", input);
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromEtherscan", input),
+    );
 
     return verificationId;
   }
@@ -382,60 +387,58 @@ export class VerificationService {
       [new Date(), chainId, address, verificationEndpoint],
     );
 
-    const similarityLookupTask = this.storageService
-      .performServiceOperation("getSimilarityCandidatesByRuntimeCode", [
-        runtimeBytecode,
-        DEFAULT_SIMILARITY_CANDIDATE_LIMIT,
-      ])
-      .then(async (candidates) => {
-        if (candidates.length === 0) {
-          logger.info("No similarity candidates found", {
+    this.runInBackground(
+      (async () => {
+        try {
+          const candidates = await this.storageService.performServiceOperation(
+            "getSimilarityCandidatesByRuntimeCode",
+            [runtimeBytecode, DEFAULT_SIMILARITY_CANDIDATE_LIMIT],
+          );
+
+          if (candidates.length === 0) {
+            logger.info("No similarity candidates found", {
+              chainId,
+              address,
+            });
+            await this.storageService.performServiceOperation("setJobError", [
+              verificationId,
+              new Date(),
+              {
+                customCode: "no_similar_match_found",
+                errorId: uuidv4(),
+                errorData: undefined,
+              },
+            ]);
+            return;
+          }
+
+          const input: VerifySimilarityInput = {
             chainId,
             address,
+            runtimeBytecode,
+            creationTransactionHash,
+            candidates,
+            traceId: asyncLocalStorage.getStore()?.traceId,
+          };
+
+          await this.verifyViaWorker(verificationId, "verifySimilarity", input);
+        } catch (error) {
+          logger.error("Failed to fetch similarity candidates", {
+            chainId,
+            address,
+            error,
           });
           await this.storageService.performServiceOperation("setJobError", [
             verificationId,
             new Date(),
             {
-              customCode: "no_similar_match_found",
+              customCode: "internal_error",
               errorId: uuidv4(),
-              errorData: undefined,
             },
           ]);
-          return;
         }
-
-        const input: VerifySimilarityInput = {
-          chainId,
-          address,
-          runtimeBytecode,
-          creationTransactionHash,
-          candidates,
-          traceId: asyncLocalStorage.getStore()?.traceId,
-        };
-
-        this.verifyViaWorker(verificationId, "verifySimilarity", input);
-      })
-      .catch(async (error) => {
-        logger.error("Failed to fetch similarity candidates", {
-          chainId,
-          address,
-          error,
-        });
-        await this.storageService.performServiceOperation("setJobError", [
-          verificationId,
-          new Date(),
-          {
-            customCode: "internal_error",
-            errorId: uuidv4(),
-          },
-        ]);
-      });
-
-    this.runningTasks.add(similarityLookupTask);
-    similarityLookupTask.finally(() => {
-      this.runningTasks.delete(similarityLookupTask);
-    });
+      })(),
+    );
 
     return verificationId;
   }
@@ -448,8 +451,8 @@ export class VerificationService {
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
-  ): void {
-    const task = this.workerPool
+  ): Promise<void> {
+    return this.workerPool
       .run(input, { name: functionName })
       .then((output: VerifyOutput) => {
         if (output.verificationExport) {
@@ -514,10 +517,13 @@ export class VerificationService {
           new Date(),
           errorExport,
         ]);
-      })
-      .finally(() => {
-        this.runningTasks.delete(task);
       });
+  }
+
+  private runInBackground(promise: Promise<void>): void {
+    const task = promise.finally(() => {
+      this.runningTasks.delete(task);
+    });
     this.runningTasks.add(task);
   }
 }
