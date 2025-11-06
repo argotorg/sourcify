@@ -168,7 +168,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.have.property("message");
   });
 
-  it.only("should return a 429 if the contract is being verified at the moment already", async () => {
+  it("should return a 429 if the contract is being verified at the moment already", async () => {
     const databaseService = serverFixture.server.services.storage.rwServices[
       "SourcifyDatabase"
     ] as SourcifyDatabaseService;
