@@ -286,12 +286,12 @@ async function _verifySimilarity({
   chainId,
   address,
   runtimeBytecode,
-  creatorTxHash,
+  creationTransactionHash,
   candidates,
 }: VerifySimilarityInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
 
-  let resolvedCreatorTxHash = creatorTxHash || undefined;
+  let resolvedCreatorTxHash = creationTransactionHash || undefined;
   if (!resolvedCreatorTxHash) {
     resolvedCreatorTxHash =
       (await getCreatorTx(sourcifyChain, address)) || undefined;

@@ -41,7 +41,7 @@ export interface VerifySimilarityInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
   runtimeBytecode: string;
-  creatorTxHash?: string;
+  creationTransactionHash?: string;
   candidates: SimilarityCandidate[];
 }
 

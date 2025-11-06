@@ -409,7 +409,7 @@ export class VerificationService {
           chainId,
           address,
           runtimeBytecode,
-          creatorTxHash: creationTransactionHash,
+          creationTransactionHash,
           candidates,
           traceId: asyncLocalStorage.getStore()?.traceId,
         };
