@@ -49,7 +49,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(runTaskStub.calledOnce).to.be.true;
     const [workerInput] = runTaskStub.firstCall.args;
     chai.expect(workerInput).to.include({
-      creatorTxHash: customCreationHash,
+      creationTransactionHash: customCreationHash,
     });
   });
   it("should store a job error when no candidates are found", async () => {
