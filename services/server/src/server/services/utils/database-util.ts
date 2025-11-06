@@ -32,7 +32,6 @@ import {
   SimilarityCandidate,
 } from "../../types";
 import { keccak256, JsonFragment } from "ethers";
-import logger from "../../../common/logger";
 import { SignatureType } from "./signature-util";
 import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
@@ -864,31 +863,13 @@ export async function getDatabaseColumnsFromVerification(
   };
 }
 
-type CompilerSettings = Omit<
-  SoliditySettings | VyperSettings,
-  "outputSelection"
->;
-
-export function removeOutputSelectionFromSettings<
-  T extends SoliditySettings | VyperSettings,
->(settings: T): Omit<T, "outputSelection"> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { outputSelection, ...restSettings } = settings;
-  return restSettings;
-}
-
-export function prepareCompilerSettingsFromJsonInput(
-  jsonInput: SolidityJsonInput | VyperJsonInput,
-): CompilerSettings {
-  return removeOutputSelectionFromSettings(jsonInput.settings);
-}
-
 export function prepareCompilerSettingsFromVerification(
   verification: VerificationExport,
-): CompilerSettings {
-  return removeOutputSelectionFromSettings(
-    verification.compilation.jsonInput.settings,
-  );
+): Omit<SoliditySettings | VyperSettings, "outputSelection"> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { outputSelection, ...restSettings } =
+    verification.compilation.jsonInput.settings;
+  return restSettings;
 }
 
 export function createPreRunCompilationFromStoredCandidate(
