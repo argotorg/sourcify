@@ -905,25 +905,6 @@ export function createPreRunCompilationFromStoredCandidate(
     metadata,
   } = candidate;
 
-  if (
-    !jsonInput ||
-    !jsonOutput ||
-    !version ||
-    !fullyQualifiedName ||
-    !creationCborAuxdata ||
-    !runtimeCborAuxdata
-  ) {
-    logger.error("createPreRunCompilationFromStoredCandidate: missing fields", {
-      hasJsonInput: !!jsonInput,
-      hasJsonOutput: !!jsonOutput,
-      hasVersion: !!version,
-      hasFullyQualifiedName: !!fullyQualifiedName,
-      hasCreationCborAuxdata: !!creationCborAuxdata,
-      hasRuntimeCborAuxdata: !!runtimeCborAuxdata,
-    });
-    throw new Error("Compilation properties not found");
-  }
-
   const { contractPath, contractName } =
     splitFullyQualifiedName(fullyQualifiedName);
   const compilationTarget = {
@@ -937,8 +918,8 @@ export function createPreRunCompilationFromStoredCandidate(
     jsonInput,
     jsonOutput,
     compilationTarget,
-    creationCborAuxdata,
-    runtimeCborAuxdata,
+    creationCborAuxdata || {},
+    runtimeCborAuxdata || {},
   );
 
   if (jsonInput.language === "Vyper" && metadata) {
