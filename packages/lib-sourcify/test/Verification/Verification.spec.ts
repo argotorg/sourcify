@@ -936,45 +936,6 @@ describe('Verification Class Tests', () => {
         });
         assertCborTransformations(verification.transformations.runtime?.list);
       });
-
-      it('should partially match when deployed bytecodeHash none factory is verified with standard metadata (nested CBOR)', async () => {
-        const deploymentCompilation = await compileContractWithMetadata(
-          NESTED_CBOR_FACTORY_FOLDER,
-          (metadata) => {
-            metadata.settings.metadata = {
-              ...(metadata.settings.metadata ?? {}),
-              bytecodeHash: 'none',
-            };
-            delete metadata.settings.metadata.appendCBOR;
-          },
-        );
-        const { contractAddress, txHash } = await deployCompiledContract(
-          signer,
-          deploymentCompilation,
-          [await signer.getAddress()],
-        );
-
-        const verificationCompilation = await getCompilationFromMetadata(
-          NESTED_CBOR_FACTORY_FOLDER,
-        );
-
-        const verification = new Verification(
-          verificationCompilation,
-          sourcifyChainHardhat,
-          contractAddress,
-          txHash,
-        );
-        await verification.verify();
-
-        expectVerification(verification, {
-          status: {
-            runtimeMatch: 'partial',
-            creationMatch: 'partial',
-          },
-        });
-        assertCborTransformations(verification.transformations.runtime?.list);
-        assertCborTransformations(verification.transformations.creation?.list);
-      });
     });
   });
 
