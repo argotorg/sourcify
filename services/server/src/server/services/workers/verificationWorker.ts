@@ -266,21 +266,6 @@ async function _verifyFromEtherscan({
   });
 }
 
-function createPreRunCompilationFromCandidate(
-  candidate: SimilarityCandidate,
-): PreRunCompilation {
-  try {
-    return createPreRunCompilationFromStoredCandidate(
-      { solc, vyper },
-      candidate,
-    );
-  } catch (error: any) {
-    throw new Error(
-      `Failed to create PreRunCompilation from similarity candidate: ${error.message}`,
-    );
-  }
-}
-
 async function _verifySimilarity({
   chainId,
   address,
@@ -347,7 +332,10 @@ async function _verifySimilarity({
   for (const candidate of candidates) {
     let compilation;
     try {
-      compilation = createPreRunCompilationFromCandidate(candidate);
+      compilation = createPreRunCompilationFromStoredCandidate(
+        { solc, vyper },
+        candidate,
+      );
     } catch (error: any) {
       logger.warn("Failed to create compilation from similarity candidate", {
         chainId,
