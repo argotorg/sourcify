@@ -41,12 +41,6 @@ const STORAGE_CONTRACT_FOLDER = path.join(
   'sources',
   'Storage',
 );
-const NESTED_CBOR_FACTORY_FOLDER = path.join(
-  __dirname,
-  '..',
-  'sources',
-  'CBORInTheMiddleFactory',
-);
 const APPEND_CBOR_SUPPORTED_VERSION = '0.8.28+commit.7893614a';
 
 function assertCborTransformations(transformations?: any[]) {
