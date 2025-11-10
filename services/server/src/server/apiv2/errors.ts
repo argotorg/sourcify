@@ -30,7 +30,8 @@ export type ErrorCode =
   | "etherscan_request_failed"
   | "etherscan_limit"
   | "not_etherscan_verified"
-  | "malformed_etherscan_response";
+  | "malformed_etherscan_response"
+  | "failed_to_get_bytecode";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -203,6 +204,31 @@ export class InvalidJsonError extends BadRequestError {
     };
   }
 }
+export class ContractNotDeployedError extends NotFoundError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "cannot_fetch_bytecode",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class GetBytecodeError extends BadGatewayError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "failed_to_get_bytecode",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
 
 // Maps OpenApiValidator errors to our custom error format
 export function errorHandler(
@@ -239,7 +265,8 @@ export type VerificationErrorCode =
   | SourcifyLibErrorCode
   | "unsupported_language"
   | "already_verified"
-  | "internal_error";
+  | "internal_error"
+  | "no_similar_match_found";
 
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
@@ -257,6 +284,8 @@ export function getVerificationErrorMessage(
       return "The contract is already verified and the job didn't yield a better match.";
     case "internal_error":
       return "The server encountered an unexpected error.";
+    case "no_similar_match_found":
+      return "No similar verified contracts were found in the database.";
     default:
       return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }

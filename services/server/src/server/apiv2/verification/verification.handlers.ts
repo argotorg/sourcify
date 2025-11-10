@@ -146,3 +146,36 @@ export async function verifyFromEtherscanEndpoint(
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });
 }
+
+interface VerifySimilarityRequest extends Request {
+  params: {
+    chainId: string;
+    address: string;
+  };
+  body: {
+    creationTransactionHash?: string;
+  };
+}
+
+export async function verifySimilarityEndpoint(
+  req: VerifySimilarityRequest,
+  res: VerifyResponse,
+) {
+  logger.debug("verifySimilarityEndpoint", {
+    chainId: req.params.chainId,
+    address: req.params.address,
+    creationTransactionHash: req.body.creationTransactionHash,
+  });
+
+  const services = req.app.get("services") as Services;
+
+  const verificationId =
+    await services.verification.verifyFromSimilarityViaWorker(
+      req.baseUrl + req.path,
+      req.params.chainId,
+      req.params.address,
+      req.body.creationTransactionHash,
+    );
+
+  res.status(StatusCodes.ACCEPTED).json({ verificationId });
+}

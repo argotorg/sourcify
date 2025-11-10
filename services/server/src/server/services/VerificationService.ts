@@ -37,8 +37,12 @@ import {
   type VerifyFromJsonInput,
   type VerifyFromMetadataInput,
   type VerifyOutput,
+  type VerifySimilarityInput,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
+import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
+
+const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -55,6 +59,7 @@ export class VerificationService {
   solcRepoPath: string;
   solJsonRepoPath: string;
   storageService: StorageService;
+  private sourcifyChainMap: SourcifyChainMap;
 
   activeVerificationsByChainIdAddress: {
     [chainIdAndAddress: string]: boolean;
@@ -71,6 +76,7 @@ export class VerificationService {
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
+    this.sourcifyChainMap = options.sourcifyChainMap;
 
     const sourcifyChainInstanceMap = Object.entries(
       options.sourcifyChainMap,
@@ -290,7 +296,9 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromJsonInput", input);
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
+    );
 
     return verificationId;
   }
@@ -317,8 +325,9 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromMetadata", input);
-
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromMetadata", input),
+    );
     return verificationId;
   }
 
@@ -340,7 +349,96 @@ export class VerificationService {
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
 
-    this.verifyViaWorker(verificationId, "verifyFromEtherscan", input);
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromEtherscan", input),
+    );
+
+    return verificationId;
+  }
+
+  public async verifyFromSimilarityViaWorker(
+    verificationEndpoint: string,
+    chainId: string,
+    address: string,
+    creationTransactionHash?: string,
+  ): Promise<VerificationJobId> {
+    let runtimeBytecode: string;
+    try {
+      runtimeBytecode =
+        await this.sourcifyChainMap[chainId].getBytecode(address);
+    } catch (error) {
+      throw new GetBytecodeError(
+        `Failed to get bytecode for chain ${chainId} and address ${address}.`,
+      );
+    }
+
+    if (
+      !runtimeBytecode ||
+      runtimeBytecode === "0x" ||
+      runtimeBytecode === ""
+    ) {
+      throw new ContractNotDeployedError(
+        `There is no bytecode at address ${address} on chain ${chainId}.`,
+      );
+    }
+
+    const verificationId = await this.storageService.performServiceOperation(
+      "storeVerificationJob",
+      [new Date(), chainId, address, verificationEndpoint],
+    );
+
+    this.runInBackground(
+      (async () => {
+        try {
+          const candidates = await this.storageService.performServiceOperation(
+            "getSimilarityCandidatesByRuntimeCode",
+            [runtimeBytecode, DEFAULT_SIMILARITY_CANDIDATE_LIMIT],
+          );
+
+          if (candidates.length === 0) {
+            logger.info("No similarity candidates found", {
+              chainId,
+              address,
+            });
+            await this.storageService.performServiceOperation("setJobError", [
+              verificationId,
+              new Date(),
+              {
+                customCode: "no_similar_match_found",
+                errorId: uuidv4(),
+                errorData: undefined,
+              },
+            ]);
+            return;
+          }
+
+          const input: VerifySimilarityInput = {
+            chainId,
+            address,
+            runtimeBytecode,
+            creationTransactionHash,
+            candidates,
+            traceId: asyncLocalStorage.getStore()?.traceId,
+          };
+
+          await this.verifyViaWorker(verificationId, "verifySimilarity", input);
+        } catch (error) {
+          logger.error("Failed to fetch similarity candidates", {
+            chainId,
+            address,
+            error,
+          });
+          await this.storageService.performServiceOperation("setJobError", [
+            verificationId,
+            new Date(),
+            {
+              customCode: "internal_error",
+              errorId: uuidv4(),
+            },
+          ]);
+        }
+      })(),
+    );
 
     return verificationId;
   }
@@ -351,9 +449,10 @@ export class VerificationService {
     input:
       | VerifyFromJsonInput
       | VerifyFromMetadataInput
-      | VerifyFromEtherscanInput,
-  ): void {
-    const task = this.workerPool
+      | VerifyFromEtherscanInput
+      | VerifySimilarityInput,
+  ): Promise<void> {
+    return this.workerPool
       .run(input, { name: functionName })
       .then((output: VerifyOutput) => {
         if (output.verificationExport) {
@@ -418,10 +517,13 @@ export class VerificationService {
           new Date(),
           errorExport,
         ]);
-      })
-      .finally(() => {
-        this.runningTasks.delete(task);
       });
+  }
+
+  private runInBackground(promise: Promise<void>): void {
+    const task = promise.finally(() => {
+      this.runningTasks.delete(task);
+    });
     this.runningTasks.add(task);
   }
 }
