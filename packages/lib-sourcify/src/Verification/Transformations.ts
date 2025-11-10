@@ -328,6 +328,8 @@ export function extractAuxdataTransformation(
         // TODO with this we could potentially support multiple auxdata sections, but needs more testing
         // && (true || index === Object.values(cborAuxdataPositions).length - 1)
       ) {
+        // If cborAuxdata is disabled Solidity adds a ff byte at the end of the bytecode
+        // so we need to remove it from the populated recompiled bytecode to match
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart - 2) +
           populatedRecompiledBytecode.slice(offsetEnd);
