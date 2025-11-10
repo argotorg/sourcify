@@ -1,8 +1,10 @@
-import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import * as DatabaseUtil from "../utils/database-util";
-import { bytesFromString, Tables } from "../utils/database-util";
-import { Database, DatabaseOptions } from "../utils/Database";
-import { PoolClient, QueryResult } from "pg";
+import type { Tables } from "../utils/database-util";
+import { bytesFromString } from "../utils/database-util";
+import type { DatabaseOptions } from "../utils/Database";
+import { Database } from "../utils/Database";
+import type { PoolClient, QueryResult } from "pg";
 
 export default abstract class AbstractDatabaseService {
   public database: Database;

@@ -1,9 +1,10 @@
-import { createLogger, transports, format, Logger } from "winston";
+import type { Logger } from "winston";
+import { createLogger, transports, format } from "winston";
 import chalk from "chalk";
+import type { ILibSourcifyLogger } from "@ethereum-sourcify/lib-sourcify";
 import {
   setLibSourcifyLogger,
   setLibSourcifyLoggerLevel,
-  ILibSourcifyLogger,
 } from "@ethereum-sourcify/lib-sourcify";
 import { asyncLocalStorage } from "./async-context";
 import {

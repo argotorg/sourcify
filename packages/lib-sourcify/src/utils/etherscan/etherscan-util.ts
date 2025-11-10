@@ -1,18 +1,17 @@
-import {
+import type {
   ISolidityCompiler,
   IVyperCompiler,
   SolidityJsonInput,
   VyperJsonInput,
-  VyperCompilation,
-  SolidityCompilation,
   Sources,
 } from '../..';
+import { VyperCompilation, SolidityCompilation } from '../..';
 import { logInfo, logDebug, logWarn, logError } from '../../logger';
-import {
-  EtherscanImportError,
+import type {
   EtherscanResult,
   ProcessedEtherscanResult,
 } from './EtherscanTypes';
+import { EtherscanImportError } from './EtherscanTypes';
 
 interface VyperVersion {
   compiler_version: string;

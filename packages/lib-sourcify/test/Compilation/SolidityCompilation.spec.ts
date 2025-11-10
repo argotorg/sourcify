@@ -4,11 +4,9 @@ import path from 'path';
 import fs from 'fs';
 import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
 import { solc } from '../utils';
-import {
-  CompilationTarget,
-  CompilationError,
-} from '../../src/Compilation/CompilationTypes';
-import {
+import type { CompilationTarget } from '../../src/Compilation/CompilationTypes';
+import { CompilationError } from '../../src/Compilation/CompilationTypes';
+import type {
   SolidityJsonInput,
   Metadata,
 } from '@ethereum-sourcify/compilers-types';

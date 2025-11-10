@@ -5,13 +5,13 @@ import type {
   Metadata,
 } from "@ethereum-sourcify/lib-sourcify";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
-import { TypedResponse } from "../../types";
+import type { TypedResponse } from "../../types";
 import logger from "../../../common/logger";
-import { Request } from "express";
-import { Services } from "../../services/services";
+import type { Request } from "express";
+import type { Services } from "../../services/services";
 import { StatusCodes } from "http-status-codes";
 import { fetchFromEtherscan } from "../../services/utils/etherscan-util";
-import { ChainRepository } from "../../../sourcify-chain-repository";
+import type { ChainRepository } from "../../../sourcify-chain-repository";
 
 interface VerifyFromJsonInputRequest extends Request {
   params: {

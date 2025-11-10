@@ -2,9 +2,10 @@ import { expect, use } from 'chai';
 import { SolidityMetadataContract } from '../../src/Validation/SolidityMetadataContract';
 import { id as keccak256str } from 'ethers';
 import nock from 'nock';
-import { ISolidityCompiler } from '../../src/Compilation/CompilationTypes';
-import { Metadata } from '@ethereum-sourcify/compilers-types';
-import { getErrorMessageFromCode, PathContent } from '../../src';
+import type { ISolidityCompiler } from '../../src/Compilation/CompilationTypes';
+import type { Metadata } from '@ethereum-sourcify/compilers-types';
+import type { PathContent } from '../../src';
+import { getErrorMessageFromCode } from '../../src';
 import chaiAsPromised from 'chai-as-promised';
 
 use(chaiAsPromised);

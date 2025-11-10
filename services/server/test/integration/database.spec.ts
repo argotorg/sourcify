@@ -8,7 +8,7 @@ import type { MetadataSourceMap } from "@ethereum-sourcify/lib-sourcify";
 import { Database } from "../../src/server/services/utils/Database";
 import { bytesFromString } from "../../src/server/services/utils/database-util";
 import crypto from "crypto";
-import { Bytes } from "../../src/server/types";
+import type { Bytes } from "../../src/server/types";
 import sinon from "sinon";
 import { assertVerification } from "../helpers/assertions";
 import path from "path";

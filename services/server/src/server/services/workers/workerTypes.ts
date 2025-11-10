@@ -7,7 +7,7 @@ import type {
   EtherscanResult,
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
-import { JobErrorData } from "../utils/database-util";
+import type { JobErrorData } from "../utils/database-util";
 import type { SimilarityCandidate } from "../../types";
 
 export interface VerificationWorkerInput {

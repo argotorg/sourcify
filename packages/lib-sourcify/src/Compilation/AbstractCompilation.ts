@@ -1,14 +1,14 @@
-import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import {
+import type { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import type {
   CompilationTarget,
   CompiledContractCborAuxdata,
   CompilationLanguage,
   StringMap,
-  CompilationError,
   ISolidityCompiler,
   IVyperCompiler,
 } from './CompilationTypes';
-import {
+import { CompilationError } from './CompilationTypes';
+import type {
   ImmutableReferences,
   SolidityJsonInput,
   SolidityOutput,

@@ -6,7 +6,7 @@ import { MockVerificationExport } from "../../helpers/mocks";
 import { resetDatabase } from "../../helpers/helpers";
 import sinon from "sinon";
 import * as signatureUtil from "../../../src/server/services/utils/signature-util";
-import { QueryResult } from "pg";
+import type { QueryResult } from "pg";
 import {
   bytesFromString,
   type Tables,

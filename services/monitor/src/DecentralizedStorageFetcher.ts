@@ -1,6 +1,6 @@
-import { FileHash } from "./util";
+import type { FileHash } from "./util";
 import logger from "./logger";
-import {
+import type {
   DecentralizedStorageConfig,
   DecentralizedStorageOrigin,
 } from "./types";
@@ -8,7 +8,7 @@ import assert from "assert";
 import { EventEmitter } from "stream";
 import { GatewayFetcher } from "./GatewayFetcher";
 import defaultConfig from "./defaultConfig";
-import { Logger } from "winston";
+import type { Logger } from "winston";
 
 /**
  * Fetcher for a certain type of Decentralized Storage (e.g. IPFS)

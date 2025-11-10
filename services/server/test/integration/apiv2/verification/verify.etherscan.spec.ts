@@ -22,7 +22,7 @@ import {
 } from "../../../helpers/etherscanResponseMocks";
 import { sourcifyChainsMap } from "../../../../src/sourcify-chains";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
-import { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 import { toMatchLevel } from "../../../../src/server/services/utils/util";
 import {
   testAlreadyBeingVerified,

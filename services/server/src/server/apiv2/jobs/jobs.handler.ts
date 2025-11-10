@@ -1,8 +1,8 @@
 import { StatusCodes } from "http-status-codes";
-import { Services } from "../../services/services";
+import type { Services } from "../../services/services";
 import logger from "../../../common/logger";
-import { Request } from "express";
-import { TypedResponse, VerificationJob } from "../../types";
+import type { Request } from "express";
+import type { TypedResponse, VerificationJob } from "../../types";
 import { JobNotFoundError } from "../errors";
 
 interface GetJobRequest extends Request {

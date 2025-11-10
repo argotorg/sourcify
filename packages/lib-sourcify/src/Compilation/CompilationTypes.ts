@@ -1,13 +1,11 @@
-import {
+import type {
   SolidityJsonInput,
   SolidityOutput,
   VyperJsonInput,
   VyperOutput,
 } from '@ethereum-sourcify/compilers-types';
-import {
-  SourcifyLibError,
-  SourcifyLibErrorParameters,
-} from '../SourcifyLibError';
+import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
+import { SourcifyLibError } from '../SourcifyLibError';
 
 export interface CompiledContractCborAuxdata {
   [key: string]: {

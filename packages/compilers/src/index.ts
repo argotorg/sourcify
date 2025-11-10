@@ -1,4 +1,5 @@
-import { setLogger, setLevel, ILogger } from './logger';
+import type { ILogger } from './logger';
+import { setLogger, setLevel } from './logger';
 export const setCompilersLogger = setLogger;
 export const setCompilersLoggerLevel = setLevel;
 export type ICompilersLogger = ILogger;

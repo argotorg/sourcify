@@ -1,36 +1,34 @@
-import { AbstractCompilation } from '../Compilation/AbstractCompilation';
+import type { AbstractCompilation } from '../Compilation/AbstractCompilation';
 import { logDebug, logInfo, logWarn } from '../logger';
-import { SourcifyChain } from '../SourcifyChain/SourcifyChain';
+import type { SourcifyChain } from '../SourcifyChain/SourcifyChain';
 import { lt } from 'semver';
+import type { SolidityDecodedObject } from '@ethereum-sourcify/bytecode-utils';
 import {
   splitAuxdata,
   AuxdataStyle,
   decode as decodeBytecode,
-  SolidityDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
-import {
+import type {
   CompiledContractCborAuxdata,
   ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
 
+import type { Transformation, TransformationValues } from './Transformations';
 import {
   extractAuxdataTransformation,
   extractCallProtectionTransformation,
   extractConstructorArgumentsTransformation,
   extractImmutablesTransformation,
   extractLibrariesTransformation,
-  Transformation,
-  TransformationValues,
 } from './Transformations';
-import {
+import type {
   BytecodeMatchingResult,
-  SolidityBugType,
-  VerificationError,
   VerificationExport,
   VerificationStatus,
 } from './VerificationTypes';
-import {
+import { SolidityBugType, VerificationError } from './VerificationTypes';
+import type {
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,

@@ -1,5 +1,6 @@
 import treeKill from "tree-kill";
-import { ChildProcess, spawn } from "child_process";
+import type { ChildProcess } from "child_process";
+import { spawn } from "child_process";
 
 export function startHardhatNetwork(port: number) {
   return new Promise<ChildProcess>((resolve, reject) => {

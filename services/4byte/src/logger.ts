@@ -1,4 +1,5 @@
-import { createLogger, transports, format, Logger } from "winston";
+import type { Logger } from "winston";
+import { createLogger, transports, format } from "winston";
 import chalk from "chalk";
 
 export enum LogLevels {

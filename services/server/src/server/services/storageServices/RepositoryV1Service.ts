@@ -1,12 +1,12 @@
 import dirTree from "directory-tree";
 import Path from "path";
 import fs from "fs";
-import {
+import type {
   VerificationStatus,
   StringMap,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
-import {
+import type {
   ContractData,
   FileObject,
   FilesInfo,
@@ -19,7 +19,7 @@ import {
 import path from "path";
 import logger from "../../../common/logger";
 import { getAddress } from "ethers";
-import { RWStorageService } from "../StorageService";
+import type { RWStorageService } from "../StorageService";
 import { RWStorageIdentifiers } from "./identifiers";
 import { exists, readFile } from "../utils/util";
 import { getMatchStatus } from "../../apiv1/controllers.common";

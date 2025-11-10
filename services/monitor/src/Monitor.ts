@@ -1,14 +1,12 @@
 import DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
 import assert from "assert";
 import { EventEmitter } from "stream";
-import {
-  FetchRequestRPC,
-  SourcifyChain,
-} from "@ethereum-sourcify/lib-sourcify";
+import type { FetchRequestRPC } from "@ethereum-sourcify/lib-sourcify";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import logger from "./logger";
 import "./loggerServer"; // Start the dynamic log level server
 import ChainMonitor from "./ChainMonitor";
-import {
+import type {
   KnownDecentralizedStorageFetchers,
   MonitorChain,
   MonitorConfig,

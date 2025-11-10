@@ -1,4 +1,4 @@
-import {
+import type {
   SolidityJsonInput,
   VyperJsonInput,
 } from '@ethereum-sourcify/compilers-types';

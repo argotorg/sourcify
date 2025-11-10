@@ -1,17 +1,18 @@
 import Piscina from "piscina";
-import {
+import type {
   SolidityJsonInput,
   VyperJsonInput,
+  SourcifyChainInstance,
+  SourcifyChainMap,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
   SolidityCompilation,
   VyperCompilation,
   Verification,
   SourcifyLibError,
   SourcifyChain,
-  SourcifyChainInstance,
-  SourcifyChainMap,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
-  PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -32,7 +33,6 @@ import logger, { setLogLevel } from "../../../common/logger";
 import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
-import type { SimilarityCandidate } from "../../types";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
 
 export const filename = resolve(__filename);

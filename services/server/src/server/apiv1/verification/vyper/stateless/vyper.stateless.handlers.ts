@@ -1,15 +1,15 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import { extractFiles } from "../../verification.common";
-import {
+import type {
   IVyperCompiler,
   StringMap,
   VyperSettings,
-  VyperCompilation,
   VyperJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
+import { VyperCompilation } from "@ethereum-sourcify/lib-sourcify";
 import { NotFoundError, BadRequestError } from "../../../../../common/errors";
-import { Services } from "../../../../services/services";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type { Services } from "../../../../services/services";
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
 import logger from "../../../../../common/logger";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 

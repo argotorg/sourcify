@@ -1,25 +1,27 @@
-import {
+import type {
   VerificationStatus,
   StringMap,
   VerificationExport,
-  splitFullyQualifiedName,
   ISolidityCompiler,
   IVyperCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
+import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
-import { RWStorageService } from "../StorageService";
-import {
-  bytesFromString,
+import type { RWStorageService } from "../StorageService";
+import type {
   Field,
-  FIELDS_TO_STORED_PROPERTIES,
   GetSourcifyMatchByChainAddressWithPropertiesResult,
   StoredProperties,
   Tables,
-  createPreRunCompilationFromStoredCandidate,
 } from "../utils/database-util";
 import {
+  bytesFromString,
+  FIELDS_TO_STORED_PROPERTIES,
+  createPreRunCompilationFromStoredCandidate,
+} from "../utils/database-util";
+import type {
   ContractData,
   FileObject,
   FilesInfo,
@@ -49,13 +51,11 @@ import { extractSignaturesFromAbi } from "../utils/signature-util";
 import { BadRequestError } from "../../../common/errors";
 import { RWStorageIdentifiers } from "./identifiers";
 import semver from "semver";
-import { DatabaseOptions } from "../utils/Database";
-import {
-  getVerificationErrorMessage,
-  VerificationErrorCode,
-} from "../../apiv2/errors";
-import { VerifyErrorExport } from "../workers/workerTypes";
-import { PoolClient } from "pg";
+import type { DatabaseOptions } from "../utils/Database";
+import type { VerificationErrorCode } from "../../apiv2/errors";
+import { getVerificationErrorMessage } from "../../apiv2/errors";
+import type { VerifyErrorExport } from "../workers/workerTypes";
+import type { PoolClient } from "pg";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 

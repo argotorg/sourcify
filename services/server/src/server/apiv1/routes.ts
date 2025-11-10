@@ -1,4 +1,5 @@
-import { Router, Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
+import { Router } from "express";
 import testArtifactsRoutes from "./testartifacts/testartifacts.routes";
 import repositoryRoutes from "./repository/repository.routes";
 import sessionStateRoutes from "./verification/session-state/session-state.routes";

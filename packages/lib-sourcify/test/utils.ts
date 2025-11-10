@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import path from 'path';
 import { expect } from 'chai';
-import { ContractFactory, Signer } from 'ethers';
+import type { Signer } from 'ethers';
+import { ContractFactory } from 'ethers';
 import {
   useSolidityCompiler,
   useVyperCompiler,
 } from '@ethereum-sourcify/compilers';
-import {
+import type {
   SolidityJsonInput,
   SolidityOutput,
   VyperJsonInput,
   VyperOutput,
 } from '@ethereum-sourcify/compilers-types';
-import { Verification } from '../src/Verification/Verification';
-import {
+import type { Verification } from '../src/Verification/Verification';
+import type {
   CompiledContractCborAuxdata,
   ISolidityCompiler,
   IVyperCompiler,

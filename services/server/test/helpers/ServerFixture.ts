@@ -1,21 +1,20 @@
 import rimraf from "rimraf";
 import { resetDatabase } from "../helpers/helpers";
-import { Server, ServerOptions } from "../../src/server/server";
+import type { ServerOptions } from "../../src/server/server";
+import { Server } from "../../src/server/server";
 import config from "config";
 import { sourcifyChainsMap } from "../../src/sourcify-chains";
-import {
-  RWStorageIdentifiers,
-  StorageIdentifiers,
-} from "../../src/server/services/storageServices/identifiers";
+import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
+import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { Pool } from "pg";
-import { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
+import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
 import genFunc from "connect-pg-simple";
 import expressSession from "express-session";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
-import { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 
 export type ServerFixtureOptions = {
   port: number;

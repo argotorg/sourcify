@@ -1,4 +1,4 @@
-import {
+import type {
   CompiledContractCborAuxdata,
   Devdoc,
   ImmutableReferences,
@@ -17,12 +17,15 @@ import {
   VyperOutputSource,
   SolidityOutputSource,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Response } from "express";
-import { JsonFragment } from "ethers";
-import { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
-import { GenericErrorResponse, MatchingErrorResponse } from "./apiv2/errors";
-import { SignatureType } from "./services/utils/signature-util";
-import { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./services/utils/database-util";
+import type { Response } from "express";
+import type { JsonFragment } from "ethers";
+import type { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
+import type {
+  GenericErrorResponse,
+  MatchingErrorResponse,
+} from "./apiv2/errors";
+import type { SignatureType } from "./services/utils/signature-util";
+import type { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./services/utils/database-util";
 
 // Types used internally by the server.
 

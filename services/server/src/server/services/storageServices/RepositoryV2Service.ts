@@ -7,15 +7,19 @@
 
 import Path from "path";
 import fs from "fs";
-import {
+import type {
   VerificationStatus,
   StringMap,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
-import { V1MatchLevelWithoutAny, MatchQuality, PathConfig } from "../../types";
+import type {
+  V1MatchLevelWithoutAny,
+  MatchQuality,
+  PathConfig,
+} from "../../types";
 import logger from "../../../common/logger";
 import { getAddress, id as keccak256 } from "ethers";
-import { WStorageService } from "../StorageService";
+import type { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import { exists, readFile } from "../utils/util";
 import { getMatchStatus } from "../../apiv1/controllers.common";

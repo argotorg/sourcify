@@ -1,14 +1,14 @@
-import {
+import type {
   CompilationLanguage,
   VerificationExport,
   VyperSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
-import { WStorageService } from "../StorageService";
+import type { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
-import { Database } from "../utils/Database";
-import { SourcifyDatabaseService } from "./SourcifyDatabaseService";
-import { ExternalVerification } from "../utils/database-util";
+import type { Database } from "../utils/Database";
+import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
+import type { ExternalVerification } from "../utils/database-util";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify

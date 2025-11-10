@@ -1,15 +1,13 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { ServerFixture } from "../../helpers/ServerFixture";
-import { VerificationJob } from "../../../src/server/types";
+import type { VerificationJob } from "../../../src/server/types";
 import { v4 as uuidv4 } from "uuid";
 import { LocalChainFixture } from "../../helpers/LocalChainFixture";
-import {
-  getVerificationErrorMessage,
-  MatchingErrorResponse,
-} from "../../../src/server/apiv2/errors";
+import type { MatchingErrorResponse } from "../../../src/server/apiv2/errors";
+import { getVerificationErrorMessage } from "../../../src/server/apiv2/errors";
 import { verifyContract } from "../../helpers/helpers";
-import { JobErrorData } from "../../../src/server/services/utils/database-util";
+import type { JobErrorData } from "../../../src/server/services/utils/database-util";
 
 chai.use(chaiHttp);
 

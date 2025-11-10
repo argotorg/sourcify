@@ -8,14 +8,14 @@ import { v4 as uuidv4 } from "uuid";
 import type { Request, Response, NextFunction } from "express";
 import { error as openApiValidatorErrors } from "express-openapi-validator";
 import logger from "../../common/logger";
-import {
-  getErrorMessageFromCode,
+import type {
   SourcifyLibErrorCode,
   SourcifyLibErrorParameters,
 } from "@ethereum-sourcify/lib-sourcify";
+import { getErrorMessageFromCode } from "@ethereum-sourcify/lib-sourcify";
 import { TooManyRequests } from "../../common/errors/TooManyRequests";
 import { BadGatewayError } from "../../common/errors/BadGatewayError";
-import { JobErrorData } from "../services/utils/database-util";
+import type { JobErrorData } from "../services/utils/database-util";
 
 export type ErrorCode =
   | VerificationErrorCode

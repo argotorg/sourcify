@@ -1,4 +1,4 @@
-import DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
+import type DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
 
 export type KnownDecentralizedStorageFetchers = {
   [type in DecentralizedStorageOrigin]?: DecentralizedStorageFetcher;

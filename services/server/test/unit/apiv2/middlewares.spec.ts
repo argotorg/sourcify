@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { expect } from "chai";
 import * as sinon from "sinon";
 import { validateCompilerVersion } from "../../../src/server/apiv2/middlewares";
