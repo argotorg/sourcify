@@ -1,7 +1,7 @@
-import { Pool, PoolClient, QueryResult } from "pg";
-import { Bytes, BytesKeccak } from "../../types";
-import {
-  bytesFromString,
+import type { PoolClient, QueryResult } from "pg";
+import { Pool } from "pg";
+import type { Bytes, BytesKeccak } from "../../types";
+import type {
   GetSourcifyMatchByChainAddressResult,
   GetSourcifyMatchByChainAddressWithPropertiesResult,
   GetSourcifyMatchesByChainResult,
@@ -9,17 +9,20 @@ import {
   GetVerifiedContractByChainAndAddressResult,
   GetVerificationJobsByChainAndAddressResult,
   SourceInformation,
-  STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
   Tables,
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
   CodePrefixMatchResult,
 } from "./database-util";
+import {
+  bytesFromString,
+  STORED_PROPERTIES_TO_SELECTORS,
+} from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
+import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {

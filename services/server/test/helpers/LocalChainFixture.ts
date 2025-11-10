@@ -1,18 +1,20 @@
 import path from "path";
 import fs from "fs";
+import type { DeploymentInfo } from "./helpers";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
-  DeploymentInfo,
   readFilesFromDirectory,
 } from "./helpers";
-import { JsonRpcProvider, JsonRpcSigner, Network } from "ethers";
+import type { JsonRpcSigner } from "ethers";
+import { JsonRpcProvider, Network } from "ethers";
 import { LOCAL_CHAINS } from "../../src/sourcify-chains";
 import nock from "nock";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
 import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
 import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
-import { ChildProcess, spawn } from "child_process";
+import type { ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import treeKill from "tree-kill";
 import { SolidityMetadataContract } from "@ethereum-sourcify/lib-sourcify";
 import type { Metadata } from "@ethereum-sourcify/lib-sourcify";

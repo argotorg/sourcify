@@ -1,4 +1,4 @@
-import {
+import type {
   ImmutableReferences,
   Metadata,
   VerificationStatus,
@@ -18,10 +18,12 @@ import {
   SourcifyLibErrorData,
   ISolidityCompiler,
   IVyperCompiler,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
   PreRunCompilation,
   splitFullyQualifiedName,
 } from "@ethereum-sourcify/lib-sourcify";
-import {
+import type {
   VerifiedContract as VerifiedContractApiObject,
   Bytes,
   BytesSha,
@@ -31,9 +33,10 @@ import {
   SignatureRepresentations,
   SimilarityCandidate,
 } from "../../types";
-import { keccak256, JsonFragment } from "ethers";
+import type { JsonFragment } from "ethers";
+import { keccak256 } from "ethers";
 import { SignatureType } from "./signature-util";
-import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
+import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 

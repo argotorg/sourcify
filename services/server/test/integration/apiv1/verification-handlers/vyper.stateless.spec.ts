@@ -13,11 +13,9 @@ import {
 } from "../../../helpers/assertions";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
-import { VerifyVyperRequest } from "../../../../src/server/apiv1/verification/vyper/stateless/vyper.stateless.handlers";
-import {
-  AuxdataTransformation,
-  VyperSettings,
-} from "@ethereum-sourcify/lib-sourcify";
+import type { VerifyVyperRequest } from "../../../../src/server/apiv1/verification/vyper/stateless/vyper.stateless.handlers";
+import type { VyperSettings } from "@ethereum-sourcify/lib-sourcify";
+import { AuxdataTransformation } from "@ethereum-sourcify/lib-sourcify";
 import contractArtifact from "../../../sources/vyper/testcontract/artifact.json";
 
 chai.use(chaiHttp);

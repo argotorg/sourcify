@@ -1,20 +1,21 @@
 import { FileHash } from "./util";
-import { Block, TransactionResponse, getCreateAddress } from "ethers";
+import type { Block, TransactionResponse } from "ethers";
+import { getCreateAddress } from "ethers";
 import assert from "assert";
 import { EventEmitter } from "stream";
 import {
   AuxdataStyle,
   decode as bytecodeDecode,
 } from "@ethereum-sourcify/bytecode-utils";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import logger from "./logger";
-import {
+import type {
   KnownDecentralizedStorageFetchers,
   MonitorConfig,
   SourcifyRequestOptions,
 } from "./types";
 import PendingContract from "./PendingContract";
-import { Logger } from "winston";
+import type { Logger } from "winston";
 
 function createsContract(tx: TransactionResponse): boolean {
   return !tx.to;

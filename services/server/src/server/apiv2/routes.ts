@@ -2,7 +2,7 @@ import { Router } from "express";
 import lookupRoutes from "./lookup/lookup.routes";
 import jobsRoutes from "./jobs/jobs.routes";
 import verificationRoutes from "./verification/verification.routes";
-import { Services } from "../services/services";
+import type { Services } from "../services/services";
 import { RWStorageIdentifiers } from "../services/storageServices/identifiers";
 import { RouteNotFoundError } from "./errors";
 

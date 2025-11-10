@@ -1,10 +1,8 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { id as keccak256str } from "ethers";
-import {
-  FourByteServerFixture,
-  TestSignature,
-} from "../helpers/FourByteServerFixture";
+import type { TestSignature } from "../helpers/FourByteServerFixture";
+import { FourByteServerFixture } from "../helpers/FourByteServerFixture";
 import { SignatureType } from "../../src/utils/signature-util";
 
 chai.use(chaiHttp);

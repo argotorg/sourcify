@@ -1,8 +1,8 @@
 import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
-import { ChildProcess } from 'child_process';
-import { JsonRpcSigner } from 'ethers';
+import type { ChildProcess } from 'child_process';
+import type { JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
   deployFromAbiAndBytecode,
@@ -14,16 +14,17 @@ import {
   stopHardhatNetwork,
 } from '../hardhat-network-helper';
 import { SolidityMetadataContract } from '../../src/Validation/SolidityMetadataContract';
-import { SolidityOutput } from '@ethereum-sourcify/compilers-types';
+import type { SolidityOutput } from '@ethereum-sourcify/compilers-types';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
-import { PathContent } from '../../src/Validation/ValidationTypes';
+import type { PathContent } from '../../src/Validation/ValidationTypes';
 import chaiAsPromised from 'chai-as-promised';
 import {
   findSolcPlatform,
   useSolidityCompiler,
 } from '@ethereum-sourcify/compilers';
-import { ISolidityCompiler, SourcifyChain } from '../../src';
+import type { ISolidityCompiler } from '../../src';
+import { SourcifyChain } from '../../src';
 import Sinon from 'sinon';
 
 use(chaiAsPromised);

@@ -1,7 +1,7 @@
 import chai from "chai";
-import { ServerFixture } from "./ServerFixture";
+import type { ServerFixture } from "./ServerFixture";
 import chaiHttp from "chai-http";
-import { hookIntoVerificationWorkerRun } from "./helpers";
+import type { hookIntoVerificationWorkerRun } from "./helpers";
 
 chai.use(chaiHttp);
 

@@ -7,20 +7,20 @@ import {
   splitAuxdata,
 } from '@ethereum-sourcify/bytecode-utils';
 import semver, { gte } from 'semver';
-import {
+import type {
   VyperJsonInput,
   VyperOutput,
   VyperOutputContract,
   ImmutableReferences,
   LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
-import {
-  CompilationError,
+import type {
   CompilationLanguage,
   CompilationTarget,
   CompiledContractCborAuxdata,
   IVyperCompiler,
 } from './CompilationTypes';
+import { CompilationError } from './CompilationTypes';
 
 export function returnFixedVyperVersion(compilerVersion: string): string {
   if (semver.valid(compilerVersion)) {

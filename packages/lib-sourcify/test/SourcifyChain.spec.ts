@@ -9,7 +9,7 @@ import {
   startHardhatNetwork,
   stopHardhatNetwork,
 } from './hardhat-network-helper';
-import { ChildProcess } from 'child_process';
+import type { ChildProcess } from 'child_process';
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai);

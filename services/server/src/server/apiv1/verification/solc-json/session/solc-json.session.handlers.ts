@@ -1,4 +1,4 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import {
   FILE_ENCODING,
   checkContractsInSession,
@@ -6,12 +6,12 @@ import {
   getSessionJSON,
   saveFilesToSession,
 } from "../../verification.common";
-import {
+import type {
   ISolidityCompiler,
   PathContent,
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
-import { Services } from "../../../../services/services";
+import type { Services } from "../../../../services/services";
 export async function addInputSolcJsonEndpoint(req: Request, res: Response) {
   const inputFiles = extractFiles(req, true);
   if (!inputFiles) throw new BadRequestError("No files found");

@@ -1,4 +1,5 @@
-import { id as keccak256str, Fragment, JsonFragment } from "ethers";
+import type { JsonFragment } from "ethers";
+import { id as keccak256str, Fragment } from "ethers";
 
 export enum SignatureType {
   Function = "function",

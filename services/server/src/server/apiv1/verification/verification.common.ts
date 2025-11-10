@@ -1,14 +1,16 @@
-import { Request } from "express";
+import type { Request } from "express";
 import { BadRequestError, PayloadTooLargeError } from "../../../common/errors";
-import {
+import type {
   InvalidSources,
   MissingSources,
   PathContent,
   IVyperCompiler,
-  SolidityMetadataContract,
-  VyperCompilation,
   CompilationTarget,
   Verification,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
+  SolidityMetadataContract,
+  VyperCompilation,
   VerificationError,
   useAllSourcesAndReturnCompilation,
   SolidityCompilation,
@@ -16,21 +18,21 @@ import {
   splitFiles,
   rearrangeSources,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Session } from "express-session";
-import { JsonFragmentType } from "ethers";
-import QueryString from "qs";
-import { VerificationService } from "../../services/VerificationService";
-import {
+import type { Session } from "express-session";
+import type { JsonFragmentType } from "ethers";
+import type QueryString from "qs";
+import type { VerificationService } from "../../services/VerificationService";
+import type {
   ContractMeta,
   ContractWrapper,
   ContractWrapperData,
 } from "../../common";
-import { ISolidityCompiler } from "@ethereum-sourcify/lib-sourcify";
-import { StorageService } from "../../services/StorageService";
+import type { ISolidityCompiler } from "@ethereum-sourcify/lib-sourcify";
+import type { StorageService } from "../../services/StorageService";
 import logger from "../../../common/logger";
 import { createHash } from "crypto";
-import { ChainRepository } from "../../../sourcify-chain-repository";
-import { Match } from "../../types";
+import type { ChainRepository } from "../../../sourcify-chain-repository";
+import type { Match } from "../../types";
 import { keccak256 } from "ethers";
 import { getMatchStatus } from "../controllers.common";
 

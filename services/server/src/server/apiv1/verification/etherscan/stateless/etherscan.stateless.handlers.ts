@@ -1,15 +1,15 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import {
   fetchFromEtherscan,
   getCompilationFromEtherscanResult,
 } from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
-import {
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type {
   ISolidityCompiler,
   IVyperCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Services } from "../../../../services/services";
+import type { Services } from "../../../../services/services";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 
 export async function verifyFromEtherscan(req: Request, res: Response) {

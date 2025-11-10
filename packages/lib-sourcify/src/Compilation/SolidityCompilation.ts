@@ -1,19 +1,19 @@
 import { AuxdataStyle, splitAuxdata } from '@ethereum-sourcify/bytecode-utils';
 import semver from 'semver';
 import { AbstractCompilation } from './AbstractCompilation';
-import {
+import type {
   ImmutableReferences,
   SolidityJsonInput,
   SolidityOutput,
   SolidityOutputContract,
   LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
-import {
-  CompilationError,
+import type {
   CompilationLanguage,
   CompilationTarget,
   ISolidityCompiler,
 } from './CompilationTypes';
+import { CompilationError } from './CompilationTypes';
 import {
   findAuxdataPositions,
   findAuxdatasInLegacyAssembly,

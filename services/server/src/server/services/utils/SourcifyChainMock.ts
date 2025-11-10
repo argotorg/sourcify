@@ -1,10 +1,8 @@
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import { TransactionReceipt, TransactionResponse } from "ethers";
-import {
-  bytesFromString,
-  GetSourcifyMatchByChainAddressWithPropertiesResult,
-} from "./database-util";
-import { Database } from "./Database";
+import type { TransactionReceipt, TransactionResponse } from "ethers";
+import type { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./database-util";
+import { bytesFromString } from "./database-util";
+import type { Database } from "./Database";
 import logger from "../../../common/logger";
 
 export type SourcifyChainMockContractDeployment = Required<

@@ -1,7 +1,7 @@
-import { Logger } from "winston";
+import type { Logger } from "winston";
 import logger from "./logger";
 import { TimeoutError } from "./util";
-import { GatewayFetcherConfig } from "./types";
+import type { GatewayFetcherConfig } from "./types";
 
 export class GatewayFetcher {
   public url: string;

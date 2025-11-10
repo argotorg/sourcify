@@ -1,4 +1,5 @@
-import express, { Response, Request, NextFunction } from "express";
+import type { Response, Request, NextFunction } from "express";
+import type express from "express";
 import { deprecatedRoutesVerifyStateless } from "./verification/verify/stateless/verify.stateless.routes";
 import { deprecatedRoutesVerifySession } from "./verification/verify/session/verify.session.routes";
 import { deprecatedRoutesSessionState } from "./verification/session-state/session-state.routes";

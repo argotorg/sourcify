@@ -1,8 +1,11 @@
-import { Response } from "express";
-import { LegacyVerifyRequest, extractFiles } from "../../verification.common";
-import {
+import type { Response } from "express";
+import type { LegacyVerifyRequest } from "../../verification.common";
+import { extractFiles } from "../../verification.common";
+import type {
   ISolidityCompiler,
   SolidityMetadataContract,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
   createMetadataContractsFromFiles,
   VerificationError,
   Verification,
@@ -10,8 +13,8 @@ import {
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError, NotFoundError } from "../../../../../common/errors";
 import { StatusCodes } from "http-status-codes";
-import { Services } from "../../../../services/services";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type { Services } from "../../../../services/services";
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
 import logger from "../../../../../common/logger";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 

@@ -1,4 +1,4 @@
-import {
+import type {
   SourcifyChain,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";

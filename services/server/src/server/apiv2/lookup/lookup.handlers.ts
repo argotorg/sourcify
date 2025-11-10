@@ -1,21 +1,19 @@
 import { StatusCodes } from "http-status-codes";
-import { Services } from "../../services/services";
+import type { Services } from "../../services/services";
 import logger from "../../../common/logger";
-import { Request } from "express";
-import {
+import type { Request } from "express";
+import type {
   ProxyResolution,
   TypedResponse,
   VerifiedContract,
   VerifiedContractMinimal,
 } from "../../types";
 import { getAddress } from "ethers";
-import {
-  detectAndResolveProxy,
-  Implementation,
-} from "../../services/utils/proxy-contract-util";
-import { ChainRepository } from "../../../sourcify-chain-repository";
+import type { Implementation } from "../../services/utils/proxy-contract-util";
+import { detectAndResolveProxy } from "../../services/utils/proxy-contract-util";
+import type { ChainRepository } from "../../../sourcify-chain-repository";
 import { v4 as uuidv4 } from "uuid";
-import { Field } from "../../services/utils/database-util";
+import type { Field } from "../../services/utils/database-util";
 
 interface ListContractsRequest extends Request {
   params: {

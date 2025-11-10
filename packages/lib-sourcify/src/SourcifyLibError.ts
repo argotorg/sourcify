@@ -1,7 +1,7 @@
-import { OutputError } from '@ethereum-sourcify/compilers-types';
-import { CompilationErrorCode } from './Compilation/CompilationTypes';
-import { ValidationErrorCode } from './Validation/ValidationTypes';
-import { VerificationErrorCode } from './Verification/VerificationTypes';
+import type { OutputError } from '@ethereum-sourcify/compilers-types';
+import type { CompilationErrorCode } from './Compilation/CompilationTypes';
+import type { ValidationErrorCode } from './Validation/ValidationTypes';
+import type { VerificationErrorCode } from './Verification/VerificationTypes';
 
 export type SourcifyLibErrorCode =
   | ValidationErrorCode

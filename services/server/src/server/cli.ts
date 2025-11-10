@@ -18,9 +18,10 @@ import genFunc from "connect-pg-simple";
 // local imports
 import logger from "../common/logger";
 import { sourcifyChainsMap } from "../sourcify-chains";
-import { LibSourcifyConfig, Server } from "./server";
+import type { LibSourcifyConfig } from "./server";
+import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
-import session from "express-session";
+import type session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
 export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>

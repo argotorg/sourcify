@@ -1,10 +1,9 @@
-import {
+import type {
   SourcifyChain,
   ISolidityCompiler,
   SolidityJsonInput,
   VyperJsonInput,
   PathBuffer,
-  Verification,
   SolidityCompilation,
   VyperCompilation,
   SourcifyChainMap,
@@ -14,6 +13,7 @@ import {
   Metadata,
   EtherscanResult,
 } from "@ethereum-sourcify/lib-sourcify";
+import { Verification } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
 import { ContractIsAlreadyBeingVerifiedError } from "../../common/errors/ContractIsAlreadyBeingVerifiedError";
 import logger from "../../common/logger";
@@ -22,18 +22,20 @@ import {
   getSolcExecutable,
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
-import { VerificationJobId } from "../types";
-import { StorageService } from "./StorageService";
+import type { VerificationJobId } from "../types";
+import type { StorageService } from "./StorageService";
 import Piscina from "piscina";
 import path from "path";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
 import { v4 as uuidv4 } from "uuid";
 import { ConflictError } from "../../common/errors/ConflictError";
 import os from "os";
-import {
-  VerifyError,
+import type {
   VerifyErrorExport,
   VerifyFromEtherscanInput,
+} from "./workers/workerTypes";
+import {
+  VerifyError,
   type VerifyFromJsonInput,
   type VerifyFromMetadataInput,
   type VerifyOutput,

@@ -15,19 +15,19 @@ import {
   type SourcifyChainInstance,
   type SolidityJsonInput,
   type SoliditySettings,
-  OutputError,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getAddress } from "ethers";
-import { VerifyOutput } from "../../src/server/services/workers/workerTypes";
-import {
-  deployFromAbiAndBytecodeForCreatorTxHash,
-  DeploymentInfo,
-} from "../helpers/helpers";
-import { JobErrorData } from "../../src/server/services/utils/database-util";
+import type { VerifyOutput } from "../../src/server/services/workers/workerTypes";
+import type { DeploymentInfo } from "../helpers/helpers";
+import { deployFromAbiAndBytecodeForCreatorTxHash } from "../helpers/helpers";
+import type { JobErrorData } from "../../src/server/services/utils/database-util";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
-import type { SolidityOutput } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  SolidityOutput,
+  OutputError,
+} from "@ethereum-sourcify/lib-sourcify";
 import type { SimilarityCandidate } from "../../src/server/types";
-import { VerificationErrorCode } from "../../src/server/apiv2/errors";
+import type { VerificationErrorCode } from "../../src/server/apiv2/errors";
 
 chai.use(chaiHttp);
 

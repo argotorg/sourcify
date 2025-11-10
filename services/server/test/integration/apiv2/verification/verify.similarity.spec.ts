@@ -7,7 +7,7 @@ import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   hookIntoVerificationWorkerRun,
 } from "../../../helpers/helpers";
-import { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
+import type { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
 import { MockVerificationExport } from "../../../helpers/mocks";
 import { assertJobVerification } from "../../../helpers/assertions";
 import {

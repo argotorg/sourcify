@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import { IResponseError } from "../interfaces";
+import type { IResponseError } from "../interfaces";
 
 export class BadRequestError implements IResponseError {
   statusCode: number;

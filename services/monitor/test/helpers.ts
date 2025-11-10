@@ -1,4 +1,5 @@
-import { ContractFactory, JsonRpcSigner } from "ethers";
+import type { JsonRpcSigner } from "ethers";
+import { ContractFactory } from "ethers";
 import nock from "nock";
 import { expect } from "chai";
 
