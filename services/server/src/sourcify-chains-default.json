@@ -345,6 +345,10 @@
     "sourcifyName": "Hedera Mainnet",
     "supported": true
   },
+  "296": {
+    "sourcifyName": "Hedera Testnet",
+    "supported": true
+  },
   "300": {
     "sourcifyName": "Optimism on GC",
     "supported": false
@@ -1254,17 +1258,7 @@
   },
   "2522": {
     "sourcifyName": "Fraxtal Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_FRAXTAL"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true,
-      "routescanApi": {
-        "type": "testnet"
-      }
-    }
+    "supported": false
   },
   "888": {
     "sourcifyName": "Wanchain Mainnet",
@@ -2141,6 +2135,10 @@
   },
   "970": {
     "sourcifyName": "OORT Mainnet",
+    "supported": true
+  },
+  "9700": {
+    "sourcifyName": "OORT Testnet",
     "supported": true
   },
   "223": {

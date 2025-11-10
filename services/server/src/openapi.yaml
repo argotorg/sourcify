@@ -55,6 +55,40 @@ paths:
               schema:
                 type: string
                 example: "Alive and kicking!"
+  /version:
+    get:
+      summary: Get version information
+      description: Returns version information for the server and its dependencies, along with the git commit hash
+      tags:
+        - Other
+      responses:
+        "200":
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sourcifyServerVersion:
+                    type: string
+                    description: Version of the Sourcify server
+                    example: "3.6.1"
+                  libSourcifyVersion:
+                    type: string
+                    description: Version of @ethereum-sourcify/lib-sourcify
+                    example: "^3.0.2"
+                  sourcifyCompilersVersion:
+                    type: string
+                    description: Version of @ethereum-sourcify/compilers
+                    example: "^1.0.12"
+                  bytecodeUtilsVersion:
+                    type: string
+                    description: Version of @ethereum-sourcify/bytecode-utils
+                    example: "^1.3.15"
+                  gitCommitHash:
+                    type: string
+                    description: Git commit hash the server was built from
+                    example: "755c0fcf1a2b3c4d5e6f7890abcdef1234567890"
   /chains:
     get:
       summary: Get supported blockchain chains
@@ -118,6 +152,22 @@ paths:
                     - traceSupportedRPCs
                     - supported
                     - etherscanAPI
+  /verify-ui:
+    get:
+      summary: Redirect to verification UI
+      tags:
+        - Other
+      responses:
+        "302":
+          description: Redirect to verification UI
+  /repo-ui:
+    get:
+      summary: Redirect to repository UI
+      tags:
+        - Other
+      responses:
+        "302":
+          description: Redirect to repository UI
   /private/verify-deprecated:
     $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
   /private/replace-contract:

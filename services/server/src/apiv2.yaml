@@ -9,8 +9,10 @@ paths:
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) or [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description).
 
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
-
-        **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated.
+      
+        You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
+        
+        **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated. 
       operationId: verify
       parameters:
         - $ref: "#/components/parameters/chainId"
@@ -364,8 +366,9 @@ components:
                 description: The fully qualified file path and contract name to indicate which contract to verify.
                 example: "contracts/Storage.sol:Storage"
               creationTransactionHash:
-                $ref: "#/components/schemas/Keccak256"
-                description: The hash of the transaction that created this contract. Optional.
+                allOf:
+                  - $ref: '#/components/schemas/Keccak256'
+                  - description: The hash of the transaction that created this contract. Optional.
             required:
               - stdJsonInput
               - compilerVersion
@@ -444,8 +447,9 @@ components:
                 type: object
                 description: "The [metadata](https://docs.soliditylang.org/en/latest/metadata.html) as an object."
               creationTransactionHash:
-                $ref: "#/components/schemas/Keccak256"
-                description: The hash of the transaction that created this contract. Optional.
+                allOf:
+                  - $ref: '#/components/schemas/Keccak256'
+                  - description: The hash of the transaction that created this contract. Optional.
             required:
               - sources
               - metadata
@@ -520,8 +524,9 @@ components:
                     type: string
                     format: uuid
                   error:
-                    $ref: "#/components/schemas/MatchingErrorResponse"
-                    description: "Optional, when the verification fails for some reason."
+                    allOf:
+                      - $ref: '#/components/schemas/MatchingErrorResponse'
+                      - description: 'Optional, when the verification fails for some reason.'
                   jobStartTime:
                     type: string
                     format: date-time
@@ -638,8 +643,9 @@ components:
                         type: string
                         example: "solc"
                       compilerVersion:
-                        $ref: "#/components/schemas/CompilerVersion"
-                        description: "The server accepts v prefixed but should only respond without the v prefix"
+                        allOf:
+                          - $ref: '#/components/schemas/CompilerVersion'
+                          - description: 'The server accepts v prefixed but should only respond without the v prefix'
                       compilerSettings:
                         type: object
                       name:
@@ -734,8 +740,9 @@ components:
                                       linkReferences:
                                         $ref: "#/components/schemas/LinkReferences"
                                       object:
-                                        $ref: "#/components/schemas/HexStringWithout0x"
-                                        description: "Without the 0x prefix, as in the compiler output format"
+                                        allOf:
+                                          - $ref: '#/components/schemas/HexStringWithout0x'
+                                          - description: 'Without the 0x prefix, as in the compiler output format'
                                   deployedBytecode:
                                     type: object
                                     description: In Sourcify we refer to this field more explicitly as "runtime bytecode"
@@ -745,8 +752,9 @@ components:
                                       linkReferences:
                                         $ref: "#/components/schemas/LinkReferences"
                                       object:
-                                        $ref: "#/components/schemas/HexStringWithout0x"
-                                        description: "Without the 0x prefix, as in the compiler output format"
+                                        allOf:
+                                          - $ref: '#/components/schemas/HexStringWithout0x'
+                                          - description: 'Without the 0x prefix, as in the compiler output format'
                                       immutableReferences:
                                         type: object
                                         additionalProperties:
@@ -1312,8 +1320,9 @@ components:
         linkReferences:
           $ref: "#/components/schemas/LinkReferences"
         cborAuxdata:
-          $ref: "#/components/schemas/CborAuxdataObject"
-          description: CborAuxdata that is found on the recompiled bytecode.
+          allOf:
+            - $ref: '#/components/schemas/CborAuxdataObject'
+            - description: CborAuxdata that is found on the recompiled bytecode.
         transformations:
           $ref: "#/components/schemas/CreationTransformations"
         transformationValues:
@@ -1458,8 +1467,9 @@ components:
         linkReferences:
           $ref: "#/components/schemas/LinkReferences"
         cborAuxdata:
-          $ref: "#/components/schemas/CborAuxdataObject"
-          description: CborAuxdata that is found on the recompiled bytecode.
+          allOf:
+            - $ref: '#/components/schemas/CborAuxdataObject'
+            - description: CborAuxdata that is found on the recompiled bytecode.
         immutableReferences:
           type: object
           additionalProperties:

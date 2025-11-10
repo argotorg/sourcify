@@ -1,13 +1,42 @@
-import { Router } from "express"; // static is a reserved word
+import { Router, Request, Response, NextFunction } from "express";
 import logger, { setLogLevel } from "../common/logger";
 import { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
 import apiV1Routes from "./apiv1/routes";
+import { readFileSync } from "fs";
+import { join } from "path";
+import packageJson from "../../package.json";
 
 const router: Router = Router();
 
 router.get("/health", (_req, res) => {
   res.status(200).send("Alive and kicking!");
+});
+
+router.get("/version", (_req, res) => {
+  let gitCommitHash = "unknown";
+  try {
+    gitCommitHash = readFileSync(
+      join(__dirname, "../git-commit-hash.txt"),
+      "utf-8",
+    ).trim();
+  } catch (error) {
+    logger.warn({
+      message: "Failed to read git commit hash",
+      error,
+    });
+  }
+
+  res.status(200).json({
+    sourcifyServerVersion: packageJson.version,
+    libSourcifyVersion:
+      packageJson.dependencies["@ethereum-sourcify/lib-sourcify"],
+    sourcifyCompilersVersion:
+      packageJson.dependencies["@ethereum-sourcify/compilers"],
+    bytecodeUtilsVersion:
+      packageJson.dependencies["@ethereum-sourcify/bytecode-utils"],
+    gitCommitHash,
+  });
 });
 
 // Authenticated route to change the logging level.
@@ -52,7 +81,7 @@ router.get("/chains", (_req, res) => {
   res.status(200).json(sourcifyChains);
 });
 
-router.get("/verify-ui/*path", (req, res, next) => {
+const verifyUiHandler = (req: Request, res: Response, next: NextFunction) => {
   const sourcifyVerifyUi = req.app.get("sourcifyVerifyUi") as
     | string
     | undefined;
@@ -69,9 +98,11 @@ router.get("/verify-ui/*path", (req, res, next) => {
     return res.redirect(redirectUrl);
   }
   next();
-});
+};
+router.get("/verify-ui", verifyUiHandler);
+router.get("/verify-ui/*path", verifyUiHandler);
 
-router.get("/repo-ui/*path", (req, res) => {
+const repoUiHandler = (req: Request, res: Response) => {
   const sourcifyRepoUi = req.app.get("sourcifyRepoUi") as string | undefined;
   if (sourcifyRepoUi) {
     const pathAfterContract = req.path.substring("/repo-ui".length);
@@ -82,7 +113,9 @@ router.get("/repo-ui/*path", (req, res) => {
   const pathAfterContract = req.path.substring("/repo-ui".length);
   const redirectUrl = `/v2/contract${pathAfterContract}`;
   return res.redirect(redirectUrl);
-});
+};
+router.get("/repo-ui", repoUiHandler);
+router.get("/repo-ui/*path", repoUiHandler);
 
 router.use("/", apiV1Routes);
 router.use("/v2", apiV2Routes);
