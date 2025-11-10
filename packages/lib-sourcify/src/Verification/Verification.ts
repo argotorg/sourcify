@@ -112,7 +112,7 @@ export class Verification {
     }
 
     // Early bytecode length check:
-    // - For Solidity: bytecode lengths must match exactly
+    // - For Solidity: bytecode lengths must match exactly, except for extra file input bug or no metadata onchain
     // - For Vyper: recompiled bytecode must not be longer than onchain as Vyper appends immutables at deployment
     // We cannot do an early check for creation bytecode length mismatch because
     // creation bytecode length can differ due to constructor arguments being appended at the end
@@ -133,8 +133,10 @@ export class Verification {
         }
       }
 
-      // If there is no metadata in the onchain bytecode, we can try to verify
-      let noOnchainMetadata = false;
+      // Before throwing the bytecode length mismatch error, check if onchain bytecode has no Solidity metadata
+      // If the onchain bytecode has no metadata, we can still verify it as a partial match
+      // See https://github.com/argotorg/sourcify/issues/2374
+      let noSolidityMetadataInOnchainBytecode = false;
       if (this.compilation.language === 'Solidity') {
         try {
           const decodedOnchainAuxdata = decode(
@@ -146,15 +148,16 @@ export class Verification {
             !decodedOnchainAuxdata.bzzr0 &&
             !decodedOnchainAuxdata.bzzr1
           ) {
-            noOnchainMetadata = true;
+            noSolidityMetadataInOnchainBytecode = true;
           }
         } catch (err: any) {
-          noOnchainMetadata = true;
+          // If decoding fails, assume no metadata is present
+          noSolidityMetadataInOnchainBytecode = true;
         }
       }
 
-      // we throw the bytecode length mismatch error only if there is onchain metadata
-      if (!noOnchainMetadata) {
+      // If there is no Solidity metadata in onchain bytecode, we can proceed with verification as a partial match
+      if (!noSolidityMetadataInOnchainBytecode) {
         throw new VerificationError({
           code: 'bytecode_length_mismatch',
         });
