@@ -2,38 +2,30 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import { ChildProcess } from 'child_process';
-import { ContractFactory, JsonRpcSigner } from 'ethers';
+import { JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
+  assertCborTransformations,
+  compileContractWithMetadata,
+  createVyperCompilation,
+  deployCompiledContract,
   deployFromAbiAndBytecode,
   expectVerification,
+  getCompilationFromMetadata,
   vyperCompiler,
 } from '../utils';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
 } from '../hardhat-network-helper';
-import { SolidityMetadataContract } from '../../src/Validation/SolidityMetadataContract';
-import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
-import {
-  Metadata,
-  SolidityOutput,
-  SolidityOutputContract,
-} from '@ethereum-sourcify/compilers-types';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
-import { PathContent } from '../../src/Validation/ValidationTypes';
 import chaiAsPromised from 'chai-as-promised';
-import {
-  findSolcPlatform,
-  useSolidityCompiler,
-} from '@ethereum-sourcify/compilers';
-import { ISolidityCompiler, SourcifyChain } from '../../src';
+import { findSolcPlatform } from '@ethereum-sourcify/compilers';
+import { SourcifyChain } from '../../src';
 import Sinon from 'sinon';
 
 use(chaiAsPromised);
-
-type MetadataMutator = (metadata: Metadata) => void;
 
 const STORAGE_CONTRACT_FOLDER = path.join(
   __dirname,
@@ -42,161 +34,6 @@ const STORAGE_CONTRACT_FOLDER = path.join(
   'Storage',
 );
 const APPEND_CBOR_SUPPORTED_VERSION = '0.8.28+commit.7893614a';
-
-function assertCborTransformations(transformations?: any[]) {
-  expect(transformations, 'Expected CBOR transformations').to.not.be.undefined;
-  if (!transformations) {
-    throw new Error('Expected CBOR transformations');
-  }
-
-  expect(transformations.length).to.be.greaterThan(0);
-  expect(
-    transformations.every(
-      (transformation) => transformation.reason === 'cborAuxdata',
-    ),
-  ).to.equal(true);
-}
-
-class TestSolidityCompiler implements ISolidityCompiler {
-  async compile(
-    version: string,
-    solcJsonInput: any,
-    forceEmscripten = false,
-  ): Promise<SolidityOutput> {
-    const compilersPath = path.join('/tmp', 'solc-repo');
-    const solJsonRepo = path.join('/tmp', 'soljson-repo');
-    return await useSolidityCompiler(
-      compilersPath,
-      solJsonRepo,
-      version,
-      solcJsonInput,
-      forceEmscripten,
-    );
-  }
-}
-
-// Helper function to get compilation from metadata
-async function getCompilationFromMetadata(
-  contractFolderPath: string,
-  metadataMutator?: MetadataMutator,
-) {
-  // Read metadata.json directly
-  const metadataPath = path.join(contractFolderPath, 'metadata.json');
-  const metadataRaw = fs.readFileSync(metadataPath, 'utf8');
-  const metadata: Metadata = JSON.parse(metadataRaw);
-
-  if (metadataMutator) {
-    metadataMutator(metadata);
-  }
-
-  // Read source files from the sources directory
-  const sourcesPath = path.join(contractFolderPath, 'sources');
-  const sources: PathContent[] = [];
-
-  // Recursively read all files from the sources directory
-  const readDirRecursively = (dir: string, baseDir: string = '') => {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-      const fullPath = path.join(dir, file);
-      const relativePath = path.join(baseDir, file);
-      if (fs.statSync(fullPath).isDirectory()) {
-        readDirRecursively(fullPath, relativePath);
-      } else {
-        const content = fs.readFileSync(fullPath, 'utf8');
-        sources.push({
-          path: relativePath,
-          content,
-        });
-      }
-    }
-  };
-
-  readDirRecursively(sourcesPath);
-
-  // Create metadata contract
-  const metadataContract = new SolidityMetadataContract(metadata, sources);
-
-  // Create compilation
-  return await metadataContract.createCompilation(new TestSolidityCompiler());
-}
-
-async function compileContractWithMetadata(
-  contractFolderPath: string,
-  metadataMutator?: MetadataMutator,
-) {
-  const compilation = await getCompilationFromMetadata(
-    contractFolderPath,
-    metadataMutator,
-  );
-  await compilation.compile();
-  return compilation;
-}
-
-async function deployCompiledContract(
-  signer: JsonRpcSigner,
-  compilation: SolidityCompilation,
-  constructorArgs: unknown[] = [],
-) {
-  const contractOutput =
-    compilation.contractCompilerOutput as SolidityOutputContract;
-  const contractFactory = new ContractFactory(
-    contractOutput.abi,
-    compilation.creationBytecode,
-    signer,
-  );
-  const deployment = await contractFactory.deploy(...constructorArgs);
-  await deployment.waitForDeployment();
-
-  const contractAddress = await deployment.getAddress();
-  const creationTx = deployment.deploymentTransaction();
-
-  if (!creationTx) {
-    throw new Error('Deployment transaction not found.');
-  }
-
-  return {
-    contractAddress,
-    txHash: creationTx.hash,
-  };
-}
-
-// Helper function to create Vyper compilation
-async function createVyperCompilation(
-  contractFolderPath: string,
-  version: string,
-  settings: {
-    evmVersion?: 'london' | 'paris' | 'shanghai' | 'cancun' | 'istanbul';
-    optimize?: 'gas' | 'codesize' | 'none' | boolean;
-  } = { evmVersion: 'istanbul' },
-) {
-  const contractFileName = 'test.vy';
-  const contractFileContent = await fs.promises.readFile(
-    path.join(contractFolderPath, contractFileName),
-  );
-
-  return new VyperCompilation(
-    vyperCompiler,
-    version,
-    {
-      language: 'Vyper',
-      sources: {
-        [contractFileName]: {
-          content: contractFileContent.toString(),
-        },
-      },
-      settings: {
-        ...settings,
-        outputSelection: {
-          '*': ['evm.bytecode'],
-        },
-      },
-    },
-    {
-      path: contractFileName,
-      name: contractFileName.split('.')[0],
-    },
-  );
-}
 
 const HARDHAT_PORT = 8544;
 
