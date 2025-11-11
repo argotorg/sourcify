@@ -4,7 +4,7 @@ import type {
   VyperSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
-import type { WStorageService } from "../StorageService";
+import type { StorageService, WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import type { Database } from "../utils/Database";
 import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
@@ -263,18 +263,31 @@ interface EtherscanRpcResponse {
   result: string;
 }
 
-type GetApiUrl = (
+// Helper function that returns the getApiUrl() function from the initialized StorageService
+export function createGetEtherscanVerifyApiServiceApiUrl(
+  storageService: StorageService,
+) {
+  return (
+    service: EtherscanVerifyApiIdentifiers,
+    action: string,
+    chainId: number,
+    includeApiKey = true,
+  ) =>
+    (
+      storageService.wServices[service] as EtherscanVerifyApiService | undefined
+    )?.getApiUrl.bind(storageService.wServices[service])(
+      action,
+      chainId,
+      includeApiKey,
+    );
+}
+
+export type GetExternalVerificationApiUrl = (
+  service: EtherscanVerifyApiIdentifiers,
   action: string,
   chainId: number,
   includeApiKey?: boolean,
 ) => string | undefined;
-
-// WStorage services interface may not be enabled
-export interface GetExternalVerificationApiUrl {
-  [WStorageIdentifiers.EtherscanVerify]?: GetApiUrl;
-  [WStorageIdentifiers.BlockscoutVerify]?: GetApiUrl;
-  [WStorageIdentifiers.RoutescanVerify]?: GetApiUrl;
-}
 
 export const buildExternalVerificationLinks = (
   externalVerification: Tables.VerificationJob["external_verification"],
@@ -299,9 +312,12 @@ export const buildExternalVerificationLinks = (
     if (verifierData.verificationId) {
       let apiBaseUrl;
       try {
-        apiBaseUrl = getExternalVerificationApiUrl[
-          verifier as EtherscanVerifyApiIdentifiers
-        ]?.("checkverifystatus", parseInt(chainId), false);
+        apiBaseUrl = getExternalVerificationApiUrl(
+          verifier as EtherscanVerifyApiIdentifiers,
+          "checkverifystatus",
+          parseInt(chainId),
+          false,
+        );
       } catch (error) {
         return links;
       }

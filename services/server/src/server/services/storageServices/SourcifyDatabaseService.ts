@@ -56,8 +56,10 @@ import type { VerificationErrorCode } from "../../apiv2/errors";
 import { getVerificationErrorMessage } from "../../apiv2/errors";
 import type { VerifyErrorExport } from "../workers/workerTypes";
 import type { PoolClient } from "pg";
-import { buildExternalVerificationLinks } from "./EtherscanVerifyApiService";
-import type { GetExternalVerificationApiUrl } from "./EtherscanVerifyApiService";
+import {
+  buildExternalVerificationLinks,
+  type GetExternalVerificationApiUrl,
+} from "./EtherscanVerifyApiService";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 
