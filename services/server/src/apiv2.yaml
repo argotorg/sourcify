@@ -536,6 +536,19 @@ components:
                     type: string
                     description: Time it took to compile the contract on the server in milliseconds.
                     example: "1333"
+                  externalVerificationLinks:
+                    type: object
+                    description: Links to the external verification pages on Etherscan-like services.
+                    properties:
+                      etherscan:
+                        type: string
+                        example: https://api.etherscan.io/v2/api?chainid=1&module=contract&action=checkverifystatus&guid=x3ryqcqr1zdknhfhkimqmizlcqpxncqc6nrvp3pgrcpfsqedqi'
+                      blockscout:
+                        type: string
+                        example: https://eth.blockscout.com/api?module=contract&action=checkverifystatus&guid=ezq878u486pzijkvvmerl6a9mzwhv6sefgvqi5tkwceejc7tvn
+                      routescan:
+                        type: string
+                        example: https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=contract&action=checkverifystatus&guid=ezq878u486pzijkvvmerl6a9mzwhv6sefgvqi5tkwceejc7tvn
                 required:
                   - isJobCompleted
                   - verificationId

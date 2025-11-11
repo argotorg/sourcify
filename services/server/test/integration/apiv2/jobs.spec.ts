@@ -8,16 +8,27 @@ import type { MatchingErrorResponse } from "../../../src/server/apiv2/errors";
 import { getVerificationErrorMessage } from "../../../src/server/apiv2/errors";
 import { verifyContract } from "../../helpers/helpers";
 import type { JobErrorData } from "../../../src/server/services/utils/database-util";
+import {
+  RWStorageIdentifiers,
+  WStorageIdentifiers,
+} from "../../../src/server/services/storageServices/identifiers";
 
 chai.use(chaiHttp);
 
 describe("GET /v2/verify/:verificationId", function () {
-  const serverFixture = new ServerFixture();
+  const serverFixture = new ServerFixture({
+    writeOrWarn: [
+      RWStorageIdentifiers.SourcifyDatabase,
+      WStorageIdentifiers.EtherscanVerify,
+      WStorageIdentifiers.RoutescanVerify,
+    ],
+  });
   const chainFixture = new LocalChainFixture();
 
   async function createMockJob(
     isVerified: boolean = false,
     hasError: boolean = false,
+    hasExternalVerification: boolean = false,
   ): Promise<VerificationJob> {
     if (isVerified && hasError) {
       throw new Error(
@@ -89,6 +100,27 @@ describe("GET /v2/verify/:verificationId", function () {
       };
     }
 
+    let databaseExternalVerification = null;
+    let apiExternalVerification = {};
+    if (hasExternalVerification) {
+      databaseExternalVerification = {
+        EtherscanVerify: {
+          verificationId: "some-external-id",
+        },
+        RoutescanVerify: {
+          error: "some error",
+        },
+      };
+      apiExternalVerification = {
+        etherscan: {
+          url: "https://api.etherscan.io/api?module=contract&action=checkverifystatus&chainid=31337&guid=some-external-id",
+        },
+        routescan: {
+          error: "some error",
+        },
+      };
+    }
+
     // Insert the job into the database
     await serverFixture.sourcifyDatabase.query(
       `INSERT INTO verification_jobs (
@@ -102,8 +134,9 @@ describe("GET /v2/verify/:verificationId", function () {
         error_code,
         error_id,
         error_data,
-        verification_endpoint
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        verification_endpoint,
+        external_verification
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         verificationId,
         startTime,
@@ -116,6 +149,7 @@ describe("GET /v2/verify/:verificationId", function () {
         error?.errorId || null,
         errorData,
         "/verify",
+        databaseExternalVerification,
       ],
     );
 
@@ -156,6 +190,7 @@ describe("GET /v2/verify/:verificationId", function () {
         ...(matchId ? { matchId } : {}),
       },
       ...(error ? { error } : {}),
+      externalVerificationLinks: apiExternalVerification,
     };
   }
 
@@ -203,5 +238,16 @@ describe("GET /v2/verify/:verificationId", function () {
     chai.expect(res.body.customCode).to.equal("job_not_found");
     chai.expect(res.body).to.have.property("errorId");
     chai.expect(res.body).to.have.property("message");
+  });
+
+  it("should return external verification urls and errors when job has external_verification", async function () {
+    const mockJob = await createMockJob(true, false, true);
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${mockJob.verificationId}`);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal(mockJob);
   });
 });

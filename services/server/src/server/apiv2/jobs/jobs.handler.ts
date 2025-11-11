@@ -4,6 +4,10 @@ import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { TypedResponse, VerificationJob } from "../../types";
 import { JobNotFoundError } from "../errors";
+import type {
+  EtherscanVerifyApiService,
+  GetExternalVerificationApiUrl,
+} from "../../services/storageServices/EtherscanVerifyApiService";
 
 interface GetJobRequest extends Request {
   params: {
@@ -19,9 +23,28 @@ export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
   });
   const services = req.app.get("services") as Services;
 
+  // TODO: extract this better taking into account if services are enabled
+  const getExternalVerificationApiBaseUrl: GetExternalVerificationApiUrl = {
+    EtherscanVerify: (
+      services.storage.wServices.EtherscanVerify as
+        | EtherscanVerifyApiService
+        | undefined
+    )?.getApiUrl.bind(services.storage.wServices.EtherscanVerify),
+    BlockscoutVerify: (
+      services.storage.wServices.BlockscoutVerify as
+        | EtherscanVerifyApiService
+        | undefined
+    )?.getApiUrl.bind(services.storage.wServices.BlockscoutVerify),
+    RoutescanVerify: (
+      services.storage.wServices.RoutescanVerify as
+        | EtherscanVerifyApiService
+        | undefined
+    )?.getApiUrl.bind(services.storage.wServices.RoutescanVerify),
+  };
+
   const job = await services.storage.performServiceOperation(
     "getVerificationJob",
-    [req.params.verificationId],
+    [req.params.verificationId, getExternalVerificationApiBaseUrl],
   );
 
   if (!job) {

@@ -39,6 +39,7 @@ import type { VerifyErrorExport } from "./workers/workerTypes";
 import type {
   EtherscanVerifyApiIdentifiers,
   EtherscanVerifyApiServiceOptions,
+  GetExternalVerificationApiUrl,
 } from "./storageServices/EtherscanVerifyApiService";
 import { EtherscanVerifyApiService } from "./storageServices/EtherscanVerifyApiService";
 
@@ -107,7 +108,10 @@ export interface RWStorageService extends WStorageService {
   getContractsAllChains?(
     address: string,
   ): Promise<{ results: VerifiedContractMinimal[] }>;
-  getVerificationJob?(verificationId: string): Promise<VerificationJob | null>;
+  getVerificationJob?(
+    verificationId: string,
+    getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
+  ): Promise<VerificationJob | null>;
   getVerificationJobsByChainAndAddress?(
     chainId: string,
     address: string,

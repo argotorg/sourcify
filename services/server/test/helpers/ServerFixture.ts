@@ -150,6 +150,18 @@ export class ServerFixture {
             accessKeyId: "test-key",
             secretAccessKey: "test-secret",
           },
+          etherscanVerifyApiServiceOptions: {
+            EtherscanVerify: {
+              chainApiUrls: {
+                31337: "https://api.etherscan.io/api",
+              },
+            },
+            RoutescanVerify: {
+              chainApiUrls: {
+                31337: "https://api.etherscan.io/api",
+              },
+            },
+          },
         },
       );
 

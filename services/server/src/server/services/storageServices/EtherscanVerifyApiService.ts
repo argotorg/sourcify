@@ -8,7 +8,8 @@ import type { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import type { Database } from "../utils/Database";
 import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
-import type { ExternalVerification } from "../utils/database-util";
+import type { ExternalVerification, Tables } from "../utils/database-util";
+import type { ExternalVerificationLinks } from "../../types";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -261,6 +262,80 @@ interface EtherscanRpcResponse {
   message: string;
   result: string;
 }
+
+type GetApiUrl = (
+  action: string,
+  chainId: number,
+  includeApiKey?: boolean,
+) => string | undefined;
+
+// WStorage services interface may not be enabled
+export interface GetExternalVerificationApiUrl {
+  [WStorageIdentifiers.EtherscanVerify]?: GetApiUrl;
+  [WStorageIdentifiers.BlockscoutVerify]?: GetApiUrl;
+  [WStorageIdentifiers.RoutescanVerify]?: GetApiUrl;
+}
+
+export const buildExternalVerificationLinks = (
+  externalVerification: Tables.VerificationJob["external_verification"],
+  chainId: string,
+  verificationJobId: string,
+  getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
+): ExternalVerificationLinks => {
+  if (getExternalVerificationApiUrl === undefined) {
+    return {};
+  }
+  if (!externalVerification) {
+    return {};
+  }
+  return Object.keys(externalVerification).reduce((links, verifier) => {
+    const verifierData =
+      externalVerification[verifier as EtherscanVerifyApiIdentifiers];
+    if (!verifierData) {
+      return links;
+    }
+
+    let url;
+    if (verifierData.verificationId) {
+      let apiBaseUrl;
+      try {
+        apiBaseUrl = getExternalVerificationApiUrl[
+          verifier as EtherscanVerifyApiIdentifiers
+        ]?.("checkverifystatus", parseInt(chainId), false);
+      } catch (error) {
+        return links;
+      }
+      if (!apiBaseUrl) {
+        return links;
+      }
+      url = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
+    }
+
+    const externalVerificationLinks = {
+      url,
+      error: verifierData.error,
+    };
+
+    switch (verifier) {
+      case WStorageIdentifiers.EtherscanVerify:
+        links.etherscan = externalVerificationLinks;
+        break;
+      case WStorageIdentifiers.BlockscoutVerify:
+        links.blockscout = externalVerificationLinks;
+        break;
+      case WStorageIdentifiers.RoutescanVerify:
+        links.routescan = externalVerificationLinks;
+        break;
+      default:
+        logger.warn("Unknown external verifier found", {
+          verifier,
+          verificationJobId,
+        });
+        break;
+    }
+    return links;
+  }, {} as ExternalVerificationLinks);
+};
 
 export interface EtherscanVerifyApiServiceOptions {
   /** Mapping of chainId to the explorer API base URL */
@@ -625,10 +700,23 @@ export class EtherscanVerifyApiService implements WStorageService {
     return constructorArgs.replace(/^0x/i, "");
   }
 
+  public getApiUrl(
+    action: string,
+    chainId: number,
+    includeApiKey = true,
+  ): string | undefined {
+    const apiBaseUrl = this.getApiBaseUrl(chainId);
+    if (!apiBaseUrl) {
+      return undefined;
+    }
+    return this.buildApiUrl(apiBaseUrl, action, chainId, includeApiKey);
+  }
+
   private buildApiUrl(
     apiBaseUrl: string,
     action: string,
     chainId: number,
+    includeApiKey = true,
   ): string {
     const url = new URL(apiBaseUrl);
 
@@ -636,9 +724,11 @@ export class EtherscanVerifyApiService implements WStorageService {
     url.searchParams.set("action", action);
     url.searchParams.set("chainid", String(chainId));
 
-    const apiKey = this.getApiKey(chainId);
-    if (apiKey) {
-      url.searchParams.set("apikey", apiKey);
+    if (includeApiKey) {
+      const apiKey = this.getApiKey(chainId);
+      if (apiKey) {
+        url.searchParams.set("apikey", apiKey);
+      }
     }
 
     return url.toString();

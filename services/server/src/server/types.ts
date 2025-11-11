@@ -124,6 +124,17 @@ export type ProxyResolution = Partial<ProxyDetectionResult> & {
 
 export type VerificationJobId = string;
 
+export interface ExternalVerificationData {
+  url?: string;
+  error?: string;
+}
+
+export interface ExternalVerificationLinks {
+  etherscan?: ExternalVerificationData;
+  blockscout?: ExternalVerificationData;
+  routescan?: ExternalVerificationData;
+}
+
 export interface VerificationJob {
   isJobCompleted: boolean;
   verificationId: VerificationJobId;
@@ -132,6 +143,7 @@ export interface VerificationJob {
   compilationTime?: string;
   error?: MatchingErrorResponse;
   contract: VerifiedContractMinimal;
+  externalVerificationLinks?: ExternalVerificationLinks;
 }
 
 /**
