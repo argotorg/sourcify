@@ -1,20 +1,27 @@
-import {
+import type {
   VerificationStatus,
   StringMap,
   VerificationExport,
-  splitFullyQualifiedName,
+  ISolidityCompiler,
+  IVyperCompiler,
+  PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
+import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
-import { RWStorageService } from "../StorageService";
-import {
-  bytesFromString,
+import type { RWStorageService } from "../StorageService";
+import type {
   Field,
-  FIELDS_TO_STORED_PROPERTIES,
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
   StoredProperties,
   Tables,
 } from "../utils/database-util";
 import {
+  bytesFromString,
+  FIELDS_TO_STORED_PROPERTIES,
+  createPreRunCompilationFromStoredCandidate,
+} from "../utils/database-util";
+import type {
   ContractData,
   FileObject,
   FilesInfo,
@@ -30,6 +37,7 @@ import {
   Match,
   VerificationJobId,
   BytesKeccak,
+  SimilarityCandidate,
 } from "../../types";
 import Path from "path";
 import {
@@ -43,13 +51,11 @@ import { extractSignaturesFromAbi } from "../utils/signature-util";
 import { BadRequestError } from "../../../common/errors";
 import { RWStorageIdentifiers } from "./identifiers";
 import semver from "semver";
-import { DatabaseOptions } from "../utils/Database";
-import {
-  getVerificationErrorMessage,
-  VerificationErrorCode,
-} from "../../apiv2/errors";
-import { VerifyErrorExport } from "../workers/workerTypes";
-import { PoolClient } from "pg";
+import type { DatabaseOptions } from "../utils/Database";
+import type { VerificationErrorCode } from "../../apiv2/errors";
+import { getVerificationErrorMessage } from "../../apiv2/errors";
+import type { VerifyErrorExport } from "../workers/workerTypes";
+import type { PoolClient } from "pg";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 
@@ -1052,5 +1058,138 @@ export class SourcifyDatabaseService
         verification,
       );
     });
+  }
+
+  async getSimilarityCandidatesByRuntimeCode(
+    runtimeBytecode: string,
+    limit: number,
+  ): Promise<SimilarityCandidate[]> {
+    await this.init();
+
+    const runtimeBuffer = bytesFromString(runtimeBytecode);
+    if (!runtimeBuffer || runtimeBuffer.length === 0) {
+      throw new Error("Invalid runtime bytecode");
+    }
+
+    const prefixMatches =
+      await this.database.getVerifiedContractsByRuntimeCodePrefix(
+        runtimeBuffer,
+        limit,
+      );
+
+    if (prefixMatches.rows.length === 0) {
+      return [];
+    }
+
+    const results: GetSourcifyMatchByChainAddressWithPropertiesResult[] = [];
+
+    const matchRows = await Promise.all(
+      prefixMatches.rows.map(async (row) => {
+        const addressBuffer = bytesFromString(row.address);
+        if (!addressBuffer) {
+          return null;
+        }
+        const matchResult =
+          await this.database.getSourcifyMatchByChainAddressWithProperties(
+            parseInt(row.chain_id),
+            addressBuffer,
+            [
+              "std_json_input",
+              "std_json_output",
+              "fully_qualified_name",
+              "version",
+              "creation_cbor_auxdata",
+              "runtime_cbor_auxdata",
+              "metadata",
+            ],
+          );
+
+        if (matchResult.rows.length === 0) {
+          logger.warn("Prefix match found but no sourcify match for contract", {
+            chainId: row.chain_id,
+            address: row.address,
+          });
+          return null;
+        }
+
+        return matchResult.rows[0];
+      }),
+    );
+
+    for (const matchRow of matchRows) {
+      if (!matchRow) {
+        continue;
+      }
+
+      results.push(matchRow);
+    }
+
+    return results as SimilarityCandidate[];
+  }
+
+  async getPreRunCompilationFromDatabase(
+    chainId: number,
+    address: string,
+    compilers: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+  ): Promise<PreRunCompilation> {
+    await this.init();
+
+    const addressBuffer = bytesFromString(address);
+    if (!addressBuffer) {
+      logger.error(
+        "getPreRunCompilationFromDatabase: invalid address provided",
+        {
+          chainId,
+          address,
+        },
+      );
+      throw new Error("Invalid address");
+    }
+
+    try {
+      const verifiedContractResult =
+        await this.database.getSourcifyMatchByChainAddressWithProperties(
+          chainId,
+          addressBuffer,
+          [
+            "std_json_input",
+            "std_json_output",
+            "runtime_cbor_auxdata",
+            "creation_cbor_auxdata",
+            "fully_qualified_name",
+            "version",
+            "metadata",
+          ],
+        );
+
+      if (verifiedContractResult.rows.length === 0) {
+        logger.error(
+          "getPreRunCompilationFromDatabase: verified contract not found",
+          {
+            chainId,
+            address,
+          },
+        );
+        throw new Error("Verified contract not found");
+      }
+
+      const candidate = verifiedContractResult
+        .rows[0] as GetSourcifyMatchByChainAddressWithPropertiesResult;
+
+      return createPreRunCompilationFromStoredCandidate(
+        compilers,
+        candidate as SimilarityCandidate,
+      );
+    } catch (error) {
+      logger.error(
+        "getPreRunCompilationFromDatabase: error extracting compilation properties",
+        {
+          error,
+          chainId,
+          address,
+        },
+      );
+      throw error;
+    }
   }
 }

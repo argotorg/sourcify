@@ -1,5 +1,5 @@
 import SolidityParser from "@solidity-parser/parser";
-import { Sources } from "@ethereum-sourcify/lib-sourcify";
+import type { Sources } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 
 /**

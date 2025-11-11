@@ -928,8 +928,8 @@ CREATE TABLE public.compiled_contracts (
     fully_qualified_name character varying NOT NULL,
     compiler_settings jsonb NOT NULL,
     compilation_artifacts jsonb NOT NULL,
-    creation_code_hash bytea,
-    creation_code_artifacts jsonb,
+    creation_code_hash bytea NOT NULL,
+    creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
@@ -1174,7 +1174,8 @@ CREATE TABLE public.verification_jobs (
     error_data json,
     verification_endpoint character varying NOT NULL,
     hardware character varying,
-    compilation_time bigint
+    compilation_time bigint,
+    external_verification jsonb
 );
 
 
@@ -1290,7 +1291,7 @@ ALTER TABLE ONLY public.compiled_contracts
 --
 
 ALTER TABLE ONLY public.compiled_contracts
-    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE NULLS NOT DISTINCT (compiler, language, creation_code_hash, runtime_code_hash);
+    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, version, language, creation_code_hash, runtime_code_hash);
 
 
 --
@@ -1542,6 +1543,13 @@ CREATE INDEX contracts_creation_code_hash_runtime_code_hash ON public.contracts 
 --
 
 CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtime_code_hash);
+
+
+--
+-- Name: idx_code_code_first_75; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_code_code_first_75 ON public.code USING btree (SUBSTRING(code FROM 1 FOR 75));
 
 
 --
@@ -2063,4 +2071,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250723145429'),
     ('20250828092603'),
     ('20250922140427'),
-    ('20250922141802');
+    ('20250922141802'),
+    ('20251009141621'),
+    ('20251023134207'),
+    ('20251101120000');

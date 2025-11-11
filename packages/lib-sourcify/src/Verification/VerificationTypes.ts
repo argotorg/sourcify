@@ -1,11 +1,11 @@
-import { JsonFragment } from 'ethers';
-import {
+import type { JsonFragment } from 'ethers';
+import type {
   CompilationLanguage,
   CompilationTarget,
   CompiledContractCborAuxdata,
   StringMap,
 } from '../Compilation/CompilationTypes';
-import {
+import type {
   ImmutableReferences,
   SoliditySettings,
   StorageLayout,
@@ -17,11 +17,9 @@ import {
   SolidityOutputSource,
   VyperOutputSource,
 } from '@ethereum-sourcify/compilers-types';
-import {
-  SourcifyLibErrorParameters,
-  SourcifyLibError,
-} from '../SourcifyLibError';
-import { Transformation, TransformationValues } from './Transformations';
+import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
+import { SourcifyLibError } from '../SourcifyLibError';
+import type { Transformation, TransformationValues } from './Transformations';
 
 export interface BytecodeMatchingResult {
   match: 'perfect' | 'partial' | null;
@@ -36,6 +34,7 @@ export type VerificationErrorCode =
   | 'cannot_fetch_bytecode'
   | 'contract_not_deployed'
   | 'compiled_bytecode_is_zero'
+  | 'onchain_bytecode_is_zero'
   | 'extra_file_input_bug'
   | 'creation_bytecode_match_error'
   | 'no_match'

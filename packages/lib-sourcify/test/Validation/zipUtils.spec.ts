@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { unzipFiles } from '../../src/Validation/zipUtils';
 import JSZip from 'jszip';
-import { PathBuffer } from '../../src';
+import type { PathBuffer } from '../../src';
 
 describe('zipUtils', () => {
   describe('isZip', () => {

@@ -1,1 +1,4 @@
 dist/
+chain-tests-report/
+coverage/
+node_modules/

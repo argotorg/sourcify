@@ -1,11 +1,11 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import {
   checkContractsInSession,
   getSessionJSON,
   saveFilesToSession,
   verifyContractsInSession,
 } from "../../verification.common";
-import {
+import type {
   ISolidityCompiler,
   IVyperCompiler,
   PathContent,
@@ -16,8 +16,8 @@ import {
   fetchFromEtherscan,
 } from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
-import { Services } from "../../../../services/services";
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type { Services } from "../../../../services/services";
 
 export const stringToBase64 = (str: string): string =>
   Buffer.from(str, "utf8").toString("base64");

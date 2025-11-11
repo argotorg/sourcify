@@ -4,7 +4,7 @@ import fs from 'fs';
 import { spawnSync } from 'child_process';
 import { asyncExec, CompilerError, fetchWithBackoff } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import {
+import type {
   VyperJsonInput,
   VyperOutput,
 } from '@ethereum-sourcify/compilers-types';

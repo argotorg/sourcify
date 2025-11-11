@@ -6,7 +6,7 @@ import { hookIntoVerificationWorkerRun } from "../helpers/helpers";
 import chai, { request } from "chai";
 import { ServerFixture } from "../helpers/ServerFixture";
 import { ChainRepository } from "../../src/sourcify-chain-repository";
-import { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 import { assertJobVerification } from "../helpers/assertions";
 import { toMatchLevel } from "../../src/server/services/utils/util";
 import sinon from "sinon";

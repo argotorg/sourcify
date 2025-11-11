@@ -1,11 +1,14 @@
 import logger from "./logger";
 import { FileHash } from "./util";
-import { Metadata, MetadataSourceMap } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  Metadata,
+  MetadataSourceMap,
+} from "@ethereum-sourcify/lib-sourcify";
 import { id as keccak256str } from "ethers";
-import { KnownDecentralizedStorageFetchers } from "./types";
+import type { KnownDecentralizedStorageFetchers } from "./types";
 import assert from "assert";
 import dotenv from "dotenv";
-import { Logger } from "winston";
+import type { Logger } from "winston";
 
 dotenv.config();
 

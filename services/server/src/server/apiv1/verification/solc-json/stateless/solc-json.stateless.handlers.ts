@@ -1,13 +1,13 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import { extractFiles } from "../../verification.common";
-import {
+import type {
   ISolidityCompiler,
-  SolidityCompilation,
   SolidityJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
+import { SolidityCompilation } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
-import { Services } from "../../../../services/services";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type { Services } from "../../../../services/services";
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
 import { getApiV1ResponseFromVerification } from "../../../controllers.common";
 import logger from "../../../../../common/logger";
 import { getContractPathFromSources } from "../../../../services/utils/parsing-util";

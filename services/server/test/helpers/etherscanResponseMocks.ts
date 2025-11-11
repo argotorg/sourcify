@@ -1,5 +1,5 @@
 import nock from "nock";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
 export const mockEtherscanApi = (
   sourcifyChain: SourcifyChain,

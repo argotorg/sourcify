@@ -5,23 +5,29 @@ import { LocalChainFixture } from "../helpers/LocalChainFixture";
 import {
   verifyFromJsonInput,
   verifyFromMetadata,
+  verifySimilarity,
 } from "../../src/server/services/workers/verificationWorker";
 import Sinon from "sinon";
 import Piscina from "piscina";
 import { sourcifyChainsMap } from "../../src/sourcify-chains";
 import {
+  SolidityCompilation,
   type SourcifyChainInstance,
+  type SolidityJsonInput,
   type SoliditySettings,
-  SourcifyLibErrorCode,
-  OutputError,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getAddress } from "ethers";
-import { VerifyOutput } from "../../src/server/services/workers/workerTypes";
-import {
-  deployFromAbiAndBytecodeForCreatorTxHash,
-  DeploymentInfo,
-} from "../helpers/helpers";
-import { JobErrorData } from "../../src/server/services/utils/database-util";
+import type { VerifyOutput } from "../../src/server/services/workers/workerTypes";
+import type { DeploymentInfo } from "../helpers/helpers";
+import { deployFromAbiAndBytecodeForCreatorTxHash } from "../helpers/helpers";
+import type { JobErrorData } from "../../src/server/services/utils/database-util";
+import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
+import type {
+  SolidityOutput,
+  OutputError,
+} from "@ethereum-sourcify/lib-sourcify";
+import type { SimilarityCandidate } from "../../src/server/types";
+import type { VerificationErrorCode } from "../../src/server/apiv2/errors";
 
 chai.use(chaiHttp);
 
@@ -170,7 +176,7 @@ describe("verificationWorker", function () {
 
   const assertErrorResponse = (
     result: VerifyOutput,
-    code: SourcifyLibErrorCode,
+    code: VerificationErrorCode,
     data?: JobErrorData,
   ) => {
     expect(result).to.not.have.property("verificationExport");
@@ -442,6 +448,103 @@ describe("verificationWorker", function () {
           },
         });
       });
+    });
+  });
+
+  describe("verifySimilarity", function () {
+    let solcLocal: SolcLocal;
+    let stdJsonInput: SolidityJsonInput;
+    let stdJsonOutput: SolidityOutput;
+    let compilationTargetPath: string;
+    let compilationTargetName: string;
+
+    const createCandidate = (
+      overrides: Partial<SimilarityCandidate> = {},
+    ): SimilarityCandidate => {
+      return {
+        std_json_input: structuredClone(stdJsonInput),
+        std_json_output: structuredClone(stdJsonOutput),
+        version: chainFixture.defaultContractMetadataObject.compiler.version,
+        fully_qualified_name: `${compilationTargetPath}:${compilationTargetName}`,
+        creation_cbor_auxdata:
+          chainFixture.defaultContractArtifact.cborAuxdata || {},
+        runtime_cbor_auxdata:
+          chainFixture.defaultContractArtifact.deployedCborAuxdata || {},
+        metadata: structuredClone(chainFixture.defaultContractMetadataObject),
+        ...overrides,
+      };
+    };
+
+    before(async () => {
+      solcLocal = new SolcLocal(
+        (Piscina.workerData as any).solcRepoPath,
+        (Piscina.workerData as any).solJsonRepoPath,
+      );
+      const compilationTarget =
+        chainFixture.defaultContractMetadataObject.settings.compilationTarget;
+      compilationTargetPath = Object.keys(compilationTarget)[0];
+      compilationTargetName = (compilationTarget as Record<string, string>)[
+        compilationTargetPath
+      ];
+      const solidityCompilation = new SolidityCompilation(
+        solcLocal,
+        chainFixture.defaultContractMetadataObject.compiler.version,
+        chainFixture.defaultContractJsonInput,
+        {
+          path: compilationTargetPath,
+          name: compilationTargetName,
+        },
+      );
+      await solidityCompilation.compile();
+      stdJsonInput = structuredClone(solidityCompilation.jsonInput);
+      stdJsonOutput = structuredClone(
+        solidityCompilation.compilerOutput as SolidityOutput,
+      );
+    });
+
+    it("should verify using a matching candidate", async () => {
+      const result = await verifySimilarity({
+        chainId: chainFixture.chainId,
+        address: chainFixture.defaultContractAddress,
+        runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        candidates: [createCandidate()],
+      });
+
+      assertVerificationExport(result);
+    });
+
+    it("should skip failing candidates and verify with a later match", async () => {
+      const failingOutput = structuredClone(stdJsonOutput);
+      const failingContract =
+        failingOutput.contracts[compilationTargetPath][compilationTargetName];
+      const runtimeObject = failingContract.evm.deployedBytecode
+        .object as string;
+      const flippedRuntimeObject =
+        runtimeObject.slice(0, -1) + (runtimeObject.endsWith("0") ? "1" : "0");
+      failingContract.evm.deployedBytecode.object = flippedRuntimeObject;
+
+      const result = await verifySimilarity({
+        chainId: chainFixture.chainId,
+        address: chainFixture.defaultContractAddress,
+        runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        candidates: [
+          createCandidate({ std_json_output: failingOutput }),
+          createCandidate(),
+        ],
+      });
+
+      assertVerificationExport(result);
+    });
+
+    it("should return no_similar_match_found when no candidates compile", async () => {
+      const result = await verifySimilarity({
+        chainId: chainFixture.chainId,
+        address: chainFixture.defaultContractAddress,
+        runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        candidates: [{} as SimilarityCandidate],
+      });
+
+      assertErrorResponse(result, "no_similar_match_found");
     });
   });
 });

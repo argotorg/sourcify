@@ -1,4 +1,4 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
 import {
   FILE_ENCODING,
   addRemoteFile,
@@ -8,11 +8,13 @@ import {
   saveFilesToSession,
   verifyContractsInSession,
 } from "../verification.common";
-import {
+import type {
   ISolidityCompiler,
   IVyperCompiler,
   PathBuffer,
   PathContent,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
   performFetch,
   SolidityMetadataContract,
 } from "@ethereum-sourcify/lib-sourcify";
@@ -24,8 +26,8 @@ import {
   decode as bytecodeDecode,
 } from "@ethereum-sourcify/bytecode-utils";
 import logger from "../../../../common/logger";
-import { Services } from "../../../services/services";
-import { ChainRepository } from "../../../../sourcify-chain-repository";
+import type { Services } from "../../../services/services";
+import type { ChainRepository } from "../../../../sourcify-chain-repository";
 
 export async function getSessionDataEndpoint(req: Request, res: Response) {
   res.send(getSessionJSON(req.session));

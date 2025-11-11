@@ -1,4 +1,4 @@
-import {
+import type {
   CompilerAuxdataDiff,
   CompiledContractCborAuxdata,
 } from './CompilationTypes';

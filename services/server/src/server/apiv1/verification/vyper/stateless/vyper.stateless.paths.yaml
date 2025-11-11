@@ -105,7 +105,7 @@ paths:
               examples:
                 Vyper Compiler Input Error:
                   value:
-                    error: 'Error initializing Vyper compiler input, please check files and settings'
+                    error: "Error initializing Vyper compiler input, please check files and settings"
                 Bad Formatted Json:
                   value:
                     error: "Unexpected token ' in JSON at position 107"

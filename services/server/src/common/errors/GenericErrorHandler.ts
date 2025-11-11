@@ -1,5 +1,5 @@
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import logger from "../logger";
 
 export default function genericErrorHandler(

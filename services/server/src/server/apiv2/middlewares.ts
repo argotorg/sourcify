@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { ChainRepository } from "../../sourcify-chain-repository";
+import type { Request, Response, NextFunction } from "express";
+import type { ChainRepository } from "../../sourcify-chain-repository";
 import logger from "../../common/logger";
 import {
   AlreadyVerifiedError,
@@ -11,7 +11,7 @@ import {
 import { getAddress } from "ethers";
 import { FIELDS_TO_STORED_PROPERTIES } from "../services/utils/database-util";
 import { reduceAccessorStringToProperty } from "../services/utils/util";
-import { Services } from "../services/services";
+import type { Services } from "../services/services";
 import type {
   Metadata,
   SolidityJsonInput,

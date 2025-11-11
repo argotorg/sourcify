@@ -1,8 +1,8 @@
 import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
-import { ChildProcess } from 'child_process';
-import { JsonRpcSigner } from 'ethers';
+import type { ChildProcess } from 'child_process';
+import type { JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
   assertCborTransformations,

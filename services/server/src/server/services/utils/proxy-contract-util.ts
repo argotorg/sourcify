@@ -1,5 +1,5 @@
 import { whatsabi } from "@shazow/whatsabi";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { AbiCoder } from "ethers";
 
 export type ProxyType =

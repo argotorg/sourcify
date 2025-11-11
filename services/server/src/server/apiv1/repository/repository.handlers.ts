@@ -1,6 +1,6 @@
-import { Response, Request, NextFunction } from "express";
+import type { Response, Request, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
-import {
+import type {
   ContractData,
   FilesInfo,
   V1MatchLevel,
@@ -10,13 +10,13 @@ import {
 } from "../../types";
 import { NotFoundError } from "../../../common/errors";
 import logger from "../../../common/logger";
-import { Services } from "../../services/services";
-import {
-  detectAndResolveProxy,
+import type { Services } from "../../services/services";
+import type {
   Implementation,
   ProxyDetectionResult,
 } from "../../services/utils/proxy-contract-util";
-import { ChainRepository } from "../../../sourcify-chain-repository";
+import { detectAndResolveProxy } from "../../services/utils/proxy-contract-util";
+import type { ChainRepository } from "../../../sourcify-chain-repository";
 import { getAddress } from "ethers";
 import path from "path";
 

@@ -3,13 +3,13 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
-import { SourcifyChain } from '../src';
+import { RpcFailure, SourcifyChain } from '../src';
 import { JsonRpcProvider } from 'ethers';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
 } from './hardhat-network-helper';
-import { ChildProcess } from 'child_process';
+import type { ChildProcess } from 'child_process';
 
 chai.use(chaiAsPromised);
 chai.use(sinonChai);
@@ -330,7 +330,7 @@ describe('SourcifyChain', () => {
       const mockProvider2 = sourcifyChain.rpcs[1].provider!;
       const getBlockNumberStub1 = sandbox
         .stub(mockProvider1, 'getBlockNumber')
-        .rejects(new Error('RPC 1 failed'));
+        .rejects(new RpcFailure('RPC 1 failed'));
       const getBlockNumberStub2 = sandbox
         .stub(mockProvider2, 'getBlockNumber')
         .resolves(100);
@@ -365,7 +365,7 @@ describe('SourcifyChain', () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox
         .stub(mockProvider, 'getBlockNumber')
-        .rejects(new Error('RPC failed'));
+        .rejects(new RpcFailure('RPC failed'));
       try {
         await sourcifyChain.getBlockNumber();
       } catch (e) {
@@ -395,7 +395,7 @@ describe('SourcifyChain', () => {
       const mockProvider2 = sourcifyChain.rpcs[1].provider!;
       sandbox
         .stub(mockProvider1, 'getBlockNumber')
-        .rejects(new Error('RPC 1 failed'));
+        .rejects(new RpcFailure('RPC 1 failed'));
       sandbox.stub(mockProvider2, 'getBlockNumber').resolves(100);
 
       const startTime = Date.now();
@@ -420,7 +420,7 @@ describe('SourcifyChain', () => {
 
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
-      getBlockNumberStub.onFirstCall().rejects(new Error('RPC failed'));
+      getBlockNumberStub.onFirstCall().rejects(new RpcFailure('RPC failed'));
       try {
         await sourcifyChain.getBlockNumber();
       } catch (e) {
@@ -450,7 +450,7 @@ describe('SourcifyChain', () => {
 
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       const getBlockNumberStub = sandbox.stub(mockProvider, 'getBlockNumber');
-      getBlockNumberStub.rejects(new Error('RPC failed'));
+      getBlockNumberStub.rejects(new RpcFailure('RPC failed'));
       try {
         await sourcifyChain.getBlockNumber();
       } catch (e) {

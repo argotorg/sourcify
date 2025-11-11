@@ -69,9 +69,9 @@ paths:
                             type: string
               examples:
                 multiple results:
-                  value: 
+                  value:
                     - address: "0x6F1D75a53a8805DcA5347aE5F3eDE035CAE3CBC1"
-                      chainIds: 
+                      chainIds:
                         - chainId: "5"
                           status: "perfect"
                           isProxy: false
@@ -88,17 +88,29 @@ paths:
                           proxyType: null
                           implementations: []
                     - address: "0x751D7C0Cf91a9b7704541b44E5fF7BeC3D2caA6F"
-                      chainIds: 
+                      chainIds:
                         - chainId: "5"
                           status: "partial"
                           isProxy: true
                           proxyType: "EIP1967Proxy"
-                          implementations: [{address: "0x787ec93dd71a90563979417879f5a3298389227f", name: "LogicContract"}]
+                          implementations:
+                            [
+                              {
+                                address: "0x787ec93dd71a90563979417879f5a3298389227f",
+                                name: "LogicContract",
+                              },
+                            ]
                         - chainId: "10"
                           status: "perfect"
                           isProxy: true
                           proxyType: "EIP1967Proxy"
-                          implementations: [{address: "0x787ec93dd71a90563979417879f5a3298389227f", name: "LogicContract"}]
+                          implementations:
+                            [
+                              {
+                                address: "0x787ec93dd71a90563979417879f5a3298389227f",
+                                name: "LogicContract",
+                              },
+                            ]
                     - address: "0x8D2548A5f641b00Cf0f5B693d4A72D8c0aE24d31"
                       chainIds:
                         - chainId: "5"
@@ -109,21 +121,21 @@ paths:
                     - address: "0x1f9cA631AE0C4890F99b38634C969b7E4f8719F0"
                       status: "false"
                 single result:
-                  value: 
+                  value:
                     - address: "0xEb30853fc616Bbb8f1444451A3c202cbcd08Fb47"
-                      chainIds: 
+                      chainIds:
                         - chainId: "43114"
                           status: "perfect"
                 not found:
-                  value: 
+                  value:
                     - address: "0x1f9cA631AE0C4890F99b38634C969b7E4f8719F0"
                       status: "false"
                     - address: "0x8D2548A5f641b00Cf0f5B693d4A72D8c0aE24d31"
                       status: "false"
                 proxy resolution error:
-                  value: 
+                  value:
                     - address: "0xEb30853fc616Bbb8f1444451A3c202cbcd08Fb47"
-                      chainIds: 
+                      chainIds:
                         - chainId: "43114"
                           status: "perfect"
                           proxyResolutionError: "Proxy resolution failed"

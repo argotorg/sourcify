@@ -1,4 +1,4 @@
-import http from "http";
+import type http from "http";
 import logger from "./logger";
 import { SignatureDatabase } from "./SignatureDatabase";
 import express from "express";

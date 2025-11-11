@@ -1,6 +1,6 @@
 import session from "express-session";
 import logger from "../common/logger";
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 export default function getSessionMiddleware(
   sessionOptions: session.SessionOptions,

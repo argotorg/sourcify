@@ -80,10 +80,15 @@
   "167000": {
     "sourcifyName": "Taiko Aleshia",
     "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_TAIKO"
+    },
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://blockscout.mainnet.taiko.xyz"
-      }
+      },
+      "etherscanApi": true
     }
   },
   "81457": {
@@ -113,34 +118,7 @@
   },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY"
-    },
-    "fetchContractCreationTxUsing": {
-      "blockscoutApi": {
-        "url": "https://eth-holesky.blockscout.com/"
-      },
-      "etherscanApi": true,
-      "routescanApi": {
-        "type": "testnet"
-      }
-    },
-    "rpc": [
-      {
-        "type": "APIKeyRPC",
-        "url": "https://eth-holesky.g.alchemy.com/v2/{API_KEY}",
-        "apiKeyEnvName": "ALCHEMY_API_KEY"
-      },
-      {
-        "type": "APIKeyRPC",
-        "url": "https://{SUBDOMAIN}.ethereum-holesky.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
-      }
-    ]
+    "supported": false
   },
   "5": {
     "sourcifyName": "Ethereum Goerli Testnet",
@@ -365,6 +343,10 @@
   },
   "295": {
     "sourcifyName": "Hedera Mainnet",
+    "supported": true
+  },
+  "296": {
+    "sourcifyName": "Hedera Testnet",
     "supported": true
   },
   "300": {
@@ -1276,17 +1258,7 @@
   },
   "2522": {
     "sourcifyName": "Fraxtal Testnet",
-    "supported": true,
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_FRAXTAL"
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true,
-      "routescanApi": {
-        "type": "testnet"
-      }
-    }
+    "supported": false
   },
   "888": {
     "sourcifyName": "Wanchain Mainnet",
@@ -2165,6 +2137,10 @@
     "sourcifyName": "OORT Mainnet",
     "supported": true
   },
+  "9700": {
+    "sourcifyName": "OORT Testnet",
+    "supported": true
+  },
   "223": {
     "sourcifyName": "B2 Mainnet",
     "supported": true,
@@ -2386,5 +2362,26 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       }
     ]
+  },
+  "146": {
+    "sourcifyName": "Sonic Mainnet",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_SONIC"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    }
+  },
+  "1597": {
+    "sourcifyName": "Reactive Network Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": false,
+      "blockscoutApi": {
+        "url": "https://mainnet-api.reactscan.net"
+      }
+    }
   }
 }

@@ -18,9 +18,10 @@ import genFunc from "connect-pg-simple";
 // local imports
 import logger from "../common/logger";
 import { sourcifyChainsMap } from "../sourcify-chains";
-import { LibSourcifyConfig, Server } from "./server";
+import type { LibSourcifyConfig } from "./server";
+import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
-import session from "express-session";
+import type session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
 export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
@@ -101,6 +102,8 @@ const server = new Server(
     sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
     logLevel,
     libSourcifyConfig,
+    sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
+    sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
   },
   {
     initCompilers: config.get("initCompilers") || false,
@@ -145,6 +148,14 @@ const server = new Server(
         user: process.env.SOURCIFY_POSTGRES_USER as string,
         password: process.env.SOURCIFY_POSTGRES_PASSWORD as string,
         port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+        ssl:
+          process.env.SOURCIFY_POSTGRES_SSL === "true"
+            ? {
+                rejectUnauthorized:
+                  process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED ===
+                  "true",
+              }
+            : undefined,
       },
       schema: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
       maxConnections: process.env.SOURCIFY_POSTGRES_MAX_CONNECTIONS
@@ -227,6 +238,13 @@ function initDatabaseStore() {
     user: process.env.SOURCIFY_POSTGRES_USER,
     password: process.env.SOURCIFY_POSTGRES_PASSWORD,
     port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
+    ssl:
+      process.env.SOURCIFY_POSTGRES_SSL === "true"
+        ? {
+            rejectUnauthorized:
+              process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
+          }
+        : undefined,
   });
 
   // This listener is necessary otherwise the sourcify process crashes if the database is closed

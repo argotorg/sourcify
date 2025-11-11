@@ -1,15 +1,28 @@
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import { TransactionReceipt, TransactionResponse } from "ethers";
-import {
-  bytesFromString,
-  GetSourcifyMatchByChainAddressWithPropertiesResult,
-} from "./database-util";
-import { Database } from "./Database";
+import type { TransactionReceipt, TransactionResponse } from "ethers";
+import type { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./database-util";
+import { bytesFromString } from "./database-util";
+import type { Database } from "./Database";
 import logger from "../../../common/logger";
+
+export type SourcifyChainMockContractDeployment = Required<
+  Pick<
+    GetSourcifyMatchByChainAddressWithPropertiesResult,
+    "onchain_runtime_code"
+  >
+> &
+  Pick<
+    GetSourcifyMatchByChainAddressWithPropertiesResult,
+    | "block_number"
+    | "deployer"
+    | "transaction_index"
+    | "onchain_creation_code"
+    | "transaction_hash"
+  >;
 
 export default class SourcifyChainMock extends SourcifyChain {
   constructor(
-    public contractDeployment: GetSourcifyMatchByChainAddressWithPropertiesResult,
+    public contractDeployment: SourcifyChainMockContractDeployment,
     public readonly chainId: number,
     private readonly address: string,
   ) {
@@ -52,8 +65,23 @@ export default class SourcifyChainMock extends SourcifyChain {
     if (contractDeployment.rows.length === 0) {
       throw new Error("Contract not found");
     }
+
+    const contractDeploymentRow = contractDeployment.rows[0];
+    if (!contractDeploymentRow.onchain_runtime_code) {
+      throw new Error(
+        "Incomplete contract deployment data for SourcifyChainMock",
+      );
+    }
+
     const sourcifyChainMock = new SourcifyChainMock(
-      contractDeployment.rows[0],
+      {
+        onchain_runtime_code: contractDeploymentRow.onchain_runtime_code,
+        block_number: contractDeploymentRow.block_number,
+        deployer: contractDeploymentRow.deployer,
+        onchain_creation_code: contractDeploymentRow.onchain_creation_code,
+        transaction_index: contractDeploymentRow.transaction_index,
+        transaction_hash: contractDeploymentRow.transaction_hash,
+      },
       chainId,
       address,
     );

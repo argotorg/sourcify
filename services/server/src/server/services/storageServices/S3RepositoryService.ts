@@ -1,5 +1,5 @@
 import { RepositoryV2Service } from "./RepositoryV2Service";
-import { WStorageService } from "../StorageService";
+import type { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import logger from "../../../common/logger";
 import {
@@ -8,7 +8,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { PathConfig } from "../../types";
+import type { PathConfig } from "../../types";
 import Path from "path";
 
 export interface S3RepositoryServiceOptions {

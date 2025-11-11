@@ -1,4 +1,4 @@
-import { PathContent, VariedPathContent } from './ValidationTypes';
+import type { PathContent, VariedPathContent } from './ValidationTypes';
 import { id as keccak256str } from 'ethers';
 
 export const CONTENT_VARIATORS = [

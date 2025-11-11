@@ -1,13 +1,14 @@
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import {
+import type {
   ImmutableReferences,
   LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
-import {
+import type {
   CompiledContractCborAuxdata,
   StringMap,
 } from '../Compilation/CompilationTypes';
-import { AbiCoder, id as keccak256Str, Interface, InterfaceAbi } from 'ethers';
+import type { InterfaceAbi } from 'ethers';
+import { AbiCoder, id as keccak256Str, Interface } from 'ethers';
 import { logError } from '../logger';
 
 const abiCoder = AbiCoder.defaultAbiCoder();

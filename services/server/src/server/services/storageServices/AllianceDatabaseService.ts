@@ -1,7 +1,7 @@
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
-import { WStorageService } from "../StorageService";
-import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import type { WStorageService } from "../StorageService";
+import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import { WStorageIdentifiers } from "./identifiers";
 
 export class AllianceDatabaseService

@@ -1,7 +1,7 @@
-import { Pool, PoolClient, QueryResult } from "pg";
-import { Bytes, BytesKeccak } from "../../types";
-import {
-  bytesFromString,
+import type { PoolClient, QueryResult } from "pg";
+import { Pool } from "pg";
+import type { Bytes, BytesKeccak } from "../../types";
+import type {
   GetSourcifyMatchByChainAddressResult,
   GetSourcifyMatchByChainAddressWithPropertiesResult,
   GetSourcifyMatchesByChainResult,
@@ -9,16 +9,20 @@ import {
   GetVerifiedContractByChainAndAddressResult,
   GetVerificationJobsByChainAndAddressResult,
   SourceInformation,
-  STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
   Tables,
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
+  CodePrefixMatchResult,
+} from "./database-util";
+import {
+  bytesFromString,
+  STORED_PROPERTIES_TO_SELECTORS,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
+import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {
@@ -33,6 +37,9 @@ export interface DatabaseOptions {
     database: string;
     user: string;
     password: string;
+    ssl?: {
+      rejectUnauthorized: boolean;
+    };
   };
   schema?: string;
   maxConnections?: number;
@@ -50,6 +57,9 @@ export class Database {
   private postgresDatabase?: string;
   private postgresUser?: string;
   private postgresPassword?: string;
+  private postgresSsl?: {
+    rejectUnauthorized: boolean;
+  };
   private maxConnections?: number;
   constructor(options: DatabaseOptions) {
     this.googleCloudSqlInstanceName = options.googleCloudSql?.instanceName;
@@ -61,6 +71,7 @@ export class Database {
     this.postgresDatabase = options.postgres?.database;
     this.postgresUser = options.postgres?.user;
     this.postgresPassword = options.postgres?.password;
+    this.postgresSsl = options.postgres?.ssl;
     if (options.schema) {
       this.schema = options.schema;
     }
@@ -105,6 +116,7 @@ export class Database {
         user: this.postgresUser,
         password: this.postgresPassword,
         max: this.maxConnections || 15,
+        ssl: this.postgresSsl,
       });
     } else {
       throw new Error("Alliance Database is disabled");
@@ -239,6 +251,28 @@ ${
         ${groupByClause}
         `,
       [chain, address],
+    );
+  }
+
+  async getVerifiedContractsByRuntimeCodePrefix(
+    runtimeBytecode: Buffer,
+    limit: number = 20,
+  ): Promise<QueryResult<CodePrefixMatchResult>> {
+    return await this.pool.query(
+      `
+        SELECT
+          compiled_contracts.id as compilation_id,
+          contract_deployments.chain_id,
+          concat('0x', encode(contract_deployments.address, 'hex')) as address
+        FROM ${this.schema}.code code
+        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
+        JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
+        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+        JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
+        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        LIMIT $2
+      `,
+      [runtimeBytecode, limit],
     );
   }
 
@@ -492,7 +526,10 @@ ${
     { bytecode_hash_keccak, bytecode }: Omit<Tables.Code, "bytecode_hash">,
   ): Promise<QueryResult<Pick<Tables.Code, "bytecode_hash">>> {
     let codeInsertResult = await poolClient.query(
-      `INSERT INTO ${this.schema}.code (code_hash, code, code_hash_keccak) VALUES (digest($1::bytea, 'sha256'), $1::bytea, $2) ON CONFLICT (code_hash) DO NOTHING RETURNING code_hash as bytecode_hash`,
+      `INSERT INTO ${this.schema}.code (code_hash, code, code_hash_keccak)
+      VALUES (digest($1::bytea, 'sha256'), $1::bytea, $2)
+      ON CONFLICT ON CONSTRAINT code_pkey DO NOTHING
+      RETURNING code_hash as bytecode_hash`,
       [bytecode, bytecode_hash_keccak],
     );
 
@@ -517,7 +554,10 @@ ${
     }: Omit<Tables.Contract, "id">,
   ): Promise<QueryResult<Pick<Tables.Contract, "id">>> {
     let contractInsertResult = await poolClient.query(
-      `INSERT INTO ${this.schema}.contracts (creation_code_hash, runtime_code_hash) VALUES ($1, $2) ON CONFLICT (creation_code_hash, runtime_code_hash) DO NOTHING RETURNING *`,
+      `INSERT INTO ${this.schema}.contracts (creation_code_hash, runtime_code_hash)
+      VALUES ($1, $2)
+      ON CONFLICT ON CONSTRAINT contracts_pseudo_pkey DO NOTHING
+      RETURNING *`,
       [creation_bytecode_hash, runtime_bytecode_hash],
     );
 
@@ -557,7 +597,10 @@ ${
         block_number,
         transaction_index,
         deployer
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT ON CONSTRAINT contract_deployments_pseudo_pkey DO NOTHING RETURNING *`,
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT ON CONSTRAINT contract_deployments_pseudo_pkey DO NOTHING
+      RETURNING *`,
       [
         chain_id,
         address,
@@ -617,7 +660,10 @@ ${
         runtime_code_hash,
         creation_code_artifacts,
         runtime_code_artifacts
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (compiler, language, creation_code_hash, runtime_code_hash) DO NOTHING RETURNING *
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT ON CONSTRAINT compiled_contracts_pseudo_pkey
+      DO NOTHING RETURNING *
     `,
       [
         compiler,
@@ -674,11 +720,14 @@ ${
       sourceCodesQueryValues.push(sourceCode.content);
       sourceCodesQueryValues.push(sourceCode.source_hash_keccak);
     });
-    const sourceCodesQuery = `INSERT INTO ${this.schema}.sources (
-    source_hash,
-    content,
-    source_hash_keccak
-  ) VALUES ${sourceCodesQueryIndexes.join(",")} ON CONFLICT (source_hash) DO NOTHING RETURNING *`;
+    const sourceCodesQuery = `
+      INSERT INTO ${this.schema}.sources (
+        source_hash,
+        content,
+        source_hash_keccak
+      ) VALUES ${sourceCodesQueryIndexes.join(",")}
+      ON CONFLICT ON CONSTRAINT sources_pkey 
+      DO NOTHING RETURNING *`;
     const sourceCodesQueryResult = await poolClient.query(
       sourceCodesQuery,
       sourceCodesQueryValues,
@@ -740,11 +789,14 @@ ${
       },
     );
 
-    const compiledContractsSourcesQuery = `INSERT INTO compiled_contracts_sources (
-    compilation_id,
-    source_hash,
-    path
-  ) VALUES ${compiledContractsSourcesQueryIndexes.join(",")} ON CONFLICT (compilation_id, path) DO NOTHING`;
+    const compiledContractsSourcesQuery = `
+      INSERT INTO compiled_contracts_sources (
+        compilation_id,
+        source_hash,
+        path
+      )
+      VALUES ${compiledContractsSourcesQueryIndexes.join(",")}
+      ON CONFLICT ON CONSTRAINT compiled_contracts_sources_pseudo_pkey DO NOTHING`;
     await poolClient.query(
       compiledContractsSourcesQuery,
       compiledContractsSourcesQueryValues,
@@ -772,9 +824,9 @@ ${
     });
 
     await (poolClient || this.pool).query(
-      `INSERT INTO ${this.schema}.signatures (signature_hash_32, signature) 
-       VALUES ${valueIndexes.join(", ")} 
-       ON CONFLICT (signature_hash_32) DO NOTHING`,
+      `INSERT INTO ${this.schema}.signatures (signature_hash_32, signature)
+       VALUES ${valueIndexes.join(", ")}
+       ON CONFLICT ON CONSTRAINT signatures_pkey DO NOTHING`,
       queryValues,
     );
   }
@@ -806,9 +858,9 @@ ${
     });
 
     await (poolClient || this.pool).query(
-      `INSERT INTO ${this.schema}.compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) 
-       VALUES ${valueIndexes.join(", ")} 
-       ON CONFLICT (compilation_id, signature_hash_32, signature_type) DO NOTHING`,
+      `INSERT INTO ${this.schema}.compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type)
+       VALUES ${valueIndexes.join(", ")}
+       ON CONFLICT ON CONSTRAINT compiled_contracts_signatures_pseudo_pkey DO NOTHING`,
       queryValues,
     );
   }

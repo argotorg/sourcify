@@ -1,5 +1,5 @@
-import { SolidityDecodedObject } from "@ethereum-sourcify/bytecode-utils";
-import { DecentralizedStorageOrigin } from "./types";
+import type { SolidityDecodedObject } from "@ethereum-sourcify/bytecode-utils";
+import type { DecentralizedStorageOrigin } from "./types";
 
 export type FetchedFileCallback = (fetchedFile: string) => any;
 

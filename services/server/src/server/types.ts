@@ -1,4 +1,4 @@
-import {
+import type {
   CompiledContractCborAuxdata,
   Devdoc,
   ImmutableReferences,
@@ -17,11 +17,15 @@ import {
   VyperOutputSource,
   SolidityOutputSource,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Response } from "express";
-import { JsonFragment } from "ethers";
-import { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
-import { GenericErrorResponse, MatchingErrorResponse } from "./apiv2/errors";
-import { SignatureType } from "./services/utils/signature-util";
+import type { Response } from "express";
+import type { JsonFragment } from "ethers";
+import type { ProxyDetectionResult } from "./services/utils/proxy-contract-util";
+import type {
+  GenericErrorResponse,
+  MatchingErrorResponse,
+} from "./apiv2/errors";
+import type { SignatureType } from "./services/utils/signature-util";
+import type { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./services/utils/database-util";
 
 // Types used internally by the server.
 
@@ -244,3 +248,16 @@ export interface Match {
   contractName?: string;
   message?: string;
 }
+
+export type SimilarityCandidate = Required<
+  Pick<
+    GetSourcifyMatchByChainAddressWithPropertiesResult,
+    | "std_json_input"
+    | "std_json_output"
+    | "version"
+    | "fully_qualified_name"
+    | "creation_cbor_auxdata"
+    | "runtime_cbor_auxdata"
+    | "metadata"
+  >
+>;
