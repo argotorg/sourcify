@@ -57,7 +57,7 @@ import { getVerificationErrorMessage } from "../../apiv2/errors";
 import type { VerifyErrorExport } from "../workers/workerTypes";
 import type { PoolClient } from "pg";
 import {
-  buildExternalVerificationLinks,
+  buildExternalVerifications,
   type GetExternalVerificationApiUrl,
 } from "./EtherscanVerifyApiService";
 
@@ -800,7 +800,7 @@ export class SourcifyDatabaseService
       jobStartTime: row.started_at,
       jobFinishTime: row.completed_at || undefined,
       compilationTime: row.compilation_time || undefined,
-      externalVerificationLinks: buildExternalVerificationLinks(
+      externalVerifications: buildExternalVerifications(
         row.external_verification,
         row.chain_id,
         verificationId,

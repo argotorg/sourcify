@@ -190,7 +190,7 @@ describe("GET /v2/verify/:verificationId", function () {
         ...(matchId ? { matchId } : {}),
       },
       ...(error ? { error } : {}),
-      externalVerificationLinks: apiExternalVerification,
+      externalVerifications: apiExternalVerification,
     };
   }
 

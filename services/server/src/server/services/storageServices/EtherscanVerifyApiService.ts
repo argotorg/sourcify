@@ -9,7 +9,7 @@ import { WStorageIdentifiers } from "./identifiers";
 import type { Database } from "../utils/Database";
 import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
 import type { ExternalVerification, Tables } from "../utils/database-util";
-import type { ExternalVerificationLinks } from "../../types";
+import type { ExternalVerifications } from "../../types";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -289,12 +289,12 @@ export type GetExternalVerificationApiUrl = (
   includeApiKey?: boolean,
 ) => string | undefined;
 
-export const buildExternalVerificationLinks = (
+export const buildExternalVerifications = (
   externalVerification: Tables.VerificationJob["external_verification"],
   chainId: string,
   verificationJobId: string,
   getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
-): ExternalVerificationLinks => {
+): ExternalVerifications => {
   if (getExternalVerificationApiUrl === undefined) {
     return {};
   }
@@ -327,20 +327,20 @@ export const buildExternalVerificationLinks = (
       url = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
     }
 
-    const externalVerificationLinks = {
+    const externalVerifications = {
       url,
       error: verifierData.error,
     };
 
     switch (verifier) {
       case WStorageIdentifiers.EtherscanVerify:
-        links.etherscan = externalVerificationLinks;
+        links.etherscan = externalVerifications;
         break;
       case WStorageIdentifiers.BlockscoutVerify:
-        links.blockscout = externalVerificationLinks;
+        links.blockscout = externalVerifications;
         break;
       case WStorageIdentifiers.RoutescanVerify:
-        links.routescan = externalVerificationLinks;
+        links.routescan = externalVerifications;
         break;
       default:
         logger.warn("Unknown external verifier found", {
@@ -350,7 +350,7 @@ export const buildExternalVerificationLinks = (
         break;
     }
     return links;
-  }, {} as ExternalVerificationLinks);
+  }, {} as ExternalVerifications);
 };
 
 export interface EtherscanVerifyApiServiceOptions {

@@ -129,7 +129,7 @@ export interface ExternalVerificationData {
   error?: string;
 }
 
-export interface ExternalVerificationLinks {
+export interface ExternalVerifications {
   etherscan?: ExternalVerificationData;
   blockscout?: ExternalVerificationData;
   routescan?: ExternalVerificationData;
@@ -143,7 +143,7 @@ export interface VerificationJob {
   compilationTime?: string;
   error?: MatchingErrorResponse;
   contract: VerifiedContractMinimal;
-  externalVerificationLinks?: ExternalVerificationLinks;
+  externalVerifications?: ExternalVerifications;
 }
 
 /**

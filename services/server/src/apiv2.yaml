@@ -536,7 +536,7 @@ components:
                     type: string
                     description: Time it took to compile the contract on the server in milliseconds.
                     example: "1333"
-                  externalVerificationLinks:
+                  externalVerifications:
                     type: object
                     description: Links to the external verification pages on Etherscan-like services.
                     properties:
