@@ -1,13 +1,19 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { ServerFixture } from "../../helpers/ServerFixture";
-import type { VerificationJob } from "../../../src/server/types";
+import type {
+  ApiExternalVerifications,
+  VerificationJob,
+} from "../../../src/server/types";
 import { v4 as uuidv4 } from "uuid";
 import { LocalChainFixture } from "../../helpers/LocalChainFixture";
 import type { MatchingErrorResponse } from "../../../src/server/apiv2/errors";
 import { getVerificationErrorMessage } from "../../../src/server/apiv2/errors";
 import { verifyContract } from "../../helpers/helpers";
-import type { JobErrorData } from "../../../src/server/services/utils/database-util";
+import type {
+  JobErrorData,
+  Tables,
+} from "../../../src/server/services/utils/database-util";
 import {
   RWStorageIdentifiers,
   WStorageIdentifiers,
@@ -29,7 +35,7 @@ describe("GET /v2/verify/:verificationId", function () {
     isVerified: boolean = false,
     hasError: boolean = false,
     hasExternalVerification: boolean = false,
-  ): Promise<VerificationJob> {
+  ): Promise<VerificationJob<"api">> {
     if (isVerified && hasError) {
       throw new Error(
         "Malformed test: isVerified and hasError cannot both be true",
@@ -100,20 +106,32 @@ describe("GET /v2/verify/:verificationId", function () {
       };
     }
 
-    let databaseExternalVerification = null;
-    let apiExternalVerification = {};
+    // We are creating three cases:
+    // 1. Etherscan: enabled verification service, successful verification id
+    // 2. Blockscout: disabled verification service, successful verification id
+    // 3. Routescan: enabled verification service, un-successful verification id
+    let databaseExternalVerification: Tables.VerificationJob["external_verification"] =
+      null;
+    let apiExternalVerifications: ApiExternalVerifications | undefined;
     if (hasExternalVerification) {
       databaseExternalVerification = {
         EtherscanVerify: {
+          verificationId: "some-external-id",
+        },
+        BlockscoutVerify: {
           verificationId: "some-external-id",
         },
         RoutescanVerify: {
           error: "some error",
         },
       };
-      apiExternalVerification = {
+      apiExternalVerifications = {
         etherscan: {
+          verificationId: "some-external-id",
           url: "https://api.etherscan.io/api?module=contract&action=checkverifystatus&chainid=31337&guid=some-external-id",
+        },
+        blockscout: {
+          verificationId: "some-external-id",
         },
         routescan: {
           error: "some error",
@@ -190,7 +208,9 @@ describe("GET /v2/verify/:verificationId", function () {
         ...(matchId ? { matchId } : {}),
       },
       ...(error ? { error } : {}),
-      externalVerifications: apiExternalVerification,
+      ...(apiExternalVerifications
+        ? { externalVerifications: apiExternalVerifications }
+        : undefined),
     };
   }
 

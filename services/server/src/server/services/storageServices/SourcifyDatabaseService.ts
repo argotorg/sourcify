@@ -56,10 +56,6 @@ import type { VerificationErrorCode } from "../../apiv2/errors";
 import { getVerificationErrorMessage } from "../../apiv2/errors";
 import type { VerifyErrorExport } from "../workers/workerTypes";
 import type { PoolClient } from "pg";
-import {
-  buildExternalVerifications,
-  type GetExternalVerificationApiUrl,
-} from "./EtherscanVerifyApiService";
 
 const MAX_RETURNED_CONTRACTS_BY_GETCONTRACTS = 200;
 
@@ -771,8 +767,7 @@ export class SourcifyDatabaseService
 
   getVerificationJob = async (
     verificationId: string,
-    getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
-  ): Promise<VerificationJob | null> => {
+  ): Promise<VerificationJob<"raw"> | null> => {
     const result = await this.database.getVerificationJobById(verificationId);
 
     if (result.rowCount === 0) {
@@ -794,18 +789,13 @@ export class SourcifyDatabaseService
       : null;
 
     const address = getAddress(row.contract_address);
-    const job: VerificationJob = {
+    const job: VerificationJob<"raw"> = {
       isJobCompleted: !!row.completed_at,
       verificationId,
       jobStartTime: row.started_at,
       jobFinishTime: row.completed_at || undefined,
       compilationTime: row.compilation_time || undefined,
-      externalVerifications: buildExternalVerifications(
-        row.external_verification,
-        row.chain_id,
-        verificationId,
-        getExternalVerificationApiUrl,
-      ),
+      externalVerifications: row.external_verification,
       contract: {
         match: getTotalMatchLevel(creationMatch, runtimeMatch),
         creationMatch: toMatchLevel(creationMatch),

@@ -111,7 +111,7 @@ export interface RWStorageService extends WStorageService {
   getVerificationJob?(
     verificationId: string,
     getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
-  ): Promise<VerificationJob | null>;
+  ): Promise<VerificationJob<"raw"> | null>;
   getVerificationJobsByChainAndAddress?(
     chainId: string,
     address: string,

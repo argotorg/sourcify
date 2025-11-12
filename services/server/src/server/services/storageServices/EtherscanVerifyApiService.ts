@@ -9,7 +9,10 @@ import { WStorageIdentifiers } from "./identifiers";
 import type { Database } from "../utils/Database";
 import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
 import type { ExternalVerification, Tables } from "../utils/database-util";
-import type { ExternalVerifications } from "../../types";
+import type {
+  ApiExternalVerification,
+  ApiExternalVerifications,
+} from "../../types";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -264,7 +267,7 @@ interface EtherscanRpcResponse {
 }
 
 // Helper function that returns the getApiUrl() function from the initialized StorageService
-export function createGetEtherscanVerifyApiServiceApiUrl(
+function createGetEtherscanVerifyApiServiceApiUrl(
   storageService: StorageService,
 ) {
   return (
@@ -283,57 +286,55 @@ export type GetExternalVerificationApiUrl = (
   chainId: number,
 ) => string | undefined;
 
-export const buildExternalVerifications = (
+export const buildJobExternalVerificationsObject = (
+  storageService: StorageService,
   externalVerification: Tables.VerificationJob["external_verification"],
   chainId: string,
   verificationJobId: string,
-  getExternalVerificationApiUrl?: GetExternalVerificationApiUrl,
-): ExternalVerifications => {
-  if (getExternalVerificationApiUrl === undefined) {
-    return {};
-  }
+): ApiExternalVerifications => {
+  const getExternalVerificationApiUrl =
+    createGetEtherscanVerifyApiServiceApiUrl(storageService);
   if (!externalVerification) {
     return {};
   }
-  return Object.keys(externalVerification).reduce((links, verifier) => {
+  return Object.keys(externalVerification).reduce((verifiersData, verifier) => {
     const verifierData =
       externalVerification[verifier as EtherscanVerifyApiIdentifiers];
     if (!verifierData) {
-      return links;
+      return verifiersData;
     }
 
     let url;
     if (verifierData.verificationId) {
-      let apiBaseUrl;
       try {
-        apiBaseUrl = getExternalVerificationApiUrl(
+        const apiBaseUrl = getExternalVerificationApiUrl(
           verifier as EtherscanVerifyApiIdentifiers,
           "checkverifystatus",
           parseInt(chainId),
         );
+        if (apiBaseUrl) {
+          url = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
+        }
       } catch (error) {
-        return links;
+        // Cannot generate url
       }
-      if (!apiBaseUrl) {
-        return links;
-      }
-      url = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
     }
 
-    const externalVerifications = {
-      url,
+    const externalVerifications: ApiExternalVerification = {
+      verificationId: verifierData.verificationId,
       error: verifierData.error,
+      url,
     };
 
     switch (verifier) {
       case WStorageIdentifiers.EtherscanVerify:
-        links.etherscan = externalVerifications;
+        verifiersData.etherscan = externalVerifications;
         break;
       case WStorageIdentifiers.BlockscoutVerify:
-        links.blockscout = externalVerifications;
+        verifiersData.blockscout = externalVerifications;
         break;
       case WStorageIdentifiers.RoutescanVerify:
-        links.routescan = externalVerifications;
+        verifiersData.routescan = externalVerifications;
         break;
       default:
         logger.warn("Unknown external verifier found", {
@@ -342,8 +343,8 @@ export const buildExternalVerifications = (
         });
         break;
     }
-    return links;
-  }, {} as ExternalVerifications);
+    return verifiersData;
+  }, {} as ApiExternalVerifications);
 };
 
 export interface EtherscanVerifyApiServiceOptions {
