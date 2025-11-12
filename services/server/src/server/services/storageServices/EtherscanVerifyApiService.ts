@@ -271,22 +271,16 @@ export function createGetEtherscanVerifyApiServiceApiUrl(
     service: EtherscanVerifyApiIdentifiers,
     action: string,
     chainId: number,
-    includeApiKey = true,
   ) =>
     (
       storageService.wServices[service] as EtherscanVerifyApiService | undefined
-    )?.getApiUrl.bind(storageService.wServices[service])(
-      action,
-      chainId,
-      includeApiKey,
-    );
+    )?.getApiUrl.bind(storageService.wServices[service])(action, chainId);
 }
 
 export type GetExternalVerificationApiUrl = (
   service: EtherscanVerifyApiIdentifiers,
   action: string,
   chainId: number,
-  includeApiKey?: boolean,
 ) => string | undefined;
 
 export const buildExternalVerifications = (
@@ -316,7 +310,6 @@ export const buildExternalVerifications = (
           verifier as EtherscanVerifyApiIdentifiers,
           "checkverifystatus",
           parseInt(chainId),
-          false,
         );
       } catch (error) {
         return links;
@@ -716,16 +709,12 @@ export class EtherscanVerifyApiService implements WStorageService {
     return constructorArgs.replace(/^0x/i, "");
   }
 
-  public getApiUrl(
-    action: string,
-    chainId: number,
-    includeApiKey = true,
-  ): string | undefined {
+  public getApiUrl(action: string, chainId: number): string | undefined {
     const apiBaseUrl = this.getApiBaseUrl(chainId);
     if (!apiBaseUrl) {
       return undefined;
     }
-    return this.buildApiUrl(apiBaseUrl, action, chainId, includeApiKey);
+    return this.buildApiUrl(apiBaseUrl, action, chainId, false);
   }
 
   private buildApiUrl(
