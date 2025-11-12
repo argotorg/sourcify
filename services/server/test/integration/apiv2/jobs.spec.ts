@@ -128,7 +128,11 @@ describe("GET /v2/verify/:verificationId", function () {
       apiExternalVerifications = {
         etherscan: {
           verificationId: "some-external-id",
-          url: "https://api.etherscan.io/api?module=contract&action=checkverifystatus&chainid=31337&guid=some-external-id",
+          statusUrl:
+            "https://api.etherscan.io/api?module=contract&action=checkverifystatus&chainid=31337&guid=some-external-id",
+          explorerUrl:
+            "https://etherscan.io/address/" +
+            chainFixture.defaultContractAddress,
         },
         blockscout: {
           verificationId: "some-external-id",

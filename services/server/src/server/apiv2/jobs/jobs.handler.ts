@@ -38,6 +38,7 @@ export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
         services.storage,
         job.externalVerifications,
         job.contract.chainId,
+        job.contract.address,
         job.verificationId,
       )
     : undefined;

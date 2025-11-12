@@ -129,7 +129,8 @@ export type ProxyResolution = Partial<ProxyDetectionResult> & {
 export type VerificationJobId = string;
 
 export type ApiExternalVerification = ExternalVerification & {
-  url?: string;
+  statusUrl?: string;
+  explorerUrl?: string;
 };
 
 export interface ApiExternalVerifications {

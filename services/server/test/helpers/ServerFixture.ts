@@ -152,13 +152,20 @@ export class ServerFixture {
           },
           etherscanVerifyApiServiceOptions: {
             EtherscanVerify: {
-              chainApiUrls: {
-                31337: "https://api.etherscan.io/api",
+              chainInformation: {
+                apiUrls: {
+                  31337: "https://api.etherscan.io/api",
+                },
+                explorerUrls: {
+                  31337: "https://etherscan.io/address/${ADDRESS}",
+                },
               },
             },
             RoutescanVerify: {
-              chainApiUrls: {
-                31337: "https://api.etherscan.io/api",
+              chainInformation: {
+                apiUrls: {
+                  31337: "https://api.etherscan.io/api",
+                },
               },
             },
           },
