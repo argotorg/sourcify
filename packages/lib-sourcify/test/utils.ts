@@ -2,12 +2,13 @@
 import path from 'path';
 import { expect } from 'chai';
 import type { Signer } from 'ethers';
-import { ContractFactory, JsonRpcSigner } from 'ethers';
+import { ContractFactory, type JsonRpcSigner } from 'ethers';
 import {
   useSolidityCompiler,
   useVyperCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
+  Metadata,
   SolidityJsonInput,
   SolidityOutput,
   SolidityOutputContract,
@@ -22,8 +23,8 @@ import type {
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
-  PathContent,
-  SolidityCompilation,
+  type PathContent,
+  type SolidityCompilation,
   SolidityMetadataContract,
   VyperCompilation,
 } from '../src';
