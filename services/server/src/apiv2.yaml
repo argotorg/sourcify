@@ -537,18 +537,7 @@ components:
                     description: Time it took to compile the contract on the server in milliseconds.
                     example: "1333"
                   externalVerifications:
-                    type: object
-                    description: Links to the external verification pages on Etherscan-like services.
-                    properties:
-                      etherscan:
-                        type: string
-                        example: https://api.etherscan.io/v2/api?chainid=1&module=contract&action=checkverifystatus&guid=x3ryqcqr1zdknhfhkimqmizlcqpxncqc6nrvp3pgrcpfsqedqi'
-                      blockscout:
-                        type: string
-                        example: https://eth.blockscout.com/api?module=contract&action=checkverifystatus&guid=ezq878u486pzijkvvmerl6a9mzwhv6sefgvqi5tkwceejc7tvn
-                      routescan:
-                        type: string
-                        example: https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=contract&action=checkverifystatus&guid=ezq878u486pzijkvvmerl6a9mzwhv6sefgvqi5tkwceejc7tvn
+                    $ref: "#/components/schemas/ApiExternalVerifications"
                 required:
                   - isJobCompleted
                   - verificationId
@@ -1268,6 +1257,33 @@ components:
               $ref: "#/components/schemas/Keccak256"
             errorData:
               type: object
+    ApiExternalVerification:
+      type: object
+      description: Status metadata for the verification job mirrored on an external explorer API.
+      properties:
+        verificationId:
+          type: string
+          description: Identifier returned by the external verifier when the job was created.
+          example: "x3ryqcqr1zdknhfhkimqmizlcqpxncqc6nrvp3pgrcpfsqedqi"
+        error:
+          type: string
+          description: Error message returned by the external verifier. Present when the verification failed.
+          example: "NOTOK: Max rate limit reached"
+        url:
+          type: string
+          format: uri
+          description: Direct URL to query the verification status from the explorer API.
+          example: https://api.etherscan.io/v2/api?chainid=1&module=contract&action=checkverifystatus&guid=x3ryqcqr1zdknhfhkimqmizlcqpxncqc6nrvp3pgrcpfsqedqi
+    ApiExternalVerifications:
+      type: object
+      description: Links to external verification status endpoints on Etherscan-alike services.
+      properties:
+        etherscan:
+          $ref: "#/components/schemas/ApiExternalVerification"
+        blockscout:
+          $ref: "#/components/schemas/ApiExternalVerification"
+        routescan:
+          $ref: "#/components/schemas/ApiExternalVerification"
     BytecodeString:
       type: string
       title: BytecodeString
