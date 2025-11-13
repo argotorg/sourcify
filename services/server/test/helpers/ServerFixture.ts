@@ -161,6 +161,13 @@ export class ServerFixture {
                 },
               },
             },
+            BlockscoutVerify: {
+              chainInformation: {
+                explorerUrls: {
+                  31337: "https://eth.blockscout.io/address/${ADDRESS}",
+                },
+              },
+            },
             RoutescanVerify: {
               chainInformation: {
                 apiUrls: {

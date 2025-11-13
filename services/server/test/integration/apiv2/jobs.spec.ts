@@ -26,6 +26,7 @@ describe("GET /v2/verify/:verificationId", function () {
     writeOrWarn: [
       RWStorageIdentifiers.SourcifyDatabase,
       WStorageIdentifiers.EtherscanVerify,
+      WStorageIdentifiers.BlockscoutVerify,
       WStorageIdentifiers.RoutescanVerify,
     ],
   });
@@ -107,9 +108,9 @@ describe("GET /v2/verify/:verificationId", function () {
     }
 
     // We are creating three cases:
-    // 1. Etherscan: enabled verification service, successful verification id
-    // 2. Blockscout: disabled verification service, successful verification id
-    // 3. Routescan: enabled verification service, un-successful verification id
+    // 1. Etherscan: successful verification id
+    // 2. Blockscout: already verified
+    // 3. Routescan: un-successful verification id
     let databaseExternalVerification: Tables.VerificationJob["external_verification"] =
       null;
     let apiExternalVerifications: ApiExternalVerifications | undefined;
@@ -119,7 +120,7 @@ describe("GET /v2/verify/:verificationId", function () {
           verificationId: "some-external-id",
         },
         BlockscoutVerify: {
-          verificationId: "some-external-id",
+          verificationId: "BLOCKSCOUT_ALREADY_VERIFIED",
         },
         RoutescanVerify: {
           error: "some error",
@@ -135,7 +136,10 @@ describe("GET /v2/verify/:verificationId", function () {
             chainFixture.defaultContractAddress,
         },
         blockscout: {
-          verificationId: "some-external-id",
+          verificationId: "BLOCKSCOUT_ALREADY_VERIFIED",
+          explorerUrl:
+            "https://eth.blockscout.io/address/" +
+            chainFixture.defaultContractAddress,
         },
         routescan: {
           error: "some error",

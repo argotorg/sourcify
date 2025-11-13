@@ -23,6 +23,7 @@ const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT =
   "https://api.etherscan.io/v2/chainlist";
 const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
   "https://chains.blockscout.com/api/chains";
+const BLOCKSCOUT_ALREADY_VERIFIED = "BLOCKSCOUT_ALREADY_VERIFIED";
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
@@ -354,7 +355,11 @@ export const buildJobExternalVerificationsObject = (
     }
 
     let statusUrl;
-    if (verifierData.verificationId) {
+    if (
+      verifierData.verificationId &&
+      // We need to handle the special case for a blockscout already verified contract
+      verifierData.verificationId !== BLOCKSCOUT_ALREADY_VERIFIED
+    ) {
       try {
         const apiBaseUrl = getExternalVerificationApiUrl(
           verifier as EtherscanVerifyApiIdentifiers,
@@ -557,6 +562,18 @@ export class EtherscanVerifyApiService implements WStorageService {
 
     // If we don't have job data, we cannot store the result
     if (!jobData?.verificationId) {
+      return;
+    }
+
+    // Handle the "already verified" case for Blockscout by storing
+    // { verificationId: "BLOCKSCOUT_ALREADY_VERIFIED" }
+    if (
+      this.IDENTIFIER === WStorageIdentifiers.BlockscoutVerify &&
+      response.result === "Smart-contract already verified."
+    ) {
+      this.storeExternalVerificationResult(jobData, {
+        verificationId: BLOCKSCOUT_ALREADY_VERIFIED,
+      });
       return;
     }
 
