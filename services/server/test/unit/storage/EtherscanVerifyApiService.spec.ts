@@ -83,8 +83,10 @@ describe("EtherscanVerifyApiService", function () {
       identifier,
       sourcifyDatabaseServiceStub,
       {
-        chainApiUrls: {
-          [MockVerificationExport.chainId]: baseUrl,
+        chainInformation: {
+          apiUrls: {
+            [MockVerificationExport.chainId]: baseUrl,
+          },
         },
         ...options,
       },

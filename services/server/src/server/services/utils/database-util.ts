@@ -314,6 +314,7 @@ export type GetVerificationJobByIdResult = Pick<
   | "error_id"
   | "error_data"
   | "compilation_time"
+  | "external_verification"
 > & {
   started_at: string;
   completed_at: Nullable<string>;

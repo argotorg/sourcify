@@ -944,6 +944,7 @@ ${
       verification_jobs.error_id,
       verification_jobs.error_data,
       verification_jobs.compilation_time,
+      verification_jobs.external_verification,
       nullif(concat('0x',encode(verification_jobs_ephemeral.recompiled_creation_code, 'hex')), '0x') as recompiled_creation_code,
       nullif(concat('0x',encode(verification_jobs_ephemeral.recompiled_runtime_code, 'hex')), '0x') as recompiled_runtime_code,
       nullif(concat('0x',encode(verification_jobs_ephemeral.onchain_creation_code, 'hex')), '0x') as onchain_creation_code,

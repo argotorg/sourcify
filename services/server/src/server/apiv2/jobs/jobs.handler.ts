@@ -4,6 +4,7 @@ import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { TypedResponse, VerificationJob } from "../../types";
 import { JobNotFoundError } from "../errors";
+import { buildJobExternalVerificationsObject } from "../../services/storageServices/EtherscanVerifyApiService";
 
 interface GetJobRequest extends Request {
   params: {
@@ -11,7 +12,7 @@ interface GetJobRequest extends Request {
   };
 }
 
-type GetJobResponse = TypedResponse<VerificationJob>;
+type GetJobResponse = TypedResponse<VerificationJob<"api">>;
 
 export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
   logger.debug("getJobEndpoint", {
@@ -30,5 +31,22 @@ export async function getJobEndpoint(req: GetJobRequest, res: GetJobResponse) {
     );
   }
 
-  res.status(StatusCodes.OK).json(job);
+  // If the job contains external verifications and the EtherscanVerify services are enabled,
+  // add to the response the urls to get the verification status on external verifiers
+  const externalVerifications = job.externalVerifications
+    ? buildJobExternalVerificationsObject(
+        services.storage,
+        job.externalVerifications,
+        job.contract.chainId,
+        job.contract.address,
+        job.verificationId,
+      )
+    : undefined;
+
+  const transformedJob: VerificationJob<"api"> = {
+    ...job,
+    externalVerifications,
+  };
+
+  res.status(StatusCodes.OK).json(transformedJob);
 }
