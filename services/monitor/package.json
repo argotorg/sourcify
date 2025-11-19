@@ -1,6 +1,6 @@
 {
   "name": "sourcify-monitor",
-  "version": "1.3.24",
+  "version": "1.3.25",
   "private": true,
   "description": "A monitoring service to listen to chains and send detected new contracts to a Sourcify server",
   "main": "index.js",
@@ -37,8 +37,8 @@
   },
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
-    "@ethereum-sourcify/bytecode-utils": "^1.3.16",
-    "@ethereum-sourcify/lib-sourcify": "^3.0.3",
+    "@ethereum-sourcify/bytecode-utils": "^1.3.17",
+    "@ethereum-sourcify/lib-sourcify": "^3.0.4",
     "chalk": "4.1.2",
     "commander": "12.1.0",
     "dotenv": "16.6.1",
