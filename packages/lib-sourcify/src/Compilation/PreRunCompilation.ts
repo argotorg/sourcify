@@ -1,6 +1,6 @@
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import { AbstractCompilation } from './AbstractCompilation';
-import {
+import type {
   ImmutableReferences,
   LinkReferences,
   Metadata,
@@ -10,7 +10,7 @@ import {
   VyperJsonInput,
   VyperOutput,
 } from '@ethereum-sourcify/compilers-types';
-import {
+import type {
   CompilationLanguage,
   CompilationTarget,
   CompiledContractCborAuxdata,

@@ -1,13 +1,13 @@
 import Path from "path";
 import fs from "fs";
-import {
+import type {
   V1MatchLevelWithoutAny,
   MatchQuality,
   MatchLevel,
   Match,
 } from "../../types";
 import { getAddress } from "ethers";
-import {
+import type {
   VerificationStatus,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";

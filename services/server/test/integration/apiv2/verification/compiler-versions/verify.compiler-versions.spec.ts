@@ -1,6 +1,6 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { SolidityJsonInput } from "@ethereum-sourcify/compilers-types";
+import type { SolidityJsonInput } from "@ethereum-sourcify/compilers-types";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   hookIntoVerificationWorkerRun,

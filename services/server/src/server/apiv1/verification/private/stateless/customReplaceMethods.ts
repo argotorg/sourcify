@@ -1,9 +1,9 @@
-import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 import {
   bytesFromString,
   getDatabaseColumnsFromVerification,
 } from "../../../../services/utils/database-util";
-import { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
+import type { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import { BadRequestError } from "../../../../../common/errors";
 
 export type CustomReplaceMethod = (

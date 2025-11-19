@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { logDebug } from '../logger';
-import { PathBuffer } from './ValidationTypes';
+import type { PathBuffer } from './ValidationTypes';
 
 export async function unzipFiles(files: PathBuffer[]) {
   const allUnzipped: PathBuffer[] = [];

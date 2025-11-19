@@ -11,6 +11,7 @@ import {
   verifyFromJsonInputEndpoint,
   verifyFromMetadataEndpoint,
   verifyFromEtherscanEndpoint,
+  verifySimilarityEndpoint,
 } from "./verification.handlers";
 import { Router } from "express";
 
@@ -47,6 +48,16 @@ router
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromEtherscanEndpoint,
+  );
+
+router
+  .route("/verify/similarity/:chainId/:address")
+  .post(
+    validateChainId,
+    validateAddress,
+    checkIfAlreadyVerified,
+    checkIfJobIsAlreadyRunning,
+    verifySimilarityEndpoint,
   );
 
 export default router;

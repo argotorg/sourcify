@@ -1,7 +1,5 @@
-import {
-  SourcifyLibErrorParameters,
-  SourcifyLibError,
-} from '../SourcifyLibError';
+import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
+import { SourcifyLibError } from '../SourcifyLibError';
 
 export interface PathBuffer {
   path: string;

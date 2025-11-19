@@ -1,6 +1,7 @@
 import chai from "chai";
 import { extractSignaturesFromAbi } from "../../../src/server/services/utils/signature-util";
-import { JsonFragment, id as keccak256str } from "ethers";
+import type { JsonFragment } from "ethers";
+import { id as keccak256str } from "ethers";
 
 describe("signature-util", function () {
   describe("extractSignaturesFromAbi", function () {

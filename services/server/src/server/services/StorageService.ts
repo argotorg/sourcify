@@ -1,16 +1,12 @@
-import { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
-import {
-  RepositoryV1Service,
-  RepositoryV1ServiceOptions,
-} from "./storageServices/RepositoryV1Service";
-import {
-  RepositoryV2Service,
-  RepositoryV2ServiceOptions,
-} from "./storageServices/RepositoryV2Service";
+import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import type { RepositoryV1ServiceOptions } from "./storageServices/RepositoryV1Service";
+import { RepositoryV1Service } from "./storageServices/RepositoryV1Service";
+import type { RepositoryV2ServiceOptions } from "./storageServices/RepositoryV2Service";
+import { RepositoryV2Service } from "./storageServices/RepositoryV2Service";
 import { SourcifyDatabaseService } from "./storageServices/SourcifyDatabaseService";
 import { AllianceDatabaseService } from "./storageServices/AllianceDatabaseService";
 import logger from "../../common/logger";
-import {
+import type {
   ContractData,
   FileObject,
   FilesInfo,
@@ -26,26 +22,25 @@ import {
   VerificationJob,
   Match,
   VerificationJobId,
+  SimilarityCandidate,
 } from "../types";
+import type { StorageIdentifiers } from "./storageServices/identifiers";
 import {
   RWStorageIdentifiers,
-  StorageIdentifiers,
   WStorageIdentifiers,
 } from "./storageServices/identifiers";
 import { ConflictError } from "../../common/errors/ConflictError";
 import { isBetterVerification } from "./utils/util";
-import {
-  S3RepositoryService,
-  S3RepositoryServiceOptions,
-} from "./storageServices/S3RepositoryService";
-import { DatabaseOptions } from "./utils/Database";
-import { Field } from "./utils/database-util";
-import { VerifyErrorExport } from "./workers/workerTypes";
-import {
+import type { S3RepositoryServiceOptions } from "./storageServices/S3RepositoryService";
+import { S3RepositoryService } from "./storageServices/S3RepositoryService";
+import type { DatabaseOptions } from "./utils/Database";
+import type { Field } from "./utils/database-util";
+import type { VerifyErrorExport } from "./workers/workerTypes";
+import type {
   EtherscanVerifyApiIdentifiers,
-  EtherscanVerifyApiService,
   EtherscanVerifyApiServiceOptions,
 } from "./storageServices/EtherscanVerifyApiService";
+import { EtherscanVerifyApiService } from "./storageServices/EtherscanVerifyApiService";
 
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
@@ -112,11 +107,17 @@ export interface RWStorageService extends WStorageService {
   getContractsAllChains?(
     address: string,
   ): Promise<{ results: VerifiedContractMinimal[] }>;
-  getVerificationJob?(verificationId: string): Promise<VerificationJob | null>;
+  getVerificationJob?(
+    verificationId: string,
+  ): Promise<VerificationJob<"raw"> | null>;
   getVerificationJobsByChainAndAddress?(
     chainId: string,
     address: string,
   ): Promise<Pick<VerificationJob, "isJobCompleted">[]>;
+  getSimilarityCandidatesByRuntimeCode?(
+    runtimeBytecode: string,
+    limit: number,
+  ): Promise<SimilarityCandidate[]>;
 }
 
 export interface EnabledServices {

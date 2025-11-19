@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { Logger } from "winston";
-import {
+import type { Logger } from "winston";
+import type {
   SignatureLookupRow,
   SignatureStatsRow,
   SignatureInsertResult,
@@ -12,7 +12,7 @@ import {
 } from "../utils/signature-util";
 import { bytesFromString } from "../utils/database-util";
 import { sendSignatureApiFailure } from "./validation";
-import { SignatureDatabase } from "../SignatureDatabase";
+import type { SignatureDatabase } from "../SignatureDatabase";
 
 interface SignatureItem {
   name: string;

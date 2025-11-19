@@ -6,15 +6,15 @@ import fs from "fs";
 import { getAddress, id } from "ethers";
 import type { Response } from "superagent";
 import type { Done } from "mocha";
-import { Pool } from "pg";
-import {
+import type { Pool } from "pg";
+import type {
   Transformation,
   TransformationValues,
   VerificationStatus,
 } from "@ethereum-sourcify/lib-sourcify";
-import { ServerFixture } from "./ServerFixture";
+import type { ServerFixture } from "./ServerFixture";
 import { getMatchStatus } from "../../src/server/apiv1/controllers.common";
-import { MatchLevel } from "../../src/server/types";
+import type { MatchLevel } from "../../src/server/types";
 import { toVerificationStatus } from "../../src/server/services/utils/util";
 import chaiHttp from "chai-http";
 

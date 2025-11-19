@@ -4,10 +4,8 @@ import { deployAndVerifyContract } from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import { getAddress } from "ethers";
-import {
-  SourcifyChain,
-  SourcifyChainMap,
-} from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 

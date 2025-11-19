@@ -1,6 +1,7 @@
-import { Router, Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
+import { Router } from "express";
 import logger, { setLogLevel } from "../common/logger";
-import { ChainRepository } from "../sourcify-chain-repository";
+import type { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
 import apiV1Routes from "./apiv1/routes";
 import { readFileSync } from "fs";

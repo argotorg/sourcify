@@ -1,8 +1,10 @@
 import { expect } from "chai";
-import sinon, { SinonSandbox } from "sinon";
+import type { SinonSandbox } from "sinon";
+import sinon from "sinon";
 import Monitor, { authenticateRpcs } from "../src/Monitor";
 import logger from "../src/logger";
-import { FetchRequest, JsonRpcProvider, JsonRpcSigner, Network } from "ethers";
+import type { JsonRpcSigner } from "ethers";
+import { FetchRequest, JsonRpcProvider, Network } from "ethers";
 import {
   deployFromAbiAndBytecode,
   nockInterceptorForVerification,
@@ -12,11 +14,11 @@ import {
   startHardhatNetwork,
   stopHardhatNetwork,
 } from "./hardhat-network-helper";
-import { ChildProcess } from "child_process";
+import type { ChildProcess } from "child_process";
 import storageContractArtifact from "./sources/Storage/1_Storage.json";
 import nock from "nock";
-import { RpcObject } from "../src/types";
-import { FetchRequestRPC } from "@ethereum-sourcify/lib-sourcify";
+import type { RpcObject } from "../src/types";
+import type { FetchRequestRPC } from "@ethereum-sourcify/lib-sourcify";
 
 const HARDHAT_PORT = 8546;
 // Configured in hardhat.config.js

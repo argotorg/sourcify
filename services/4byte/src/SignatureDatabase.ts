@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { id as keccak256str } from "ethers";
-import { SignatureType } from "./utils/signature-util";
-import { DatabaseConfig } from "./FourByteServer";
+import type { SignatureType } from "./utils/signature-util";
+import type { DatabaseConfig } from "./FourByteServer";
 import logger from "./logger";
 
 export interface SignatureLookupRow {

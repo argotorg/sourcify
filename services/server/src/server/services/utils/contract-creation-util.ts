@@ -1,4 +1,4 @@
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
 import logger from "../../../common/logger";
 

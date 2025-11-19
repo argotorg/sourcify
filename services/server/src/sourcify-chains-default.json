@@ -2137,6 +2137,10 @@
     "sourcifyName": "OORT Mainnet",
     "supported": true
   },
+  "9700": {
+    "sourcifyName": "OORT Testnet",
+    "supported": true
+  },
   "223": {
     "sourcifyName": "B2 Mainnet",
     "supported": true,
@@ -2379,5 +2383,23 @@
         "url": "https://mainnet-api.reactscan.net"
       }
     }
+  },
+  "5042002": {
+    "sourcifyName": "ARC-testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet.arcscan.app/"
+      }
+    },
+    "rpc": [
+      {
+        "type": "APIKeyRPC",
+        "url": "https://rpc.quicknode.testnet.arc.network/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
+        "traceSupport": "trace_transaction"
+      }
+    ]
   }
 }

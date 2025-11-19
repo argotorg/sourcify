@@ -1,3 +1,4 @@
+import type { EthersError } from 'ethers';
 import {
   FetchRequest,
   JsonRpcProvider,
@@ -5,10 +6,9 @@ import {
   TransactionReceipt,
   TransactionResponse,
   getAddress,
-  EthersError,
 } from 'ethers';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import {
+import type {
   CallFrame,
   FetchContractCreationTxMethods,
   FetchRequestRPC,

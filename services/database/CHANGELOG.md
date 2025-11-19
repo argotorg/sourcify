@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.10.1 - 2025-11-19
+
+- Add `idx_code_code_first_75` index (#2481)
+
 ## sourcify-database@2.10.0 - 2025-10-28
 
 - add external verification migration (#2430)

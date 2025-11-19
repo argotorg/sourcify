@@ -40,7 +40,7 @@ paths:
                 chosenContract:
                   type: string
                   description: "Optional index for the contract if multiple contracts (i.e. metadata.json files) are present."
-                  example: "0" 
+                  example: "0"
           multipart/form-data:
             schema:
               type: object

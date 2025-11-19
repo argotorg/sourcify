@@ -1,7 +1,7 @@
-import { Pool, PoolClient, QueryResult } from "pg";
-import { Bytes, BytesKeccak } from "../../types";
-import {
-  bytesFromString,
+import type { PoolClient, QueryResult } from "pg";
+import { Pool } from "pg";
+import type { Bytes, BytesKeccak } from "../../types";
+import type {
   GetSourcifyMatchByChainAddressResult,
   GetSourcifyMatchByChainAddressWithPropertiesResult,
   GetSourcifyMatchesByChainResult,
@@ -9,16 +9,20 @@ import {
   GetVerifiedContractByChainAndAddressResult,
   GetVerificationJobsByChainAndAddressResult,
   SourceInformation,
-  STORED_PROPERTIES_TO_SELECTORS,
   StoredProperties,
   Tables,
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
+  CodePrefixMatchResult,
+} from "./database-util";
+import {
+  bytesFromString,
+  STORED_PROPERTIES_TO_SELECTORS,
 } from "./database-util";
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
-import { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
+import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
   googleCloudSql?: {
@@ -247,6 +251,28 @@ ${
         ${groupByClause}
         `,
       [chain, address],
+    );
+  }
+
+  async getVerifiedContractsByRuntimeCodePrefix(
+    runtimeBytecode: Buffer,
+    limit: number = 20,
+  ): Promise<QueryResult<CodePrefixMatchResult>> {
+    return await this.pool.query(
+      `
+        SELECT
+          compiled_contracts.id as compilation_id,
+          contract_deployments.chain_id,
+          concat('0x', encode(contract_deployments.address, 'hex')) as address
+        FROM ${this.schema}.code code
+        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
+        JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
+        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+        JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
+        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        LIMIT $2
+      `,
+      [runtimeBytecode, limit],
     );
   }
 
@@ -918,6 +944,7 @@ ${
       verification_jobs.error_id,
       verification_jobs.error_data,
       verification_jobs.compilation_time,
+      verification_jobs.external_verification,
       nullif(concat('0x',encode(verification_jobs_ephemeral.recompiled_creation_code, 'hex')), '0x') as recompiled_creation_code,
       nullif(concat('0x',encode(verification_jobs_ephemeral.recompiled_runtime_code, 'hex')), '0x') as recompiled_runtime_code,
       nullif(concat('0x',encode(verification_jobs_ephemeral.onchain_creation_code, 'hex')), '0x') as onchain_creation_code,

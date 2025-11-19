@@ -1,6 +1,6 @@
 import { getAddress, isAddress } from "ethers";
 import { BadRequestError } from "../../common/errors";
-import { ChainRepository } from "../../sourcify-chain-repository";
+import type { ChainRepository } from "../../sourcify-chain-repository";
 import type { OpenApiValidatorOpts } from "express-openapi-validator/dist/framework/types";
 
 export function makeV1ValidatorFormats(

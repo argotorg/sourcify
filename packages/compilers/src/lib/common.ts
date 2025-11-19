@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { logDebug, logError, logSilly } from '../logger';
-import { OutputError } from '@ethereum-sourcify/compilers-types';
+import type { OutputError } from '@ethereum-sourcify/compilers-types';
 
 /**
  * Fetches a resource with an exponential timeout.

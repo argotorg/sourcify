@@ -1,4 +1,4 @@
-import {
+import type {
   SolidityOutput,
   ISolidityCompiler,
   SolidityJsonInput,

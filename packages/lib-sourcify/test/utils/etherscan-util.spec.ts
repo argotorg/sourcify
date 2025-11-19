@@ -2,11 +2,10 @@ import { expect, use } from 'chai';
 import chaiHttp from 'chai-http';
 import nock from 'nock';
 import chaiAsPromised from 'chai-as-promised';
+import type { SolidityJsonInput, VyperJsonInput } from '../../src';
 import {
   SolidityCompilation,
-  SolidityJsonInput,
   VyperCompilation,
-  VyperJsonInput,
   EtherscanUtils,
 } from '../../src';
 // Import SourcifyChain from built package to match the type expected by mockEtherscanApi

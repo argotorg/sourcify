@@ -1,5 +1,6 @@
 import path from "path";
-import express, { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import express from "express";
 import cors from "cors";
 import * as OpenApiValidator from "express-openapi-validator";
 import yamljs from "yamljs";
@@ -17,21 +18,23 @@ import genericErrorHandler from "../common/errors/GenericErrorHandler";
 import { initDeprecatedRoutes } from "./apiv1/deprecated.routes";
 import getSessionMiddleware from "./session";
 import { Services } from "./services/services";
-import { StorageServiceOptions } from "./services/StorageService";
-import { VerificationServiceOptions } from "./services/VerificationService";
-import {
-  getLibSourcifyLoggerLevel,
+import type { StorageServiceOptions } from "./services/StorageService";
+import type { VerificationServiceOptions } from "./services/VerificationService";
+import type {
   ISolidityCompiler,
   IVyperCompiler,
-  SolidityMetadataContract,
-  SourcifyChain,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";
+import {
+  getLibSourcifyLoggerLevel,
+  SolidityMetadataContract,
+  SourcifyChain,
+} from "@ethereum-sourcify/lib-sourcify";
 import { ChainRepository } from "../sourcify-chain-repository";
-import { SessionOptions } from "express-session";
+import type { SessionOptions } from "express-session";
 import { makeV1ValidatorFormats } from "./apiv1/validation";
 import { errorHandler as v2ErrorHandler } from "./apiv2/errors";
-import http from "http";
+import type http from "http";
 import { RWStorageIdentifiers } from "./services/storageServices/identifiers";
 
 declare module "express-serve-static-core" {

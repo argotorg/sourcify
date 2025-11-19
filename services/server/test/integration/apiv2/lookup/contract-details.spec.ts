@@ -1,8 +1,8 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
+import type { DeploymentInfo } from "../../../helpers/helpers";
 import {
   deployFromAbiAndBytecode,
-  DeploymentInfo,
   verifyContract,
 } from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
@@ -14,7 +14,7 @@ import { getAddress } from "ethers";
 import Sinon from "sinon";
 import * as proxyContractUtil from "../../../../src/server/services/utils/proxy-contract-util";
 import { extractSignaturesFromAbi } from "../../../../src/server/services/utils/signature-util";
-import { SignatureRepresentations } from "../../../../src/server/types";
+import type { SignatureRepresentations } from "../../../../src/server/types";
 
 chai.use(chaiHttp);
 

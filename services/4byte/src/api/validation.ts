@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
 
 export function sendSignatureApiFailure(res: Response, error: string): void {

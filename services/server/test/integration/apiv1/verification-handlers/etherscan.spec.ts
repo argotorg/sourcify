@@ -29,7 +29,7 @@ import {
   VYPER_SINGLE_CONTRACT_RESPONSE,
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
-import { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 

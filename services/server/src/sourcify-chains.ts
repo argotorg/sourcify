@@ -1,5 +1,4 @@
-import {
-  SourcifyChain,
+import type {
   SourcifyChainMap,
   Chain,
   APIKeyRPC,
@@ -8,6 +7,7 @@ import {
   SourcifyChainExtension,
   SourcifyRpc,
 } from "@ethereum-sourcify/lib-sourcify";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import chainsRaw from "./chains.json";
 import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";

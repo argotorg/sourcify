@@ -2,21 +2,24 @@ import { id as keccak256str } from 'ethers';
 import semver from 'semver';
 import { performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
-import {
+import type {
   Libraries,
   SolidityJsonInput,
   Metadata,
   MetadataCompilerSettings,
   MetadataSourceMap,
 } from '@ethereum-sourcify/compilers-types';
-import { ISolidityCompiler, StringMap } from '../Compilation/CompilationTypes';
-import {
+import type {
+  ISolidityCompiler,
+  StringMap,
+} from '../Compilation/CompilationTypes';
+import type {
   InvalidSources,
   IpfsGateway,
   MissingSources,
   PathContent,
-  ValidationError,
 } from './ValidationTypes';
+import { ValidationError } from './ValidationTypes';
 import {
   AuxdataStyle,
   decode as decodeBytecode,

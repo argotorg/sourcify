@@ -1,18 +1,18 @@
-import { Response, Request } from "express";
+import type { Response, Request } from "express";
+import type { SendableContract } from "../../verification.common";
 import {
-  SendableContract,
   getSessionJSON,
   verifyContractsInSession,
 } from "../../verification.common";
-import {
-  isEmpty,
+import type {
   ISolidityCompiler,
   IVyperCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
+import { isEmpty } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import logger from "../../../../../common/logger";
-import { Services } from "../../../../services/services";
-import { ChainRepository } from "../../../../../sourcify-chain-repository";
+import type { Services } from "../../../../services/services";
+import type { ChainRepository } from "../../../../../sourcify-chain-repository";
 
 export async function verifyContractsInSessionEndpoint(
   req: Request,
