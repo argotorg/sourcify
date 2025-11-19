@@ -4,11 +4,15 @@ import type {
   VyperSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
-import type { WStorageService } from "../StorageService";
+import type { StorageService, WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
 import type { Database } from "../utils/Database";
 import type { SourcifyDatabaseService } from "./SourcifyDatabaseService";
-import type { ExternalVerification } from "../utils/database-util";
+import type { ExternalVerification, Tables } from "../utils/database-util";
+import type {
+  ApiExternalVerification,
+  ApiExternalVerifications,
+} from "../../types";
 
 export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.EtherscanVerify
@@ -19,6 +23,7 @@ const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT =
   "https://api.etherscan.io/v2/chainlist";
 const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
   "https://chains.blockscout.com/api/chains";
+const BLOCKSCOUT_ALREADY_VERIFIED = "BLOCKSCOUT_ALREADY_VERIFIED";
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
@@ -32,6 +37,9 @@ const ROUTESCAN_CHAINLIST_ENDPOINTS = [
 const ROUTESCAN_API_URL_TEMPLATE =
   "https://api.routescan.io/v2/network/${WORKSPACE}/evm/${CHAIN_ID}/etherscan/api";
 
+const ROUTESCAN_EXPLORER_URL_TEMPLATE =
+  "https://routescan.io/address/${ADDRESS}";
+
 type ChainApiUrls = Record<string, string>;
 
 interface EtherscanChainApiResult {
@@ -39,10 +47,16 @@ interface EtherscanChainApiResult {
     chainid?: string;
     apiurl?: string;
     status?: number;
+    blockexplorer?: string;
   }[];
 }
 
-const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
+interface VerifierInformation {
+  apiUrls: ChainApiUrls;
+  explorerUrls: ChainApiUrls;
+}
+
+const fetchEtherscanInformation = async (): Promise<VerifierInformation> => {
   const targetEndpoint = DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT;
   let response: Response;
 
@@ -77,15 +91,28 @@ const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
   }
 
   const apiUrls: Record<string, string> = {};
+  const explorerUrls: Record<string, string> = {};
 
   for (const entry of payload.result) {
     if (!entry || entry.status !== 1) continue;
-    if (!entry.chainid || !entry.apiurl) continue;
+    if (!entry.chainid || !entry.apiurl || !entry.blockexplorer) continue;
 
     try {
       const parsedUrl = new URL(entry.apiurl);
       parsedUrl.hash = "";
       apiUrls[entry.chainid] = parsedUrl.toString();
+    } catch (error) {
+      logger.warn("Skipping invalid Etherscan API URL", {
+        entry,
+        error,
+      });
+    }
+
+    try {
+      const parsedUrl = new URL(entry.blockexplorer);
+      parsedUrl.hash = "";
+      explorerUrls[entry.chainid] =
+        `${parsedUrl.toString()}/address/\${ADDRESS}`;
     } catch (error) {
       logger.warn("Skipping invalid Etherscan API URL", {
         entry,
@@ -100,7 +127,10 @@ const fetchEtherscanChainApiUrls = async (): Promise<ChainApiUrls> => {
     );
   }
 
-  return apiUrls;
+  return {
+    apiUrls,
+    explorerUrls,
+  };
 };
 
 interface BlockscoutChainApiResult {
@@ -109,7 +139,7 @@ interface BlockscoutChainApiResult {
   };
 }
 
-const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
+const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
   let response: Response;
   const endpoint = DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT;
   try {
@@ -134,6 +164,7 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
   }
   const payload = (await response.json()) as BlockscoutChainApiResult;
   const apiUrls: Record<string, string> = {};
+  const explorerUrls: Record<string, string> = {};
   for (const [chainId, chainData] of Object.entries(payload)) {
     const explorers = chainData?.explorers;
     if (!Array.isArray(explorers)) continue;
@@ -145,6 +176,7 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
       explorerUrl.search = "";
       explorerUrl.hash = "";
       apiUrls[chainId] = explorerUrl.toString();
+      explorerUrls[chainId] = `${blockscoutExplorer.url}/address/\${ADDRESS}`;
     } catch (error) {
       logger.warn("Skipping invalid Blockscout explorer URL", {
         chainId,
@@ -158,7 +190,10 @@ const fetchBlockscoutChainApiUrls = async (): Promise<ChainApiUrls> => {
       "Blockscout chain list did not contain any usable endpoints",
     );
   }
-  return apiUrls;
+  return {
+    apiUrls,
+    explorerUrls,
+  };
 };
 
 interface RoutescanChainApiResult {
@@ -168,8 +203,9 @@ interface RoutescanChainApiResult {
   }[];
 }
 
-const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
+const fetchRoutescanInformation = async (): Promise<VerifierInformation> => {
   const apiUrls: ChainApiUrls = {};
+  const explorerUrls: Record<string, string> = {};
 
   for (const { workspace, endpoint } of ROUTESCAN_CHAINLIST_ENDPOINTS) {
     let response: Response;
@@ -237,6 +273,8 @@ const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
         url.hash = "";
 
         apiUrls[String(evmChainId)] = url.toString();
+        explorerUrls[String(evmChainId)] =
+          `${ROUTESCAN_EXPLORER_URL_TEMPLATE}?chainid=${String(chainId)}`;
       } catch (error) {
         logger.warn("Skipping invalid Routescan API URL", {
           workspace,
@@ -253,7 +291,10 @@ const fetchRoutescanChainApiUrls = async (): Promise<ChainApiUrls> => {
     );
   }
 
-  return apiUrls;
+  return {
+    apiUrls,
+    explorerUrls,
+  };
 };
 
 interface EtherscanRpcResponse {
@@ -262,9 +303,95 @@ interface EtherscanRpcResponse {
   result: string;
 }
 
+export const buildJobExternalVerificationsObject = (
+  storageService: StorageService,
+  externalVerification: Tables.VerificationJob["external_verification"],
+  chainId: string,
+  address: string,
+  verificationJobId: string,
+): ApiExternalVerifications => {
+  if (!externalVerification) {
+    return {};
+  }
+  return Object.keys(externalVerification).reduce((verifiersData, verifier) => {
+    const verifierIdentifier = verifier as EtherscanVerifyApiIdentifiers;
+    const verifierService = storageService.wServices[verifierIdentifier] as
+      | EtherscanVerifyApiService
+      | undefined;
+    const verifierData = externalVerification[verifierIdentifier];
+    if (!verifierData) {
+      return verifiersData;
+    }
+
+    let statusUrl;
+    if (
+      verifierData.verificationId &&
+      // We need to handle the special case for a blockscout already verified contract
+      verifierData.verificationId !== BLOCKSCOUT_ALREADY_VERIFIED
+    ) {
+      try {
+        const apiBaseUrl = verifierService?.getApiUrl(
+          "checkverifystatus",
+          parseInt(chainId),
+        );
+        if (apiBaseUrl) {
+          statusUrl = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
+        }
+      } catch (error) {
+        // Cannot generate url
+      }
+    }
+
+    let explorerUrl;
+    if (verifierData.verificationId) {
+      try {
+        const apiBaseUrl = verifierService?.getExplorerUrl(parseInt(chainId));
+        if (apiBaseUrl) {
+          explorerUrl = apiBaseUrl.replace(
+            "${ADDRESS}",
+            encodeURIComponent(address),
+          );
+        }
+      } catch (error) {
+        // Cannot generate url
+      }
+    }
+
+    const externalVerifications: ApiExternalVerification = {
+      verificationId: verifierData.verificationId,
+      error: verifierData.error,
+      statusUrl,
+      explorerUrl,
+    };
+
+    switch (verifier) {
+      case WStorageIdentifiers.EtherscanVerify:
+        verifiersData.etherscan = externalVerifications;
+        break;
+      case WStorageIdentifiers.BlockscoutVerify:
+        verifiersData.blockscout = externalVerifications;
+        break;
+      case WStorageIdentifiers.RoutescanVerify:
+        verifiersData.routescan = externalVerifications;
+        break;
+      default:
+        logger.warn("Unknown external verifier found", {
+          verifier,
+          verificationJobId,
+        });
+        break;
+    }
+    return verifiersData;
+  }, {} as ApiExternalVerifications);
+};
+
 export interface EtherscanVerifyApiServiceOptions {
-  /** Mapping of chainId to the explorer API base URL */
-  chainApiUrls?: ChainApiUrls;
+  chainInformation?: {
+    /** Mapping of chainId to the explorer API base URL */
+    apiUrls?: ChainApiUrls;
+    /** Mapping of chainId to the explorer URL */
+    explorerUrls?: ChainApiUrls;
+  };
   /** Optional mapping of chainId to API keys */
   apiKeys?: Record<string, string>;
   /** Optional fallback API key when chain-specific key is missing */
@@ -285,24 +412,36 @@ export class EtherscanVerifyApiService implements WStorageService {
     this.IDENTIFIER = identifier;
     this.database = sourcifyDatabaseService.database;
     this.options = {
-      chainApiUrls: options?.chainApiUrls || {},
+      chainInformation: options?.chainInformation || {},
       apiKeys: options?.apiKeys || {},
       defaultApiKey: options?.defaultApiKey || "",
     };
   }
 
   async init(): Promise<boolean> {
-    if (Object.keys(this.options.chainApiUrls).length === 0) {
+    if (
+      !this.options.chainInformation ||
+      Object.keys(this.options.chainInformation).length === 0
+    ) {
       switch (this.IDENTIFIER) {
-        case WStorageIdentifiers.EtherscanVerify:
-          this.options.chainApiUrls = await fetchEtherscanChainApiUrls();
+        case WStorageIdentifiers.EtherscanVerify: {
+          const { apiUrls, explorerUrls } = await fetchEtherscanInformation();
+          this.options.chainInformation.apiUrls = apiUrls;
+          this.options.chainInformation.explorerUrls = explorerUrls;
           break;
-        case WStorageIdentifiers.BlockscoutVerify:
-          this.options.chainApiUrls = await fetchBlockscoutChainApiUrls();
+        }
+        case WStorageIdentifiers.BlockscoutVerify: {
+          const { apiUrls, explorerUrls } = await fetchBlockscoutInformation();
+          this.options.chainInformation.apiUrls = apiUrls;
+          this.options.chainInformation.explorerUrls = explorerUrls;
           break;
-        case WStorageIdentifiers.RoutescanVerify:
-          this.options.chainApiUrls = await fetchRoutescanChainApiUrls();
+        }
+        case WStorageIdentifiers.RoutescanVerify: {
+          const { apiUrls, explorerUrls } = await fetchRoutescanInformation();
+          this.options.chainInformation.apiUrls = apiUrls;
+          this.options.chainInformation.explorerUrls = explorerUrls;
           break;
+        }
         default:
           throw new Error(`Unsupported verifier: ${this.IDENTIFIER}`);
       }
@@ -388,6 +527,18 @@ export class EtherscanVerifyApiService implements WStorageService {
 
     // If we don't have job data, we cannot store the result
     if (!jobData?.verificationId) {
+      return;
+    }
+
+    // Handle the "already verified" case for Blockscout by storing
+    // { verificationId: "BLOCKSCOUT_ALREADY_VERIFIED" }
+    if (
+      this.IDENTIFIER === WStorageIdentifiers.BlockscoutVerify &&
+      response.result === "Smart-contract already verified."
+    ) {
+      this.storeExternalVerificationResult(jobData, {
+        verificationId: BLOCKSCOUT_ALREADY_VERIFIED,
+      });
       return;
     }
 
@@ -625,10 +776,24 @@ export class EtherscanVerifyApiService implements WStorageService {
     return constructorArgs.replace(/^0x/i, "");
   }
 
+  public getExplorerUrl(chainId: number): string | undefined {
+    const key = String(chainId);
+    return this.options.chainInformation?.explorerUrls?.[key];
+  }
+
+  public getApiUrl(action: string, chainId: number): string | undefined {
+    const apiBaseUrl = this.getApiBaseUrl(chainId);
+    if (!apiBaseUrl) {
+      return undefined;
+    }
+    return this.buildApiUrl(apiBaseUrl, action, chainId, false);
+  }
+
   private buildApiUrl(
     apiBaseUrl: string,
     action: string,
     chainId: number,
+    includeApiKey = true,
   ): string {
     const url = new URL(apiBaseUrl);
 
@@ -636,9 +801,11 @@ export class EtherscanVerifyApiService implements WStorageService {
     url.searchParams.set("action", action);
     url.searchParams.set("chainid", String(chainId));
 
-    const apiKey = this.getApiKey(chainId);
-    if (apiKey) {
-      url.searchParams.set("apikey", apiKey);
+    if (includeApiKey) {
+      const apiKey = this.getApiKey(chainId);
+      if (apiKey) {
+        url.searchParams.set("apikey", apiKey);
+      }
     }
 
     return url.toString();
@@ -646,7 +813,7 @@ export class EtherscanVerifyApiService implements WStorageService {
 
   private getApiBaseUrl(chainId: number): string | undefined {
     const key = String(chainId);
-    return this.options.chainApiUrls[key];
+    return this.options.chainInformation?.apiUrls?.[key];
   }
 
   private getApiKey(chainId: number): string | undefined {

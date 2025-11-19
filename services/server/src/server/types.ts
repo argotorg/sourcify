@@ -25,7 +25,11 @@ import type {
   MatchingErrorResponse,
 } from "./apiv2/errors";
 import type { SignatureType } from "./services/utils/signature-util";
-import type { GetSourcifyMatchByChainAddressWithPropertiesResult } from "./services/utils/database-util";
+import type {
+  ExternalVerification,
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
+  Tables,
+} from "./services/utils/database-util";
 
 // Types used internally by the server.
 
@@ -124,7 +128,28 @@ export type ProxyResolution = Partial<ProxyDetectionResult> & {
 
 export type VerificationJobId = string;
 
-export interface VerificationJob {
+export type ApiExternalVerification = ExternalVerification & {
+  statusUrl?: string;
+  explorerUrl?: string;
+};
+
+export interface ApiExternalVerifications {
+  etherscan?: ApiExternalVerification;
+  blockscout?: ApiExternalVerification;
+  routescan?: ApiExternalVerification;
+}
+
+export type VerificationJobExternalFormat = "raw" | "api";
+
+type ExternalVerificationForFormat<
+  TExternalFormat extends VerificationJobExternalFormat,
+> = TExternalFormat extends "api"
+  ? ApiExternalVerifications
+  : Tables.VerificationJob["external_verification"];
+
+export interface VerificationJob<
+  TExternalFormat extends VerificationJobExternalFormat = "raw",
+> {
   isJobCompleted: boolean;
   verificationId: VerificationJobId;
   jobStartTime: string;
@@ -132,6 +157,7 @@ export interface VerificationJob {
   compilationTime?: string;
   error?: MatchingErrorResponse;
   contract: VerifiedContractMinimal;
+  externalVerifications?: ExternalVerificationForFormat<TExternalFormat>;
 }
 
 /**

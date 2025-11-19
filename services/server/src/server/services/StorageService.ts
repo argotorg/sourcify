@@ -107,7 +107,9 @@ export interface RWStorageService extends WStorageService {
   getContractsAllChains?(
     address: string,
   ): Promise<{ results: VerifiedContractMinimal[] }>;
-  getVerificationJob?(verificationId: string): Promise<VerificationJob | null>;
+  getVerificationJob?(
+    verificationId: string,
+  ): Promise<VerificationJob<"raw"> | null>;
   getVerificationJobsByChainAndAddress?(
     chainId: string,
     address: string,
