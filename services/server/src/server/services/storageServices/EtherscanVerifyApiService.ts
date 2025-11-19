@@ -327,12 +327,6 @@ function createGetEtherscanVerifyApiServiceExplorerUrl(
     )?.getExplorerUrl.bind(storageService.wServices[service])(chainId);
 }
 
-export type GetExternalVerificationApiUrl = (
-  service: EtherscanVerifyApiIdentifiers,
-  action: string,
-  chainId: number,
-) => string | undefined;
-
 export const buildJobExternalVerificationsObject = (
   storageService: StorageService,
   externalVerification: Tables.VerificationJob["external_verification"],
