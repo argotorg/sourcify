@@ -1269,11 +1269,16 @@ components:
           type: string
           description: Error message returned by the external verifier. Present when the verification failed.
           example: "NOTOK: Max rate limit reached"
-        url:
+        statusUrl:
           type: string
           format: uri
           description: Direct URL to query the verification status from the explorer API.
           example: https://api.etherscan.io/v2/api?chainid=1&module=contract&action=checkverifystatus&guid=x3ryqcqr1zdknhfhkimqmizlcqpxncqc6nrvp3pgrcpfsqedqi
+        explorerUrl:
+          type: string
+          format: uri
+          description: Direct URL to the block explorer page for the contract
+          example: https://etherscan.io/address/0x0D41E0B7bbdEBDBc684020dcb64ADe76C0338222#code
     ApiExternalVerifications:
       type: object
       description: Links to external verification status endpoints on Etherscan-alike services.
