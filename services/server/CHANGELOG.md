@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.8.0 - 2025-11-19
+
+- update dependencies
+- Turn @typescript-eslint/consistent-type-imports rule on (#2496)
+- Similarity search verification (#2481)
+- Enable prettier on yaml and js files inside server (#2499)
+- Add external verification links to verification job responses (#2504)
+- Add chains:
+  - 5042002 ARC-testnet
+  - 9700 OORT Testnet
+
 ## sourcify-server@3.7.0 - 2025-11-04
 
 - Add /version endpoint to server (#2489)
