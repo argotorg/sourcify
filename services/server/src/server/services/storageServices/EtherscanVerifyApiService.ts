@@ -315,9 +315,9 @@ export const buildJobExternalVerificationsObject = (
   }
   return Object.keys(externalVerification).reduce((verifiersData, verifier) => {
     const verifierIdentifier = verifier as EtherscanVerifyApiIdentifiers;
-    const verifierService = storageService.wServices[
-      verifierIdentifier
-    ] as EtherscanVerifyApiService | undefined;
+    const verifierService = storageService.wServices[verifierIdentifier] as
+      | EtherscanVerifyApiService
+      | undefined;
     const verifierData = externalVerification[verifierIdentifier];
     if (!verifierData) {
       return verifiersData;
@@ -345,9 +345,7 @@ export const buildJobExternalVerificationsObject = (
     let explorerUrl;
     if (verifierData.verificationId) {
       try {
-        const apiBaseUrl = verifierService?.getExplorerUrl(
-          parseInt(chainId),
-        );
+        const apiBaseUrl = verifierService?.getExplorerUrl(parseInt(chainId));
         if (apiBaseUrl) {
           explorerUrl = apiBaseUrl.replace(
             "${ADDRESS}",
