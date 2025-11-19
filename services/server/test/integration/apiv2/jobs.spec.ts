@@ -14,17 +14,13 @@ import type {
   JobErrorData,
   Tables,
 } from "../../../src/server/services/utils/database-util";
-import {
-  RWStorageIdentifiers,
-  WStorageIdentifiers,
-} from "../../../src/server/services/storageServices/identifiers";
+import { WStorageIdentifiers } from "../../../src/server/services/storageServices/identifiers";
 
 chai.use(chaiHttp);
 
 describe("GET /v2/verify/:verificationId", function () {
   const serverFixture = new ServerFixture({
     writeOrWarn: [
-      RWStorageIdentifiers.SourcifyDatabase,
       WStorageIdentifiers.EtherscanVerify,
       WStorageIdentifiers.BlockscoutVerify,
       WStorageIdentifiers.RoutescanVerify,

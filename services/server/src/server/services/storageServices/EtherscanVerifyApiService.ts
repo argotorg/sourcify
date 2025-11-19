@@ -303,30 +303,6 @@ interface EtherscanRpcResponse {
   result: string;
 }
 
-// Helper function that returns the getApiUrl() function from the initialized StorageService
-function createGetEtherscanVerifyApiServiceApiUrl(
-  storageService: StorageService,
-) {
-  return (
-    service: EtherscanVerifyApiIdentifiers,
-    action: string,
-    chainId: number,
-  ) =>
-    (
-      storageService.wServices[service] as EtherscanVerifyApiService | undefined
-    )?.getApiUrl.bind(storageService.wServices[service])(action, chainId);
-}
-
-// Helper function that returns the getExplorerUrl() function from the initialized StorageService
-function createGetEtherscanVerifyApiServiceExplorerUrl(
-  storageService: StorageService,
-) {
-  return (service: EtherscanVerifyApiIdentifiers, chainId: number) =>
-    (
-      storageService.wServices[service] as EtherscanVerifyApiService | undefined
-    )?.getExplorerUrl.bind(storageService.wServices[service])(chainId);
-}
-
 export const buildJobExternalVerificationsObject = (
   storageService: StorageService,
   externalVerification: Tables.VerificationJob["external_verification"],
@@ -334,16 +310,15 @@ export const buildJobExternalVerificationsObject = (
   address: string,
   verificationJobId: string,
 ): ApiExternalVerifications => {
-  const getExternalVerificationApiUrl =
-    createGetEtherscanVerifyApiServiceApiUrl(storageService);
-  const getExternalVerificationExplorerUrl =
-    createGetEtherscanVerifyApiServiceExplorerUrl(storageService);
   if (!externalVerification) {
     return {};
   }
   return Object.keys(externalVerification).reduce((verifiersData, verifier) => {
-    const verifierData =
-      externalVerification[verifier as EtherscanVerifyApiIdentifiers];
+    const verifierIdentifier = verifier as EtherscanVerifyApiIdentifiers;
+    const verifierService = storageService.wServices[
+      verifierIdentifier
+    ] as EtherscanVerifyApiService | undefined;
+    const verifierData = externalVerification[verifierIdentifier];
     if (!verifierData) {
       return verifiersData;
     }
@@ -355,8 +330,7 @@ export const buildJobExternalVerificationsObject = (
       verifierData.verificationId !== BLOCKSCOUT_ALREADY_VERIFIED
     ) {
       try {
-        const apiBaseUrl = getExternalVerificationApiUrl(
-          verifier as EtherscanVerifyApiIdentifiers,
+        const apiBaseUrl = verifierService?.getApiUrl(
           "checkverifystatus",
           parseInt(chainId),
         );
@@ -371,8 +345,7 @@ export const buildJobExternalVerificationsObject = (
     let explorerUrl;
     if (verifierData.verificationId) {
       try {
-        const apiBaseUrl = getExternalVerificationExplorerUrl(
-          verifier as EtherscanVerifyApiIdentifiers,
+        const apiBaseUrl = verifierService?.getExplorerUrl(
           parseInt(chainId),
         );
         if (apiBaseUrl) {
