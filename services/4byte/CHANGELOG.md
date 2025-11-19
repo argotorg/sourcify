@@ -1,5 +1,10 @@
 
 
+## sourcify-4byte@1.1.4 - 2025-11-19
+
+- update dependencies
+- Turn @typescript-eslint/consistent-type-imports rule on (#2496)
+
 ## sourcify-4byte@1.1.3 - 2025-11-04
 
 - update dependencies

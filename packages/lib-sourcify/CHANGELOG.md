@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.4 - 2025-11-19
+
+- Turn @typescript-eslint/consistent-type-imports rule on (#2496)
+- Support contracts without auxdata (#2456)
+- update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.0.3 - 2025-11-04
 
 - update dependencies
