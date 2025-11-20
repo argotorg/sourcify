@@ -502,22 +502,37 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
-    let response: EtherscanRpcResponse;
-    try {
-      response = await this.submitVerification(verification, apiBaseUrl);
-    } catch (error: any) {
-      // Store the external verification result if we have job data
-      if (jobData) {
-        this.storeExternalVerificationResult(jobData, {
-          error: error.message,
-        });
-      }
-      logger.error("Failed to submit verification to explorer", {
-        ...submissionContext,
-        error,
+    let response = await this.handleEtherscanApiVerification(
+      verification,
+      apiBaseUrl,
+      submissionContext,
+      jobData,
+    );
+
+    // Case in which Etherscan explorer hasn't indexed the contract yet
+    const maxRetries = 6;
+    const retryDelayMs = 5000;
+    let retries = 0;
+    while (
+      response.message.startsWith("Unable to locate ContractCode at") &&
+      retries < maxRetries
+    ) {
+      retries += 1;
+      logger.info(
+        "Explorer has not indexed contract yet; retrying verification submission",
+        {
+          ...submissionContext,
+          attempt: retries,
+          maxRetries,
+        },
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      response = await this.handleEtherscanApiVerification(
+        verification,
         apiBaseUrl,
-      });
-      throw error;
+        submissionContext,
+        jobData,
+      );
     }
 
     logger.info("Submitted verification to explorer", {
@@ -607,6 +622,36 @@ export class EtherscanVerifyApiService implements WStorageService {
     }
 
     return (await response.json()) as EtherscanRpcResponse;
+  }
+
+  private async handleEtherscanApiVerification(
+    verification: VerificationExport,
+    apiBaseUrl: string,
+    submissionContext: {
+      identifier: string;
+      chainId: number;
+      address: string;
+    },
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<EtherscanRpcResponse> {
+    try {
+      return await this.submitVerification(verification, apiBaseUrl);
+    } catch (error: any) {
+      if (jobData) {
+        this.storeExternalVerificationResult(jobData, {
+          error: error.message,
+        });
+      }
+      logger.error("Failed to submit verification to explorer", {
+        ...submissionContext,
+        apiBaseUrl,
+        error,
+      });
+      throw error;
+    }
   }
 
   private async handleBlockscoutVyperVerification(
