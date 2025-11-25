@@ -116,7 +116,7 @@ describe("GET /v2/verify/:verificationId", function () {
           verificationId: "some-external-id",
         },
         BlockscoutVerify: {
-          verificationId: "BLOCKSCOUT_ALREADY_VERIFIED",
+          verificationId: "VERIFIER_ALREADY_VERIFIED",
         },
         RoutescanVerify: {
           error: "some error",
@@ -132,7 +132,7 @@ describe("GET /v2/verify/:verificationId", function () {
             chainFixture.defaultContractAddress,
         },
         blockscout: {
-          verificationId: "BLOCKSCOUT_ALREADY_VERIFIED",
+          verificationId: "VERIFIER_ALREADY_VERIFIED",
           explorerUrl:
             "https://eth.blockscout.io/address/" +
             chainFixture.defaultContractAddress,
