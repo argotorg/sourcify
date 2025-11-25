@@ -215,6 +215,7 @@ export class Dao {
       STORED_PROPERTIES_TO_SELECTORS["runtime_match"],
       STORED_PROPERTIES_TO_SELECTORS["address"],
       STORED_PROPERTIES_TO_SELECTORS["verified_at"],
+      STORED_PROPERTIES_TO_SELECTORS["name"],
     ];
     const records = await this.pool.query(
       `
@@ -225,6 +226,7 @@ export class Dao {
         JOIN contract_deployments ON 
             contract_deployments.id = verified_contracts.deployment_id
             AND contract_deployments.chain_id = :chain
+        JOIN compiled_contracts ON compiled_contracts.id = verified_contracts.compilation_id    
         ${queryWhere}
         ${orderBy}
         LIMIT :limit

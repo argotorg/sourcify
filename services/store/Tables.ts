@@ -656,6 +656,7 @@ export type GetSourcifyMatchByChainAddressResult = Tables.ISourcifyMatch &
 export type GetSourcifyMatchesByChainResult = Pick<
   Tables.ISourcifyMatch,
   "id" | "creation_match" | "runtime_match"
+> & Pick<Tables.ICompiledContract, "name"
 > & { address: string; verified_at: string };
 
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<

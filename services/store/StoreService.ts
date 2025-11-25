@@ -496,6 +496,7 @@ export class StoreService extends StoreBase implements RWStorageService {
         address: getAddress(row.address),
         verifiedAt: row.verified_at,
         matchId: row.id,
+        name: row.name,
       }),
     );
 
