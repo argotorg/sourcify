@@ -91,6 +91,21 @@ export const fetchFromEtherscan = async (
   }
 };
 
+export function isEtherscanError(
+  err: unknown,
+): err is
+  | EtherscanLimitError
+  | EtherscanRequestFailedError
+  | NotEtherscanVerifiedError
+  | MalformedEtherscanResponseError {
+  return (
+    err instanceof EtherscanLimitError ||
+    err instanceof EtherscanRequestFailedError ||
+    err instanceof NotEtherscanVerifiedError ||
+    err instanceof MalformedEtherscanResponseError
+  );
+}
+
 export async function getCompilationFromEtherscanResult(
   etherscanResult: any,
   solc: ISolidityCompiler,

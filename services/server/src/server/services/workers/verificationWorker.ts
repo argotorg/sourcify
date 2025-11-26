@@ -30,10 +30,14 @@ import type {
   VerifySimilarityInput,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
-import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
+import {
+  getCompilationFromEtherscanResult,
+  isEtherscanError,
+} from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
+import type { EtherscanErrorCode } from "../../apiv2/errors";
 
 export const filename = resolve(__filename);
 
@@ -251,11 +255,25 @@ async function _verifyFromEtherscan({
   address,
   etherscanResult,
 }: VerifyFromEtherscanInput): Promise<VerifyOutput> {
-  const compilation = await getCompilationFromEtherscanResult(
-    etherscanResult,
-    solc,
-    vyper,
-  );
+  let compilation: SolidityCompilation | VyperCompilation;
+  try {
+    compilation = await getCompilationFromEtherscanResult(
+      etherscanResult,
+      solc,
+      vyper,
+      true,
+    );
+  } catch (error: any) {
+    if (isEtherscanError(error)) {
+      const { customCode, errorId } = error.payload;
+      return {
+        errorExport: { customCode: customCode as EtherscanErrorCode, errorId },
+      };
+    }
+    return {
+      errorExport: createErrorExport(error),
+    };
+  }
 
   return _verifyFromJsonInput({
     chainId,
