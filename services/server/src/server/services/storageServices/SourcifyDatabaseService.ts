@@ -914,7 +914,7 @@ export class SourcifyDatabaseService
 
       const abi = verification.compilation.contractCompilerOutput.abi;
       if (!abi) {
-        throw new Error("No ABI found in compilation output");
+        return;
       }
 
       const signatureData = extractSignaturesFromAbi(abi);

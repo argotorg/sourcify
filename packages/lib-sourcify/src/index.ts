@@ -12,6 +12,7 @@ export * from './Compilation/SolidityCompilation';
 export * from './Compilation/VyperCompilation';
 export * from './Compilation/PreRunCompilation';
 export * from './Compilation/CompilationTypes';
+export * from './Compilation/utils';
 
 // Verification exports
 export * from './Verification/Verification';

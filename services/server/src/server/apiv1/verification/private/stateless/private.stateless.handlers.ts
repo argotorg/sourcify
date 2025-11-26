@@ -14,9 +14,9 @@ import type {
 import {
   createMetadataContractsFromFiles,
   Verification,
-  SolidityCompilation,
-  VyperCompilation,
   splitFullyQualifiedName,
+  CompilationError,
+  createCompilationFromJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   BadRequestError,
@@ -236,25 +236,25 @@ export async function replaceContract(
           "jsonInput, compilerVersion and compilationTarget are required when forceCompilation is true",
         );
       }
-      if (jsonInput?.language === "Solidity") {
-        compilation = new SolidityCompilation(
-          solc,
+      try {
+        compilation = createCompilationFromJsonInput(
+          { solc, vyper },
           compilerVersion,
-          jsonInput as SolidityJsonInput,
+          jsonInput,
           compilationTarget,
         );
-      } else if (jsonInput?.language === "Vyper") {
-        compilation = new VyperCompilation(
-          vyper,
-          compilerVersion,
-          jsonInput as VyperJsonInput,
-          compilationTarget,
-        );
-      } else {
-        throw new BadRequestError(
-          "Invalid language. Only Solidity and Vyper are supported",
-        );
+      } catch (err: any) {
+        if (
+          err instanceof CompilationError &&
+          err.code === "invalid_language"
+        ) {
+          throw new BadRequestError(
+            "Invalid language. Only Solidity and Vyper are supported",
+          );
+        }
+        throw err;
       }
+
       await compilation.compile();
     }
 

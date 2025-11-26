@@ -1,6 +1,9 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { deployFromAbiAndBytecodeForCreatorTxHash } from "../helpers/helpers";
+import {
+  deployFromAbiAndBytecodeForCreatorTxHash,
+  hookIntoVerificationWorkerRun,
+} from "../helpers/helpers";
 import { id as keccak256str, keccak256 } from "ethers";
 import { LocalChainFixture } from "../helpers/LocalChainFixture";
 import { ServerFixture } from "../helpers/ServerFixture";
@@ -32,6 +35,12 @@ function sha3_256(data: Bytes) {
 describe("Verifier Alliance database", function () {
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
+  const sandbox = sinon.createSandbox();
+  const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
+
+  afterEach(async () => {
+    sandbox.restore();
+  });
 
   const verifierAllianceTest = async (testCase: any) => {
     const constructorArguments =
@@ -139,6 +148,55 @@ describe("Verifier Alliance database", function () {
       contractPath,
       contractName: testCase.name,
     });
+
+    await assertDatabase(
+      testCase,
+      contractAddress,
+      txHash,
+      blockNumber,
+      txIndex,
+    );
+  };
+
+  const verifierAllianceTestYul = async (testCase: any) => {
+    const { resolveWorkers } = makeWorkersWait();
+    const constructorArguments =
+      testCase?.creation_values?.constructorArguments;
+    const { contractAddress, txHash, blockNumber, txIndex } =
+      await deployFromAbiAndBytecodeForCreatorTxHash(
+        chainFixture.localSigner,
+        testCase.compilation_artifacts.abi,
+        constructorArguments
+          ? testCase.compiled_creation_code
+          : testCase.deployed_creation_code,
+        constructorArguments ? [constructorArguments] : undefined,
+      );
+
+    const stdJsonInput = {
+      language: "Yul",
+      sources: Object.keys(testCase.sources).reduce(
+        (sources: any, sourceKey: string) => {
+          sources[sourceKey] = {
+            content: testCase.sources[sourceKey],
+          };
+          return sources;
+        },
+        {},
+      ),
+      settings: testCase.compiler_settings,
+    };
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(`/v2/verify/${chainFixture.chainId}/${contractAddress}`)
+      .send({
+        contractIdentifier: testCase.fully_qualified_name,
+        creationTransactionHash: txHash,
+        stdJsonInput,
+        compilerVersion: "0.8.26+commit.8a97fa7a",
+      });
+
+    chai.expect(verifyRes.status).to.equal(202);
+    await resolveWorkers();
 
     await assertDatabase(
       testCase,
@@ -386,6 +444,13 @@ describe("Verifier Alliance database", function () {
       "../verifier-alliance/full_match_double_auxdata.json"
     );
     await verifierAllianceTest(verifierAllianceTestDoubleAuxdata);
+  });
+
+  it("Store Yul match in database", async () => {
+    const verifierAllianceTestYulMatch = await import(
+      "../verifier-alliance/yul.json"
+    );
+    await verifierAllianceTestYul(verifierAllianceTestYulMatch);
   });
 
   // Tests to be implemented:

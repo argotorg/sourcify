@@ -79,6 +79,7 @@ export class PreRunCompilation extends AbstractCompilation {
 
   get immutableReferences(): ImmutableReferences {
     switch (this.language) {
+      case 'Yul':
       case 'Solidity': {
         const compilationTarget = this
           .contractCompilerOutput as SolidityOutputContract;
@@ -97,6 +98,7 @@ export class PreRunCompilation extends AbstractCompilation {
 
   get runtimeLinkReferences(): LinkReferences {
     switch (this.language) {
+      case 'Yul':
       case 'Solidity': {
         const compilationTarget = this
           .contractCompilerOutput as SolidityOutputContract;
@@ -109,6 +111,7 @@ export class PreRunCompilation extends AbstractCompilation {
 
   get creationLinkReferences(): LinkReferences {
     switch (this.language) {
+      case 'Yul':
       case 'Solidity': {
         const compilationTarget = this
           .contractCompilerOutput as SolidityOutputContract;
