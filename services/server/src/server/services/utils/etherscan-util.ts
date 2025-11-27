@@ -92,21 +92,6 @@ export const fetchFromEtherscanOrThrowError = async (
   }
 };
 
-export function isEtherscanError(
-  err: unknown,
-): err is
-  | EtherscanLimitError
-  | EtherscanRequestFailedError
-  | NotEtherscanVerifiedError
-  | MalformedEtherscanResponseError {
-  return (
-    err instanceof EtherscanLimitError ||
-    err instanceof EtherscanRequestFailedError ||
-    err instanceof NotEtherscanVerifiedError ||
-    err instanceof MalformedEtherscanResponseError
-  );
-}
-
 // Fetches compilation from Etherscan result and maps any errors to appropriate v1 server errors
 export async function getCompilationFromEtherscanResultOrThrowV1Error(
   etherscanResult: any,

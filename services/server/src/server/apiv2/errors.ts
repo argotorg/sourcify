@@ -27,6 +27,10 @@ export type ErrorCode =
   | "proxy_resolution_error"
   | "job_not_found"
   | "duplicate_verification_request"
+  | "etherscan_request_failed"
+  | "etherscan_limit"
+  | "not_etherscan_verified"
+  | "malformed_etherscan_response"
   | "failed_to_get_bytecode";
 
 export interface GenericErrorResponse {
@@ -257,15 +261,8 @@ export function errorHandler(
   next(new InternalError("The server encountered an unexpected error."));
 }
 
-export type EtherscanErrorCode =
-  | "etherscan_request_failed"
-  | "etherscan_limit"
-  | "not_etherscan_verified"
-  | "malformed_etherscan_response";
-
 export type VerificationErrorCode =
   | SourcifyLibErrorCode
-  | EtherscanErrorCode
   | "unsupported_language"
   | "already_verified"
   | "internal_error"
