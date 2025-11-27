@@ -2,11 +2,13 @@ import type { OutputError } from '@ethereum-sourcify/compilers-types';
 import type { CompilationErrorCode } from './Compilation/CompilationTypes';
 import type { ValidationErrorCode } from './Validation/ValidationTypes';
 import type { VerificationErrorCode } from './Verification/VerificationTypes';
+import type { EtherscanImportErrorCode } from './utils/etherscan/EtherscanTypes';
 
 export type SourcifyLibErrorCode =
   | ValidationErrorCode
   | CompilationErrorCode
-  | VerificationErrorCode;
+  | VerificationErrorCode
+  | EtherscanImportErrorCode;
 
 interface SourcifyLibErrorDataRequired {
   chainId: string;
@@ -16,6 +18,10 @@ interface SourcifyLibErrorDataRequired {
   compilationTargets: string[];
   compilerErrorMessage?: string;
   compilerErrors?: OutputError[];
+  status: number;
+  apiErrorMessage: string;
+  contractName: string;
+  compilerVersion: string;
 }
 
 export type SourcifyLibErrorData = Partial<SourcifyLibErrorDataRequired>;
@@ -31,6 +37,10 @@ export type SourcifyLibErrorParameters =
         | 'cannot_fetch_bytecode'
         | 'contract_not_deployed'
         | 'compiler_error'
+        | 'etherscan_http_error'
+        | 'etherscan_api_error'
+        | 'etherscan_missing_contract_in_json'
+        | 'etherscan_vyper_version_mapping_failed'
       >;
     }
   | ({
@@ -50,7 +60,19 @@ export type SourcifyLibErrorParameters =
     } & Pick<
       SourcifyLibErrorDataRequired,
       'compilerErrorMessage' | 'compilerErrors'
-    >);
+    >)
+  | ({
+      code: 'etherscan_http_error';
+    } & Pick<SourcifyLibErrorDataRequired, 'status'>)
+  | ({
+      code: 'etherscan_api_error';
+    } & Pick<SourcifyLibErrorDataRequired, 'apiErrorMessage'>)
+  | ({
+      code: 'etherscan_missing_contract_in_json';
+    } & Pick<SourcifyLibErrorDataRequired, 'contractName'>)
+  | ({
+      code: 'etherscan_vyper_version_mapping_failed';
+    } & Pick<SourcifyLibErrorDataRequired, 'compilerVersion'>);
 
 export class SourcifyLibError extends Error {
   public code: SourcifyLibErrorCode;
@@ -106,6 +128,23 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
       return 'Onchain runtime bytecode not available.';
     case 'onchain_creation_bytecode_not_available':
       return 'Onchain creation bytecode not available.';
+    // Etherscan import errors
+    case 'etherscan_network_error':
+      return `Network error while connecting to Etherscan API.`;
+    case 'etherscan_http_error':
+      return `Etherscan API returned HTTP ${params.status} error.`;
+    case 'etherscan_rate_limit':
+      return `Etherscan API rate limit reached, try later.`;
+    case 'etherscan_api_error':
+      return `Error in Etherscan API response. Result message: Invalid API Key`;
+    case 'etherscan_not_verified':
+      return `This contract is not verified on Etherscan.`;
+    case 'etherscan_vyper_version_mapping_failed':
+      return `Failed to map Vyper version "${params.compilerVersion}" from Etherscan to valid compiler version.`;
+    case 'etherscan_missing_contract_in_json':
+      return `Expected contract "${params.contractName}" not found in Etherscan JSON input sources.`;
+    case 'etherscan_missing_vyper_settings':
+      return 'Vyper compiler settings missing from Etherscan response.';
     // Unknown error
     default:
       return 'Unknown error.';

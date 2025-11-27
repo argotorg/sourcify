@@ -59,7 +59,8 @@ function mapLibError(err: any, throwV2Errors: boolean): never {
   throw err;
 }
 
-export const fetchFromEtherscan = async (
+// Fetches contract data from Etherscan and maps any errors to appropriate server errors (v1 or v2)
+export const fetchFromEtherscanOrThrowError = async (
   sourcifyChain: SourcifyChain,
   address: string,
   userApiKey?: string,
@@ -106,11 +107,11 @@ export function isEtherscanError(
   );
 }
 
-export async function getCompilationFromEtherscanResult(
+// Fetches compilation from Etherscan result and maps any errors to appropriate v1 server errors
+export async function getCompilationFromEtherscanResultOrThrowV1Error(
   etherscanResult: any,
   solc: ISolidityCompiler,
   vyperCompiler: IVyperCompiler,
-  throwV2Errors = false,
 ) {
   try {
     return EtherscanUtils.getCompilationFromEtherscanResult(
@@ -119,6 +120,6 @@ export async function getCompilationFromEtherscanResult(
       vyperCompiler,
     );
   } catch (err) {
-    return mapLibError(err, throwV2Errors);
+    return mapLibError(err, false);
   }
 }

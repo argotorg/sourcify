@@ -13,6 +13,7 @@ import {
   SourcifyChain,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
+  EtherscanUtils,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -30,14 +31,9 @@ import type {
   VerifySimilarityInput,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
-import {
-  getCompilationFromEtherscanResult,
-  isEtherscanError,
-} from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
-import type { EtherscanErrorCode } from "../../apiv2/errors";
 
 export const filename = resolve(__filename);
 
@@ -257,19 +253,12 @@ async function _verifyFromEtherscan({
 }: VerifyFromEtherscanInput): Promise<VerifyOutput> {
   let compilation: SolidityCompilation | VyperCompilation;
   try {
-    compilation = await getCompilationFromEtherscanResult(
+    compilation = await EtherscanUtils.getCompilationFromEtherscanResult(
       etherscanResult,
       solc,
       vyper,
-      true,
     );
   } catch (error: any) {
-    if (isEtherscanError(error)) {
-      const { customCode, errorId } = error.payload;
-      return {
-        errorExport: { customCode: customCode as EtherscanErrorCode, errorId },
-      };
-    }
     return {
       errorExport: createErrorExport(error),
     };
