@@ -235,7 +235,7 @@ ${
   properties.includes("event_signatures") ||
   properties.includes("error_signatures")
     ? `
-        JOIN ${this.schema}.compiled_contracts_signatures ON compiled_contracts_signatures.compilation_id = compiled_contracts.id
+        LEFT JOIN ${this.schema}.compiled_contracts_signatures ON compiled_contracts_signatures.compilation_id = compiled_contracts.id
         LEFT JOIN ${this.schema}.signatures ON signatures.signature_hash_32 = compiled_contracts_signatures.signature_hash_32
       `
     : ""
