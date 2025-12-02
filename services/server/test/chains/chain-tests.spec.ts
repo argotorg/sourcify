@@ -2015,6 +2015,22 @@ describe("Test Supported Chains", function () {
     "perfect",
   );
 
+  // Jovay Sepolia Testnet
+  verifyContract(
+    "0x63A2fA72305de66654bB95606190f5477abeAf36",
+    "2019775",
+    "Jovay Sepolia Testnet",
+    "shared/",
+  );
+
+  // Jovay Mainnet
+  verifyContract(
+    "0x63A2fA72305de66654bB95606190f5477abeAf36",
+    "5734951",
+    "Jovay Mainnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains

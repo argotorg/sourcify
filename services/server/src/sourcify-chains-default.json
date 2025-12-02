@@ -2429,5 +2429,25 @@
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
     }
+  },
+  "2019775": {
+    "sourcifyName": "Jovay Sepolia Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://sepolia-explorer.jovay.io"
+      }
+    },
+    "rpc": ["https://api.zan.top/public/jovay-testnet"]
+  },
+  "5734951": {
+    "sourcifyName": "Jovay Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.jovay.io"
+      }
+    },
+    "rpc": ["https://rpc.jovay.io"]
   }
 }
