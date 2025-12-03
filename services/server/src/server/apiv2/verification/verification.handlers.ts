@@ -10,7 +10,7 @@ import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { Services } from "../../services/services";
 import { StatusCodes } from "http-status-codes";
-import { fetchFromEtherscan } from "../../services/utils/etherscan-util";
+import { fetchFromEtherscanOrThrowError } from "../../services/utils/etherscan-util";
 import type { ChainRepository } from "../../../sourcify-chain-repository";
 
 interface VerifyFromJsonInputRequest extends Request {
@@ -129,7 +129,7 @@ export async function verifyFromEtherscanEndpoint(
 
   // Fetch here to give early feedback to the user.
   // Then, process in worker.
-  const etherscanResult = await fetchFromEtherscan(
+  const etherscanResult = await fetchFromEtherscanOrThrowError(
     chainRepository.supportedChainMap[req.params.chainId],
     req.params.address,
     req.body?.apiKey,

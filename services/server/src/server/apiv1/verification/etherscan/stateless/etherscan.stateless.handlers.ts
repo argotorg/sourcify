@@ -1,7 +1,7 @@
 import type { Response, Request } from "express";
 import {
-  fetchFromEtherscan,
-  getCompilationFromEtherscanResult,
+  fetchFromEtherscanOrThrowError,
+  getCompilationFromEtherscanResultOrThrowV1Error,
 } from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
 import type { ChainRepository } from "../../../../../sourcify-chain-repository";
@@ -27,13 +27,13 @@ export async function verifyFromEtherscan(req: Request, res: Response) {
 
   logger.info("verifyFromEtherscan", { chain, address, apiKey });
 
-  const etherscanResult = await fetchFromEtherscan(
+  const etherscanResult = await fetchFromEtherscanOrThrowError(
     sourcifyChain,
     address,
     apiKey,
   );
 
-  const compilation = await getCompilationFromEtherscanResult(
+  const compilation = await getCompilationFromEtherscanResultOrThrowV1Error(
     etherscanResult,
     solc,
     vyperCompiler,
