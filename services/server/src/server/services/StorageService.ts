@@ -360,9 +360,7 @@ export class StorageService {
     await Promise.all(
       Array.from(services)
         .map((service) => service.close?.())
-        .filter(
-          (promise): promise is Promise<void> => promise !== undefined,
-        ),
+        .filter((promise): promise is Promise<void> => promise !== undefined),
     );
   }
 

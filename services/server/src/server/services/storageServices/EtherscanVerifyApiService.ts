@@ -590,10 +590,7 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
-    this.trackExternalVerificationWrite(
-      jobData.verificationId,
-      writePromise,
-    );
+    this.trackExternalVerificationWrite(jobData.verificationId, writePromise);
   }
 
   private trackExternalVerificationWrite(
