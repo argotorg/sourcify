@@ -68,11 +68,11 @@ describe("EtherscanVerifyApiService", function () {
   const createService = (
     identifier: EtherscanVerifyApiIdentifiers,
     baseUrl: string,
-    upsertStub: sinon.SinonStub,
+    upsertExternalVerificationStub: sinon.SinonStub,
     options: Partial<EtherscanVerifyApiServiceOptions> = {},
   ): EtherscanVerifyApiService => {
     const databaseStub = {
-      upsertExternalVerification: upsertStub,
+      upsertExternalVerification: upsertExternalVerificationStub,
     } as unknown as Database;
 
     const sourcifyDatabaseServiceStub = {
@@ -117,8 +117,12 @@ describe("EtherscanVerifyApiService", function () {
   explorers.forEach(({ label, identifier, baseUrl }) => {
     describe(`${label} explorer`, () => {
       it("stores verification when explorer returns OK", async () => {
-        const upsertStub = sandbox.stub().resolves();
-        const service = createService(identifier, baseUrl, upsertStub);
+        const upsertExternalVerificationStub = sandbox.stub().resolves();
+        const service = createService(
+          identifier,
+          baseUrl,
+          upsertExternalVerificationStub,
+        );
         const jobData = {
           verificationId: "verification-job-id",
           finishTime: new Date(),
@@ -158,7 +162,7 @@ describe("EtherscanVerifyApiService", function () {
         });
 
         sinon.assert.calledOnceWithExactly(
-          upsertStub,
+          upsertExternalVerificationStub,
           jobData.verificationId,
           identifier,
           {
@@ -168,8 +172,12 @@ describe("EtherscanVerifyApiService", function () {
       });
 
       it("throws when explorer does not confirm submission", async () => {
-        const upsertStub = sandbox.stub().resolves();
-        const service = createService(identifier, baseUrl, upsertStub);
+        const upsertExternalVerificationStub = sandbox.stub().resolves();
+        const service = createService(
+          identifier,
+          baseUrl,
+          upsertExternalVerificationStub,
+        );
         const jobData = {
           verificationId: "verification-job-id",
           finishTime: new Date(),
@@ -188,7 +196,7 @@ describe("EtherscanVerifyApiService", function () {
           ),
         ).to.eventually.be.fulfilled;
         sinon.assert.calledOnceWithExactly(
-          upsertStub,
+          upsertExternalVerificationStub,
           jobData.verificationId,
           identifier,
           {
@@ -199,13 +207,62 @@ describe("EtherscanVerifyApiService", function () {
     });
   });
 
-  it("uses vyper codeformat when verification is for a Vyper contract", async () => {
+  it.only("waits for pending external verification writes on close", async () => {
     const baseUrl = "https://etherscan.example/api";
-    const upsertStub = sandbox.stub().resolves();
+    // Keep the upsert promise unresolved until we manually resolve it to verify that close() waits
+    let resolveUpsertExternalVerification: (() => void) | undefined;
+    const upsertExternalVerificationStub = sandbox.stub().returns(
+      new Promise<void>((resolve) => {
+        resolveUpsertExternalVerification = resolve;
+      }),
+    );
     const service = createService(
       WStorageIdentifiers.EtherscanVerify,
       baseUrl,
-      upsertStub,
+      upsertExternalVerificationStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+    const fetchPayload = {
+      status: "1" as const,
+      message: "OK",
+      result: "receipt-123",
+    };
+    fetchStub.resolves(mockFetchResponse(fetchPayload));
+
+    await service.storeVerification(
+      structuredClone(MockVerificationExport),
+      jobData,
+    );
+
+    // Ensure the upsertExternalVerification was called and is pending
+    sinon.assert.calledOnce(upsertExternalVerificationStub);
+
+    // Ensure close() does not resolve until the pending upsertExternalVerification finishes
+    const closePromise = service.close().then(() => "closed");
+    const raceResult = await Promise.race([
+      closePromise,
+      Promise.resolve("pending"),
+    ]);
+    expect(raceResult).to.equal("pending");
+
+    // Resolve the upsert and verify close() completes
+    resolveUpsertExternalVerification?.();
+
+    // Now closePromise should resolve
+    const closeResult = await closePromise;
+    expect(closeResult).to.equal("closed");
+  });
+
+  it("uses vyper codeformat when verification is for a Vyper contract", async () => {
+    const baseUrl = "https://etherscan.example/api";
+    const upsertExternalVerificationStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.EtherscanVerify,
+      baseUrl,
+      upsertExternalVerificationStub,
     );
     const jobData = {
       verificationId: "verification-job-id",
@@ -251,11 +308,11 @@ describe("EtherscanVerifyApiService", function () {
 
   it("uses the Blockscout specific endpoint and payload for Vyper verification", async () => {
     const baseUrl = "https://blockscout.example/api";
-    const upsertStub = sandbox.stub().resolves();
+    const upsertExternalVerificationStub = sandbox.stub().resolves();
     const service = createService(
       WStorageIdentifiers.BlockscoutVerify,
       baseUrl,
-      upsertStub,
+      upsertExternalVerificationStub,
     );
     const jobData = {
       verificationId: "verification-job-id",
@@ -317,7 +374,7 @@ describe("EtherscanVerifyApiService", function () {
     expect(file.type).to.equal("application/json");
 
     sinon.assert.calledOnceWithExactly(
-      upsertStub,
+      upsertExternalVerificationStub,
       jobData.verificationId,
       WStorageIdentifiers.BlockscoutVerify,
       {

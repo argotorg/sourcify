@@ -45,6 +45,7 @@ import { EtherscanVerifyApiService } from "./storageServices/EtherscanVerifyApiS
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
   init(): Promise<boolean>;
+  close?(): Promise<void>;
   storeVerification(
     verification: VerificationExport,
     jobData?: {
@@ -347,6 +348,21 @@ export class StorageService {
           );
         }
       }),
+    );
+  }
+
+  async close(): Promise<void> {
+    const services = new Set<WStorageService>([
+      ...Object.values(this.rwServices),
+      ...Object.values(this.wServices),
+    ]);
+
+    await Promise.all(
+      Array.from(services)
+        .map((service) => service.close?.())
+        .filter(
+          (promise): promise is Promise<void> => promise !== undefined,
+        ),
     );
   }
 

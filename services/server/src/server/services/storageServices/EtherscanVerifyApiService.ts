@@ -401,6 +401,7 @@ export interface EtherscanVerifyApiServiceOptions {
 export class EtherscanVerifyApiService implements WStorageService {
   IDENTIFIER: EtherscanVerifyApiIdentifiers;
   private database: Database;
+  private readonly pendingExternalVerificationWrites = new Set<Promise<void>>();
 
   private readonly options: Required<EtherscanVerifyApiServiceOptions>;
 
@@ -563,16 +564,20 @@ export class EtherscanVerifyApiService implements WStorageService {
     });
   }
 
-  private async storeExternalVerificationResult(
+  async close(): Promise<void> {
+    await Promise.all(this.pendingExternalVerificationWrites);
+  }
+
+  private storeExternalVerificationResult(
     jobData: {
       verificationId: string;
       finishTime: Date;
     },
     response: ExternalVerification,
-  ): Promise<void> {
-    // Record the result of the successful submission
+  ): void {
+    let writePromise: Promise<void>;
     try {
-      await this.database.upsertExternalVerification(
+      writePromise = this.database.upsertExternalVerification(
         jobData.verificationId,
         this.IDENTIFIER,
         response,
@@ -582,7 +587,31 @@ export class EtherscanVerifyApiService implements WStorageService {
         verificationJobId: jobData.verificationId,
         error,
       });
+      return;
     }
+
+    this.trackExternalVerificationWrite(
+      jobData.verificationId,
+      writePromise,
+    );
+  }
+
+  private trackExternalVerificationWrite(
+    verificationJobId: string,
+    writePromise: Promise<void>,
+  ): void {
+    const trackedPromise = writePromise
+      .catch((error) => {
+        logger.error("Failed to record external verification receipt", {
+          verificationJobId,
+          error,
+        });
+      })
+      .finally(() => {
+        this.pendingExternalVerificationWrites.delete(trackedPromise);
+      });
+
+    this.pendingExternalVerificationWrites.add(trackedPromise);
   }
 
   private async submitVerification(
