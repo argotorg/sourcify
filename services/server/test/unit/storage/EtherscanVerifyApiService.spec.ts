@@ -207,7 +207,7 @@ describe("EtherscanVerifyApiService", function () {
     });
   });
 
-  it.only("waits for pending external verification writes on close", async () => {
+  it("waits for pending external verification writes on close", async () => {
     const baseUrl = "https://etherscan.example/api";
     // Keep the upsert promise unresolved until we manually resolve it to verify that close() waits
     let resolveUpsertExternalVerification: (() => void) | undefined;
