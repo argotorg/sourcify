@@ -204,8 +204,8 @@
     "sourcifyName": "PulseChain Mainnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://scan.pulsechain.com/"
+      "blockscoutApi": {
+        "url": "https://api.scan.pulsechain.com/"
       }
     }
   },
