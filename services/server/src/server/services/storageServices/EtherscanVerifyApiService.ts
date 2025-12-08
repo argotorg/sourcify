@@ -508,7 +508,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     } catch (error: any) {
       // Store the external verification result if we have job data
       if (jobData) {
-        this.storeExternalVerificationResult(jobData, {
+        await this.storeExternalVerificationResult(jobData, {
           error: error.message,
         });
       }
@@ -538,7 +538,7 @@ export class EtherscanVerifyApiService implements WStorageService {
       (this.IDENTIFIER === WStorageIdentifiers.EtherscanVerify &&
         response.result === "Contract source code already verified")
     ) {
-      this.storeExternalVerificationResult(jobData, {
+      await this.storeExternalVerificationResult(jobData, {
         verificationId: VERIFIER_ALREADY_VERIFIED,
       });
       return;
@@ -551,14 +551,14 @@ export class EtherscanVerifyApiService implements WStorageService {
         verificationJobId: jobData.verificationId,
         error: response.result,
       });
-      this.storeExternalVerificationResult(jobData, {
+      await this.storeExternalVerificationResult(jobData, {
         error: response.result,
       });
       return;
     }
 
     // Record the result of the successful submission
-    this.storeExternalVerificationResult(jobData, {
+    await this.storeExternalVerificationResult(jobData, {
       verificationId: response.result,
     });
   }
@@ -636,7 +636,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     if (!response.ok) {
       const responseText = await response.text();
       if (jobData) {
-        this.storeExternalVerificationResult(jobData, {
+        await this.storeExternalVerificationResult(jobData, {
           error: responseText,
         });
       }
@@ -656,11 +656,11 @@ export class EtherscanVerifyApiService implements WStorageService {
       // Blockscout does not return a verification ID,
       // so we use a fixed string to indicate a successful submission
       if (res.message === "Smart-contract verification started") {
-        this.storeExternalVerificationResult(jobData, {
+        await this.storeExternalVerificationResult(jobData, {
           verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
         });
       } else {
-        this.storeExternalVerificationResult(jobData, {
+        await this.storeExternalVerificationResult(jobData, {
           error: res.message,
         });
       }
