@@ -436,6 +436,13 @@
       "expectedStatus": "partial"
     }
   ],
+  "1329": [
+    {
+      "address": "0xe15fC38F6D8c56aF07bbCBe3BAf5708A2Bf42392",
+      "type": "standard-json",
+      "expectedStatus": "perfect"
+    }
+  ],
   "167000": [
     {
       "address": "0xc32777ABD72933ea91Ed92f531F0406af274bac7",

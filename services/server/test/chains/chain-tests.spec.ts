@@ -1973,6 +1973,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Sei Mainnet
+  verifyContract(
+    "0xc9f275dc9c9d7451dAa5655d0105F0266b31347f",
+    "1329",
+    "Sei Mainnet",
+    "shared/",
+  );
+
   // Reactive Network
   verifyContract(
     "0xCBe2F4039A3990E17b206fad54Aa6fe1EFcdF35B",
