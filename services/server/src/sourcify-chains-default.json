@@ -2401,5 +2401,16 @@
         "traceSupport": "trace_transaction"
       }
     ]
+  },
+  "1329": {
+    "sourcifyName": "Sei Network",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_SEI"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    }
   }
 }

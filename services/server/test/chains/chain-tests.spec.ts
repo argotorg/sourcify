@@ -1989,6 +1989,13 @@ describe("Test Supported Chains", function () {
     "multicall-src/",
     "partial",
   );
+  // Sei Network
+  verifyContract(
+    "0xc9f275dc9c9d7451dAa5655d0105F0266b31347f",
+    "1329",
+    "Sei Network",
+    "shared/",
+  );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
