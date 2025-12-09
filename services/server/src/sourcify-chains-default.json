@@ -200,15 +200,29 @@
     "sourcifyName": "Ethereum Mekong Testnet",
     "supported": false
   },
-  "369": {
-    "sourcifyName": "PulseChain Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutApi": {
-        "url": "https://api.scan.pulsechain.com/"
-      }
-    }
-  },
+  "369": {  
+    "sourcifyName": "PulseChain Mainnet",  
+    "supported": true,  
+    "fetchContractCreationTxUsing": {  
+      "blockscoutApi": {  
+        "url": "https://api.scan.pulsechain.com/"  
+      }  
+    },  
+    "rpc": [  
+      {  
+        "url": "https://rpc.pulsechain.com",  
+        "type": "BaseRPC",  
+        "traceSupport": "trace_transaction"  
+      },  
+      "https://pulsechain-rpc.publicnode.com",  
+      "wss://pulsechain-rpc.publicnode.com",  
+      {  
+        "url": "https://rpc-pulsechain.g4mm4.io",  
+        "type": "BaseRPC",   
+        "traceSupport": "trace_transaction"  
+      }  
+    ]  
+  }
   "3": {
     "sourcifyName": "Ethereum Ropsten Testnet",
     "supported": false
