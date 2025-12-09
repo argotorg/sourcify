@@ -222,7 +222,7 @@
         "traceSupport": "trace_transaction"  
       }  
     ]  
-  }
+  },
   "3": {
     "sourcifyName": "Ethereum Ropsten Testnet",
     "supported": false
