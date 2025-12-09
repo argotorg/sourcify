@@ -2407,7 +2407,7 @@
     "supported": true,
     "etherscanApi": {
       "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_SEI"
+      "apiKeyEnvName": "ETHERSCAN_API_KEY"
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
