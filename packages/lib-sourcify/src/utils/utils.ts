@@ -52,3 +52,36 @@ export function convertLibrariesToMetadataFormat(
 
   return Object.keys(metadataLibraries).length ? metadataLibraries : undefined;
 }
+
+/**
+ * Converts libraries from the metadata format to the solc JSON input format.
+ * metadata format: { "contracts/1_Storage.sol:Journal": "0x..." }
+ * jsonInput format: { "contracts/1_Storage.sol": { Journal: "0x..." } }
+ */
+export function convertLibrariesFromMetadataFormat(
+  metadataLibraries?: MetadataCompilerSettings['libraries'],
+): Libraries | undefined {
+  if (!metadataLibraries) {
+    return undefined;
+  }
+
+  return Object.keys(metadataLibraries).reduce((libraries, libraryKey) => {
+    // Before Solidity v0.7.5: { "ERC20": "0x..."}
+    if (!libraryKey.includes(':')) {
+      if (!libraries['']) {
+        libraries[''] = {};
+      }
+      // try using the global method, available for pre 0.7.5 versions
+      libraries[''][libraryKey] = metadataLibraries[libraryKey];
+      return libraries;
+    }
+
+    // After Solidity v0.7.5: { "ERC20.sol:ERC20": "0x..."}
+    const { contractPath, contractName } = splitFullyQualifiedName(libraryKey);
+    if (!libraries[contractPath]) {
+      libraries[contractPath] = {};
+    }
+    libraries[contractPath][contractName] = metadataLibraries[libraryKey];
+    return libraries;
+  }, {} as Libraries);
+}

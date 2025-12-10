@@ -1,18 +1,20 @@
 import type {
+  AnyCompilation,
+  CompilationTarget,
+  ISolidityCompiler,
+  IVyperCompiler,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
+  CompilationError,
+  SolidityCompilation,
+  VyperCompilation,
+  YulCompilation,
+} from "@ethereum-sourcify/lib-sourcify";
+import type {
   AnyJsonInput,
   SolidityJsonInput,
   VyperJsonInput,
-} from '@ethereum-sourcify/compilers-types';
-import { SolidityCompilation } from './SolidityCompilation';
-import { VyperCompilation } from './VyperCompilation';
-import {
-  CompilationError,
-  type AnyCompilation,
-  type CompilationTarget,
-  type ISolidityCompiler,
-  type IVyperCompiler,
-} from './CompilationTypes';
-import { YulCompilation } from './YulCompilation';
+} from "@ethereum-sourcify/compilers-types";
 
 export function createCompilationFromJsonInput(
   compilers: {
@@ -22,39 +24,34 @@ export function createCompilationFromJsonInput(
   compilerVersion: string,
   jsonInput: AnyJsonInput,
   compilationTarget: CompilationTarget,
-) {
-  let compilation: AnyCompilation;
+): AnyCompilation {
   switch (jsonInput?.language) {
-    case 'Solidity': {
-      compilation = new SolidityCompilation(
+    case "Solidity": {
+      return new SolidityCompilation(
         compilers.solc,
         compilerVersion,
         jsonInput as SolidityJsonInput,
         compilationTarget,
       );
-      break;
     }
-    case 'Yul': {
-      compilation = new YulCompilation(
+    case "Yul": {
+      return new YulCompilation(
         compilers.solc,
         compilerVersion,
         jsonInput as SolidityJsonInput,
         compilationTarget,
       );
-      break;
     }
-    case 'Vyper': {
-      compilation = new VyperCompilation(
+    case "Vyper": {
+      return new VyperCompilation(
         compilers.vyper,
         compilerVersion,
         jsonInput as VyperJsonInput,
         compilationTarget,
       );
-      break;
     }
     default: {
-      throw new CompilationError({ code: 'invalid_language' });
+      throw new CompilationError({ code: "invalid_language" });
     }
   }
-  return compilation;
 }

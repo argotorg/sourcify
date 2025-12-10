@@ -53,7 +53,7 @@ export type DeploymentInfo = {
  */
 export async function deployFromAbiAndBytecodeForCreatorTxHash(
   signer: JsonRpcSigner,
-  abi: JsonFragment[],
+  abi: JsonFragment[] | undefined,
   bytecode: BytesLike | { object: string },
   args?: any[],
 ): Promise<DeploymentInfo> {

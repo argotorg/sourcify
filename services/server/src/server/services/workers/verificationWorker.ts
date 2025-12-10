@@ -11,7 +11,6 @@ import {
   SourcifyChain,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
-  createCompilationFromJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -33,6 +32,7 @@ import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
+import { createCompilationFromJsonInput } from "../utils/compilation";
 
 export const filename = resolve(__filename);
 

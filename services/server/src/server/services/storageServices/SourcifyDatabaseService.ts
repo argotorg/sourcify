@@ -914,7 +914,10 @@ export class SourcifyDatabaseService
 
       const abi = verification.compilation.contractCompilerOutput.abi;
       if (!abi) {
-        return;
+        if (verification.compilation.language === "Yul") {
+          return;
+        }
+        throw new Error("No ABI found in compilation output");
       }
 
       const signatureData = extractSignaturesFromAbi(abi);

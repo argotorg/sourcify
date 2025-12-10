@@ -16,7 +16,6 @@ import {
   Verification,
   splitFullyQualifiedName,
   CompilationError,
-  createCompilationFromJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   BadRequestError,
@@ -33,6 +32,7 @@ import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
 import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
 import type { CustomReplaceMethod } from "./customReplaceMethods";
 import { REPLACE_METHODS } from "./customReplaceMethods";
+import { createCompilationFromJsonInput } from "../../../../services/utils/compilation";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,

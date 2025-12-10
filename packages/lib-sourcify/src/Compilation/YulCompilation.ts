@@ -44,15 +44,19 @@ export class YulCompilation extends SolidityCompilation {
       JSON.stringify(this.jsonInput.settings),
     ) as SoliditySettings;
 
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      outputSelection: _outputSelection,
+      libraries,
+      ...settingsWithoutOutputSelection
+    } = soliditySettings;
+
     const metadataSettings: Omit<
       MetadataCompilerSettings,
       'compilationTarget'
-    > & { outputSelection: undefined } = {
-      ...soliditySettings,
-      outputSelection: undefined,
-      libraries: convertLibrariesToMetadataFormat(
-        this.jsonInput.settings.libraries,
-      ),
+    > = {
+      ...settingsWithoutOutputSelection,
+      libraries: convertLibrariesToMetadataFormat(libraries),
     };
     this._metadata = {
       compiler: { version: this.compilerVersion },
