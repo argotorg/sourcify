@@ -2338,10 +2338,8 @@
     "rpc": [
       {
         "type": "APIKeyRPC",
-        "url": "https://{SUBDOMAIN}.tempo-testnet.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
+        "url": "https://tempo-testnet.g.alchemy.com/v2/{API_KEY}",
+        "apiKeyEnvName": "ALCHEMY_API_KEY"
       }
     ]
   },

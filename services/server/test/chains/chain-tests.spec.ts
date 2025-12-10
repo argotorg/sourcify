@@ -1992,11 +1992,11 @@ describe("Test Supported Chains", function () {
 
   // Tempo Testnet (Andantino)
   verifyContract(
-    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "0x7ecedB5ca848e695ee8aB33cce9Ad1E1fe7865F8",
     "42429",
     "Tempo Testnet (Andantino)",
-    "10/",
-    "partial",
+    "shared/",
+    "perfect",
   );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
