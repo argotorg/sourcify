@@ -9,6 +9,8 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import chainsRaw from "./chains.json";
+// Chains that we decide to support but that are not in chains.json
+import extraChainsRaw from "./extra-chains.json";
 import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";
 import fs from "fs";
@@ -60,7 +62,7 @@ else {
 }
 
 // chains.json from ethereum-lists (chainId.network/chains.json)
-const allChains = chainsRaw as Chain[];
+const allChains = [...chainsRaw, ...extraChainsRaw] as Chain[];
 
 export const LOCAL_CHAINS: SourcifyChain[] = [
   new SourcifyChain({
