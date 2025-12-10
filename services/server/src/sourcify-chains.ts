@@ -9,7 +9,6 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import chainsRaw from "./chains.json";
-// Chains that we decide to support but that are not in chains.json
 import extraChainsRaw from "./extra-chains.json";
 import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";
@@ -61,8 +60,17 @@ else {
     rawSourcifyChainExtentions as SourcifyChainsExtensionsObjectWithHeaderEnvName;
 }
 
-// chains.json from ethereum-lists (chainId.network/chains.json)
-const allChains = [...chainsRaw, ...extraChainsRaw] as Chain[];
+const chainMapById = new Map<number, Chain>();
+// Add chains.json from ethereum-lists (chainId.network/chains.json)
+chainsRaw.forEach((chain) => chainMapById.set(chain.chainId, chain));
+// Chains that we decide to support but that are not in chains.json
+extraChainsRaw.forEach((chain) => {
+  // Skip if chainsRaw already defines this chainId so canonical entry wins
+  if (!chainMapById.has(chain.chainId)) {
+    chainMapById.set(chain.chainId, chain);
+  }
+});
+const allChains = Array.from(chainMapById.values());
 
 export const LOCAL_CHAINS: SourcifyChain[] = [
   new SourcifyChain({
