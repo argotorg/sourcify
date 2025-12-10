@@ -32,7 +32,7 @@ import {
   getVariationsByContentHash,
 } from './variationsUtils';
 import { logDebug } from '../logger';
-import { convertLibrariesFromMetadataFormat } from '../utils/utils';
+import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export class SolidityMetadataContract {
   metadata: Metadata;
@@ -316,7 +316,7 @@ export class SolidityMetadataContract {
 
     this.solcJsonInput.language = this.metadata.language;
 
-    const libraries = convertLibrariesFromMetadataFormat(metadataLibraries);
+    const libraries = convertLibrariesToStdJsonFormat(metadataLibraries);
     if (libraries) {
       this.solcJsonInput.settings.libraries = libraries;
     }

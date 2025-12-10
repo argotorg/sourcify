@@ -58,7 +58,7 @@ export function convertLibrariesToMetadataFormat(
  * metadata format: { "contracts/1_Storage.sol:Journal": "0x..." }
  * jsonInput format: { "contracts/1_Storage.sol": { Journal: "0x..." } }
  */
-export function convertLibrariesFromMetadataFormat(
+export function convertLibrariesToStdJsonFormat(
   metadataLibraries?: MetadataCompilerSettings['libraries'],
 ): Libraries | undefined {
   if (!metadataLibraries) {
