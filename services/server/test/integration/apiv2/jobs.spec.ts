@@ -130,6 +130,9 @@ describe("GET /v2/verify/:verificationId", function () {
           explorerUrl:
             "https://etherscan.io/address/" +
             chainFixture.defaultContractAddress,
+          contractApiUrl:
+            "https://api.etherscan.io/api?module=contract&action=getabi&chainid=31337&address=" +
+            chainFixture.defaultContractAddress,
         },
         blockscout: {
           verificationId: "VERIFIER_ALREADY_VERIFIED",

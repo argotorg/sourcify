@@ -324,18 +324,27 @@ export const buildJobExternalVerificationsObject = (
     }
 
     let statusUrl;
+    let contractApiUrl;
     if (
       verifierData.verificationId &&
       // We need to handle the special case for a blockscout already verified contract
       verifierData.verificationId !== VERIFIER_ALREADY_VERIFIED
     ) {
       try {
-        const apiBaseUrl = verifierService?.getApiUrl(
+        const statusApiBaseUrl = verifierService?.getApiUrl(
           "checkverifystatus",
           parseInt(chainId),
         );
-        if (apiBaseUrl) {
-          statusUrl = `${apiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
+        if (statusApiBaseUrl) {
+          statusUrl = `${statusApiBaseUrl}&guid=${encodeURIComponent(verifierData.verificationId)}`;
+        }
+
+        const contractApiBaseUrl = verifierService?.getApiUrl(
+          "getabi",
+          parseInt(chainId),
+        );
+        if (contractApiBaseUrl) {
+          contractApiUrl = `${contractApiBaseUrl}&address=${address}`;
         }
       } catch (error) {
         // Cannot generate url
@@ -362,6 +371,7 @@ export const buildJobExternalVerificationsObject = (
       error: verifierData.error,
       statusUrl,
       explorerUrl,
+      contractApiUrl,
     };
 
     switch (verifier) {
