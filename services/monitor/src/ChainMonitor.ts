@@ -16,6 +16,7 @@ import type {
 } from "./types";
 import PendingContract from "./PendingContract";
 import type { Logger } from "winston";
+import type SimilarityVerificationClient from "./SimilarityVerificationClient";
 
 function createsContract(tx: TransactionResponse): boolean {
   return !tx.to;
@@ -31,6 +32,7 @@ export default class ChainMonitor extends EventEmitter {
   private sourceFetchers: KnownDecentralizedStorageFetchers;
   private sourcifyServerURLs: string[];
   private sourcifyRequestOptions: SourcifyRequestOptions;
+  private similarityVerificationClient?: SimilarityVerificationClient;
 
   private chainLogger: Logger;
   private startBlock?: number;
@@ -47,10 +49,12 @@ export default class ChainMonitor extends EventEmitter {
     sourcifyChain: SourcifyChain,
     sourceFetchers: KnownDecentralizedStorageFetchers,
     monitorConfig: MonitorConfig,
+    similarityVerificationClient?: SimilarityVerificationClient,
   ) {
     super();
     this.sourcifyChain = sourcifyChain;
     this.sourceFetchers = sourceFetchers; // TODO: handle multipe
+    this.similarityVerificationClient = similarityVerificationClient;
     this.chainLogger = logger.child({
       moduleName: "ChainMonitor #" + this.sourcifyChain.chainId,
       chainId: this.sourcifyChain.chainId,
@@ -286,6 +290,10 @@ export default class ChainMonitor extends EventEmitter {
           address,
           origin: metadataHash.origin,
         });
+        await this.triggerSimilarityVerificationFallback(
+          creatorTxHash,
+          address,
+        );
         return;
       }
 
@@ -300,6 +308,10 @@ export default class ChainMonitor extends EventEmitter {
         await pendingContract.assemble();
       } catch (err: any) {
         this.chainLogger.info("Couldn't assemble contract", { address, err });
+        await this.triggerSimilarityVerificationFallback(
+          creatorTxHash,
+          address,
+        );
         return;
       }
       if (!this.isEmpty(pendingContract.pendingSources)) {
@@ -307,6 +319,10 @@ export default class ChainMonitor extends EventEmitter {
           address: pendingContract.address,
           pendingSources: pendingContract.pendingSources,
         });
+        await this.triggerSimilarityVerificationFallback(
+          creatorTxHash,
+          address,
+        );
         return;
       }
 
@@ -364,6 +380,36 @@ export default class ChainMonitor extends EventEmitter {
       this.chainLogger.error("Error processing bytecode", { address, error });
     }
   };
+
+  private async triggerSimilarityVerificationFallback(
+    creatorTxHash: string,
+    address: string,
+  ) {
+    if (!this.similarityVerificationClient) {
+      this.chainLogger.debug("Similarity search disabled, skipping fallback", {
+        address,
+      });
+      return;
+    }
+
+    this.chainLogger.info("Triggering similarity search fallback", {
+      address,
+      creatorTxHash,
+    });
+
+    try {
+      await this.similarityVerificationClient.trigger(
+        this.sourcifyChain.chainId,
+        address,
+        creatorTxHash,
+      );
+    } catch (error: any) {
+      this.chainLogger.error("Similarity search fallback failed", {
+        address,
+        error,
+      });
+    }
+  }
 
   private startBlockPauseLogging = (): void => {
     this.blockPauseLogInterval = setInterval(() => {
