@@ -418,15 +418,11 @@ describe("Verify repository endpoints", function () {
 
       it(`should fetch library-map.json of specific address, and it should be available in /files/any. Storage type: ${serverFixture.identifier}`, async function () {
         const artifact = (
-          await import(
-            "../../../testcontracts/LibrariesLinkedManually/LibrariesLinkedManually.json"
-          )
+          await import("../../../testcontracts/LibrariesLinkedManually/LibrariesLinkedManually.json")
         ).default;
 
         const metadata = (
-          await import(
-            "../../../testcontracts/LibrariesLinkedManually/metadata.json"
-          )
+          await import("../../../testcontracts/LibrariesLinkedManually/metadata.json")
         ).default;
         const metadataBuffer = Buffer.from(JSON.stringify(metadata));
 

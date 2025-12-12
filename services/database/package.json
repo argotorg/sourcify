@@ -23,7 +23,7 @@
     "commander": "12.1.0",
     "dbmate": "2.28.0",
     "dotenv": "16.6.1",
-    "ethers": "6.15.0",
+    "ethers": "6.16.0",
     "pg": "8.16.3",
     "readdirp": "3.6.0"
   }

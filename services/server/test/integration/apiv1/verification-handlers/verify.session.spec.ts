@@ -662,9 +662,7 @@ describe("/session", function () {
 
     // Deploy child by calling deploy(uint)
     const childMetadata = (
-      await import(
-        "../../../testcontracts/FactoryImmutable/Child_metadata.json"
-      )
+      await import("../../../testcontracts/FactoryImmutable/Child_metadata.json")
     ).default;
     const childMetadataBuffer = Buffer.from(JSON.stringify(childMetadata));
     const txReceipt = await callContractMethodWithTx(
@@ -711,9 +709,7 @@ describe("/session", function () {
 
   it("should verify a contract created by a factory contract and has immutables without constructor arguments but with msg.sender assigned immutable", async () => {
     const artifact = (
-      await import(
-        "../../../testcontracts/FactoryImmutableWithoutConstrArg/Factory3.json"
-      )
+      await import("../../../testcontracts/FactoryImmutableWithoutConstrArg/Factory3.json")
     ).default;
     const factoryAddress = await deployFromAbiAndBytecode(
       chainFixture.localSigner,
@@ -723,9 +719,7 @@ describe("/session", function () {
 
     // Deploy child by calling deploy(uint)
     const childMetadata = (
-      await import(
-        "../../../testcontracts/FactoryImmutableWithoutConstrArg/Child3_metadata.json"
-      )
+      await import("../../../testcontracts/FactoryImmutableWithoutConstrArg/Child3_metadata.json")
     ).default;
     const childMetadataBuffer = Buffer.from(JSON.stringify(childMetadata));
     const txReceipt = await callContractMethodWithTx(
@@ -949,9 +943,7 @@ describe("/session", function () {
 
     before(async () => {
       const bytecodeMismatchArtifact = (
-        await import(
-          "../../../sources/artifacts/extraFilesBytecodeMismatch.json"
-        )
+        await import("../../../sources/artifacts/extraFilesBytecodeMismatch.json")
       ).default;
       contractAddress = await deployFromAbiAndBytecode(
         chainFixture.localSigner,
@@ -961,52 +953,56 @@ describe("/session", function () {
     });
 
     it("should warn the user about the issue when metadata match but not bytecodes", (done) => {
-      import(
-        "../../../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json"
-      ).then((hardhatOutput) => {
-        const hardhatOutputBuffer = Buffer.from(JSON.stringify(hardhatOutput));
-        const agent = chai.request.agent(serverFixture.server.app);
-        agent
-          .post("/session/input-files")
-          .attach("files", hardhatOutputBuffer)
-          .then((res) => {
-            const contracts = res.body.contracts;
-            contracts[0].address = contractAddress;
-            contracts[0].chainId = chainFixture.chainId;
-            agent
-              .post("/session/verify-validated")
-              .send({ contracts })
-              .then((res) => {
-                assertSingleContractStatus(res, "error");
-                done();
-              });
-          });
-      });
+      import("../../../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json").then(
+        (hardhatOutput) => {
+          const hardhatOutputBuffer = Buffer.from(
+            JSON.stringify(hardhatOutput),
+          );
+          const agent = chai.request.agent(serverFixture.server.app);
+          agent
+            .post("/session/input-files")
+            .attach("files", hardhatOutputBuffer)
+            .then((res) => {
+              const contracts = res.body.contracts;
+              contracts[0].address = contractAddress;
+              contracts[0].chainId = chainFixture.chainId;
+              agent
+                .post("/session/verify-validated")
+                .send({ contracts })
+                .then((res) => {
+                  assertSingleContractStatus(res, "error");
+                  done();
+                });
+            });
+        },
+      );
     });
 
     it("should verify with all input files and not only those in metadata", (done) => {
-      import(
-        "../../../sources/hardhat-output/extraFilesBytecodeMismatch.json"
-      ).then((hardhatOutput) => {
-        const hardhatOutputBuffer = Buffer.from(JSON.stringify(hardhatOutput));
+      import("../../../sources/hardhat-output/extraFilesBytecodeMismatch.json").then(
+        (hardhatOutput) => {
+          const hardhatOutputBuffer = Buffer.from(
+            JSON.stringify(hardhatOutput),
+          );
 
-        const agent = chai.request.agent(serverFixture.server.app);
-        agent
-          .post("/session/input-files")
-          .attach("files", hardhatOutputBuffer)
-          .then((res) => {
-            const contracts = res.body.contracts;
-            contracts[0].address = contractAddress;
-            contracts[0].chainId = chainFixture.chainId;
-            agent
-              .post("/session/verify-validated")
-              .send({ contracts })
-              .then((res) => {
-                assertSingleContractStatus(res, "perfect");
-                done();
-              });
-          });
-      });
+          const agent = chai.request.agent(serverFixture.server.app);
+          agent
+            .post("/session/input-files")
+            .attach("files", hardhatOutputBuffer)
+            .then((res) => {
+              const contracts = res.body.contracts;
+              contracts[0].address = contractAddress;
+              contracts[0].chainId = chainFixture.chainId;
+              agent
+                .post("/session/verify-validated")
+                .send({ contracts })
+                .then((res) => {
+                  assertSingleContractStatus(res, "perfect");
+                  done();
+                });
+            });
+        },
+      );
     });
   });
 });
