@@ -989,9 +989,7 @@ describe("/", function () {
           [],
         );
       const metadata = (
-        await import(
-          "../../../testcontracts/Storage/metadata.upMultipleDirs.json"
-        )
+        await import("../../../testcontracts/Storage/metadata.upMultipleDirs.json")
       ).default;
 
       // Now pass the creatorTxHash
@@ -1037,9 +1035,7 @@ describe("/", function () {
 
     before(async () => {
       const bytecodeMismatchArtifact = (
-        await import(
-          "../../../sources/artifacts/extraFilesBytecodeMismatch.json"
-        )
+        await import("../../../sources/artifacts/extraFilesBytecodeMismatch.json")
       ).default;
       contractAddress = await deployFromAbiAndBytecode(
         chainFixture.localSigner,
@@ -1049,58 +1045,60 @@ describe("/", function () {
     });
 
     it("should warn the user about the issue when metadata match but not bytecodes", (done) => {
-      import(
-        "../../../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json"
-      ).then((hardhatOutput) => {
-        const hardhatOutputBuffer = Buffer.from(JSON.stringify(hardhatOutput));
-        chai
-          .request(serverFixture.server.app)
-          .post("/")
-          .field("chain", chainFixture.chainId)
-          .field("address", contractAddress)
-          .attach("files", hardhatOutputBuffer)
-          .end((err, res) => {
-            chai.expect(res.status).to.equal(StatusCodes.BAD_REQUEST);
-            chai
-              .expect(res.body.error)
-              .to.equal(
-                "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/argotorg/sourcify/issues/618",
-              );
-            done();
-          });
-      });
+      import("../../../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json").then(
+        (hardhatOutput) => {
+          const hardhatOutputBuffer = Buffer.from(
+            JSON.stringify(hardhatOutput),
+          );
+          chai
+            .request(serverFixture.server.app)
+            .post("/")
+            .field("chain", chainFixture.chainId)
+            .field("address", contractAddress)
+            .attach("files", hardhatOutputBuffer)
+            .end((err, res) => {
+              chai.expect(res.status).to.equal(StatusCodes.BAD_REQUEST);
+              chai
+                .expect(res.body.error)
+                .to.equal(
+                  "It seems your contract's metadata hashes match but not the bytecodes. If you are verifying via metadata.json, use the original full standard JSON input file that has all files including those not needed by this contract. See the issue for more information: https://github.com/argotorg/sourcify/issues/618",
+                );
+              done();
+            });
+        },
+      );
     });
 
     it("should verify with all input files and not only those in metadata", (done) => {
-      import(
-        "../../../sources/hardhat-output/extraFilesBytecodeMismatch.json"
-      ).then((hardhatOutput) => {
-        const hardhatOutputBuffer = Buffer.from(JSON.stringify(hardhatOutput));
-        chai
-          .request(serverFixture.server.app)
-          .post("/")
-          .field("chain", chainFixture.chainId)
-          .field("address", contractAddress)
-          .attach("files", hardhatOutputBuffer)
-          .end(async (err, res) => {
-            await assertVerification(
-              serverFixture,
-              err,
-              res,
-              done,
-              contractAddress,
-              chainFixture.chainId,
-              "perfect",
-            );
-          });
-      });
+      import("../../../sources/hardhat-output/extraFilesBytecodeMismatch.json").then(
+        (hardhatOutput) => {
+          const hardhatOutputBuffer = Buffer.from(
+            JSON.stringify(hardhatOutput),
+          );
+          chai
+            .request(serverFixture.server.app)
+            .post("/")
+            .field("chain", chainFixture.chainId)
+            .field("address", contractAddress)
+            .attach("files", hardhatOutputBuffer)
+            .end(async (err, res) => {
+              await assertVerification(
+                serverFixture,
+                err,
+                res,
+                done,
+                contractAddress,
+                chainFixture.chainId,
+                "perfect",
+              );
+            });
+        },
+      );
     });
   });
   it("should verify a contract compiled with Solidity < 0.5.0 with non-keccak values for library placeholders", async () => {
     const artifact = (
-      await import(
-        "../../../testcontracts/LibrariesPreSolidity050/artifact.json"
-      )
+      await import("../../../testcontracts/LibrariesPreSolidity050/artifact.json")
     ).default;
     const address = await deployFromAbiAndBytecode(
       chainFixture.localSigner,
@@ -1108,9 +1106,7 @@ describe("/", function () {
       artifact.bytecode,
     );
     const metadata = (
-      await import(
-        "../../../testcontracts/LibrariesPreSolidity050/metadata.json"
-      )
+      await import("../../../testcontracts/LibrariesPreSolidity050/metadata.json")
     ).default;
 
     const file = fs.readFileSync(
@@ -1178,9 +1174,7 @@ describe("/", function () {
 
   it("should verify a contract compiled with Solidity < 0.7.5 and libraries have been linked using compiler settings", async () => {
     const artifact = (
-      await import(
-        "../../../testcontracts/LibrariesSolidity075/LibrariesSolidity075.json"
-      )
+      await import("../../../testcontracts/LibrariesSolidity075/LibrariesSolidity075.json")
     ).default;
     const address = await deployFromAbiAndBytecode(
       chainFixture.localSigner,

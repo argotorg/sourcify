@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Tempo Testnet",
+    "title": "Tempo Testnet (Andantino)",
+    "chain": "USD",
+    "rpc": ["https://rpc.testnet.tempo.xyz"],
+    "faucets": [],
+    "nativeCurrency": { "name": "Tempo USD", "symbol": "USD", "decimals": 18 },
+    "infoURL": "https://tempo.xyz/",
+    "shortName": "tmp",
+    "chainId": 42429,
+    "networkId": 42429,
+    "icon": "tempo",
+    "explorers": [
+      {
+        "name": "explorer-tempo",
+        "url": "https://scout.tempo.xyz/",
+        "standard": "EIP3091"
+      }
+    ]
+  }
+]

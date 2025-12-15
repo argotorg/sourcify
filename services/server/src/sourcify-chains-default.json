@@ -200,14 +200,28 @@
     "sourcifyName": "Ethereum Mekong Testnet",
     "supported": false
   },
-  "369": {
-    "sourcifyName": "PulseChain Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://scan.pulsechain.com/"
-      }
-    }
+  "369": {  
+    "sourcifyName": "PulseChain Mainnet",  
+    "supported": true,  
+    "fetchContractCreationTxUsing": {  
+      "blockscoutApi": {  
+        "url": "https://api.scan.pulsechain.com/"  
+      }  
+    },  
+    "rpc": [  
+      {  
+        "url": "https://rpc.pulsechain.com",  
+        "type": "BaseRPC",  
+        "traceSupport": "trace_transaction"  
+      },  
+      "https://pulsechain-rpc.publicnode.com",  
+      "wss://pulsechain-rpc.publicnode.com",  
+      {  
+        "url": "https://rpc-pulsechain.g4mm4.io",  
+        "type": "BaseRPC",   
+        "traceSupport": "trace_transaction"  
+      }  
+    ]  
   },
   "3": {
     "sourcifyName": "Ethereum Ropsten Testnet",
@@ -2327,6 +2341,30 @@
       }
     }
   },
+  "42429": {
+    "sourcifyName": "Tempo Testnet (Andantino)",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scout.tempo.xyz/"
+      }
+    },
+    "rpc": [
+      {
+        "type": "APIKeyRPC",
+        "url": "https://tempo-testnet.g.alchemy.com/v2/{API_KEY}",
+        "apiKeyEnvName": "ALCHEMY_API_KEY"
+      },
+      {
+        "type": "APIKeyRPC",
+        "url": "https://{SUBDOMAIN}.tempo-testnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
+        "traceSupport": "trace_transaction"
+      },
+      "https://rpc.testnet.tempo.xyz"
+    ]
+  },
   "1868": {
     "sourcifyName": "Soneium",
     "supported": true,
@@ -2401,5 +2439,16 @@
         "traceSupport": "trace_transaction"
       }
     ]
+  },
+  "1329": {
+    "sourcifyName": "Sei Network",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    }
   }
 }

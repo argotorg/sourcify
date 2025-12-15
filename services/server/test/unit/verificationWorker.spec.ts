@@ -385,9 +385,8 @@ describe("verificationWorker", function () {
       });
 
       it("should fail if extra-file-input-bug is detected and not all sources are provided", async () => {
-        const hardhatOutput = await import(
-          "../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json"
-        );
+        const hardhatOutput =
+          await import("../sources/hardhat-output/extraFilesBytecodeMismatch-onlyMetadata.json");
 
         const sources = Object.entries(hardhatOutput.input.sources).reduce(
           (acc, [path, source]) => {
@@ -413,9 +412,8 @@ describe("verificationWorker", function () {
       });
 
       it("should verify with all input files if extra-file-input-bug is detected", async () => {
-        const hardhatOutput = await import(
-          "../sources/hardhat-output/extraFilesBytecodeMismatch.json"
-        );
+        const hardhatOutput =
+          await import("../sources/hardhat-output/extraFilesBytecodeMismatch.json");
 
         const sources = Object.entries(hardhatOutput.input.sources).reduce(
           (acc, [path, source]) => {

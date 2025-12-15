@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.8.1 - 2025-12-15
+
+- Support new "already verified" message from Etherscan (#2520)
+- Change JOIN to LEFT JOIN for compiled_contracts_signatures in query (#2526)
+- Fix v2 etherscan error handling (#2523)
+- Update PulseChain's fetchContractCreationTxUsing blockscout API link (#2528)
+- Enhance PulseChain Mainnet configuration (#2536)
+- Add await to storeExternalVerificationResult calls (#2534)
+- Add contractApiUrl to externalVerifcations returned properties (#2535)
+- Update dependencies
+- Fix prettier
+- Add chains:
+    - 1329 Sei network
+    - 42429 Tempo testnet
+
+
 ## sourcify-server@3.8.0 - 2025-11-19
 
 - update dependencies

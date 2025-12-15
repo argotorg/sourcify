@@ -13,6 +13,7 @@ import {
   SourcifyChain,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
+  EtherscanUtils,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -30,7 +31,6 @@ import type {
   VerifySimilarityInput,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
-import { getCompilationFromEtherscanResult } from "../utils/etherscan-util";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
@@ -251,11 +251,18 @@ async function _verifyFromEtherscan({
   address,
   etherscanResult,
 }: VerifyFromEtherscanInput): Promise<VerifyOutput> {
-  const compilation = await getCompilationFromEtherscanResult(
-    etherscanResult,
-    solc,
-    vyper,
-  );
+  let compilation: SolidityCompilation | VyperCompilation;
+  try {
+    compilation = await EtherscanUtils.getCompilationFromEtherscanResult(
+      etherscanResult,
+      solc,
+      vyper,
+    );
+  } catch (error: any) {
+    return {
+      errorExport: createErrorExport(error),
+    };
+  }
 
   return _verifyFromJsonInput({
     chainId,

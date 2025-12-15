@@ -131,6 +131,7 @@ export type VerificationJobId = string;
 export type ApiExternalVerification = ExternalVerification & {
   statusUrl?: string;
   explorerUrl?: string;
+  contractApiUrl?: string;
 };
 
 export interface ApiExternalVerifications {

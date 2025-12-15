@@ -97,8 +97,10 @@ export async function checkPerfectMatch(
   }
 }
 
-export interface ApiV1Response
-  extends Omit<Match, "runtimeMatch" | "creationMatch"> {
+export interface ApiV1Response extends Omit<
+  Match,
+  "runtimeMatch" | "creationMatch"
+> {
   abiEncodedConstructorArguments?: string;
   libraryMap?: StringMap;
   creatorTxHash?: string;

@@ -12,8 +12,8 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import { BadRequestError } from "../../../../../common/errors";
 import {
-  getCompilationFromEtherscanResult,
-  fetchFromEtherscan,
+  getCompilationFromEtherscanResultOrThrowV1Error,
+  fetchFromEtherscanOrThrowError,
 } from "../../../../services/utils/etherscan-util";
 import logger from "../../../../../common/logger";
 import type { ChainRepository } from "../../../../../sourcify-chain-repository";
@@ -40,13 +40,13 @@ export async function sessionVerifyFromEtherscan(req: Request, res: Response) {
   const apiKey = req.body?.apiKey;
   const sourcifyChain = chainRepository.supportedChainMap[chain];
 
-  const etherscanResult = await fetchFromEtherscan(
+  const etherscanResult = await fetchFromEtherscanOrThrowError(
     sourcifyChain,
     address,
     apiKey,
   );
 
-  const compilation = await getCompilationFromEtherscanResult(
+  const compilation = await getCompilationFromEtherscanResultOrThrowV1Error(
     etherscanResult,
     solc,
     vyper,

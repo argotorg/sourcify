@@ -19,6 +19,7 @@ import {
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
+  SOLC_1_1_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
 import { sourcifyChainsMap } from "../../../../src/sourcify-chains";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
@@ -134,6 +135,37 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testChainId,
       testAddress,
       expectedStatus,
+    );
+  });
+
+  it("should surface unsupported compiler version when Etherscan returns solc 1.1", async () => {
+    const testAddress = "0x1111111111111111111111111111111111111111";
+
+    const { resolveWorkers } = makeWorkersWait();
+    mockEtherscanApi(
+      sourcifyChainsMap[testChainId],
+      testAddress,
+      SOLC_1_1_CONTRACT_RESPONSE,
+    );
+
+    const verifyRes = await request(serverFixture.server.app)
+      .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
+      .send({});
+
+    expect(verifyRes.status).to.equal(202);
+    expect(verifyRes.body).to.have.property("verificationId");
+
+    await resolveWorkers();
+
+    const jobStatusRes = await request(serverFixture.server.app).get(
+      `/v2/verify/${verifyRes.body.verificationId}`,
+    );
+
+    expect(jobStatusRes.status).to.equal(200);
+    expect(jobStatusRes.body.isJobCompleted).to.be.true;
+    expect(jobStatusRes.body.error).to.exist;
+    expect(jobStatusRes.body.error.customCode).to.equal(
+      "unsupported_compiler_version",
     );
   });
 

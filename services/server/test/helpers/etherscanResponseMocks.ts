@@ -61,6 +61,32 @@ export const RATE_LIMIT_REACHED_RESPONSE = {
   result: "Max rate limit reached, please use API Key for higher rate limit",
 };
 
+export const SOLC_1_1_CONTRACT_RESPONSE = {
+  status: "1",
+  message: "OK",
+  result: [
+    {
+      SourceCode:
+        "contract FirstCoin {\r\n    mapping (address => uint) public coinBalanceOf;\r\n\r\n    event CoinTransfer(address sender, address receiver, uint amount);\r\n\r\n    function FirstCoin(uint supply) {\r\n        coinBalanceOf[msg.sender] = 1000000;\r\n    }\r\n\r\n    function sendCoin(address receiver, uint amount) returns(bool sufficient) {\r\n        if (coinBalanceOf[msg.sender] < amount) {\r\n            return false;\r\n        }\r\n        coinBalanceOf[msg.sender] -= amount;\r\n        coinBalanceOf[receiver] += amount;\r\n        CoinTransfer(msg.sender, receiver, amount);\r\n        return true;\r\n    } \r\n}",
+      ABI: '[{"constant":false,"inputs":[{"name":"receiver","type":"address"},{"name":"amount","type":"uint256"}],"name":"sendCoin","outputs":[{"name":"sufficient","type":"bool"}],"type":"function","payable":true,"stateMutability":"payable"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"coinBalanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function","stateMutability":"view","payable":false},{"inputs":[{"name":"supply","type":"uint256"}],"type":"constructor","payable":true,"stateMutability":"payable"},{"anonymous":false,"inputs":[{"indexed":false,"name":"sender","type":"address"},{"indexed":false,"name":"receiver","type":"address"},{"indexed":false,"name":"amount","type":"uint256"}],"name":"CoinTransfer","type":"event"},{"type":"fallback","payable":true,"stateMutability":"payable"}]',
+      ContractName: "FirstCoin",
+      CompilerVersion: "v0.1.1+commit.6ff4cd6",
+      CompilerType: "solc",
+      OptimizationUsed: "0",
+      Runs: "200",
+      ConstructorArguments: "",
+      EVMVersion: "Default",
+      Library: "",
+      ContractFileName: "",
+      LicenseType: "",
+      Proxy: "0",
+      Implementation: "",
+      SwarmSource: "",
+      SimilarMatch: "0x8374f5CC22eDA52e960D9558fb48DD4b7946609a",
+    },
+  ],
+};
+
 export const SINGLE_CONTRACT_RESPONSE = {
   status: "1",
   message: "OK",

@@ -1989,6 +1989,22 @@ describe("Test Supported Chains", function () {
     "multicall-src/",
     "partial",
   );
+  // Sei Network
+  verifyContract(
+    "0xc9f275dc9c9d7451dAa5655d0105F0266b31347f",
+    "1329",
+    "Sei Network",
+    "shared/",
+  );
+
+  // Tempo Testnet (Andantino)
+  verifyContract(
+    "0x7ecedB5ca848e695ee8aB33cce9Ad1E1fe7865F8",
+    "42429",
+    "Tempo Testnet (Andantino)",
+    "shared/",
+    "perfect",
+  );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];

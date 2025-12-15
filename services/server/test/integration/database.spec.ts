@@ -326,65 +326,56 @@ describe("Verifier Alliance database", function () {
   };
 
   it("Libraries have been linked manually instead of using compiler settings. Placeholders are replaced with zero addresses", async () => {
-    const verifierAllianceTestLibrariesManuallyLinked = await import(
-      "../verifier-alliance/libraries_manually_linked.json"
-    );
+    const verifierAllianceTestLibrariesManuallyLinked =
+      await import("../verifier-alliance/libraries_manually_linked.json");
     await verifierAllianceTest(verifierAllianceTestLibrariesManuallyLinked);
   });
 
   it("Store full match in database", async () => {
-    const verifierAllianceTestFullMatch = await import(
-      "../verifier-alliance/full_match.json"
-    );
+    const verifierAllianceTestFullMatch =
+      await import("../verifier-alliance/full_match.json");
     await verifierAllianceTest(verifierAllianceTestFullMatch);
   });
 
   it("Store match with immutables in sourcify database", async () => {
-    const verifierAllianceTestImmutables = await import(
-      "../verifier-alliance/immutables.json"
-    );
+    const verifierAllianceTestImmutables =
+      await import("../verifier-alliance/immutables.json");
     await verifierAllianceTest(verifierAllianceTestImmutables);
   });
 
   it("Libraries have been linked using compiler settings. The placeholders are already replaced inside the compiled bytecode, and no link references provided", async () => {
-    const verifierAllianceTestLibrariesLinkedByCompiler = await import(
-      "../verifier-alliance/libraries_linked_by_compiler.json"
-    );
+    const verifierAllianceTestLibrariesLinkedByCompiler =
+      await import("../verifier-alliance/libraries_linked_by_compiler.json");
     await verifierAllianceTest(verifierAllianceTestLibrariesLinkedByCompiler);
   });
 
   it("Store match without auxdata in database", async () => {
-    const verifierAllianceTestMetadataHashAbsent = await import(
-      "../verifier-alliance/metadata_hash_absent.json"
-    );
+    const verifierAllianceTestMetadataHashAbsent =
+      await import("../verifier-alliance/metadata_hash_absent.json");
     await verifierAllianceTest(verifierAllianceTestMetadataHashAbsent);
   });
 
   it("Store partial match in database", async () => {
-    const verifierAllianceTestPartialMatch = await import(
-      "../verifier-alliance/partial_match.json"
-    );
+    const verifierAllianceTestPartialMatch =
+      await import("../verifier-alliance/partial_match.json");
     await verifierAllianceTest(verifierAllianceTestPartialMatch);
   });
 
   it("Store match deployed with constructor arguments in database", async () => {
-    const verifierAllianceTestConstructorArguments = await import(
-      "../verifier-alliance/constructor_arguments.json"
-    );
+    const verifierAllianceTestConstructorArguments =
+      await import("../verifier-alliance/constructor_arguments.json");
     await verifierAllianceTest(verifierAllianceTestConstructorArguments);
   });
 
   it("Store partial match in database for a contract with multiple auxdatas", async () => {
-    const verifierAllianceTestDoubleAuxdata = await import(
-      "../verifier-alliance/partial_match_double_auxdata.json"
-    );
+    const verifierAllianceTestDoubleAuxdata =
+      await import("../verifier-alliance/partial_match_double_auxdata.json");
     await verifierAllianceTest(verifierAllianceTestDoubleAuxdata);
   });
 
   it("Store full match in database for a contract with multiple auxdatas", async () => {
-    const verifierAllianceTestDoubleAuxdata = await import(
-      "../verifier-alliance/full_match_double_auxdata.json"
-    );
+    const verifierAllianceTestDoubleAuxdata =
+      await import("../verifier-alliance/full_match_double_auxdata.json");
     await verifierAllianceTest(verifierAllianceTestDoubleAuxdata);
   });
 
@@ -394,37 +385,32 @@ describe("Verifier Alliance database", function () {
 
   describe("Vyper", () => {
     it("should store auxdata for a Vyper contract compiled with 0.3.4", async () => {
-      const vyperTestAuxdata0_3_4 = await import(
-        "../verifier-alliance/vyper/auxdata-0.3.4.json"
-      );
+      const vyperTestAuxdata0_3_4 =
+        await import("../verifier-alliance/vyper/auxdata-0.3.4.json");
       await verifierAllianceTestVyper(vyperTestAuxdata0_3_4);
     });
 
     it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
-      const vyperTestAuxdata0_3_8 = await import(
-        "../verifier-alliance/vyper/auxdata-0.3.8.json"
-      );
+      const vyperTestAuxdata0_3_8 =
+        await import("../verifier-alliance/vyper/auxdata-0.3.8.json");
       await verifierAllianceTestVyper(vyperTestAuxdata0_3_8);
     });
 
     it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {
-      const vyperTestAuxdata0_4_0 = await import(
-        "../verifier-alliance/vyper/auxdata-0.4.0.json"
-      );
+      const vyperTestAuxdata0_4_0 =
+        await import("../verifier-alliance/vyper/auxdata-0.4.0.json");
       await verifierAllianceTestVyper(vyperTestAuxdata0_4_0);
     });
 
     it("should store auxdata for a Vyper contract compiled with 0.4.1", async () => {
-      const vyperTestAuxdata0_4_1 = await import(
-        "../verifier-alliance/vyper/auxdata-0.4.1.json"
-      );
+      const vyperTestAuxdata0_4_1 =
+        await import("../verifier-alliance/vyper/auxdata-0.4.1.json");
       await verifierAllianceTestVyper(vyperTestAuxdata0_4_1);
     });
 
     it("should store transformations for constructor arguments and immutables", async () => {
-      const vyperTestConstructorArgumentsAndImmutables = await import(
-        "../verifier-alliance/vyper/constructor_args_immutables.json"
-      );
+      const vyperTestConstructorArgumentsAndImmutables =
+        await import("../verifier-alliance/vyper/constructor_args_immutables.json");
       await verifierAllianceTestVyper(
         vyperTestConstructorArgumentsAndImmutables,
       );
