@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/compilers",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Wrapper around multiple compilers to download the right version and invoke the compilation with a common interface.",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",

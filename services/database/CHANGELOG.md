@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.10.2 - 2025-12-15
+
+- Update dependencies
+
 ## sourcify-database@2.10.1 - 2025-11-19
 
 - Add `idx_code_code_first_75` index (#2481)
