@@ -91,8 +91,7 @@ paths:
                     example: "755c0fcf1a2b3c4d5e6f7890abcdef1234567890"
   /chains:
     get:
-      summary: Get supported blockchain chains
-      description: Returns a list of all blockchain networks supported by Sourcify
+      summary: Get the list of supported and deprecated chains
       tags:
         - Other
       responses:
@@ -155,6 +154,7 @@ paths:
   /verify-ui:
     get:
       summary: Redirect to verification UI
+      description: This endpoint redirects to the Sourcify verification UI (verify.sourcify.dev). Useful for tooling to take a single Sourcify server URL (e.g. https://sourcify.dev/server) and provide verify links with that base URL.
       tags:
         - Other
       responses:
@@ -163,6 +163,7 @@ paths:
   /repo-ui:
     get:
       summary: Redirect to repository UI
+      description: This endpoint redirects to the Sourcify repository UI (repo.sourcify.dev). Useful for tooling to take a single Sourcify server URL (e.g. https://sourcify.dev/server) and provide repo links with that base URL.
       tags:
         - Other
       responses:
