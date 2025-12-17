@@ -1,23 +1,28 @@
 import logger from "./logger";
 import type { Logger } from "winston";
+import type { SimilarityVerificationConfig } from "./types";
 
 const trimTrailingSlash = (url: string) => url.replace(/\/+$/, "");
 
 export default class SimilarityVerificationClient {
   private baseUrls: string[];
   private clientLogger: Logger;
+  private requestDelay: number;
 
-  constructor(baseUrls: string[]) {
+  constructor(baseUrls: string[], options: SimilarityVerificationConfig) {
     this.baseUrls = baseUrls.map((url) => trimTrailingSlash(url));
     this.clientLogger = logger.child({ moduleName: "SimilarityVerification" });
+    this.requestDelay = options.requestDelay ?? 15 * 1000;
   }
 
-  trigger = async (
+  trigger = (
     chainId: number,
     address: string,
     creationTransactionHash?: string,
-  ): Promise<void> => {
+  ) => {
     this.baseUrls.forEach(async (baseUrl) => {
+      // Give time to the explorer to index the new contract before triggering similarity verification
+      await new Promise((resolve) => setTimeout(resolve, this.requestDelay));
       const url = `${baseUrl}/v2/verify/similarity/${chainId}/${address}`;
       try {
         this.clientLogger.info("Triggering similarity verification", {

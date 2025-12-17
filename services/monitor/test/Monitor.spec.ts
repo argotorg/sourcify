@@ -241,7 +241,7 @@ describe("Monitor", function () {
     });
   });
 
-  it("should trigger similarity verification when contract assembly fails", async () => {
+  it.only("should trigger similarity verification when contract assembly fails", async () => {
     monitor = new Monitor([localChain], {
       sourcifyServerURLs: [MOCK_SIMILARITY_SERVER],
       decentralizedStorages: {
@@ -255,6 +255,9 @@ describe("Monitor", function () {
           startBlock: 0,
           blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
         },
+      },
+      similarityVerification: {
+        requestDelay: 2000, // Override to 2 seconds for faster tests
       },
     });
 

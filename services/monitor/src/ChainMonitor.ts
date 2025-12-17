@@ -290,7 +290,7 @@ export default class ChainMonitor extends EventEmitter {
           address,
           origin: metadataHash.origin,
         });
-        await this.similarityVerificationClient.trigger(
+        this.similarityVerificationClient.trigger(
           this.sourcifyChain.chainId,
           address,
           creatorTxHash,
@@ -309,7 +309,7 @@ export default class ChainMonitor extends EventEmitter {
         await pendingContract.assemble();
       } catch (err: any) {
         this.chainLogger.info("Couldn't assemble contract", { address, err });
-        await this.similarityVerificationClient.trigger(
+        this.similarityVerificationClient.trigger(
           this.sourcifyChain.chainId,
           address,
           creatorTxHash,
@@ -321,7 +321,7 @@ export default class ChainMonitor extends EventEmitter {
           address: pendingContract.address,
           pendingSources: pendingContract.pendingSources,
         });
-        await this.similarityVerificationClient.trigger(
+        this.similarityVerificationClient.trigger(
           this.sourcifyChain.chainId,
           address,
           creatorTxHash,

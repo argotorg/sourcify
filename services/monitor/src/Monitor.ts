@@ -60,6 +60,7 @@ export default class Monitor extends EventEmitter {
       .filter(Boolean);
     this.similarityVerificationClient = new SimilarityVerificationClient(
       similarityBaseUrls,
+      this.config.similarityVerification,
     );
 
     const sourcifyChains = chainsToMonitor.map((chain) => {
