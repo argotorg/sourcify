@@ -23,7 +23,7 @@ export default class Monitor extends EventEmitter {
   private chainMonitors: ChainMonitor[];
   private sourceFetchers: KnownDecentralizedStorageFetchers = {};
   private config: MonitorConfig;
-  private similarityVerificationClient?: SimilarityVerificationClient;
+  private similarityVerificationClient: SimilarityVerificationClient;
 
   constructor(
     chainsToMonitor: MonitorChain[],
@@ -55,21 +55,12 @@ export default class Monitor extends EventEmitter {
       );
     }
 
-    if (this.config.similarityVerification.enabled) {
-      const similarityBaseUrls = this.config.sourcifyServerURLs
-        .map((url) => url.replace(/\/+$/, ""))
-        .filter(Boolean);
-      if (similarityBaseUrls.length === 0) {
-        logger.warn(
-          "Similarity search enabled but no Sourcify server URL configured. Disabling.",
-        );
-      } else {
-        this.similarityVerificationClient = new SimilarityVerificationClient(
-          similarityBaseUrls,
-          true,
-        );
-      }
-    }
+    const similarityBaseUrls = this.config.sourcifyServerURLs
+      .map((url) => url.replace(/\/+$/, ""))
+      .filter(Boolean);
+    this.similarityVerificationClient = new SimilarityVerificationClient(
+      similarityBaseUrls,
+    );
 
     const sourcifyChains = chainsToMonitor.map((chain) => {
       if (chain instanceof SourcifyChain) {

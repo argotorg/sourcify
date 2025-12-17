@@ -6,11 +6,9 @@ const trimTrailingSlash = (url: string) => url.replace(/\/+$/, "");
 export default class SimilarityVerificationClient {
   private baseUrls: string[];
   private clientLogger: Logger;
-  private enabled: boolean;
 
-  constructor(baseUrls: string[], enabled: boolean) {
+  constructor(baseUrls: string[]) {
     this.baseUrls = baseUrls.map((url) => trimTrailingSlash(url));
-    this.enabled = enabled;
     this.clientLogger = logger.child({ moduleName: "SimilarityVerification" });
   }
 
@@ -19,17 +17,6 @@ export default class SimilarityVerificationClient {
     address: string,
     creationTransactionHash?: string,
   ): Promise<void> => {
-    if (!this.enabled) {
-      this.clientLogger.debug(
-        "Similarity verification disabled, skipping trigger",
-        {
-          chainId,
-          address,
-        },
-      );
-      return;
-    }
-
     this.baseUrls.forEach(async (baseUrl) => {
       const url = `${baseUrl}/v2/verify/similarity/${chainId}/${address}`;
       try {

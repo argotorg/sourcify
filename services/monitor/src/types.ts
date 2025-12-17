@@ -55,7 +55,6 @@ export type MonitorConfig = {
   sourcifyServerURLs: string[];
   sourcifyRequestOptions: SourcifyRequestOptions;
   defaultChainConfig: DefatultChainMonitorConfig;
-  similarityVerification: SimilarityVerificationConfig;
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };
@@ -66,7 +65,6 @@ export type PassedMonitorConfig = {
   sourcifyServerURLs?: string[];
   sourcifyRequestOptions?: Partial<SourcifyRequestOptions>;
   defaultChainConfig?: DefatultChainMonitorConfig;
-  similarityVerification?: Partial<SimilarityVerificationConfig>;
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };
@@ -83,8 +81,4 @@ export type MonitorChain = {
   title?: string;
   chainId: number;
   rpc: Array<string | RpcObject>;
-};
-
-export type SimilarityVerificationConfig = {
-  enabled: boolean;
 };
