@@ -4,7 +4,7 @@ import sinon from "sinon";
 import Monitor, { authenticateRpcs } from "../src/Monitor";
 import logger from "../src/logger";
 import type { JsonRpcSigner } from "ethers";
-import { FetchRequest, JsonRpcProvider, Network } from "ethers";
+import { JsonRpcProvider, Network } from "ethers";
 import {
   deployFromAbiAndBytecode,
   nockInterceptorForVerification,
@@ -26,6 +26,7 @@ const HARDHAT_BLOCK_TIME_IN_SEC = 3;
 const MOCK_SOURCIFY_SERVER = "http://mocksourcifyserver.dev/server/";
 const MOCK_SOURCIFY_SERVER_RETURNING_ERRORS =
   "http://mocksourcifyserver-returning-errors.dev/server/";
+const MOCK_SIMILARITY_SERVER = "http://mocksimilarity.dev/server/";
 const localChain = {
   chainId: 1337,
   rpc: [`http://localhost:${HARDHAT_PORT}`],
@@ -238,6 +239,56 @@ describe("Monitor", function () {
         });
       monitor.start();
     });
+  });
+
+  it.only("should trigger similarity verification when contract assembly fails", async () => {
+    monitor = new Monitor([localChain], {
+      sourcifyServerURLs: [MOCK_SIMILARITY_SERVER],
+      decentralizedStorages: {
+        ipfs: {
+          enabled: false,
+          gateways: [],
+        },
+      },
+      chainConfigs: {
+        [localChain.chainId]: {
+          startBlock: 0,
+          blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
+        },
+      },
+      similarityVerification: {
+        requestDelay: 2000, // Override to 2 seconds for faster tests
+      },
+    });
+
+    const contractAddress = await deployFromAbiAndBytecode(
+      signer,
+      storageContractArtifact.abi,
+      storageContractArtifact.bytecode,
+      [],
+    );
+
+    const similarityScope = nock("http://mocksimilarity.dev")
+      .post(
+        `/server/v2/verify/similarity/${localChain.chainId}/${contractAddress}`,
+        (body) => {
+          expect(body).to.have.property("creationTransactionHash");
+          return true;
+        },
+      )
+      .reply(200, { status: "ok" });
+
+    await monitor.start();
+
+    await new Promise<void>((resolve, reject) => {
+      similarityScope.on("replied", () => resolve());
+      setTimeout(
+        () => reject(new Error("Similarity verification not called")),
+        10000,
+      );
+    });
+
+    expect(similarityScope.isDone()).to.be.true;
   });
   // Add more test cases as needed
 });

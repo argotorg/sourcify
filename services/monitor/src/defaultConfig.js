@@ -13,6 +13,9 @@ const defaultConfig = {
     maxRetries: 3,
     retryDelay: 30000,
   },
+  similarityVerification: {
+    requestDelay: 15000,
+  },
   defaultChainConfig: {
     startBlock: undefined,
     blockInterval: 10000,
