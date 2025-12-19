@@ -959,7 +959,8 @@ CREATE TABLE public.compiled_contracts_sources (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     compilation_id uuid NOT NULL,
     source_hash bytea NOT NULL,
-    path character varying NOT NULL
+    path character varying NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1469,6 +1470,20 @@ CREATE INDEX code_code_hash_keccak ON public.code USING btree (code_hash_keccak)
 
 
 --
+-- Name: code_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX code_created_at ON public.code USING btree (created_at);
+
+
+--
+-- Name: compiled_contracts_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_created_at ON public.compiled_contracts USING btree (created_at);
+
+
+--
 -- Name: compiled_contracts_creation_code_hash; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1480,6 +1495,13 @@ CREATE INDEX compiled_contracts_creation_code_hash ON public.compiled_contracts 
 --
 
 CREATE INDEX compiled_contracts_runtime_code_hash ON public.compiled_contracts USING btree (runtime_code_hash);
+
+
+--
+-- Name: compiled_contracts_signatures_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_signatures_created_at ON public.compiled_contracts_signatures USING btree (created_at);
 
 
 --
@@ -1504,6 +1526,13 @@ CREATE INDEX compiled_contracts_sources_compilation_id ON public.compiled_contra
 
 
 --
+-- Name: compiled_contracts_sources_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_sources_created_at ON public.compiled_contracts_sources USING btree (created_at);
+
+
+--
 -- Name: compiled_contracts_sources_source_hash; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1522,6 +1551,20 @@ CREATE INDEX contract_deployments_address ON public.contract_deployments USING b
 --
 
 CREATE INDEX contract_deployments_contract_id ON public.contract_deployments USING btree (contract_id);
+
+
+--
+-- Name: contract_deployments_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_deployments_created_at ON public.contract_deployments USING btree (created_at);
+
+
+--
+-- Name: contracts_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contracts_created_at ON public.contracts USING btree (created_at);
 
 
 --
@@ -1560,6 +1603,13 @@ CREATE UNIQUE INDEX signature_stats_type_idx ON public.signature_stats USING btr
 
 
 --
+-- Name: signatures_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX signatures_created_at ON public.signatures USING btree (created_at);
+
+
+--
 -- Name: signatures_hash_4_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1571,6 +1621,20 @@ CREATE INDEX signatures_hash_4_idx ON public.signatures USING btree (signature_h
 --
 
 CREATE INDEX signatures_signature_trgm_idx ON public.signatures USING gin (signature public.gin_trgm_ops);
+
+
+--
+-- Name: sources_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sources_created_at ON public.sources USING btree (created_at);
+
+
+--
+-- Name: sourcify_matches_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcify_matches_updated_at ON public.sourcify_matches USING btree (updated_at);
 
 
 --
@@ -1595,6 +1659,13 @@ CREATE INDEX verified_contracts_compilation_id ON public.verified_contracts USIN
 
 
 --
+-- Name: verified_contracts_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX verified_contracts_created_at ON public.verified_contracts USING btree (created_at);
+
+
+--
 -- Name: verified_contracts_deployment_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1613,6 +1684,13 @@ CREATE TRIGGER insert_set_created_at BEFORE INSERT ON public.code FOR EACH ROW E
 --
 
 CREATE TRIGGER insert_set_created_at BEFORE INSERT ON public.compiled_contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_set_created_at();
+
+
+--
+-- Name: compiled_contracts_sources insert_set_created_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER insert_set_created_at BEFORE INSERT ON public.compiled_contracts_sources FOR EACH ROW EXECUTE FUNCTION public.trigger_set_created_at();
 
 
 --
@@ -1781,6 +1859,13 @@ CREATE TRIGGER update_reuse_created_at BEFORE UPDATE ON public.code FOR EACH ROW
 --
 
 CREATE TRIGGER update_reuse_created_at BEFORE UPDATE ON public.compiled_contracts FOR EACH ROW EXECUTE FUNCTION public.trigger_reuse_created_at();
+
+
+--
+-- Name: compiled_contracts_sources update_reuse_created_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_reuse_created_at BEFORE UPDATE ON public.compiled_contracts_sources FOR EACH ROW EXECUTE FUNCTION public.trigger_reuse_created_at();
 
 
 --
@@ -2074,4 +2159,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250922141802'),
     ('20251009141621'),
     ('20251023134207'),
-    ('20251101120000');
+    ('20251101120000'),
+    ('20251106144315'),
+    ('20251219160923');
