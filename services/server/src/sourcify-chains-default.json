@@ -2440,6 +2440,17 @@
       }
     ]
   },
+  "1328": {
+    "sourcifyName": "Sei Testnet",
+    "supported": true,
+    "etherscanApi": {
+      "supported": true,
+      "apiKeyEnvName": "ETHERSCAN_API_KEY_SEI"
+    },
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": true
+    }
+  },
   "1329": {
     "sourcifyName": "Sei Network",
     "supported": true,
