@@ -1994,14 +1994,14 @@ describe("Test Supported Chains", function () {
     "0xf6eacb6e11b66ec61822fe8097c4ba9b12410f8f",
     "1328",
     "Sei Testnet",
-    "shared/"
+    "shared/",
   );
   // Sei Network
   verifyContract(
     "0xc9f275dc9c9d7451dAa5655d0105F0266b31347f",
     "1329",
     "Sei Network",
-    "shared/"
+    "shared/",
   );
 
   // Tempo Testnet (Andantino)
