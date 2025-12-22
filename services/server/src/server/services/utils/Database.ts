@@ -892,7 +892,9 @@ ${
         creation_match,
         runtime_metadata_match,
         creation_metadata_match
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) DO NOTHING RETURNING *`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT ON CONSTRAINT verified_contracts_pseudo_pkey DO NOTHING 
+       RETURNING *`,
       [
         compilation_id,
         deployment_id,
