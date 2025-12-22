@@ -22,6 +22,7 @@ import {
 import { createHash } from "crypto";
 import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import logger from "../../../common/logger";
+import { ConflictError } from "../../../common/errors/ConflictError";
 import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
 export interface DatabaseOptions {
@@ -880,7 +881,7 @@ ${
       creation_metadata_match,
     }: Omit<Tables.VerifiedContract, "id">,
   ): Promise<QueryResult<Pick<Tables.VerifiedContract, "id">>> {
-    let verifiedContractsInsertResult = await poolClient.query(
+    const result = await poolClient.query(
       `INSERT INTO ${this.schema}.verified_contracts (
         compilation_id,
         deployment_id,
@@ -915,20 +916,14 @@ ${
         creation_metadata_match,
       ],
     );
-    if (verifiedContractsInsertResult.rows.length === 0) {
-      verifiedContractsInsertResult = await poolClient.query(
-        `
-        SELECT
-          id
-        FROM ${this.schema}.verified_contracts
-        WHERE 1=1
-          AND compilation_id = $1
-          AND deployment_id = $2
-        `,
-        [compilation_id, deployment_id],
+
+    if (result.rowCount === 0) {
+      throw new ConflictError(
+        "A verified contract already exist for your compilation and deployment",
       );
     }
-    return verifiedContractsInsertResult;
+
+    return result;
   }
 
   async getVerificationJobById(
