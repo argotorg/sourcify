@@ -493,6 +493,9 @@ export class RepositoryV1Service implements RWStorageService {
   }
 
   public async storeVerification(verification: VerificationExport) {
+    if (verification.compilation.metadata === undefined) {
+      throw new Error("Cannot store contracts without metadata");
+    }
     if (
       verification.address &&
       (verification.status.runtimeMatch === "perfect" ||

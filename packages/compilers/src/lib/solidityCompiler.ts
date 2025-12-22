@@ -93,7 +93,7 @@ export async function useSolidityCompiler(
       const coercedVersion =
         semver.coerce(new semver.SemVer(version))?.version ?? '';
       // Run Worker for solc versions < 0.4.0 for clean compiler context. See https://github.com/argotorg/sourcify/issues/1099
-      if (semver.lt(coercedVersion, '0.4.0')) {
+      if (semver.lt(coercedVersion, '0.4.12')) {
         compiled = await new Promise((resolve, reject) => {
           const worker = importWorker(
             path.resolve(__dirname, './compilerWorker.ts'),

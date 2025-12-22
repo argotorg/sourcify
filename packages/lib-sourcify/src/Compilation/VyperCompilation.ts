@@ -1,6 +1,5 @@
 import { logWarn } from '../logger';
 import { AbstractCompilation } from './AbstractCompilation';
-import { id as keccak256str } from 'ethers';
 import {
   AuxdataStyle,
   decode,
@@ -103,43 +102,6 @@ export class VyperCompilation extends AbstractCompilation {
   // Vyper version is not semver compliant, so we need to handle it differently
   public compilerVersionCompatibleWithSemver: string;
 
-  /**
-   * Vyper compiler does not produce a metadata but we generate it ourselves for backward
-   * compatibility reasons e.g. in the legacy Sourcify API that always assumes a metadata.json
-   */
-  generateMetadata() {
-    const contract = this.contractCompilerOutput;
-    const outputMetadata = {
-      abi: contract.abi,
-      devdoc: contract.devdoc,
-      userdoc: contract.userdoc,
-    };
-
-    const sourcesWithHashes = Object.entries(this.jsonInput.sources).reduce(
-      (acc, [path, source]) => ({
-        ...acc,
-        [path]: {
-          keccak256: keccak256str(source.content),
-        },
-      }),
-      {},
-    );
-
-    this._metadata = {
-      compiler: { version: this.compilerVersion },
-      language: 'Vyper',
-      output: outputMetadata,
-      settings: {
-        ...this.jsonInput.settings,
-        compilationTarget: {
-          [this.compilationTarget.path]: this.compilationTarget.name,
-        },
-      },
-      sources: sourcesWithHashes,
-      version: 1,
-    };
-  }
-
   initVyperJsonInput() {
     const outputSelection = {
       [this.compilationTarget.path]: [
@@ -201,7 +163,6 @@ export class VyperCompilation extends AbstractCompilation {
 
   public async compile() {
     await this.compileAndReturnCompilationTarget(false);
-    this.generateMetadata();
   }
   /**
    * Generate the cbor auxdata positions for the creation and runtime bytecodes.

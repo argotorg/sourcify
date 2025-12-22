@@ -123,6 +123,9 @@ export abstract class AbstractCompilation {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });
     }
+    if (this.compilerOutput.contracts['']?.[this.compilationTarget.name]) {
+      return this.compilerOutput.contracts[''][this.compilationTarget.name];
+    }
     if (
       !this.compilerOutput.contracts ||
       !this.compilerOutput.contracts[this.compilationTarget.path] ||

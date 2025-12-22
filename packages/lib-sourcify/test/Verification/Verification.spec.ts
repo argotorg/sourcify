@@ -12,6 +12,7 @@ import {
   deployFromAbiAndBytecode,
   expectVerification,
   getCompilationFromMetadata,
+  TestSolidityCompiler,
   vyperCompiler,
 } from '../utils';
 import {
@@ -22,7 +23,8 @@ import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import chaiAsPromised from 'chai-as-promised';
 import { findSolcPlatform } from '@ethereum-sourcify/compilers';
-import { SourcifyChain } from '../../src';
+import { SolidityCompilation, SourcifyChain } from '../../src';
+import type { SolidityJsonInput } from '../../src';
 import Sinon from 'sinon';
 
 use(chaiAsPromised);
@@ -104,6 +106,66 @@ describe('Verification Class Tests', () => {
       expectVerification(verification, {
         status: {
           runtimeMatch: 'perfect',
+          creationMatch: null,
+        },
+      });
+    });
+
+    it('should verify contracts with solidity version 0.4.11', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        '0.4.x',
+        '0.4.11',
+      );
+      const { contractAddress } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const contractPath = path.join(__dirname, '..', 'sources', '0.4.x');
+      const sources = {
+        'Simple.sol': {
+          content: fs.readFileSync(
+            path.join(contractPath, 'Simple.sol'),
+            'utf8',
+          ),
+        },
+      };
+
+      const solcJsonInput: SolidityJsonInput = {
+        language: 'Solidity',
+        sources,
+        settings: {
+          outputSelection: {
+            '*': {
+              '*': ['*'],
+            },
+          },
+        },
+      };
+
+      const compilation = new SolidityCompilation(
+        new TestSolidityCompiler(),
+        '0.4.11+commit.68ef5810',
+        solcJsonInput,
+        {
+          name: 'Simple',
+          path: 'Simple.sol',
+        },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
           creationMatch: null,
         },
       });

@@ -5,7 +5,6 @@ import fs from 'fs';
 import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
 import { solc } from '../utils';
 import type { CompilationTarget } from '../../src/Compilation/CompilationTypes';
-import { CompilationError } from '../../src/Compilation/CompilationTypes';
 import type {
   SolidityJsonInput,
   Metadata,
@@ -428,8 +427,8 @@ describe('SolidityCompilation', () => {
     }
   });
 
-  it('should throw CompilationError for unsupported compiler versions < 0.4.11', () => {
-    const contractPath = path.join(__dirname, '..', 'sources', 'pre-0.4.11');
+  it.only('should support solidity versions with no auxdata', async () => {
+    const contractPath = path.join(__dirname, '..', 'sources', '0.4.x');
     const sources = {
       'Simple.sol': {
         content: fs.readFileSync(path.join(contractPath, 'Simple.sol'), 'utf8'),
@@ -448,13 +447,20 @@ describe('SolidityCompilation', () => {
       },
     };
 
-    expect(() => {
-      new SolidityCompilation(solc, '0.4.6+commit.2dabbdf0', solcJsonInput, {
+    const compilation = new SolidityCompilation(
+      solc,
+      '0.4.2+commit.af6afb04',
+      solcJsonInput,
+      {
         name: 'Simple',
         path: 'Simple.sol',
-      });
-    })
-      .to.throw(CompilationError)
-      .with.property('code', 'unsupported_compiler_version');
+      },
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({});
+    expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
   });
 });

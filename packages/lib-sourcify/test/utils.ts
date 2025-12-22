@@ -227,7 +227,7 @@ export function expectVerification(
   }
 }
 
-class TestSolidityCompiler implements ISolidityCompiler {
+export class TestSolidityCompiler implements ISolidityCompiler {
   async compile(
     version: string,
     solcJsonInput: any,
