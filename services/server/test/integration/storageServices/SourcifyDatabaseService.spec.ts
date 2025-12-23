@@ -12,6 +12,7 @@ import {
   type Tables,
 } from "../../../src/server/services/utils/database-util";
 import { id as keccak256str } from "ethers";
+import { ConflictError } from "../../../src/common/errors/ConflictError";
 
 use(chaiAsPromised);
 
@@ -62,8 +63,20 @@ describe("SourcifyDatabaseService", function () {
     await databaseService.init();
     await databaseService.storeVerification(nonePerfectVerification);
 
-    await expect(databaseService.storeVerification(MockVerificationExport)).to
-      .eventually.be.rejected;
+    // We cannot use to.eventually.be.rejectedWith because ConflictError doesn't extend Error directly
+    let thrownError: unknown;
+    try {
+      await databaseService.storeVerification(MockVerificationExport);
+      expect.fail("Expected storeVerification to throw");
+    } catch (error) {
+      thrownError = error;
+    }
+
+    expect(thrownError).to.be.instanceOf(ConflictError);
+    expect((thrownError as ConflictError).statusCode).to.equal(409);
+    expect((thrownError as ConflictError).message).to.equal(
+      "A verified contract already exist for your compilation and deployment",
+    );
   });
 
   it("should store signatures correctly when storeVerification is called", async () => {

@@ -48,7 +48,7 @@ import {
 } from "../utils/util";
 import { getAddress, id as keccak256Str } from "ethers";
 import { extractSignaturesFromAbi } from "../utils/signature-util";
-import { BadRequestError } from "../../../common/errors";
+import { BadRequestError, ConflictError } from "../../../common/errors";
 import { RWStorageIdentifiers } from "./identifiers";
 import semver from "semver";
 import type { DatabaseOptions } from "../utils/Database";
@@ -1026,6 +1026,13 @@ export class SourcifyDatabaseService
 
       return { verifiedContractId: verifiedContractId };
     } catch (error: any) {
+      if (error instanceof ConflictError) {
+        logger.warn("Contract already exists in SourcifyDatabase", {
+          name: verification.compilation.compilationTarget.name,
+          address: verification.address,
+        });
+        throw error;
+      }
       logger.error("Error storing verification", {
         error: error,
       });
