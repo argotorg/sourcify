@@ -70,10 +70,6 @@ describe("SourcifyDatabaseService", function () {
       expect.fail("Expected storeVerification to throw");
     } catch (error) {
       thrownError = error;
-      console.log(
-        "SourcifyDatabaseService.storeVerification error:",
-        thrownError,
-      );
     }
 
     expect(thrownError).to.be.instanceOf(ConflictError);
