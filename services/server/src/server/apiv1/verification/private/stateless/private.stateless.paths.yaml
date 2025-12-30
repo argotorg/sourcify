@@ -4,8 +4,11 @@ paths:
   /private/verify-deprecated:
     post:
       deprecated: false
+      summary: Private endpoint for verifying contracts on deprecated chains.
       description: |
-        Sends provided files for verification
+        This endpoint is used to submit verifications for contracts on deprecated chains. The endpoint puts placeholders for the onchain data such as the onchain bytecodes or tx hashes, as such data can't be fetched from a chain that is no longer live.
+
+        Useful for example when we get an old dataset of verified contracts and we want to verify on old chains.
       tags:
         - Private
       security:
@@ -136,6 +139,7 @@ paths:
   /private/replace-contract:
     post:
       deprecated: false
+      summary: Private endpoint for replacing contract data in the database.
       description: |
         Replaces an existing contract in the database, addressing issues with misaligned or incorrect contract data.
         This endpoint provides a generic, maintainable solution and optimizes performance by optionally skipping 

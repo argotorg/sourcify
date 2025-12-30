@@ -15,6 +15,7 @@ import type {
 import dotenv from "dotenv";
 import defaultConfig from "./defaultConfig";
 import path from "path";
+import SimilarityVerificationClient from "./SimilarityVerificationClient";
 
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
@@ -22,6 +23,7 @@ export default class Monitor extends EventEmitter {
   private chainMonitors: ChainMonitor[];
   private sourceFetchers: KnownDecentralizedStorageFetchers = {};
   private config: MonitorConfig;
+  private similarityVerificationClient: SimilarityVerificationClient;
 
   constructor(
     chainsToMonitor: MonitorChain[],
@@ -52,6 +54,14 @@ export default class Monitor extends EventEmitter {
         this.config.decentralizedStorages.ipfs,
       );
     }
+
+    const similarityBaseUrls = this.config.sourcifyServerURLs
+      .map((url) => url.replace(/\/+$/, ""))
+      .filter(Boolean);
+    this.similarityVerificationClient = new SimilarityVerificationClient(
+      similarityBaseUrls,
+      this.config.similarityVerification,
+    );
 
     const sourcifyChains = chainsToMonitor.map((chain) => {
       if (chain instanceof SourcifyChain) {
@@ -100,7 +110,13 @@ export default class Monitor extends EventEmitter {
     }
 
     this.chainMonitors = sourcifyChains.map(
-      (chain) => new ChainMonitor(chain, this.sourceFetchers, this.config),
+      (chain) =>
+        new ChainMonitor(
+          chain,
+          this.sourceFetchers,
+          this.config,
+          this.similarityVerificationClient,
+        ),
     );
   }
 

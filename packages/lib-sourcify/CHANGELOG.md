@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.0.5 - 2025-12-15
+
+- Fix v2 etherscan error handling (#2523)\
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.0.4 - 2025-11-19
 
 - Turn @typescript-eslint/consistent-type-imports rule on (#2496)

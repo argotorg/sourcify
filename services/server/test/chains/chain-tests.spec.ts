@@ -1989,12 +1989,21 @@ describe("Test Supported Chains", function () {
     "multicall-src/",
     "partial",
   );
+  // Sei Testnet
+  verifyContract(
+    "0x504294682d7A9941fCC1a5c3D847251df38E790B",
+    "1328",
+    "Sei Testnet",
+    "shared/",
+    "perfect",
+  );
   // Sei Network
   verifyContract(
     "0xc9f275dc9c9d7451dAa5655d0105F0266b31347f",
     "1329",
     "Sei Network",
     "shared/",
+    "perfect",
   );
 
   // Tempo Testnet (Andantino)

@@ -55,16 +55,22 @@ export type MonitorConfig = {
   sourcifyServerURLs: string[];
   sourcifyRequestOptions: SourcifyRequestOptions;
   defaultChainConfig: DefatultChainMonitorConfig;
+  similarityVerification: SimilarityVerificationConfig;
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };
 };
 
+export interface SimilarityVerificationConfig {
+  requestDelay?: number;
+}
+
 export type PassedMonitorConfig = {
-  decentralizedStorages?: DecentralizedStorageConfig;
+  decentralizedStorages?: DecentralizedStorageConfigMap;
   sourcifyServerURLs?: string[];
   sourcifyRequestOptions?: Partial<SourcifyRequestOptions>;
   defaultChainConfig?: DefatultChainMonitorConfig;
+  similarityVerification?: SimilarityVerificationConfig;
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };

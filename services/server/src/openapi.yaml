@@ -8,7 +8,7 @@ info:
     Important differences between the deprecated legacy API and the new APIv2:
     - **Ticketing**: The verfication requests resolve into tickets/verification jobs. 
       - Previously the verification happened during the HTTP request, which resulted in timeouts if compilation took longer
-    - **Standard JSON as default**: In the current design we take the standard JSON format as our main verification endpoint. We still support verification with metadata at `/v2/verify/metadata`.
+    - **Standard JSON as default**: In the current design we take the standard JSON format as our main verification endpoint. Other methods such as "multi-file" or "single-file" should be handled by frontends or tooling to format into std-json. We still support verification with metadata at `/v2/verify/metadata`.
     - **Lean API**: We keep the number of endpoints minimal compared to v1. We won't have a session API. 
     - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
   license:
@@ -91,8 +91,7 @@ paths:
                     example: "755c0fcf1a2b3c4d5e6f7890abcdef1234567890"
   /chains:
     get:
-      summary: Get supported blockchain chains
-      description: Returns a list of all blockchain networks supported by Sourcify
+      summary: Get the list of supported and deprecated chains
       tags:
         - Other
       responses:
@@ -155,6 +154,7 @@ paths:
   /verify-ui:
     get:
       summary: Redirect to verification UI
+      description: This endpoint redirects to the Sourcify verification UI (verify.sourcify.dev). Useful for tooling to take a single Sourcify server URL (e.g. https://sourcify.dev/server) and provide verify links with that base URL.
       tags:
         - Other
       responses:
@@ -163,6 +163,7 @@ paths:
   /repo-ui:
     get:
       summary: Redirect to repository UI
+      description: This endpoint redirects to the Sourcify repository UI (repo.sourcify.dev). Useful for tooling to take a single Sourcify server URL (e.g. https://sourcify.dev/server) and provide repo links with that base URL.
       tags:
         - Other
       responses:

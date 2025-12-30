@@ -1,6 +1,6 @@
 {
   "name": "sourcify-4byte",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "private": true,
   "description": "Standalone service exposing Sourcify signature database endpoints",
   "main": "dist/cli.js",
@@ -45,7 +45,7 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.19.2",
+    "@types/node": "22.19.3",
     "@types/pg": "8.16.0",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
