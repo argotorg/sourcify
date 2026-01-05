@@ -4,6 +4,7 @@ import type {
   SourcifyChainMap,
   AnyCompilation,
   SolidityCompilation,
+  VyperCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   Verification,
