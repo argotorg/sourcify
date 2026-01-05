@@ -1,6 +1,10 @@
-import { JsonFragment } from "ethers";
-import { SolidityOutputError, SoliditySettings } from "./SolidityTypes";
-import { VyperOutputError } from "./VyperTypes";
+import type { JsonFragment } from "ethers";
+import type {
+  SolidityJsonInput,
+  SolidityOutputError,
+  SoliditySettings,
+} from "./SolidityTypes";
+import type { VyperJsonInput, VyperOutputError } from "./VyperTypes";
 
 export interface LinkReferences {
   [filePath: string]: {
@@ -105,3 +109,5 @@ export interface Metadata {
   sources: MetadataSourceMap;
   version: number;
 }
+
+export type AnyJsonInput = SolidityJsonInput | VyperJsonInput;

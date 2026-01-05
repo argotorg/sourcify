@@ -12,6 +12,7 @@ import {
   deployFromAbiAndBytecode,
   expectVerification,
   getCompilationFromMetadata,
+  solc,
   vyperCompiler,
 } from '../utils';
 import {
@@ -24,6 +25,8 @@ import chaiAsPromised from 'chai-as-promised';
 import { findSolcPlatform } from '@ethereum-sourcify/compilers';
 import { SourcifyChain } from '../../src';
 import Sinon from 'sinon';
+import { YulCompilation } from '../../src/Compilation/YulCompilation';
+import type { SolidityJsonInput } from '@ethereum-sourcify/compilers-types';
 
 use(chaiAsPromised);
 
@@ -105,6 +108,49 @@ describe('Verification Class Tests', () => {
         status: {
           runtimeMatch: 'perfect',
           creationMatch: null,
+        },
+      });
+    });
+
+    it('should verify a simple Yul contract', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Yul',
+        'cas-forwarder',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const jsonInput: SolidityJsonInput = JSON.parse(
+        fs.readFileSync(
+          path.join(contractFolderPath, 'jsonInput.json'),
+          'utf8',
+        ),
+      );
+
+      const yulCompilation = new YulCompilation(
+        solc,
+        '0.8.26+commit.8a97fa7a',
+        jsonInput,
+        { name: 'cas-forwarder', path: 'cas-forwarder.yul' },
+      );
+
+      const verification = new Verification(
+        yulCompilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
+          creationMatch: 'partial',
         },
       });
     });
