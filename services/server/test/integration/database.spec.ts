@@ -438,9 +438,8 @@ describe("Verifier Alliance database", function () {
   });
 
   it("Store Yul match in database", async () => {
-    const verifierAllianceTestYulMatch = await import(
-      "../verifier-alliance/yul.json"
-    );
+    const verifierAllianceTestYulMatch =
+      await import("../verifier-alliance/yul.json");
     await verifierAllianceTestYul(verifierAllianceTestYulMatch);
   });
 
