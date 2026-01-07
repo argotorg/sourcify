@@ -32,6 +32,20 @@
         ]
       },
       {
+        "type": "FetchRequest",
+        "url": "https://archive.mainnet.ethpandaops.io",
+        "headers": [
+          {
+            "headerName": "CF-Access-Client-Id",
+            "headerEnvName": "CF_ACCESS_CLIENT_ID"
+          },
+          {
+            "headerName": "CF-Access-Client-Secret",
+            "headerEnvName": "CF_ACCESS_CLIENT_SECRET"
+          }
+        ]
+      },
+      {
         "type": "APIKeyRPC",
         "url": "https://eth-mainnet.g.alchemy.com/v2/{API_KEY}",
         "apiKeyEnvName": "ALCHEMY_API_KEY"
