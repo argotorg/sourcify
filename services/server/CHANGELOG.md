@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.9.0 - 2026-01-07
+
+- Add support for Yul compilation and verification (#2521)
+- Add YUL OpenApi example (#2562)
+- Update OpenAPI documentation and private verification endpoints (#2549)
+- Fix verified contracts unique constraint error (#2552)
+- Fallback to chains.json rpcs (#2573)
+- Add ethpandaops archive node rpc (#2574)
+- Add support for Sei Testnet (chain ID 1328), edit contract for Sei Mainnet (Chain Id 1329) (#2550)
+- Add Sei Network specific Etherscan API key variable (#2547)
+- Disable chains which fail CI tests (#2557)
+
+
 ## sourcify-server@3.8.1 - 2025-12-15
 
 - Support new "already verified" message from Etherscan (#2520)
