@@ -273,10 +273,8 @@ for (const chain of allChains) {
     if (sourcifyExtension.rpc) {
       rpcs = buildCustomRpcs(sourcifyExtension.rpc);
     }
-    // Fallback to rpcs of chains.json
-    if (!rpcs.length) {
-      rpcs = buildCustomRpcs(chain.rpc);
-    }
+    // Add rpcs of chains.json as a fallback
+    rpcs = [...rpcs, ...buildCustomRpcs(chain.rpc)];
 
     // sourcifyExtension is spread later to overwrite chains.json values
     // Exclude rpc from sourcifyExtension as we now use rpcs
