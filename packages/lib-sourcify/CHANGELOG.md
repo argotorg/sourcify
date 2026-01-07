@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.1.0 - 2026-01-07
+
+- Add support for Yul compilation and verification (#2521)
+
+
 ## @ethereum-sourcify/lib-sourcify@3.0.5 - 2025-12-15
 
 - Fix v2 etherscan error handling (#2523)\

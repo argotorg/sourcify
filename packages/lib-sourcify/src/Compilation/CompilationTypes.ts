@@ -6,6 +6,8 @@ import type {
 } from '@ethereum-sourcify/compilers-types';
 import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
 import { SourcifyLibError } from '../SourcifyLibError';
+import type { SolidityCompilation } from './SolidityCompilation';
+import type { VyperCompilation } from './VyperCompilation';
 
 export interface CompiledContractCborAuxdata {
   [key: string]: {
@@ -28,9 +30,10 @@ export interface CompilationTarget {
   path: string;
 }
 
-export type CompilationLanguage = 'Solidity' | 'Vyper';
+export type CompilationLanguage = 'Solidity' | 'Vyper' | 'Yul';
 
 export type CompilationErrorCode =
+  | 'invalid_language'
   | 'cannot_generate_cbor_auxdata_positions'
   | 'invalid_compiler_version'
   | 'unsupported_compiler_version'
@@ -66,3 +69,5 @@ export interface IVyperCompiler {
     vyperJsonInput: VyperJsonInput,
   ): Promise<VyperOutput>;
 }
+
+export type AnyCompilation = SolidityCompilation | VyperCompilation;

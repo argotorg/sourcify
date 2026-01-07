@@ -4,14 +4,13 @@ import type {
   SolidityJsonInput,
   VyperJsonInput,
   PathBuffer,
-  SolidityCompilation,
-  VyperCompilation,
   SourcifyChainMap,
   VerificationExport,
   SourcifyChainInstance,
   CompilationTarget,
   Metadata,
   EtherscanResult,
+  AnyCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Verification } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
@@ -241,7 +240,7 @@ export class VerificationService {
   }
 
   public async verifyFromCompilation(
-    compilation: SolidityCompilation | VyperCompilation,
+    compilation: AnyCompilation,
     sourcifyChain: SourcifyChain,
     address: string,
     creatorTxHash?: string,
