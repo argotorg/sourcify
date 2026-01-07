@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers-types@1.0.11 - 2026-01-07
+
+- Add `AnyJsonInput` type
+
 ## @ethereum-sourcify/compilers-types@1.0.10 - 2025-10-28
 
 none
