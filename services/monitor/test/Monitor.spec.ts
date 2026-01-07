@@ -241,7 +241,7 @@ describe("Monitor", function () {
     });
   });
 
-  it.only("should trigger similarity verification when contract assembly fails", async () => {
+  it("should trigger similarity verification when contract assembly fails", async () => {
     monitor = new Monitor([localChain], {
       sourcifyServerURLs: [MOCK_SIMILARITY_SERVER],
       decentralizedStorages: {
