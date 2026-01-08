@@ -119,11 +119,7 @@
   {
     "name": "Polygon zkEVM Mainnet",
     "chainId": 1101,
-    "rpc": [
-      "https://rpc.ankr.com/polygon_zkevm",
-      "https://zkevm-rpc.com",
-      "https://rpc.polygon-zkevm.gateway.fm"
-    ]
+    "rpc": ["https://zkevm-rpc.com", "https://rpc.polygon-zkevm.gateway.fm"]
   },
   {
     "name": "Avalanche C-Chain",
