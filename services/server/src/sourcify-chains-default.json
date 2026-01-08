@@ -293,21 +293,11 @@
   },
   "82": {
     "sourcifyName": "Meter Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:8000/"
-      }
-    }
+    "supported": true
   },
   "83": {
     "sourcifyName": "Meter Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:4000/"
-      }
-    }
+    "supported": true
   },
   "97": {
     "sourcifyName": "Binance Smart Chain Testnet",
