@@ -194,11 +194,6 @@
     ]
   },
   {
-    "name": "Polygon zkEVM Mainnet",
-    "chainId": 1101,
-    "rpc": ["https://zkevm-rpc.com", "https://rpc.polygon-zkevm.gateway.fm"]
-  },
-  {
     "name": "Avalanche C-Chain",
     "chainId": 43114,
     "rpc": [
@@ -273,7 +268,15 @@
   {
     "name": "Hedera Mainnet",
     "chainId": 295,
-    "rpc": ["https://mainnet.hashio.io/api"]
+    "rpc": [
+      {
+        "type": "APIKey",
+        "url": "https://{SUBDOMAIN}.hedera-mainnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN"
+      },
+      "https://mainnet.hashio.io/api"
+    ]
   },
   {
     "name": "Celo Mainnet",
@@ -309,6 +312,12 @@
     "name": "Linea Mainnet",
     "chainId": 59144,
     "rpc": [
+      {
+        "type": "APIKey",
+        "url": "https://{SUBDOMAIN}.linea-mainnet.quiknode.pro/{API_KEY}",
+        "apiKeyEnvName": "QUICKNODE_API_KEY",
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN"
+      },
       "https://rpc.linea.build",
       "https://linea-rpc.publicnode.com",
       "https://linea.blockpi.network/v1/rpc/public"
