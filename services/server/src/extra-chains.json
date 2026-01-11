@@ -1,20 +1,20 @@
 [
   {
-    "name": "Tempo Testnet",
-    "title": "Tempo Testnet (Andantino)",
+    "name": "Tempo Moderato Testnet",
+    "title": "Tempo Testnet (Moderato)",
     "chain": "USD",
-    "rpc": ["https://rpc.testnet.tempo.xyz"],
+    "rpc": ["https://rpc.moderato.tempo.xyz"],
     "faucets": [],
     "nativeCurrency": { "name": "Tempo USD", "symbol": "USD", "decimals": 18 },
     "infoURL": "https://tempo.xyz/",
     "shortName": "tmp",
-    "chainId": 42429,
-    "networkId": 42429,
+    "chainId": 42431,
+    "networkId": 42431,
     "icon": "tempo",
     "explorers": [
       {
         "name": "explorer-tempo",
-        "url": "https://scout.tempo.xyz/",
+        "url": "https://explore.tempo.xyz/",
         "standard": "EIP3091"
       }
     ]
