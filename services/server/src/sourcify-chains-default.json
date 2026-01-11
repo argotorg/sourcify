@@ -2442,9 +2442,8 @@
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
-      }
     }, 
-  "42431": {
+    "42431": {
     "name": "Tempo Moderato Testnet",
     "chain": "TEMPO",
     "rpc": ["https://rpc.moderato.tempo.xyz"],
