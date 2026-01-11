@@ -2442,12 +2442,14 @@
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
-      }
-    }, 
-    "42431": {
-    "name": "Tempo Moderato Testnet",
-    "chain": "TEMPO",
-    "rpc": ["https://rpc.moderato.tempo.xyz"],
+    }
+  },
+  "42431": {
+    "sourcifyName": "Tempo Moderato Testnet",
+    "supported": true,
+    "rpc": [
+      "https://rpc.moderato.tempo.xyz"
+    ],
     "nativeCurrency": {
       "name": "USD",
       "symbol": "USD",
@@ -2460,7 +2462,7 @@
         "name": "Tempo Explorer",
         "url": "https://explore.tempo.xyz",
         "standard": "EIP3091"
-       }
-     ]
-   }
+      }
+    ]
+  }
 }
