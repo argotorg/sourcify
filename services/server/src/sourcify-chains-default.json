@@ -2439,9 +2439,30 @@
     "etherscanApi": {
       "supported": true,
       "apiKeyEnvName": "ETHERSCAN_API_KEY_SEI"
-    },
+     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
     }
+  },
+  "42431": {
+    "sourcifyName": "Tempo Moderato Testnet",
+    "supported": true,
+    "rpc": [
+      "https://rpc.moderato.tempo.xyz"
+    ],
+    "nativeCurrency": {
+      "name": "USD",
+      "symbol": "USD",
+      "decimals": 6
+    },
+    "chainId": 42431,
+    "networkId": 42431,
+    "explorers": [
+      {
+        "name": "Tempo Explorer",
+        "url": "https://explore.tempo.xyz",
+        "standard": "EIP3091"
+      }
+    ]
   }
 }
