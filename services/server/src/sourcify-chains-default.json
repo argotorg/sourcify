@@ -2442,7 +2442,6 @@
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
-      }
     }, 
     "42431": {
     "name": "Tempo Moderato Testnet",
