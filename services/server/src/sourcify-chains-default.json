@@ -2442,6 +2442,7 @@
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
+      }
     }, 
   "42431": {
     "name": "Tempo Moderato Testnet",
@@ -2459,6 +2460,7 @@
         "name": "Tempo Explorer",
         "url": "https://explore.tempo.xyz",
         "standard": "EIP3091"
-      }
-    ]
-  }
+       }
+     ]
+   }
+}
