@@ -2015,6 +2015,15 @@ describe("Test Supported Chains", function () {
     "perfect",
   );
 
+  // Tempo Testnet (Andantino)
+  verifyContract(
+    "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
+    "42431",
+    "Tempo Testnet (Moderato)",
+    "createx/",
+    "partial",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains
