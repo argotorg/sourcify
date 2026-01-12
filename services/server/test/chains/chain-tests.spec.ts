@@ -2015,7 +2015,22 @@ describe("Test Supported Chains", function () {
     "perfect",
   );
 
-  // Tempo Testnet (Andantino)
+  // Jovay Sepolia Testnet
+  verifyContract(
+    "0x63A2fA72305de66654bB95606190f5477abeAf36",
+    "2019775",
+    "Jovay Sepolia Testnet",
+    "shared/",
+  );
+  // Jovay Mainnet
+  verifyContract(
+    "0x63A2fA72305de66654bB95606190f5477abeAf36",
+    "5734951",
+    "Jovay Mainnet",
+    "shared/",
+  );
+
+  // Tempo Testnet (Moderato)
   verifyContract(
     "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
     "42431",
