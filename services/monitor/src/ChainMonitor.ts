@@ -175,7 +175,6 @@ export default class ChainMonitor extends EventEmitter {
     this.chainLogger.silly("Block", block);
 
     for (const tx of block.prefetchedTransactions) {
-      // TODO: Check factory contracts with traces
       this.chainLogger.silly("Checking tx", {
         txHash: tx.hash,
         blockNumber: block.number,
@@ -190,6 +189,18 @@ export default class ChainMonitor extends EventEmitter {
         });
         this.processNewContract(tx.hash, address);
       }
+    }
+
+    // Check factory contracts with traces
+    const factoryCreatedAddresses =
+      await this.sourcifyChain.getCreatedAddressesFromBlockTraces(block.number);
+    for (const address of factoryCreatedAddresses) {
+      this.chainLogger.info("Found new contract created by factory in block", {
+        blockNumber: block.number,
+        address,
+      });
+      // todo return tx hash
+      this.processNewContract("", address);
     }
   };
 
