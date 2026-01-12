@@ -221,6 +221,64 @@ describe("Monitor", function () {
     });
   });
 
+  it.only("should successfully catch a contract that is deployed by a factory, and send to Sourcify", async () => {
+    process.env.TEST_API_KEY = "testkey123";
+    const traceSupportedChain = structuredClone(localChain);
+    traceSupportedChain.rpc = [
+      {
+        type: "ApiKey",
+        url: `http://localhost:${HARDHAT_PORT}`,
+        traceSupport: "debug_traceTransaction",
+        apiKeyEnvName: "TEST_API_KEY",
+      },
+    ] as any[];
+    monitor = new Monitor([traceSupportedChain], {
+      sourcifyServerURLs: [MOCK_SOURCIFY_SERVER],
+      chainConfigs: {
+        [traceSupportedChain.chainId]: {
+          startBlock: 0,
+          blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
+        },
+      },
+    });
+
+    const factoryArtifact = (await import("./sources/Factory/Factory.json"))
+      .default;
+    const factoryAddress = await deployFromAbiAndBytecode(
+      signer,
+      factoryArtifact.abi,
+      factoryArtifact.bytecode,
+      [],
+    );
+    // Deploy Child
+    const deployValue = 12345;
+    const factoryContract = new Contract(
+      factoryAddress,
+      factoryArtifact.abi,
+      signer,
+    );
+    const deployTx = await factoryContract.deploy.send(deployValue);
+    const deployReceipt = await deployTx.wait();
+    const childAddress = (deployReceipt!.logs[0] as EventLog).args[0];
+
+    const nockInterceptor = nockInterceptorForVerification(
+      MOCK_SOURCIFY_SERVER,
+      traceSupportedChain.chainId,
+      childAddress,
+    );
+
+    await monitor.start();
+    await new Promise<void>((resolve) => {
+      nockInterceptor.on("replied", () => {
+        expect(
+          nockInterceptor.isDone(),
+          `Server ${MOCK_SOURCIFY_SERVER} not called`,
+        ).to.be.true;
+        resolve();
+      });
+    });
+  });
+
   it("should use retry mechanism for failed Sourcify request", (done) => {
     const maxRetries = 2;
     monitor = new Monitor([localChain], {
