@@ -2449,8 +2449,8 @@
   "fetchContractCreationTxUsing": {
     "blockscoutApi": {
       "url": "https://explore.tempo.xyz/"
+      }
     }
-  }
   },
   "rpc": [
     "https://rpc.moderato.tempo.xyz"
