@@ -2448,7 +2448,8 @@
   "supported": true,
   "fetchContractCreationTxUsing": {
     "blockscoutApi": {
-      "url": "https://scout.tempo.xyz/"
+      "url": "https://explore.tempo.xyz/"
+      }
     }
   },
   "rpc": [
