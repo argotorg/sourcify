@@ -1,7 +1,10 @@
 import DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
 import assert from "assert";
 import { EventEmitter } from "stream";
-import type { FetchRequestRPC } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  FetchRequestRPC,
+  SourcifyRpc,
+} from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import logger from "./logger";
 import "./loggerServer"; // Start the dynamic log level server
@@ -69,9 +72,7 @@ export default class Monitor extends EventEmitter {
       } else {
         return new SourcifyChain({
           chainId: chain.chainId,
-          rpcs: authenticateRpcs(chain).map((rpc) => ({
-            rpc,
-          })),
+          rpcs: authenticateRpcs(chain),
           name: chain.name,
           supported: true,
         });
@@ -145,9 +146,7 @@ export default class Monitor extends EventEmitter {
   };
 }
 
-export function authenticateRpcs(
-  chain: MonitorChain,
-): (string | FetchRequestRPC)[] {
+export function authenticateRpcs(chain: MonitorChain): SourcifyRpc[] {
   return chain.rpc.map((rpc) => {
     if (typeof rpc === "string") {
       if (rpc?.includes("ethpandaops.io")) {
@@ -165,9 +164,9 @@ export function authenticateRpcs(
             },
           ],
         };
-        return fetchRequestRpc;
+        return { rpc: fetchRequestRpc };
       }
-      return rpc;
+      return { rpc };
     }
     if (rpc?.type === "ApiKey") {
       const apiKey = process.env[rpc.apiKeyEnvName] || "";
@@ -187,7 +186,10 @@ export function authenticateRpcs(
         }
         secretUrl = secretUrl.replace("{SUBDOMAIN}", subDomain);
       }
-      return secretUrl;
+      return {
+        rpc: secretUrl,
+        ...(rpc.traceSupport ? { traceSupport: rpc.traceSupport } : {}),
+      };
     }
     throw new Error("Invalid rpc object: " + JSON.stringify(rpc));
   });

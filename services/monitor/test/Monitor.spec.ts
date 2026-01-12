@@ -80,7 +80,7 @@ describe("Monitor", function () {
     it("should return string RPC unchanged", () => {
       const rpc = "https://example.com/rpc";
       const result = authenticateRpcs({ chainId: 1, rpc: [rpc], name: "Test" });
-      expect(result).to.deep.equal([rpc]);
+      expect(result).to.deep.equal([{ rpc }]);
     });
 
     it("should replace API key in URL for ApiKey type", () => {
@@ -91,7 +91,24 @@ describe("Monitor", function () {
         apiKeyEnvName: "TEST_API_KEY",
       };
       const result = authenticateRpcs({ chainId: 1, rpc: [rpc], name: "Test" });
-      expect(result).to.deep.equal(["https://example.com/rpc/testkey123"]);
+      expect(result).to.deep.equal([
+        { rpc: "https://example.com/rpc/testkey123" },
+      ]);
+    });
+
+    it("should replace subdomain in URL for ApiKey type", () => {
+      process.env.TEST_API_KEY = "testkey123";
+      process.env.TEST_SUBDOMAIN = "test-subdomain";
+      const rpc: RpcObject = {
+        type: "ApiKey",
+        url: "https://{SUBDOMAIN}.example.com/rpc/{API_KEY}",
+        apiKeyEnvName: "TEST_API_KEY",
+        subDomainEnvName: "TEST_SUBDOMAIN",
+      };
+      const result = authenticateRpcs({ chainId: 1, rpc: [rpc], name: "Test" });
+      expect(result).to.deep.equal([
+        { rpc: "https://test-subdomain.example.com/rpc/testkey123" },
+      ]);
     });
 
     it("should throw error if API key is not found in environment variables", () => {
@@ -115,7 +132,7 @@ describe("Monitor", function () {
       const rpc = ["https://rpc.ethpandaops.io/test"];
       const result = authenticateRpcs({ chainId: 1, rpc: rpc, name: "Test" });
 
-      const fetchRequest = result[0] as FetchRequestRPC;
+      const fetchRequest = result[0].rpc as FetchRequestRPC;
       expect(fetchRequest.url).to.equal("https://rpc.ethpandaops.io/test");
       expect(fetchRequest.headers).to.be.an("array");
       expect(fetchRequest.headers).to.have.lengthOf(2);
