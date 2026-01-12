@@ -52,7 +52,7 @@ describe('SourcifyChain', () => {
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
       ).to.be.rejectedWith(
-        'No trace support for chain 1. No other method to get the creation bytecode',
+        'No trace support for chain 1. No other method to get the data',
       );
     });
 
@@ -76,7 +76,7 @@ describe('SourcifyChain', () => {
       ]);
     });
 
-    it('should throw an error if no create trace is found', async () => {
+    it('should throw an error if no create trace is found in parity traces', async () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox
         .stub(mockProvider, 'send')
@@ -201,6 +201,150 @@ describe('SourcifyChain', () => {
     });
   });
 
+  describe('getCreatedAddressesFromBlockTraces', () => {
+    it('should throw an error if trace support is not available', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [
+          {
+            rpc: 'http://localhost:8545',
+          },
+        ],
+        supported: true,
+      });
+      await expect(
+        sourcifyChain.getCreatedAddressesFromBlockTraces(12345),
+      ).to.be.rejectedWith(
+        'No trace support for chain 1. No other method to get the data',
+      );
+    });
+
+    it('should extract created addresses from parity traces', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          type: 'create',
+          result: { address: '0xaddress' },
+          action: { init: '0xcreationBytecode' },
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal(['0xaddress']);
+      expect(mockProvider.send).to.have.been.calledWith('trace_block', [
+        '0x3039',
+      ]);
+    });
+
+    it('should extract created addresses from geth traces', async () => {
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          txHash: '0xhash',
+          result: {
+            calls: [
+              {
+                type: 'CREATE',
+                to: '0xaddress',
+                input: '0xcreationBytecode',
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal(['0xaddress']);
+      expect(mockProvider.send).to.have.been.calledWith(
+        'debug_traceBlockByNumber',
+        ['0x3039', { tracer: 'callTracer' }],
+      );
+    });
+
+    it('should throw an error if parity traces are empty', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([]);
+
+      await expect(sourcifyChain.getCreatedAddressesFromBlockTraces(12345)).to
+        .be.rejected;
+    });
+
+    it('should return an empty array if no create trace is found in parity traces', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          type: 'call',
+          action: { to: '0xaddress' },
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal([]);
+      expect(mockProvider.send).to.have.been.calledWith('trace_block', [
+        '0x3039',
+      ]);
+    });
+
+    it('should throw an error if geth traces are empty', async () => {
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([]);
+
+      await expect(sourcifyChain.getCreatedAddressesFromBlockTraces(12345)).to
+        .be.rejected;
+    });
+
+    it('should return an empty array if no create trace is found in geth traces', async () => {
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'debug_traceTransaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+      ];
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          txHash: '0xhash',
+          result: {
+            calls: [
+              {
+                type: 'CALL',
+                to: '0xsomeaddress',
+                input: '0xsomeinput',
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal([]);
+      expect(mockProvider.send).to.have.been.calledWith(
+        'debug_traceBlockByNumber',
+        ['0x3039', { tracer: 'callTracer' }],
+      );
+    });
+  });
+
   describe('extractFromParityTraceProvider', () => {
     it('should throw an error if the contract address does not match', async () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
@@ -213,10 +357,10 @@ describe('SourcifyChain', () => {
       ]);
 
       await expect(
-        sourcifyChain.extractFromParityTraceProvider(
+        sourcifyChain.extractCreationBytecodeFromParityTraceProvider(
+          sourcifyChain.rpcs[0],
           '0xhash',
           '0xaddress',
-          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith(
         `Provided tx 0xhash does not create the expected contract 0xaddress. Created contracts by this tx: 0xdifferentAddress`,
@@ -234,10 +378,10 @@ describe('SourcifyChain', () => {
       ]);
 
       await expect(
-        sourcifyChain.extractFromParityTraceProvider(
+        sourcifyChain.extractCreationBytecodeFromParityTraceProvider(
+          sourcifyChain.rpcs[0],
           '0xhash',
           '0xaddress',
-          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('.action.init not found');
     });
@@ -258,11 +402,12 @@ describe('SourcifyChain', () => {
         ],
       });
 
-      const result = await sourcifyChain.extractFromGethTraceProvider(
-        '0xhash',
-        '0xaddress',
-        sourcifyChain.rpcs[0],
-      );
+      const result =
+        await sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        );
       expect(result).to.equal('0xcreationBytecode');
     });
 
@@ -283,11 +428,12 @@ describe('SourcifyChain', () => {
         ],
       });
 
-      const result = await sourcifyChain.extractFromGethTraceProvider(
-        '0xhash',
-        '0xaddress',
-        sourcifyChain.rpcs[0],
-      );
+      const result =
+        await sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        );
       expect(result).to.equal('0xcreationBytecode');
     });
 
@@ -296,10 +442,10 @@ describe('SourcifyChain', () => {
       sandbox.stub(mockProvider, 'send').resolves({});
 
       await expect(
-        sourcifyChain.extractFromGethTraceProvider(
+        sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
           '0xhash',
           '0xaddress',
-          sourcifyChain.rpcs[0],
         ),
       ).to.be.rejectedWith('received empty or malformed response');
     });
