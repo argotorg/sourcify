@@ -2443,13 +2443,14 @@
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
     },
-    "42431": {
+   "42431": {
   "sourcifyName": "Tempo Testnet (Moderato)",
   "supported": true,
   "fetchContractCreationTxUsing": {
     "blockscoutApi": {
-      "url": "https://explore.tempo.xyz/"
-      },
+      "url": "https://scout.tempo.xyz/"
+    }
+  },
   "rpc": [
     "https://rpc.moderato.tempo.xyz"
   ]
