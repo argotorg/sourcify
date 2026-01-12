@@ -227,12 +227,13 @@ describe('SourcifyChain', () => {
           type: 'create',
           result: { address: '0xaddress' },
           action: { init: '0xcreationBytecode' },
+          transactionHash: '0xhash',
         },
       ]);
 
       const result =
         await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
-      expect(result).to.deep.equal(['0xaddress']);
+      expect(result).to.deep.equal({ '0xhash': ['0xaddress'] });
       expect(mockProvider.send).to.have.been.calledWith('trace_block', [
         '0x3039',
       ]);
@@ -264,7 +265,7 @@ describe('SourcifyChain', () => {
 
       const result =
         await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
-      expect(result).to.deep.equal(['0xaddress']);
+      expect(result).to.deep.equal({ '0xhash': ['0xaddress'] });
       expect(mockProvider.send).to.have.been.calledWith(
         'debug_traceBlockByNumber',
         ['0x3039', { tracer: 'callTracer' }],
@@ -285,12 +286,13 @@ describe('SourcifyChain', () => {
         {
           type: 'call',
           action: { to: '0xaddress' },
+          transactionHash: '0xhash',
         },
       ]);
 
       const result =
         await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
-      expect(result).to.deep.equal([]);
+      expect(result).to.deep.equal({});
       expect(mockProvider.send).to.have.been.calledWith('trace_block', [
         '0x3039',
       ]);
@@ -337,7 +339,7 @@ describe('SourcifyChain', () => {
 
       const result =
         await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
-      expect(result).to.deep.equal([]);
+      expect(result).to.deep.equal({});
       expect(mockProvider.send).to.have.been.calledWith(
         'debug_traceBlockByNumber',
         ['0x3039', { tracer: 'callTracer' }],
