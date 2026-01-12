@@ -365,7 +365,7 @@ export class SourcifyChain {
    */
   getCreatedAddressesFromBlockTraces = async (
     blockNumber: number,
-  ): Promise<string[]> => {
+  ): Promise<Record<string, string[]>> => {
     return this.getRpcDataViaTraceType(
       (rpc, blockNumber) =>
         this.extractCreatedAddressesFromParityTraceProvider(rpc, blockNumber),
@@ -506,7 +506,7 @@ export class SourcifyChain {
   extractCreatedAddressesFromParityTraceProvider = async (
     rpc: SourcifyRpcWithProvider,
     blockNumber: number,
-  ): Promise<string[]> => {
+  ): Promise<Record<string, string[]>> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -527,25 +527,28 @@ export class SourcifyChain {
       );
     }
 
-    const createdAddresses: string[] = [];
+    const createdAddresses: Record<string, string[]> = {};
     for (const trace of traces) {
       if (trace.type !== 'create') continue;
-      if (!trace.result || !trace.result.address) {
-        logWarn('Found create trace without result.address, skipping.', {
+      if (!trace.result || !trace.result.address || !trace.transactionHash) {
+        logWarn('Found create trace with missing data, skipping.', {
           blockNumber,
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
         });
         continue;
       }
-      createdAddresses.push(trace.result.address);
+      if (!createdAddresses[trace.transactionHash]) {
+        createdAddresses[trace.transactionHash] = [];
+      }
+      createdAddresses[trace.transactionHash].push(trace.result.address);
     }
 
     logDebug('Found created addresses from create traces', {
-      numberOfCreatedAddresses: createdAddresses.length,
       blockNumber,
       maskedProviderUrl: rpc.maskedUrl,
       chainId: this.chainId,
+      createdAddresses,
     });
     return createdAddresses;
   };
@@ -615,7 +618,7 @@ export class SourcifyChain {
   extractCreatedAddressesFromGethTraceProvider = async (
     rpc: SourcifyRpcWithProvider,
     blockNumber: number,
-  ): Promise<string[]> => {
+  ): Promise<Record<string, string[]>> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -639,16 +642,31 @@ export class SourcifyChain {
       );
     }
 
-    const createCalls: CallFrame[] = [];
+    const createdAddresses: Record<string, string[]> = {};
     // traces is an array of objects { txHash, result: CallFrame }
     for (const tracesForTx of traces) {
+      if (!tracesForTx.txHash) {
+        logWarn('Found trace item without tx hash, skipping.', {
+          blockNumber,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        continue;
+      }
+      const txHash = tracesForTx.txHash;
+      const createCalls: CallFrame[] = [];
       this.findCreateInDebugTraceTransactionCalls(
         (tracesForTx.result as CallFrame).calls,
         createCalls,
       );
+      if (createCalls.length === 0) {
+        continue;
+      }
+      if (!createdAddresses[txHash]) {
+        createdAddresses[txHash] = [];
+      }
+      createdAddresses[txHash].push(...createCalls.map((call) => call.to));
     }
-
-    const createdAddresses = createCalls.map((call) => call.to);
 
     logDebug('Found created addresses from create traces', {
       numberOfCreatedAddresses: createdAddresses.length,

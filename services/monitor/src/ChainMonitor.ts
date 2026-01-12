@@ -194,13 +194,18 @@ export default class ChainMonitor extends EventEmitter {
     // Check factory contracts with traces
     const factoryCreatedAddresses =
       await this.sourcifyChain.getCreatedAddressesFromBlockTraces(block.number);
-    for (const address of factoryCreatedAddresses) {
-      this.chainLogger.info("Found new contract created by factory in block", {
-        blockNumber: block.number,
-        address,
-      });
-      // todo return tx hash
-      this.processNewContract("", address);
+    for (const [txHash, addresses] of Object.entries(factoryCreatedAddresses)) {
+      for (const address of addresses) {
+        this.chainLogger.info(
+          "Found new contract created by factory in block",
+          {
+            blockNumber: block.number,
+            address,
+            txHash,
+          },
+        );
+        this.processNewContract(txHash, address);
+      }
     }
   };
 
