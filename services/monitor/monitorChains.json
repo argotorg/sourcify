@@ -9,7 +9,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -28,7 +28,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.ethereum-sepolia.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -49,7 +49,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.ethereum-hoodi.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -63,7 +63,7 @@
     "chainId": 42161,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.arbitrum-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -80,7 +80,7 @@
     "chainId": 421614,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.arbitrum-sepolia.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -102,7 +102,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.nova-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -116,7 +116,7 @@
     "chainId": 100,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.xdai.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -132,7 +132,7 @@
     "chainId": 10,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.optimism.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -148,7 +148,7 @@
     "chainId": 11155420,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.optimism-sepolia.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -169,7 +169,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.matic.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -183,7 +183,7 @@
     "chainId": 80002,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.matic-amoy.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -198,7 +198,7 @@
     "chainId": 43114,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.avalanche-mainnet.quiknode.pro/{API_KEY}/ext/bc/C/rpc/",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -220,7 +220,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.avalanche-testnet.quiknode.pro/{API_KEY}/ext/bc/C/rpc/",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -239,7 +239,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.base-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -254,7 +254,7 @@
     "chainId": 84532,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.base-sepolia.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -270,7 +270,7 @@
     "chainId": 295,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.hedera-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN"
@@ -288,7 +288,7 @@
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.celo-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -313,7 +313,7 @@
     "chainId": 59144,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.linea-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN"
@@ -337,7 +337,7 @@
     "chainId": 534352,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.scroll-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
@@ -353,7 +353,7 @@
     "chainId": 534351,
     "rpc": [
       {
-        "type": "APIKey",
+        "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.scroll-testnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
