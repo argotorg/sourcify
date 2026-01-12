@@ -176,7 +176,18 @@ export function authenticateRpcs(
           `API key ${rpc.apiKeyEnvName} not found in environment variables`,
         );
       }
-      return rpc.url.replace("{API_KEY}", apiKey);
+      let secretUrl = rpc.url.replace("{API_KEY}", apiKey);
+      if (rpc?.subDomainEnvName) {
+        // subDomain is optional
+        const subDomain = process.env[rpc.subDomainEnvName];
+        if (!subDomain) {
+          throw new Error(
+            `Subdomain ${rpc.subDomainEnvName} not found in environment variables`,
+          );
+        }
+        secretUrl = secretUrl.replace("{SUBDOMAIN}", subDomain);
+      }
+      return secretUrl;
     }
     throw new Error("Invalid rpc object: " + JSON.stringify(rpc));
   });
