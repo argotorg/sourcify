@@ -3,7 +3,6 @@ import semver from 'semver';
 import { performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
 import type {
-  Libraries,
   SolidityJsonInput,
   Metadata,
   MetadataCompilerSettings,
@@ -33,7 +32,7 @@ import {
   getVariationsByContentHash,
 } from './variationsUtils';
 import { logDebug } from '../logger';
-import { splitFullyQualifiedName } from '../utils/utils';
+import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export class SolidityMetadataContract {
   metadata: Metadata;
@@ -317,32 +316,9 @@ export class SolidityMetadataContract {
 
     this.solcJsonInput.language = this.metadata.language;
 
-    // Convert the libraries from the metadata format to the compiler_settings format
-    // metadata format: "contracts/1_Storage.sol:Journal": "0x7d53f102f4d4aa014db4e10d6deec2009b3cda6b"
-    // settings format: "contracts/1_Storage.sol": { Journal: "0x7d53f102f4d4aa014db4e10d6deec2009b3cda6b" }
-    if (metadataLibraries) {
-      this.solcJsonInput.settings.libraries = Object.keys(
-        metadataLibraries,
-      ).reduce((libraries, libraryKey) => {
-        // Before Solidity v0.7.5: { "ERC20": "0x..."}
-        if (!libraryKey.includes(':')) {
-          if (!libraries['']) {
-            libraries[''] = {};
-          }
-          // try using the global method, available for pre 0.7.5 versions
-          libraries[''][libraryKey] = metadataLibraries[libraryKey];
-          return libraries;
-        }
-
-        // After Solidity v0.7.5: { "ERC20.sol:ERC20": "0x..."}
-        const { contractPath, contractName } =
-          splitFullyQualifiedName(libraryKey);
-        if (!libraries[contractPath]) {
-          libraries[contractPath] = {};
-        }
-        libraries[contractPath][contractName] = metadataLibraries[libraryKey];
-        return libraries;
-      }, {} as Libraries);
+    const libraries = convertLibrariesToStdJsonFormat(metadataLibraries);
+    if (libraries) {
+      this.solcJsonInput.settings.libraries = libraries;
     }
   }
 

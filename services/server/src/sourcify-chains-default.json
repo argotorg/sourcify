@@ -32,6 +32,20 @@
         ]
       },
       {
+        "type": "FetchRequest",
+        "url": "https://archive.mainnet.ethpandaops.io",
+        "headers": [
+          {
+            "headerName": "CF-Access-Client-Id",
+            "headerEnvName": "CF_ACCESS_CLIENT_ID"
+          },
+          {
+            "headerName": "CF-Access-Client-Secret",
+            "headerEnvName": "CF_ACCESS_CLIENT_SECRET"
+          }
+        ]
+      },
+      {
         "type": "APIKeyRPC",
         "url": "https://eth-mainnet.g.alchemy.com/v2/{API_KEY}",
         "apiKeyEnvName": "ALCHEMY_API_KEY"
@@ -279,21 +293,11 @@
   },
   "82": {
     "sourcifyName": "Meter Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:8000/"
-      }
-    }
+    "supported": true
   },
   "83": {
     "sourcifyName": "Meter Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:4000/"
-      }
-    }
+    "supported": true
   },
   "97": {
     "sourcifyName": "Binance Smart Chain Testnet",
@@ -2332,6 +2336,16 @@
       },
       "https://rpc.testnet.tempo.xyz"
     ]
+  },
+  "42431": {
+    "sourcifyName": "Tempo Testnet (Moderato)",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explore.tempo.xyz/"
+      }
+    },
+    "rpc": ["https://rpc.moderato.tempo.xyz"]
   },
   "1868": {
     "sourcifyName": "Soneium",

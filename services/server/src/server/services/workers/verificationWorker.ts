@@ -1,13 +1,12 @@
 import Piscina from "piscina";
 import type {
-  SolidityJsonInput,
-  VyperJsonInput,
   SourcifyChainInstance,
   SourcifyChainMap,
-} from "@ethereum-sourcify/lib-sourcify";
-import {
+  AnyCompilation,
   SolidityCompilation,
   VyperCompilation,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
   Verification,
   SourcifyLibError,
   SourcifyChain,
@@ -34,6 +33,7 @@ import logger, { setLogLevel } from "../../../common/logger";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
+import { createCompilationFromJsonInput } from "../utils/compilation";
 
 export const filename = resolve(__filename);
 
@@ -108,23 +108,14 @@ async function _verifyFromJsonInput({
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
-  let compilation: SolidityCompilation | VyperCompilation | undefined;
+  let compilation: AnyCompilation;
   try {
-    if (jsonInput.language === "Solidity") {
-      compilation = new SolidityCompilation(
-        solc,
-        compilerVersion,
-        jsonInput as SolidityJsonInput,
-        compilationTarget,
-      );
-    } else if (jsonInput.language === "Vyper") {
-      compilation = new VyperCompilation(
-        vyper,
-        compilerVersion,
-        jsonInput as VyperJsonInput,
-        compilationTarget,
-      );
-    }
+    compilation = createCompilationFromJsonInput(
+      { solc, vyper },
+      compilerVersion,
+      jsonInput,
+      compilationTarget,
+    );
   } catch (error: any) {
     return {
       errorExport: createErrorExport(error),

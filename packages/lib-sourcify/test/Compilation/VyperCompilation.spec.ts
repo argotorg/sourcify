@@ -614,6 +614,9 @@ describe('VyperCompilation', () => {
 
     await compilation.compile();
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { outputSelection, ...settings } = compilation.jsonInput.settings;
+
     expect(compilation.metadata).to.deep.equal({
       compiler: { version: vyperVersion },
       language: 'Vyper',
@@ -636,7 +639,7 @@ describe('VyperCompilation', () => {
         userdoc: {},
       },
       settings: {
-        ...compilation.jsonInput.settings,
+        ...settings,
         compilationTarget: { [contractFileName]: contractName },
       },
       sources: {

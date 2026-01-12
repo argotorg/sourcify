@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.4.0 - 2026-01-07
+
+- Implement similarity verification in Monitor (#2539)
+
+
 ## sourcify-monitor@1.3.26 - 2025-12-15
 
 - Update dependencies

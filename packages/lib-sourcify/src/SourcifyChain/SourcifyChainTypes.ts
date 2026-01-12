@@ -32,9 +32,6 @@ export interface FetchContractCreationTxMethods {
   blocksScanApi?: {
     url: string;
   };
-  meterApi?: {
-    url: string;
-  };
   telosApi?: {
     url: string;
   };

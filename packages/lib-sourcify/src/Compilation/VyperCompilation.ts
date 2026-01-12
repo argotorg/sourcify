@@ -125,12 +125,18 @@ export class VyperCompilation extends AbstractCompilation {
       {},
     );
 
+    const {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      outputSelection: _outputSelection,
+      ...settingsWithoutOutputSelection
+    } = this.jsonInput.settings || {};
+
     this._metadata = {
       compiler: { version: this.compilerVersion },
       language: 'Vyper',
       output: outputMetadata,
       settings: {
-        ...this.jsonInput.settings,
+        ...settingsWithoutOutputSelection,
         compilationTarget: {
           [this.compilationTarget.path]: this.compilationTarget.name,
         },

@@ -815,6 +815,19 @@ export async function getDatabaseColumnsFromVerification(
     },
   );
 
+  let compiler;
+  switch (verification.compilation.language.toLocaleLowerCase()) {
+    case "yul":
+    case "solidity":
+      compiler = "solc";
+      break;
+    case "vyper":
+      compiler = "vyper";
+      break;
+    default:
+      throw new Error("Language not supported");
+  }
+
   return {
     recompiledCreationCode,
     recompiledRuntimeCode: {
@@ -840,10 +853,7 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler:
-        verification.compilation.language.toLocaleLowerCase() === "solidity"
-          ? "solc"
-          : "vyper",
+      compiler,
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,

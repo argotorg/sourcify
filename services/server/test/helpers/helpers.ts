@@ -53,11 +53,11 @@ export type DeploymentInfo = {
  */
 export async function deployFromAbiAndBytecodeForCreatorTxHash(
   signer: JsonRpcSigner,
-  abi: JsonFragment[],
+  abi: JsonFragment[] | undefined,
   bytecode: BytesLike | { object: string },
   args?: any[],
 ): Promise<DeploymentInfo> {
-  const contractFactory = new ContractFactory(abi, bytecode, signer);
+  const contractFactory = new ContractFactory(abi || [], bytecode, signer);
   console.log(`Deploying contract ${args?.length ? `with args ${args}` : ""}`);
   const deployment = await contractFactory.deploy(...(args || []));
   await deployment.waitForDeployment();
