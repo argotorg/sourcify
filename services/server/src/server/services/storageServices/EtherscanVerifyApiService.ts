@@ -519,6 +519,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     }
 
     const response = await this.sendVerificationWithRetry(
+      (...args) => this.submitVerification(...args),
       verification,
       apiBaseUrl,
       submissionContext,
@@ -593,32 +594,6 @@ export class EtherscanVerifyApiService implements WStorageService {
   private async submitVerification(
     verification: VerificationExport,
     apiBaseUrl: string,
-  ): Promise<EtherscanRpcResponse> {
-    const url = this.buildApiUrl(
-      apiBaseUrl,
-      "verifysourcecode",
-      verification.chainId,
-    );
-    const body = this.buildVerificationPayload(verification);
-
-    const response = await fetch(url, {
-      method: "POST",
-      body,
-    });
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      throw new Error(
-        `Explorer verification request failed (${response.status}): ${responseText}`,
-      );
-    }
-
-    return (await response.json()) as EtherscanRpcResponse;
-  }
-
-  private async sendVerifcationAndHandleErrors(
-    verification: VerificationExport,
-    apiBaseUrl: string,
     submissionContext: {
       identifier: string;
       chainId: number;
@@ -630,7 +605,26 @@ export class EtherscanVerifyApiService implements WStorageService {
     },
   ): Promise<EtherscanRpcResponse> {
     try {
-      return await this.submitVerification(verification, apiBaseUrl);
+      const url = this.buildApiUrl(
+        apiBaseUrl,
+        "verifysourcecode",
+        verification.chainId,
+      );
+      const body = this.buildVerificationPayload(verification);
+
+      const response = await fetch(url, {
+        method: "POST",
+        body,
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(
+          `Explorer verification request failed (${response.status}): ${responseText}`,
+        );
+      }
+
+      return (await response.json()) as EtherscanRpcResponse;
     } catch (error: any) {
       if (jobData) {
         await this.storeExternalVerificationResult(jobData, {
@@ -647,6 +641,7 @@ export class EtherscanVerifyApiService implements WStorageService {
   }
 
   private async sendVerificationWithRetry(
+    submissionFunction: typeof this.submitVerification,
     verification: VerificationExport,
     apiBaseUrl: string,
     submissionContext: {
@@ -662,7 +657,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     const MAX_RETRIES = 6;
     const RETRY_DELAY_MS = 5000;
 
-    let response = await this.sendVerifcationAndHandleErrors(
+    let response = await submissionFunction(
       verification,
       apiBaseUrl,
       submissionContext,
@@ -695,7 +690,7 @@ export class EtherscanVerifyApiService implements WStorageService {
         });
         throw error;
       }
-      response = await this.sendVerifcationAndHandleErrors(
+      response = await submissionFunction(
         verification,
         apiBaseUrl,
         submissionContext,
@@ -704,6 +699,54 @@ export class EtherscanVerifyApiService implements WStorageService {
     }
 
     return response;
+  }
+
+  private async submitBlockscoutVyperVerification(
+    verification: VerificationExport,
+    apiBaseUrl: string,
+    submissionContext: {
+      identifier: string;
+      chainId: number;
+      address: string;
+    },
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<EtherscanRpcResponse> {
+    try {
+      const url = this.buildBlockscoutVyperUrl(
+        apiBaseUrl,
+        verification.address,
+      );
+      const body = this.buildBlockscoutVyperPayload(verification);
+
+      const response = await fetch(url, {
+        method: "POST",
+        body,
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(
+          `Blockscout Vyper verification request failed (${response.status}): ${responseText}`,
+        );
+      }
+
+      return (await response.json()) as EtherscanRpcResponse;
+    } catch (error: any) {
+      if (jobData) {
+        await this.storeExternalVerificationResult(jobData, {
+          error: error.message,
+        });
+      }
+      logger.error("Blockscout Vyper verification request failed", {
+        ...submissionContext,
+        apiBaseUrl,
+        error,
+      });
+      throw error;
+    }
   }
 
   private async handleBlockscoutVyperVerification(
@@ -719,50 +762,30 @@ export class EtherscanVerifyApiService implements WStorageService {
       finishTime: Date;
     },
   ): Promise<void> {
-    const url = this.buildBlockscoutVyperUrl(apiBaseUrl, verification.address);
-    const body = this.buildBlockscoutVyperPayload(verification);
+    const response = await this.sendVerificationWithRetry(
+      (...args) => this.submitBlockscoutVyperVerification(...args),
+      verification,
+      apiBaseUrl,
+      submissionContext,
+      jobData,
+    );
 
-    const response = await fetch(url, {
-      method: "POST",
-      body,
-    });
-
-    // This case handles the Bad Requests cases or server errors
-    if (!response.ok) {
-      const responseText = await response.text();
-      if (jobData) {
-        await this.storeExternalVerificationResult(jobData, {
-          error: responseText,
-        });
-      }
-      logger.warn("Blockscout Vyper verification request failed", {
-        status: response.status,
-        responseText,
-        apiBaseUrl,
-      });
-      throw new Error(
-        `Blockscout Vyper verification request failed (${response.status}): ${responseText}`,
-      );
-    }
-    const res = (await response.json()) as {
-      message: string;
-    };
     if (jobData) {
       // Blockscout does not return a verification ID,
       // so we use a fixed string to indicate a successful submission
-      if (res.message === "Smart-contract verification started") {
+      if (response.message === "Smart-contract verification started") {
         await this.storeExternalVerificationResult(jobData, {
           verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
         });
       } else {
         await this.storeExternalVerificationResult(jobData, {
-          error: res.message,
+          error: response.message,
         });
       }
     }
     logger.info("Submitted verification to explorer", {
       ...submissionContext,
-      receiptId: res.message,
+      receiptId: response.message,
     });
   }
 
