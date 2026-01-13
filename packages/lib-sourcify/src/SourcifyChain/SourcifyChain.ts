@@ -656,7 +656,7 @@ export class SourcifyChain {
       const txHash = tracesForTx.txHash;
       const createCalls: CallFrame[] = [];
       this.findCreateInDebugTraceTransactionCalls(
-        (tracesForTx.result as CallFrame).calls,
+        (tracesForTx.result as CallFrame)?.calls || [],
         createCalls,
       );
       if (createCalls.length === 0) {
@@ -669,10 +669,10 @@ export class SourcifyChain {
     }
 
     logDebug('Found created addresses from create traces', {
-      numberOfCreatedAddresses: createdAddresses.length,
       blockNumber,
       maskedProviderUrl: rpc.maskedUrl,
       chainId: this.chainId,
+      createdAddresses,
     });
     return createdAddresses;
   };
