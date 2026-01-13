@@ -2461,5 +2461,12 @@
         "url": "https://explorer.jovay.io"
       }
     }
-  }
+  },
+  
+  "1122": {
+    "sourcifyName": "LuxePorts",
+    "supported": true,
+    "monitored": false
+  
+}
 }

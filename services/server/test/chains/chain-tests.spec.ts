@@ -2030,6 +2030,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // LuxePorts MainNet
+  verifyContract(
+    "0x5827317D75D53E7a7901657307209bC684B8EcDc",
+    "1122",
+    "LuxePorts MainNet",
+    "shared/",
+  );
+
   // Tempo Testnet (Moderato)
   verifyContract(
     "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
