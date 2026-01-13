@@ -459,6 +459,8 @@ export class EtherscanVerifyApiService implements WStorageService {
     return true;
   }
 
+  async close(): Promise<void> {}
+
   async storeVerification(
     verification: VerificationExport,
     jobData?: {

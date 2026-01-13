@@ -45,6 +45,7 @@ import { EtherscanVerifyApiService } from "./storageServices/EtherscanVerifyApiS
 export interface WStorageService {
   IDENTIFIER: StorageIdentifiers;
   init(): Promise<boolean>;
+  close?(): Promise<void>;
   storeVerification(
     verification: VerificationExport,
     jobData?: {
@@ -348,6 +349,13 @@ export class StorageService {
         }
       }),
     );
+  }
+
+  public async close() {
+    logger.info("Gracefully closing storage services");
+    for (const service of Object.values(this.wServices)) {
+      await service.close?.();
+    }
   }
 
   async storeVerification(
