@@ -25,5 +25,6 @@ export class Services {
 
   public async close() {
     await this.verification.close();
+    await this.storage.close();
   }
 }
