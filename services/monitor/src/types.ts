@@ -1,3 +1,4 @@
+import type { TraceSupport } from "@ethereum-sourcify/lib-sourcify";
 import type DecentralizedStorageFetcher from "./DecentralizedStorageFetcher";
 
 export type KnownDecentralizedStorageFetchers = {
@@ -80,6 +81,8 @@ export type RpcObject = {
   type: "ApiKey";
   url: string;
   apiKeyEnvName: string;
+  subDomainEnvName?: string;
+  traceSupport?: TraceSupport;
 };
 
 export type MonitorChain = {

@@ -6,6 +6,7 @@ import {
   TransactionReceipt,
   TransactionResponse,
   getAddress,
+  toBeHex,
 } from 'ethers';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type {
@@ -338,12 +339,52 @@ export class SourcifyChain {
   getCreationBytecodeForFactory = async (
     creatorTxHash: string,
     address: string,
-  ) => {
+  ): Promise<string> => {
     // TODO: Alternative methods e.g. getting from Coleslaw. Not only traces.
+    return this.getRpcDataViaTraceType(
+      (rpc, creatorTxHash, address) =>
+        this.extractCreationBytecodeFromParityTraceProvider(
+          rpc,
+          creatorTxHash,
+          address,
+        ),
+      (rpc, creatorTxHash, address) =>
+        this.extractCreationBytecodeFromGethTraceProvider(
+          rpc,
+          creatorTxHash,
+          address,
+        ),
+      `getCreationBytecodeForFactory(${creatorTxHash}, ${address})`,
+      creatorTxHash,
+      address,
+    );
+  };
 
+  /**
+   * Tries to fetch all created contracts for a block with the available methods.
+   */
+  getCreatedAddressesFromBlockTraces = async (
+    blockNumber: number,
+  ): Promise<Record<string, string[]>> => {
+    return this.getRpcDataViaTraceType(
+      (rpc, blockNumber) =>
+        this.extractCreatedAddressesFromParityTraceProvider(rpc, blockNumber),
+      (rpc, blockNumber) =>
+        this.extractCreatedAddressesFromGethTraceProvider(rpc, blockNumber),
+      `getCreatedAddressesFromBlockTraces(${blockNumber})`,
+      blockNumber,
+    );
+  };
+
+  private getRpcDataViaTraceType = async <P extends any[], R>(
+    parityStyleMethod: (rpc: SourcifyRpcWithProvider, ...args: P) => Promise<R>,
+    gethStyleMethod: (rpc: SourcifyRpcWithProvider, ...args: P) => Promise<R>,
+    operationName: string,
+    ...args: P
+  ): Promise<R> => {
     if (!this.traceSupport) {
       throw new Error(
-        `No trace support for chain ${this.chainId}. No other method to get the creation bytecode`,
+        `No trace support for chain ${this.chainId}. No other method to get the data`,
       );
     }
 
@@ -356,76 +397,64 @@ export class SourcifyChain {
 
       // Parity type `trace_transaction`
       if (type === 'trace_transaction') {
-        logDebug('Fetching creation bytecode from parity traces', {
-          creatorTxHash,
-          address,
+        logDebug('Fetching from parity traces', {
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
+          ...args,
         });
         try {
-          const creationBytecode = await this.extractFromParityTraceProvider(
-            creatorTxHash,
-            address,
-            rpc,
-          );
-          return { result: creationBytecode };
+          const result = await parityStyleMethod(rpc, ...args);
+          return { result };
         } catch (e: any) {
           if (e instanceof RpcFailure) {
             throw e;
           }
-          logWarn('Failed to fetch creation bytecode from parity traces', {
-            creatorTxHash,
-            address,
+          logWarn('Failed to fetch from parity traces', {
             maskedProviderUrl: rpc.maskedUrl,
             chainId: this.chainId,
             error: e.message,
+            ...args,
           });
           return { tryNext: true };
         }
       }
       // Geth type `debug_traceTransaction`
       else if (type === 'debug_traceTransaction') {
-        logDebug('Fetching creation bytecode from geth traces', {
-          creatorTxHash,
-          address,
+        logDebug('Fetching from geth traces', {
           maskedProviderUrl: rpc.maskedUrl,
           chainId: this.chainId,
+          ...args,
         });
         try {
-          const creationBytecode = await this.extractFromGethTraceProvider(
-            creatorTxHash,
-            address,
-            rpc,
-          );
-          return { result: creationBytecode };
+          const result = await gethStyleMethod(rpc, ...args);
+          return { result };
         } catch (e: any) {
           if (e instanceof RpcFailure) {
             throw e;
           }
-          logWarn('Failed to fetch creation bytecode from geth traces', {
-            creatorTxHash,
-            address,
+          logWarn('Failed to fetch from geth traces', {
             maskedProviderUrl: rpc.maskedUrl,
             chainId: this.chainId,
             error: e.message,
+            ...args,
           });
           return { tryNext: true };
         }
       }
 
       return { tryNext: true };
-    }, `getCreationBytecodeForFactory(${creatorTxHash}, ${address})`);
+    }, operationName);
   };
 
   /**
    * For Parity style traces `trace_transaction`
    * Extracts the creation bytecode from the traces of a transaction
    */
-  extractFromParityTraceProvider = async (
+  extractCreationBytecodeFromParityTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,
-    rpc: SourcifyRpcWithProvider,
-  ) => {
+  ): Promise<string> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -435,14 +464,14 @@ export class SourcifyChain {
     );
 
     if (traces instanceof Array && traces.length > 0) {
-      logInfo('Fetched tx traces', {
+      logInfo('Fetched tx traces for creation tx hash', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
       });
     } else {
       throw new Error(
-        `Transaction's traces of ${creatorTxHash} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
+        `Transaction's traces of tx hash ${creatorTxHash} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
       );
     }
 
@@ -470,11 +499,69 @@ export class SourcifyChain {
     }
   };
 
-  extractFromGethTraceProvider = async (
+  /**
+   * For Parity style traces `trace_block`
+   * Extracts the all created addresses from the traces of a block
+   */
+  extractCreatedAddressesFromParityTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
+    blockNumber: number,
+  ): Promise<Record<string, string[]>> => {
+    if (!rpc.provider) throw new Error('No provider found in rpc');
+    const provider = rpc.provider;
+
+    const traces = await this.callProviderWithTimeout(
+      provider.send('trace_block', [toBeHex(blockNumber)]),
+      rpc.maskedUrl,
+    );
+
+    if (traces instanceof Array && traces.length > 0) {
+      logInfo('Fetched tx traces for block number', {
+        blockNumber,
+        maskedProviderUrl: rpc.maskedUrl,
+        chainId: this.chainId,
+      });
+    } else {
+      throw new Error(
+        `Transaction's traces of block ${blockNumber} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
+      );
+    }
+
+    const createdAddresses: Record<string, string[]> = {};
+    for (const trace of traces) {
+      if (trace.type !== 'create') continue;
+      if (!trace.result || !trace.result.address || !trace.transactionHash) {
+        logWarn('Found create trace with missing data, skipping.', {
+          blockNumber,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        continue;
+      }
+      if (!createdAddresses[trace.transactionHash]) {
+        createdAddresses[trace.transactionHash] = [];
+      }
+      createdAddresses[trace.transactionHash].push(trace.result.address);
+    }
+
+    logDebug('Found created addresses from create traces', {
+      blockNumber,
+      maskedProviderUrl: rpc.maskedUrl,
+      chainId: this.chainId,
+      createdAddresses,
+    });
+    return createdAddresses;
+  };
+
+  /**
+   * For Geth style traces `debug_traceTransaction`
+   * Extracts the creation bytecode from the traces of a transaction
+   */
+  extractCreationBytecodeFromGethTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,
-    rpc: SourcifyRpcWithProvider,
-  ) => {
+  ): Promise<string> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -487,14 +574,14 @@ export class SourcifyChain {
     );
 
     if (traces?.calls instanceof Array && traces.calls.length > 0) {
-      logInfo('Fetched tx traces', {
+      logInfo('Fetched tx traces for creation tx hash', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
       });
     } else {
       throw new Error(
-        `Transaction's traces of ${creatorTxHash} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
+        `Transaction's traces of tx hash ${creatorTxHash} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
       );
     }
 
@@ -525,10 +612,76 @@ export class SourcifyChain {
   };
 
   /**
+   * For Geth style traces `debug_traceBlockByNumber`
+   * Extracts the all created addresses from the traces of a block
+   */
+  extractCreatedAddressesFromGethTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
+    blockNumber: number,
+  ): Promise<Record<string, string[]>> => {
+    if (!rpc.provider) throw new Error('No provider found in rpc');
+    const provider = rpc.provider;
+
+    const traces = await this.callProviderWithTimeout(
+      provider.send('debug_traceBlockByNumber', [
+        toBeHex(blockNumber),
+        { tracer: 'callTracer' },
+      ]),
+      rpc.maskedUrl,
+    );
+
+    if (traces instanceof Array && traces.length > 0) {
+      logInfo('Fetched tx traces for block number', {
+        blockNumber,
+        maskedProviderUrl: rpc.maskedUrl,
+        chainId: this.chainId,
+      });
+    } else {
+      throw new Error(
+        `Transaction's traces of block ${blockNumber} on RPC ${rpc.maskedUrl} and chain ${this.chainId} received empty or malformed response`,
+      );
+    }
+
+    const createdAddresses: Record<string, string[]> = {};
+    // traces is an array of objects { txHash, result: CallFrame }
+    for (const tracesForTx of traces) {
+      if (!tracesForTx.txHash) {
+        logWarn('Found trace item without tx hash, skipping.', {
+          blockNumber,
+          maskedProviderUrl: rpc.maskedUrl,
+          chainId: this.chainId,
+        });
+        continue;
+      }
+      const txHash = tracesForTx.txHash;
+      const createCalls: CallFrame[] = [];
+      this.findCreateInDebugTraceTransactionCalls(
+        (tracesForTx.result as CallFrame)?.calls || [],
+        createCalls,
+      );
+      if (createCalls.length === 0) {
+        continue;
+      }
+      if (!createdAddresses[txHash]) {
+        createdAddresses[txHash] = [];
+      }
+      createdAddresses[txHash].push(...createCalls.map((call) => call.to));
+    }
+
+    logDebug('Found created addresses from create traces', {
+      blockNumber,
+      maskedProviderUrl: rpc.maskedUrl,
+      chainId: this.chainId,
+      createdAddresses,
+    });
+    return createdAddresses;
+  };
+
+  /**
    * Find CREATE or CREATE2 operations recursively in the call frames. Because a call can have nested calls.
    * Pushes the found call frames to the createCalls array.
    */
-  findCreateInDebugTraceTransactionCalls(
+  private findCreateInDebugTraceTransactionCalls(
     calls: CallFrame[],
     createCalls: CallFrame[],
   ) {
@@ -540,6 +693,7 @@ export class SourcifyChain {
       }
     });
   }
+
   /**
    * Fetches the contract's deployed bytecode from SourcifyChain's rpc's.
    * Tries to fetch sequentially if the first RPC is a local eth node. Fetches in parallel otherwise.
