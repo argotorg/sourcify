@@ -45,7 +45,7 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.19.3",
+    "@types/node": "22.19.5",
     "@types/pg": "8.16.0",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
@@ -54,7 +54,7 @@
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
     "csv-parse": "6.1.0",
-    "dbmate": "2.28.0",
+    "dbmate": "2.29.3",
     "mocha": "10.8.2"
   }
 }
