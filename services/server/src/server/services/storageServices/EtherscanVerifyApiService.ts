@@ -413,6 +413,7 @@ export class EtherscanVerifyApiService implements WStorageService {
   private database: Database;
 
   private readonly options: Required<EtherscanVerifyApiServiceOptions>;
+  private readonly abortController: AbortController;
 
   constructor(
     identifier: EtherscanVerifyApiIdentifiers,
@@ -426,6 +427,7 @@ export class EtherscanVerifyApiService implements WStorageService {
       apiKeys: options?.apiKeys || {},
       defaultApiKey: options?.defaultApiKey || "",
     };
+    this.abortController = new AbortController();
   }
 
   async init(): Promise<boolean> {
@@ -459,7 +461,9 @@ export class EtherscanVerifyApiService implements WStorageService {
     return true;
   }
 
-  async close(): Promise<void> {}
+  async close(): Promise<void> {
+    this.abortController.abort();
+  }
 
   async storeVerification(
     verification: VerificationExport,
@@ -514,23 +518,12 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
-    let response: EtherscanRpcResponse;
-    try {
-      response = await this.submitVerification(verification, apiBaseUrl);
-    } catch (error: any) {
-      // Store the external verification result if we have job data
-      if (jobData) {
-        await this.storeExternalVerificationResult(jobData, {
-          error: error.message,
-        });
-      }
-      logger.error("Failed to submit verification to explorer", {
-        ...submissionContext,
-        error,
-        apiBaseUrl,
-      });
-      throw error;
-    }
+    const response = await this.sendVerificationWithRetry(
+      verification,
+      apiBaseUrl,
+      submissionContext,
+      jobData,
+    );
 
     logger.info("Submitted verification to explorer", {
       ...submissionContext,
@@ -621,6 +614,96 @@ export class EtherscanVerifyApiService implements WStorageService {
     }
 
     return (await response.json()) as EtherscanRpcResponse;
+  }
+
+  private async sendVerifcationAndHandleErrors(
+    verification: VerificationExport,
+    apiBaseUrl: string,
+    submissionContext: {
+      identifier: string;
+      chainId: number;
+      address: string;
+    },
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<EtherscanRpcResponse> {
+    try {
+      return await this.submitVerification(verification, apiBaseUrl);
+    } catch (error: any) {
+      if (jobData) {
+        await this.storeExternalVerificationResult(jobData, {
+          error: error.message,
+        });
+      }
+      logger.error("Failed to submit verification to explorer", {
+        ...submissionContext,
+        apiBaseUrl,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  private async sendVerificationWithRetry(
+    verification: VerificationExport,
+    apiBaseUrl: string,
+    submissionContext: {
+      identifier: string;
+      chainId: number;
+      address: string;
+    },
+    jobData?: {
+      verificationId: string;
+      finishTime: Date;
+    },
+  ): Promise<EtherscanRpcResponse> {
+    const MAX_RETRIES = 6;
+    const RETRY_DELAY_MS = 5000;
+
+    let response = await this.sendVerifcationAndHandleErrors(
+      verification,
+      apiBaseUrl,
+      submissionContext,
+      jobData,
+    );
+
+    // Case in which Etherscan explorer hasn't indexed the contract yet
+    let retries = 0;
+    while (
+      (response.message.startsWith("Unable to locate ContractCode at") ||
+        response.message.startsWith("Address is not a smart-contract") ||
+        response.message.startsWith("The address is not a smart contract")) &&
+      retries < MAX_RETRIES
+    ) {
+      retries += 1;
+      logger.info(
+        "Explorer has not indexed the contract yet; retrying verification submission",
+        {
+          ...submissionContext,
+          attempt: retries,
+          MAX_RETRIES,
+        },
+      );
+      try {
+        await this.cancellableDelay(RETRY_DELAY_MS);
+      } catch (error) {
+        // Delay was cancelled due to service shutdown
+        logger.info("Verification retry cancelled due to service shutdown", {
+          ...submissionContext,
+        });
+        throw error;
+      }
+      response = await this.sendVerifcationAndHandleErrors(
+        verification,
+        apiBaseUrl,
+        submissionContext,
+        jobData,
+      );
+    }
+
+    return response;
   }
 
   private async handleBlockscoutVyperVerification(
@@ -868,5 +951,18 @@ export class EtherscanVerifyApiService implements WStorageService {
     }
 
     return false;
+  }
+
+  private async cancellableDelay(ms: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(resolve, ms);
+      const onAbort = () => {
+        clearTimeout(timeout);
+        reject(new Error("Delay cancelled"));
+      };
+      this.abortController.signal.addEventListener("abort", onAbort, {
+        once: true,
+      });
+    });
   }
 }
