@@ -353,9 +353,13 @@ export class StorageService {
 
   public async close() {
     logger.info("Gracefully closing storage services");
+    const closingPromises: Promise<void>[] = [];
     for (const service of Object.values(this.wServices)) {
-      await service.close?.();
+      if (service.close) {
+        closingPromises.push(service.close());
+      }
     }
+    await Promise.all(closingPromises);
   }
 
   async storeVerification(
