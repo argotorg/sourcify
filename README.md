@@ -45,6 +45,6 @@ Sourcify aims to be fully open and transparent. You can see what we are working 
 
 ## Adding a new chain
 
-If you'd like to add a new chain support to Sourcify please follow the [chain support instructions](https://docs.sourcify.dev/docs/chain-support/) in docs.
+If you'd like to add a new chain support to Sourcify please follow the [chain support instructions](https://docs.sourcify.dev/docs/chain-support/) in the docs.
 
 _Sourcify is an [Argot Collective](https://argot.org) project_
