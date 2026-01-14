@@ -6,7 +6,7 @@ import {
   TransactionReceipt,
   TransactionResponse,
   getAddress,
-  toBeHex,
+  toQuantity,
 } from 'ethers';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type {
@@ -511,7 +511,7 @@ export class SourcifyChain {
     const provider = rpc.provider;
 
     const traces = await this.callProviderWithTimeout(
-      provider.send('trace_block', [toBeHex(blockNumber)]),
+      provider.send('trace_block', [toQuantity(blockNumber)]),
       rpc.maskedUrl,
     );
 
@@ -624,7 +624,7 @@ export class SourcifyChain {
 
     const traces = await this.callProviderWithTimeout(
       provider.send('debug_traceBlockByNumber', [
-        toBeHex(blockNumber),
+        toQuantity(blockNumber),
         { tracer: 'callTracer' },
       ]),
       rpc.maskedUrl,
