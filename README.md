@@ -10,13 +10,13 @@
 [![Discord](https://img.shields.io/badge/Discord%20-chat-brightgreen?style=plastic&logo=discord)](https://discord.com/invite/6aqd9cfZ9s)
 [![X Follow](https://img.shields.io/twitter/follow/SourcifyEth?style=plastic&logo=x)](https://X.com/SourcifyEth)
 
-Sourcify ([sourcify.dev](https://sourcify.dev)) is a source-code verification service for Ethereum smart contracts supporting Solidity and Vyper. Sourcify is fully commited to the following:
+Sourcify ([sourcify.dev](https://sourcify.dev)) is a source-code verification service for Ethereum smart contracts supporting Solidity and Vyper. Sourcify is fully committed to smart-contract verification instead of siloed, propriety services based on the following:
 
 - Open-source (MIT License)
 - Open-data (see [Downloading the repository](https://docs.sourcify.dev/docs/repository/))
 - Open-standards (see the [Verifier Alliance](https://github.com/verifier-alliance))
 
-in smart-contract verification instead of siloed, propriety services. We foster these values across the ecosystem and work actively to push the status-quo in this direction.
+We foster these values across the ecosystem and work actively to push the status-quo in this direction.
 
 Different than other verification services, Sourcify leverages the [Solidity metadata](https://docs.sourcify.dev/docs/metadata/) and file and its integrity hash to ["fully verify"](https://docs.sourcify.dev/docs/full-vs-partial-match/) the Solidity contracts (see [the playground](https://playground.sourcify.dev)).
 
