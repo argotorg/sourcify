@@ -2361,7 +2361,7 @@
         "url": "https://{SUBDOMAIN}.soneium-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
+        "traceSupport": "debug_traceTransaction"
       }
     ]
   },

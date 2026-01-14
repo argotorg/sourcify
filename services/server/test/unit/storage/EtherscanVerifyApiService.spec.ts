@@ -325,4 +325,85 @@ describe("EtherscanVerifyApiService", function () {
       },
     );
   });
+
+  it("retries submission when contract is not yet indexed", async () => {
+    const clock = sandbox.useFakeTimers();
+    const baseUrl = "https://etherscan.example/api";
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.EtherscanVerify,
+      baseUrl,
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+
+    const unindexedResponse = mockFetchResponse({
+      status: "0",
+      message: "Unable to locate ContractCode at 0xabc",
+      result: "N/A",
+    });
+    const successResponse = mockFetchResponse({
+      status: "1",
+      message: "OK",
+      result: "receipt-789",
+    });
+
+    fetchStub.onCall(0).resolves(unindexedResponse);
+    fetchStub.onCall(1).resolves(unindexedResponse);
+    fetchStub.onCall(2).resolves(successResponse);
+
+    const verification = structuredClone(MockVerificationExport);
+    const storePromise = service.storeVerification(verification, jobData);
+
+    await clock.tickAsync(10000);
+    await storePromise;
+
+    expect(fetchStub.callCount).to.equal(3);
+    expect(clock.now).to.equal(10000);
+    sinon.assert.calledOnceWithExactly(
+      upsertStub,
+      jobData.verificationId,
+      WStorageIdentifiers.EtherscanVerify,
+      {
+        verificationId: "receipt-789",
+      },
+    );
+  });
+
+  it("cancels retry delay when close() is called", async () => {
+    const clock = sandbox.useFakeTimers();
+    const baseUrl = "https://etherscan.example/api";
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.EtherscanVerify,
+      baseUrl,
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+
+    const unindexedResponse = mockFetchResponse({
+      status: "0",
+      message: "Unable to locate ContractCode at 0xabc",
+      result: "N/A",
+    });
+
+    fetchStub.resolves(unindexedResponse);
+
+    const verification = structuredClone(MockVerificationExport);
+    const storePromise = service.storeVerification(verification, jobData);
+
+    // Advance past first attempt and into the retry delay
+    await clock.tickAsync(0);
+    // Close the service while waiting for retry
+    await service.close();
+
+    await expect(storePromise).to.eventually.be.rejectedWith("Delay cancelled");
+    expect(fetchStub.callCount).to.equal(1);
+  });
 });
