@@ -22,9 +22,9 @@ Different than other verification services, Sourcify leverages the [Solidity met
 
 Sourcify mainly consists of:
 
-- [sourcify-server](/services/server) - an HTTP server to run source-code verifications and store the verified contracts for the supported chains through an [API](https://docs.sourcify.dev/docs/api/)
-- [sourcify-database](/services/database) - a PostgreSQL database to store the verified contracts and their metadata, and a repository for the database schema and migrations.
-- [sourcify-monitor](/services/monitor) - a standalone service that listens to various EVM chains for new contract creations and automatically submits them to a Sourcify API for verification if published on IPFS.
+- [Sourcify-server](/services/server) - an HTTP server to run source-code verifications and store the verified contracts for the supported chains through an [API](https://docs.sourcify.dev/docs/api/)
+- [Sourcify-database](/services/database) - a PostgreSQL database to store the verified contracts and their metadata, and a repository for the database schema and migrations.
+- [Sourcify-monitor](/services/monitor) - a standalone service that listens to various EVM chains for new contract creations and automatically submit them to a Sourcify API for verification if published on IPFS.
 - Packages:
   - [@ethereum-sourcify/lib-sourcify](/packages/lib-sourcify/): The core library for Sourcify. It contains the logic to verify contracts.
   - [@ethereum-sourcify/bytecode-utils](/packages/bytecode-utils/): A library to extract and parse the CBOR encoded metadata from the bytecode.
