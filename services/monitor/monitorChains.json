@@ -186,8 +186,7 @@
         "type": "ApiKey",
         "url": "https://{SUBDOMAIN}.matic-amoy.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
+        "subDomainEnvName": "QUICKNODE_SUBDOMAIN"
       },
       "https://rpc-amoy.polygon.technology",
       "https://rpc.ankr.com/polygon_amoy"
