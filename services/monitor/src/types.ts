@@ -26,24 +26,19 @@ export type DecentralizedStorageConfigMap = {
   [K in DecentralizedStorageTypes]?: DecentralizedStorageConfig;
 };
 
-export type ChainMonitorConfig = {
-  startBlock?: number;
-  blockInterval?: number;
-  blockIntervalFactor?: number;
-  blockIntervalUpperLimit?: number;
-  blockIntervalLowerLimit?: number;
-  bytecodeInterval?: number;
-  bytecodeNumberOfTries?: number;
-};
+export type ChainMonitorConfig = Partial<DefatultChainMonitorConfig>;
 
 export type DefatultChainMonitorConfig = {
-  startBlock: undefined; // Default to latest block
+  startBlock?: number; // undefined defaults to latest block
   blockInterval: number;
   blockIntervalFactor: number;
   blockIntervalUpperLimit: number;
   blockIntervalLowerLimit: number;
   bytecodeInterval: number;
   bytecodeNumberOfTries: number;
+  traceInterval: number;
+  traceNumberOfTries: number;
+  traceDelay: number;
 };
 
 export type SourcifyRequestOptions = {

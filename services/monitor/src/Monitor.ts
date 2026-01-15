@@ -102,7 +102,10 @@ export default class Monitor extends EventEmitter {
       }
     }
 
-    if (chainsInConfigButNotChainsToMonitor.length > 0) {
+    if (
+      chainsInConfigButNotChainsToMonitor.length > 0 &&
+      process.env.NODE_ENV === "production"
+    ) {
       throw new Error(
         `Chain configs found for chains that are not being monitored: ${chainsInConfigButNotChainsToMonitor.join(
           ",",
