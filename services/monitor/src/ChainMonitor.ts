@@ -210,7 +210,7 @@ export default class ChainMonitor extends EventEmitter {
       this.chainLogger.debug("Fetching created addresses", {
         retryNumber: this.traceNumberOfTries - i + 1,
         blockNumber: block.number,
-        bytecodeInterval: this.bytecodeInterval,
+        traceInterval: this.traceInterval,
         maxRetries: this.traceNumberOfTries,
       });
 
