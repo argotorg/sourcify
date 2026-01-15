@@ -526,16 +526,6 @@ export class EtherscanVerifyApiService implements WStorageService {
       jobData,
     );
 
-    logger.info("Submitted verification to explorer", {
-      ...submissionContext,
-      receiptId: response.result,
-    });
-
-    // If we don't have job data, we cannot store the result
-    if (!jobData?.verificationId) {
-      return;
-    }
-
     // Handle the "already verified" case for Blockscout and Etherscan by storing
     // { verificationId: "VERIFIER_ALREADY_VERIFIED" }
     if (
@@ -554,7 +544,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     if (response.status !== "1" || response.message !== "OK") {
       logger.warn("Explorer rejected verification submission", {
         ...submissionContext,
-        verificationJobId: jobData.verificationId,
+        verificationJobId: jobData?.verificationId,
         error: response.result,
       });
       await this.storeExternalVerificationResult(jobData, {
@@ -563,6 +553,12 @@ export class EtherscanVerifyApiService implements WStorageService {
       return;
     }
 
+    logger.info("Submitted verification successfully to explorer", {
+      ...submissionContext,
+      receiptId: response.result,
+      verificationJobId: jobData?.verificationId,
+    });
+
     // Record the result of the successful submission
     await this.storeExternalVerificationResult(jobData, {
       verificationId: response.result,
@@ -570,12 +566,17 @@ export class EtherscanVerifyApiService implements WStorageService {
   }
 
   private async storeExternalVerificationResult(
-    jobData: {
-      verificationId: string;
-      finishTime: Date;
-    },
+    jobData:
+      | {
+          verificationId: string;
+          finishTime: Date;
+        }
+      | undefined,
     response: ExternalVerification,
   ): Promise<void> {
+    if (!jobData?.verificationId) {
+      return;
+    }
     // Record the result of the successful submission
     try {
       await this.database.upsertExternalVerification(
@@ -626,11 +627,9 @@ export class EtherscanVerifyApiService implements WStorageService {
 
       return (await response.json()) as EtherscanRpcResponse;
     } catch (error: any) {
-      if (jobData) {
-        await this.storeExternalVerificationResult(jobData, {
-          error: error.message,
-        });
-      }
+      await this.storeExternalVerificationResult(jobData, {
+        error: error.message,
+      });
       logger.error("Failed to submit verification to explorer", {
         ...submissionContext,
         apiBaseUrl,
@@ -735,11 +734,9 @@ export class EtherscanVerifyApiService implements WStorageService {
 
       return (await response.json()) as EtherscanRpcResponse;
     } catch (error: any) {
-      if (jobData) {
-        await this.storeExternalVerificationResult(jobData, {
-          error: error.message,
-        });
-      }
+      await this.storeExternalVerificationResult(jobData, {
+        error: error.message,
+      });
       logger.error("Blockscout Vyper verification request failed", {
         ...submissionContext,
         apiBaseUrl,
@@ -770,18 +767,16 @@ export class EtherscanVerifyApiService implements WStorageService {
       jobData,
     );
 
-    if (jobData) {
-      // Blockscout does not return a verification ID,
-      // so we use a fixed string to indicate a successful submission
-      if (response.message === "Smart-contract verification started") {
-        await this.storeExternalVerificationResult(jobData, {
-          verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
-        });
-      } else {
-        await this.storeExternalVerificationResult(jobData, {
-          error: response.message,
-        });
-      }
+    // Blockscout does not return a verification ID,
+    // so we use a fixed string to indicate a successful submission
+    if (response.message === "Smart-contract verification started") {
+      await this.storeExternalVerificationResult(jobData, {
+        verificationId: "BLOCKSCOUT_VYPER_SUBMITTED",
+      });
+    } else {
+      await this.storeExternalVerificationResult(jobData, {
+        error: response.message,
+      });
     }
     logger.info("Submitted verification to explorer", {
       ...submissionContext,

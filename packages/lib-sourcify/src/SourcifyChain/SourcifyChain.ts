@@ -8,7 +8,7 @@ import {
   getAddress,
   toQuantity,
 } from 'ethers';
-import { logDebug, logError, logInfo, logWarn } from '../logger';
+import { logDebug, logInfo, logWarn } from '../logger';
 import type {
   CallFrame,
   FetchContractCreationTxMethods,
@@ -217,7 +217,7 @@ export class SourcifyChain {
           continue;
         }
 
-        logError('RPC operation threw error', {
+        logInfo('RPC operation threw error', {
           operation: operationName,
           error,
           maskedUrl: rpc.maskedUrl,
@@ -228,7 +228,7 @@ export class SourcifyChain {
       }
     }
 
-    logError('All RPCs failed or are blocked', {
+    logInfo('All RPCs failed or are blocked', {
       operation: operationName,
       chainId: this.chainId,
     });
@@ -275,7 +275,7 @@ export class SourcifyChain {
         return { tryNext: true };
       }
 
-      logInfo('Fetching tx', {
+      logDebug('Fetching tx', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
       });
@@ -409,7 +409,7 @@ export class SourcifyChain {
           if (e instanceof RpcFailure) {
             throw e;
           }
-          logWarn('Failed to fetch from parity traces', {
+          logInfo('Failed to fetch from parity traces', {
             maskedProviderUrl: rpc.maskedUrl,
             chainId: this.chainId,
             error: e.message,
@@ -432,7 +432,7 @@ export class SourcifyChain {
           if (e instanceof RpcFailure) {
             throw e;
           }
-          logWarn('Failed to fetch from geth traces', {
+          logInfo('Failed to fetch from geth traces', {
             maskedProviderUrl: rpc.maskedUrl,
             chainId: this.chainId,
             error: e.message,
@@ -464,7 +464,7 @@ export class SourcifyChain {
     );
 
     if (traces instanceof Array && traces.length > 0) {
-      logInfo('Fetched tx traces for creation tx hash', {
+      logDebug('Fetched tx traces for creation tx hash', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
@@ -516,7 +516,7 @@ export class SourcifyChain {
     );
 
     if (traces instanceof Array && traces.length > 0) {
-      logInfo('Fetched tx traces for block number', {
+      logDebug('Fetched tx traces for block number', {
         blockNumber,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
@@ -574,7 +574,7 @@ export class SourcifyChain {
     );
 
     if (traces?.calls instanceof Array && traces.calls.length > 0) {
-      logInfo('Fetched tx traces for creation tx hash', {
+      logDebug('Fetched tx traces for creation tx hash', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
@@ -631,7 +631,7 @@ export class SourcifyChain {
     );
 
     if (traces instanceof Array && traces.length > 0) {
-      logInfo('Fetched tx traces for block number', {
+      logDebug('Fetched tx traces for block number', {
         blockNumber,
         maskedProviderUrl: rpc.maskedUrl,
         chainId: this.chainId,
@@ -860,6 +860,13 @@ export class SourcifyChain {
       );
     }
 
+    logInfo('Fetched creation bytecode', {
+      address,
+      transactionHash,
+      bytecodeLength: creationBytecode.length,
+      bytecodeStart: creationBytecode.slice(0, 32),
+      chainId: this.chainId,
+    });
     return {
       creationBytecode,
       txReceipt,
