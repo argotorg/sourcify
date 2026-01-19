@@ -185,6 +185,23 @@ describe("Monitor", function () {
     process.env.NODE_ENV = nodeEnv;
   });
 
+  it("should enable factory monitoring when MONITOR_FACTORIES env var is set to true", () => {
+    const monitorFactories = process.env.MONITOR_FACTORIES;
+    process.env.MONITOR_FACTORIES = "true";
+    const monitor = new Monitor([localChain]);
+
+    expect(monitor["config"].monitorFactories).to.be.true;
+    monitor["chainMonitors"].forEach((chainMonitor) => {
+      expect(chainMonitor["monitorFactories"]).to.be.true;
+    });
+
+    if (monitorFactories !== undefined) {
+      process.env.MONITOR_FACTORIES = monitorFactories;
+    } else {
+      delete process.env.MONITOR_FACTORIES;
+    }
+  });
+
   it("should successfully catch a deployed contract, assemble, and send to Sourcify", async () => {
     monitor = new Monitor([localChain], {
       sourcifyServerURLs: [MOCK_SOURCIFY_SERVER],

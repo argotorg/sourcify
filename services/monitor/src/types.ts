@@ -52,6 +52,7 @@ export type MonitorConfig = {
   sourcifyRequestOptions: SourcifyRequestOptions;
   defaultChainConfig: DefatultChainMonitorConfig;
   similarityVerification: SimilarityVerificationConfig;
+  monitorFactories?: boolean; // gets overwritten by .env if set
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };
@@ -61,16 +62,7 @@ export interface SimilarityVerificationConfig {
   requestDelay?: number;
 }
 
-export type PassedMonitorConfig = {
-  decentralizedStorages?: DecentralizedStorageConfigMap;
-  sourcifyServerURLs?: string[];
-  sourcifyRequestOptions?: Partial<SourcifyRequestOptions>;
-  defaultChainConfig?: DefatultChainMonitorConfig;
-  similarityVerification?: SimilarityVerificationConfig;
-  chainConfigs?: {
-    [chainId: number]: ChainMonitorConfig;
-  };
-};
+export type PassedMonitorConfig = Partial<MonitorConfig>;
 
 export type RpcObject = {
   type: "ApiKey";

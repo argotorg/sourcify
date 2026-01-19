@@ -47,6 +47,7 @@ export default class ChainMonitor extends EventEmitter {
   private traceInterval: number;
   private traceNumberOfTries: number;
   private traceDelay: number;
+  private monitorFactories: boolean;
 
   constructor(
     sourcifyChain: SourcifyChain,
@@ -65,6 +66,7 @@ export default class ChainMonitor extends EventEmitter {
 
     this.sourcifyServerURLs = monitorConfig.sourcifyServerURLs;
     this.sourcifyRequestOptions = monitorConfig.sourcifyRequestOptions;
+    this.monitorFactories = monitorConfig.monitorFactories || false;
 
     const chainConfig = {
       ...monitorConfig.defaultChainConfig,
@@ -197,7 +199,7 @@ export default class ChainMonitor extends EventEmitter {
       }
     }
 
-    if (this.sourcifyChain.traceSupport) {
+    if (this.monitorFactories && this.sourcifyChain.traceSupport) {
       // Check factory contracts with traces
       this.checkFactoryCreatedAddresses(block);
     }
