@@ -118,6 +118,16 @@ const server = new Server(
       .CONCURRENT_VERIFICATIONS_PER_WORKER
       ? parseInt(process.env.CONCURRENT_VERIFICATIONS_PER_WORKER)
       : undefined,
+    debugDataS3Config:
+      process.env.DEBUG_DATA_S3_BUCKET && process.env.DEBUG_DATA_S3_REGION
+        ? {
+            bucket: process.env.DEBUG_DATA_S3_BUCKET,
+            region: process.env.DEBUG_DATA_S3_REGION,
+            accessKeyId: process.env.DEBUG_DATA_S3_ACCESS_KEY_ID,
+            secretAccessKey: process.env.DEBUG_DATA_S3_SECRET_ACCESS_KEY,
+            endpoint: process.env.DEBUG_DATA_S3_ENDPOINT,
+          }
+        : undefined,
   },
   {
     serverUrl: config.get("serverUrl"),

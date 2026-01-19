@@ -10,7 +10,6 @@ import type {
   ContractData,
   FileObject,
   FilesInfo,
-  Mandatory,
   V1MatchLevel,
   V1MatchLevelWithoutAny,
   MethodArgs,
@@ -435,7 +434,7 @@ export class StorageService {
   }
 
   performServiceOperation<
-    T extends Mandatory<RWStorageService>, // Mandatory is used to allow optional functions like getPaginatedContracts
+    T extends Required<RWStorageService>, // Required is used to allow optional functions like getPaginatedContracts
     K extends MethodNames<T>, // MethodNames extracts T's methods
   >(
     methodName: K,
