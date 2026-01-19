@@ -18,7 +18,7 @@ Sourcify ([sourcify.dev](https://sourcify.dev)) is a source-code verification se
 
 in smart-contract verification instead of siloed, propriety services. We foster these values across the ecosystem and work actively to push the status-quo in this direction.
 
-Different than other verification services, Sourcify leverages the [Solidity metadata](https://docs.sourcify.dev/docs/metadata/) and file and its integrity hash to ["fully verify"](https://docs.sourcify.dev/docs/full-vs-partial-match/) the Solidity contracts (see [the playground](https://playground.sourcify.dev)).
+Different than other verification services, Sourcify leverages the [Solidity metadata](https://docs.sourcify.dev/docs/metadata/) and its integrity hash to ["fully verify"](https://docs.sourcify.dev/docs/full-vs-partial-match/) the Solidity contracts (see [the playground](https://playground.sourcify.dev)).
 
 Sourcify mainly consists of:
 
