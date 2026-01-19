@@ -42,9 +42,17 @@ export default class Monitor extends EventEmitter {
 
     this.config = deepMerge(defaultConfig, passedConfig || {});
 
+    const monitorFactoriesEnv = process.env["MONITOR_FACTORIES"];
+    if (monitorFactoriesEnv !== undefined) {
+      const monitorFactories =
+        monitorFactoriesEnv.toLowerCase() === "true" ? true : false;
+      this.config.monitorFactories = monitorFactories;
+    }
     logger.info(
-      "Starting the monitor using the effective config: " +
-        JSON.stringify(this.config, null, 2), // Stringify here to see the full config clearly
+      `Monitoring factories is ${this.config.monitorFactories ? "enabled" : "disabled"}`,
+      {
+        monitorFactories: this.config.monitorFactories,
+      },
     );
 
     if (this.config.decentralizedStorages?.ipfs?.enabled) {
