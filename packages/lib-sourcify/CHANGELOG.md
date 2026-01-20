@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.1.1 - 2026-01-20
+
+- Remove Meter API fetching from contract creation utilities (#2578)
+- Add `getCreatedAddressesFromBlockTraces` method to `SourcifyChain` (#2585)
+- Improve log levels (#2601)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.1.0 - 2026-01-07
 
 - Add support for Yul compilation and verification (#2521)

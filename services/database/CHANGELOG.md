@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.10.4 - 2026-01-20
+
+- Update dependencies
+
 ## sourcify-database@2.10.3 - 2026-01-07
 
 - Add migrations for adding indexes on created_at columns (#2551)
