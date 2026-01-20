@@ -44,6 +44,10 @@ export default class ChainMonitor extends EventEmitter {
   private bytecodeNumberOfTries: number;
   private running = false;
   private blockPauseLogInterval: NodeJS.Timeout | null = null;
+  private traceInterval: number;
+  private traceNumberOfTries: number;
+  private traceDelay: number;
+  private monitorFactories: boolean;
 
   constructor(
     sourcifyChain: SourcifyChain,
@@ -62,6 +66,7 @@ export default class ChainMonitor extends EventEmitter {
 
     this.sourcifyServerURLs = monitorConfig.sourcifyServerURLs;
     this.sourcifyRequestOptions = monitorConfig.sourcifyRequestOptions;
+    this.monitorFactories = monitorConfig.monitorFactories || false;
 
     const chainConfig = {
       ...monitorConfig.defaultChainConfig,
@@ -76,6 +81,9 @@ export default class ChainMonitor extends EventEmitter {
     this.blockIntervalUpperLimit = chainConfig.blockIntervalUpperLimit;
     this.blockIntervalLowerLimit = chainConfig.blockIntervalLowerLimit;
     this.bytecodeNumberOfTries = chainConfig.bytecodeNumberOfTries;
+    this.traceInterval = chainConfig.traceInterval;
+    this.traceNumberOfTries = chainConfig.traceNumberOfTries;
+    this.traceDelay = chainConfig.traceDelay;
     this.chainLogger.info(
       "Created ChainMonitor",
       Object.fromEntries(
@@ -175,7 +183,6 @@ export default class ChainMonitor extends EventEmitter {
     this.chainLogger.silly("Block", block);
 
     for (const tx of block.prefetchedTransactions) {
-      // TODO: Check factory contracts with traces
       this.chainLogger.silly("Checking tx", {
         txHash: tx.hash,
         blockNumber: block.number,
@@ -189,6 +196,62 @@ export default class ChainMonitor extends EventEmitter {
           txHash: tx.hash,
         });
         this.processNewContract(tx.hash, address);
+      }
+    }
+
+    if (this.monitorFactories && this.sourcifyChain.traceSupport) {
+      // Check factory contracts with traces
+      this.checkFactoryCreatedAddresses(block);
+    }
+  };
+
+  private async getCreatedAddressesWithRetries(
+    block: Block,
+  ): Promise<Record<string, string[]>> {
+    for (let i = this.traceNumberOfTries; i > 0; i--) {
+      this.chainLogger.debug("Fetching created addresses", {
+        retryNumber: this.traceNumberOfTries - i + 1,
+        blockNumber: block.number,
+        traceInterval: this.traceInterval,
+        maxRetries: this.traceNumberOfTries,
+      });
+
+      try {
+        const factoryCreatedAddresses =
+          await this.sourcifyChain.getCreatedAddressesFromBlockTraces(
+            block.number,
+          );
+        return factoryCreatedAddresses;
+      } catch (error: any) {
+        await new Promise((resolve) => setTimeout(resolve, this.traceInterval));
+        continue;
+      }
+    }
+
+    this.chainLogger.error("No retries left for fetching created addresses", {
+      blockNumber: block.number,
+    });
+    return {};
+  }
+
+  private checkFactoryCreatedAddresses = async (block: Block) => {
+    if (this.traceDelay > 0) {
+      // On some chains, it seems to take longer until traces are available from the rpc
+      await new Promise((resolve) => setTimeout(resolve, this.traceDelay));
+    }
+    const factoryCreatedAddresses =
+      await this.getCreatedAddressesWithRetries(block);
+    for (const [txHash, addresses] of Object.entries(factoryCreatedAddresses)) {
+      for (const address of addresses) {
+        this.chainLogger.info(
+          "Found new contract created by factory in block",
+          {
+            blockNumber: block.number,
+            address,
+            txHash,
+          },
+        );
+        this.processNewContract(txHash, address);
       }
     }
   };

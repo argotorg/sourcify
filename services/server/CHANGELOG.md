@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.9.1 - 2026-01-20
+
+- Retry external verification if contract is not indexed yet (#2588)
+- Improve log levels (#2601)
+- Update dependencies
+
+
 ## sourcify-server@3.9.0 - 2026-01-07
 
 - Add support for Yul compilation and verification (#2521)

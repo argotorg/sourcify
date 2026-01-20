@@ -293,21 +293,11 @@
   },
   "82": {
     "sourcifyName": "Meter Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:8000/"
-      }
-    }
+    "supported": true
   },
   "83": {
     "sourcifyName": "Meter Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "meterApi": {
-        "url": "https://api.meter.io:4000/"
-      }
-    }
+    "supported": true
   },
   "97": {
     "sourcifyName": "Binance Smart Chain Testnet",
@@ -2337,15 +2327,25 @@
         "url": "https://tempo-testnet.g.alchemy.com/v2/{API_KEY}",
         "apiKeyEnvName": "ALCHEMY_API_KEY"
       },
+      "https://rpc.testnet.tempo.xyz",
       {
         "type": "APIKeyRPC",
         "url": "https://{SUBDOMAIN}.tempo-testnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
         "traceSupport": "trace_transaction"
-      },
-      "https://rpc.testnet.tempo.xyz"
+      }
     ]
+  },
+  "42431": {
+    "sourcifyName": "Tempo Testnet (Moderato)",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explore.tempo.xyz/"
+      }
+    },
+    "rpc": ["https://rpc.moderato.tempo.xyz"]
   },
   "1868": {
     "sourcifyName": "Soneium",
@@ -2361,7 +2361,7 @@
         "url": "https://{SUBDOMAIN}.soneium-mainnet.quiknode.pro/{API_KEY}",
         "apiKeyEnvName": "QUICKNODE_API_KEY",
         "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "trace_transaction"
+        "traceSupport": "debug_traceTransaction"
       }
     ]
   },
@@ -2442,6 +2442,24 @@
     },
     "fetchContractCreationTxUsing": {
       "etherscanApi": true
+    }
+  },
+  "2019775": {
+    "sourcifyName": "Jovay Sepolia Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://sepolia-explorer.jovay.io"
+      }
+    }
+  },
+  "5734951": {
+    "sourcifyName": "Jovay Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.jovay.io"
+      }
     }
   }
 }

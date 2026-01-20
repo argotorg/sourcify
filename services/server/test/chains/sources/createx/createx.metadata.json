@@ -1,0 +1,1286 @@
+{
+  "compiler": {
+    "version": "0.8.23+commit.f704f362"
+  },
+  "language": "Solidity",
+  "output": {
+    "abi": [
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "emitter",
+            "type": "address"
+          }
+        ],
+        "name": "FailedContractCreation",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "emitter",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "revertData",
+            "type": "bytes"
+          }
+        ],
+        "name": "FailedContractInitialisation",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "emitter",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "revertData",
+            "type": "bytes"
+          }
+        ],
+        "name": "FailedEtherTransfer",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "emitter",
+            "type": "address"
+          }
+        ],
+        "name": "InvalidNonceValue",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "emitter",
+            "type": "address"
+          }
+        ],
+        "name": "InvalidSalt",
+        "type": "error"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "ContractCreation",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "name": "ContractCreation",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "Create3ProxyContractCreation",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "initCodeHash",
+            "type": "bytes32"
+          }
+        ],
+        "name": "computeCreate2Address",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "initCodeHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "deployer",
+            "type": "address"
+          }
+        ],
+        "name": "computeCreate2Address",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "deployer",
+            "type": "address"
+          }
+        ],
+        "name": "computeCreate3Address",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "computeCreate3Address",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          }
+        ],
+        "name": "computeCreateAddress",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "deployer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          }
+        ],
+        "name": "computeCreateAddress",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "computedAddress",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate2",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate2",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "refundAddress",
+            "type": "address"
+          }
+        ],
+        "name": "deployCreate2AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          }
+        ],
+        "name": "deployCreate2AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "refundAddress",
+            "type": "address"
+          }
+        ],
+        "name": "deployCreate2AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          }
+        ],
+        "name": "deployCreate2AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "implementation",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate2Clone",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "proxy",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "implementation",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate2Clone",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "proxy",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate3",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreate3",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          }
+        ],
+        "name": "deployCreate3AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          }
+        ],
+        "name": "deployCreate3AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes32",
+            "name": "salt",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "refundAddress",
+            "type": "address"
+          }
+        ],
+        "name": "deployCreate3AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "refundAddress",
+            "type": "address"
+          }
+        ],
+        "name": "deployCreate3AndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          }
+        ],
+        "name": "deployCreateAndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "initCode",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "constructorAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "initCallAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct CreateX.Values",
+            "name": "values",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "refundAddress",
+            "type": "address"
+          }
+        ],
+        "name": "deployCreateAndInit",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "newContract",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "implementation",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "name": "deployCreateClone",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "proxy",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "payable",
+        "type": "function"
+      }
+    ],
+    "devdoc": {
+      "author": "pcaversaccio (https://web.archive.org/web/20230921103111/https://pcaversaccio.com/)",
+      "custom:coauthor": "Matt Solomon (https://web.archive.org/web/20230921103335/https://mattsolomon.dev/)",
+      "custom:security-contact": "See https://web.archive.org/web/20230921105029/https://raw.githubusercontent.com/pcaversaccio/createx/main/SECURITY.md.",
+      "details": "To simplify testing of non-public variables and functions, we use the `internal` function visibility specifier `internal` for all variables and functions, even though they could technically be `private` since we do not expect anyone to inherit from the `CreateX` contract.",
+      "errors": {
+        "FailedContractCreation(address)": [
+          {
+            "details": "Error that occurs when the contract creation failed.",
+            "params": {
+              "emitter": "The contract that emits the error."
+            }
+          }
+        ],
+        "FailedContractInitialisation(address,bytes)": [
+          {
+            "details": "Error that occurs when the contract initialisation call failed.",
+            "params": {
+              "emitter": "The contract that emits the error.",
+              "revertData": "The data returned by the failed initialisation call."
+            }
+          }
+        ],
+        "FailedEtherTransfer(address,bytes)": [
+          {
+            "details": "Error that occurs when transferring ether has failed.",
+            "params": {
+              "emitter": "The contract that emits the error.",
+              "revertData": "The data returned by the failed ether transfer."
+            }
+          }
+        ],
+        "InvalidNonceValue(address)": [
+          {
+            "details": "Error that occurs when the nonce value is invalid.",
+            "params": {
+              "emitter": "The contract that emits the error."
+            }
+          }
+        ],
+        "InvalidSalt(address)": [
+          {
+            "details": "Error that occurs when the salt value is invalid.",
+            "params": {
+              "emitter": "The contract that emits the error."
+            }
+          }
+        ]
+      },
+      "events": {
+        "ContractCreation(address)": {
+          "details": "Event that is emitted when a contract is successfully created.",
+          "params": {
+            "newContract": "The address of the new contract."
+          }
+        },
+        "ContractCreation(address,bytes32)": {
+          "details": "Event that is emitted when a contract is successfully created.",
+          "params": {
+            "newContract": "The address of the new contract.",
+            "salt": "The 32-byte random value used to create the contract address."
+          }
+        },
+        "Create3ProxyContractCreation(address,bytes32)": {
+          "details": "Event that is emitted when a `CREATE3` proxy contract is successfully created.",
+          "params": {
+            "newContract": "The address of the new proxy contract.",
+            "salt": "The 32-byte random value used to create the proxy address."
+          }
+        }
+      },
+      "kind": "dev",
+      "methods": {
+        "computeCreate2Address(bytes32,bytes32)": {
+          "details": "Returns the address where a contract will be stored if deployed via this contract using the `CREATE2` opcode. Any change in the `initCodeHash` or `salt` values will result in a new destination address.",
+          "params": {
+            "initCodeHash": "The 32-byte bytecode digest of the contract creation bytecode.",
+            "salt": "The 32-byte random value used to create the contract address."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "computeCreate2Address(bytes32,bytes32,address)": {
+          "details": "Returns the address where a contract will be stored if deployed via `deployer` using the `CREATE2` opcode. Any change in the `initCodeHash` or `salt` values will result in a new destination address. This implementation is based on OpenZeppelin: https://web.archive.org/web/20230921113703/https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/181d518609a9f006fcb97af63e6952e603cf100e/contracts/utils/Create2.sol.",
+          "params": {
+            "deployer": "The 20-byte deployer address.",
+            "initCodeHash": "The 32-byte bytecode digest of the contract creation bytecode.",
+            "salt": "The 32-byte random value used to create the contract address."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "computeCreate3Address(bytes32)": {
+          "details": "Returns the address where a contract will be stored if deployed via this contract using the `CREATE3` pattern (i.e. without an initcode factor). Any change in the `salt` value will result in a new destination address. This implementation is based on Solady: https://web.archive.org/web/20230921114120/https://raw.githubusercontent.com/Vectorized/solady/1c1ac4ad9c8558001e92d8d1a7722ef67bec75df/src/utils/CREATE3.sol.",
+          "params": {
+            "salt": "The 32-byte random value used to create the proxy contract address."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "computeCreate3Address(bytes32,address)": {
+          "details": "Returns the address where a contract will be stored if deployed via `deployer` using the `CREATE3` pattern (i.e. without an initcode factor). Any change in the `salt` value will result in a new destination address. This implementation is based on Solady: https://web.archive.org/web/20230921114120/https://raw.githubusercontent.com/Vectorized/solady/1c1ac4ad9c8558001e92d8d1a7722ef67bec75df/src/utils/CREATE3.sol.",
+          "params": {
+            "deployer": "The 20-byte deployer address.",
+            "salt": "The 32-byte random value used to create the proxy contract address."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "computeCreateAddress(address,uint256)": {
+          "details": "Returns the address where a contract will be stored if deployed via `deployer` using the `CREATE` opcode. For the specification of the Recursive Length Prefix (RLP) encoding scheme, please refer to p. 19 of the Ethereum Yellow Paper (https://web.archive.org/web/20230921110603/https://ethereum.github.io/yellowpaper/paper.pdf) and the Ethereum Wiki (https://web.archive.org/web/20230921112807/https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/). For further insights also, see the following issue: https://web.archive.org/web/20230921112943/https://github.com/transmissions11/solmate/issues/207. Based on the EIP-161 (https://web.archive.org/web/20230921113207/https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-161.md) specification, all contract accounts on the Ethereum mainnet are initiated with `nonce = 1`. Thus, the first contract address created by another contract is calculated with a non-zero nonce.",
+          "params": {
+            "deployer": "The 20-byte deployer address.",
+            "nonce": "The next 32-byte nonce of the deployer address."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "computeCreateAddress(uint256)": {
+          "details": "Returns the address where a contract will be stored if deployed via this contract using the `CREATE` opcode. For the specification of the Recursive Length Prefix (RLP) encoding scheme, please refer to p. 19 of the Ethereum Yellow Paper (https://web.archive.org/web/20230921110603/https://ethereum.github.io/yellowpaper/paper.pdf) and the Ethereum Wiki (https://web.archive.org/web/20230921112807/https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/). For further insights also, see the following issue: https://web.archive.org/web/20230921112943/https://github.com/transmissions11/solmate/issues/207. Based on the EIP-161 (https://web.archive.org/web/20230921113207/https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-161.md) specification, all contract accounts on the Ethereum mainnet are initiated with `nonce = 1`. Thus, the first contract address created by another contract is calculated with a non-zero nonce.",
+          "params": {
+            "nonce": "The next 32-byte nonce of this contract."
+          },
+          "returns": {
+            "computedAddress": "The 20-byte address where a contract will be stored."
+          }
+        },
+        "deployCreate(bytes)": {
+          "details": "Deploys a new contract via calling the `CREATE` opcode and using the creation bytecode `initCode` and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `msg.value` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "initCode": "The creation bytecode."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2(bytes)": {
+          "details": "Deploys a new contract via calling the `CREATE2` opcode and using the creation bytecode `initCode` and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `msg.value` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "initCode": "The creation bytecode."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2(bytes32,bytes)": {
+          "details": "Deploys a new contract via calling the `CREATE2` opcode and using the salt value `salt`, the creation bytecode `initCode`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `msg.value` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "initCode": "The creation bytecode.",
+            "salt": "The 32-byte random value used to create the contract address."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2AndInit(bytes,bytes,(uint256,uint256))": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE2` opcode and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor, and any excess ether is returned to `msg.sender`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2AndInit(bytes,bytes,(uint256,uint256),address)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE2` opcode and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, the refund address `refundAddress`, and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "refundAddress": "The 20-byte address where any excess ether is returned to.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2AndInit(bytes32,bytes,bytes,(uint256,uint256))": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE2` opcode and using the salt value `salt`, creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor, and any excess ether is returned to `msg.sender`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "salt": "The 32-byte random value used to create the contract address.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2AndInit(bytes32,bytes,bytes,(uint256,uint256),address)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE2` opcode and using the salt value `salt`, the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, the refund address `refundAddress`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "refundAddress": "The 20-byte address where any excess ether is returned to.",
+            "salt": "The 32-byte random value used to create the contract address.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate2Clone(address,bytes)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys a new EIP-1167 minimal proxy contract using the `CREATE2` opcode and the salt value `salt`, and initialises the implementation contract using the implementation address `implementation`, the initialisation code `data`, and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! Note that if `msg.value` is non-zero, the initialiser function called via `data` must be `payable`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed proxy contract.",
+            "implementation": "The 20-byte implementation contract address."
+          },
+          "returns": {
+            "proxy": "The 20-byte address where the clone was deployed."
+          }
+        },
+        "deployCreate2Clone(bytes32,address,bytes)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys a new EIP-1167 minimal proxy contract using the `CREATE2` opcode and the salt value `salt`, and initialises the implementation contract using the implementation address `implementation`, the initialisation code `data`, and `msg.value` as inputs. Note that if `msg.value` is non-zero, the initialiser function called via `data` must be `payable`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed proxy contract.",
+            "implementation": "The 20-byte implementation contract address.",
+            "salt": "The 32-byte random value used to create the proxy contract address."
+          },
+          "returns": {
+            "proxy": "The 20-byte address where the clone was deployed."
+          }
+        },
+        "deployCreate3(bytes)": {
+          "details": "Deploys a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the salt value `salt`, the creation bytecode `initCode`, and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `msg.value` is non-zero, `initCode` must have a `payable` constructor. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "initCode": "The creation bytecode."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate3(bytes32,bytes)": {
+          "custom:security": "We strongly recommend implementing a permissioned deploy protection by setting the first 20 bytes equal to `msg.sender` in the `salt` to prevent maliciously intended frontrun proxy deployments on other chains.",
+          "details": "Deploys a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the salt value `salt`, the creation bytecode `initCode`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `msg.value` is non-zero, `initCode` must have a `payable` constructor. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "initCode": "The creation bytecode.",
+            "salt": "The 32-byte random value used to create the proxy contract address."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate3AndInit(bytes,bytes,(uint256,uint256))": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor, and any excess ether is returned to `msg.sender`. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate3AndInit(bytes,bytes,(uint256,uint256),address)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, the refund address `refundAddress`, and `msg.value` as inputs. The salt value is calculated pseudo-randomly using a diverse selection of block and transaction properties. This approach does not guarantee true randomness! In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "refundAddress": "The 20-byte address where any excess ether is returned to.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate3AndInit(bytes32,bytes,bytes,(uint256,uint256))": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system. Furthermore, we strongly recommend implementing a permissioned deploy protection by setting the first 20 bytes equal to `msg.sender` in the `salt` to prevent maliciously intended frontrun proxy deployments on other chains.",
+          "details": "Deploys and initialises a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the salt value `salt`, the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor, and any excess ether is returned to `msg.sender`. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "salt": "The 32-byte random value used to create the proxy contract address.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreate3AndInit(bytes32,bytes,bytes,(uint256,uint256),address)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system. Furthermore, we strongly recommend implementing a permissioned deploy protection by setting the first 20 bytes equal to `msg.sender` in the `salt` to prevent maliciously intended frontrun proxy deployments on other chains.",
+          "details": "Deploys and initialises a new contract via employing the `CREATE3` pattern (i.e. without an initcode factor) and using the salt value `salt`, the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, the refund address `refundAddress`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor. This implementation is based on Solmate: https://web.archive.org/web/20230921113832/https://raw.githubusercontent.com/transmissions11/solmate/e8f96f25d48fe702117ce76c79228ca4f20206cb/src/utils/CREATE3.sol.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "refundAddress": "The 20-byte address where any excess ether is returned to.",
+            "salt": "The 32-byte random value used to create the proxy contract address.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreateAndInit(bytes,bytes,(uint256,uint256))": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE` opcode and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor, and any excess ether is returned to `msg.sender`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreateAndInit(bytes,bytes,(uint256,uint256),address)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys and initialises a new contract via calling the `CREATE` opcode and using the creation bytecode `initCode`, the initialisation code `data`, the struct for the `payable` amounts `values`, the refund address `refundAddress`, and `msg.value` as inputs. In order to save deployment costs, we do not sanity check the `initCode` length. Note that if `values.constructorAmount` is non-zero, `initCode` must have a `payable` constructor.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed contract.",
+            "initCode": "The creation bytecode.",
+            "refundAddress": "The 20-byte address where any excess ether is returned to.",
+            "values": "The specific `payable` amounts for the deployment and initialisation call."
+          },
+          "returns": {
+            "newContract": "The 20-byte address where the contract was deployed."
+          }
+        },
+        "deployCreateClone(address,bytes)": {
+          "custom:security": "This function allows for reentrancy, however we refrain from adding a mutex lock to keep it as use-case agnostic as possible. Please ensure at the protocol level that potentially malicious reentrant calls do not affect your smart contract system.",
+          "details": "Deploys a new EIP-1167 minimal proxy contract using the `CREATE` opcode, and initialises the implementation contract using the implementation address `implementation`, the initialisation code `data`, and `msg.value` as inputs. Note that if `msg.value` is non-zero, the initialiser function called via `data` must be `payable`.",
+          "params": {
+            "data": "The initialisation code that is passed to the deployed proxy contract.",
+            "implementation": "The 20-byte implementation contract address."
+          },
+          "returns": {
+            "proxy": "The 20-byte address where the clone was deployed."
+          }
+        }
+      },
+      "stateVariables": {
+        "_SELF": {
+          "details": "Caches the contract address at construction, to be used for the custom errors."
+        }
+      },
+      "title": "CreateX Factory Smart Contract",
+      "version": 1
+    },
+    "userdoc": {
+      "kind": "user",
+      "methods": {},
+      "notice": "Factory smart contract to make easier and safer usage of the `CREATE` (https://web.archive.org/web/20230921103540/https://www.evm.codes/#f0?fork=shanghai) and `CREATE2` (https://web.archive.org/web/20230921103540/https://www.evm.codes/#f5?fork=shanghai) EVM opcodes as well as of `CREATE3`-based (https://web.archive.org/web/20230921103920/https://github.com/ethereum/EIPs/pull/3171) contract creations.",
+      "version": 1
+    }
+  },
+  "settings": {
+    "compilationTarget": {
+      "src/CreateX.sol": "CreateX"
+    },
+    "evmVersion": "paris",
+    "libraries": {},
+    "metadata": {
+      "bytecodeHash": "none"
+    },
+    "optimizer": {
+      "enabled": true,
+      "runs": 10000000
+    },
+    "remappings": []
+  },
+  "sources": {
+    "src/CreateX.sol": {
+      "keccak256": "0x2dbac4ef907ba7193aaffb58b8e3cd2e5d212dcfbd5fd87ba83c5ac720767c35",
+      "license": "AGPL-3.0-only",
+      "urls": [
+        "bzz-raw://3419e91a1887f81a9c69d8fc4fb1c7ee40635e4b99328166ae15627897d077e3",
+        "dweb:/ipfs/QmPgZMLnePsddpoYufeuUK5pmAU9cdjQPvFvswpPZEaH6W"
+      ]
+    }
+  },
+  "version": 1
+}

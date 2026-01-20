@@ -13,7 +13,6 @@ const ETHERSCAN_API =
 const BLOCKSSCAN_SUFFIX = "api/accounts/${ADDRESS}";
 const BLOCKSCOUT_API_SUFFIX = "/api/v2/addresses/${ADDRESS}";
 const TELOS_SUFFIX = "v1/contract/${ADDRESS}";
-const METER_SUFFIX = "api/accounts/${ADDRESS}";
 const AVALANCHE_SUBNET_SUFFIX =
   "contracts/${ADDRESS}/transactions:getDeployment";
 const NEXUS_SUFFIX = "v1/${RUNTIME}/accounts/${ADDRESS}";
@@ -129,17 +128,6 @@ function getBlocksScanApiContractCreatorFetcher(
     apiURL + BLOCKSSCAN_SUFFIX,
     (response: any) => {
       if (response.fromTxn) return response.fromTxn as string;
-    },
-  );
-}
-
-function getMeterApiContractCreatorFetcher(
-  apiURL: string,
-): ContractCreationFetcher {
-  return getApiContractCreationFetcher(
-    apiURL + METER_SUFFIX,
-    (response: any) => {
-      return response.account.creationTxHash as string;
     },
   );
 }
@@ -337,15 +325,6 @@ export const getCreatorTx = async (
   if (sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi) {
     const fetcher = getBlocksScanApiContractCreatorFetcher(
       sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi.url,
-    );
-    const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
-    if (result) {
-      return result;
-    }
-  }
-  if (sourcifyChain.fetchContractCreationTxUsing?.meterApi) {
-    const fetcher = getMeterApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.meterApi.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
