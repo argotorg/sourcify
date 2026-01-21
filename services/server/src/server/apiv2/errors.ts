@@ -75,7 +75,7 @@ export class RouteNotFoundError extends NotFoundError {
   }
 }
 
-export class ChainNotFoundError extends NotFoundError {
+export class ChainNotFoundError extends BadRequestError {
   payload: GenericErrorResponse;
 
   constructor(message: string) {
