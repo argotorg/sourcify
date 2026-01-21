@@ -10,6 +10,8 @@ import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import sinon from "sinon";
 import type { EtherscanResult } from "@ethereum-sourcify/lib-sourcify";
+import { testS3Bucket, testS3Path } from "../helpers/S3ClientMock";
+import { MockVerificationExport } from "../helpers/mocks";
 
 describe("VerificationService", function () {
   const sandbox = sinon.createSandbox();
@@ -17,6 +19,7 @@ describe("VerificationService", function () {
   beforeEach(function () {
     // Clear any previously nocked interceptors
     nock.cleanAll();
+    rimraf.sync(path.join(testS3Path, testS3Bucket));
   });
 
   afterEach(function () {
@@ -24,6 +27,35 @@ describe("VerificationService", function () {
     nock.isDone();
     sandbox.restore();
   });
+
+  after(() => {
+    rimraf.sync(path.join(testS3Path, testS3Bucket));
+  });
+
+  function createMockStorageService(testVerificationId: string) {
+    const mockStorageService = {
+      performServiceOperation: sandbox.stub(),
+    } as any;
+
+    mockStorageService.performServiceOperation
+      .withArgs("storeVerificationJob")
+      .resolves(testVerificationId);
+
+    mockStorageService.performServiceOperation
+      .withArgs("setJobError")
+      .resolves();
+
+    return mockStorageService;
+  }
+
+  function mockWorkerPoolError(verificationService: VerificationService) {
+    const workerPoolStub = sandbox.stub(
+      verificationService["workerPool"],
+      "run",
+    );
+    workerPoolStub.rejects(new Error("Worker pool error"));
+    return workerPoolStub;
+  }
 
   it("should initialize compilers", async function () {
     rimraf.sync(config.get("solcRepo"));
@@ -104,19 +136,8 @@ describe("VerificationService", function () {
   });
 
   it("should handle workerPool.run errors and set job error as internal_error", async function () {
-    const mockStorageService = {
-      performServiceOperation: sandbox.stub(),
-    } as any;
-
-    // Mock the storage service calls
     const verificationId = "test-verification-id";
-    mockStorageService.performServiceOperation
-      .withArgs("storeVerificationJob")
-      .resolves(verificationId);
-
-    mockStorageService.performServiceOperation
-      .withArgs("setJobError")
-      .resolves();
+    const mockStorageService = createMockStorageService(verificationId);
 
     const verificationService = new VerificationService(
       {
@@ -129,12 +150,7 @@ describe("VerificationService", function () {
       mockStorageService,
     );
 
-    // Mock the workerPool.run to throw an error
-    const workerPoolStub = sandbox.stub(
-      verificationService["workerPool"],
-      "run",
-    );
-    workerPoolStub.rejects(new Error("Worker pool error"));
+    mockWorkerPoolError(verificationService);
 
     const mockEtherscanResult: EtherscanResult = {
       ContractName: "TestContract",
@@ -177,5 +193,106 @@ describe("VerificationService", function () {
       customCode: "internal_error",
     });
     expect(setJobErrorArgs[2].errorId).to.be.a("string");
+  });
+
+  it("should store verification input data to S3 after failed verification", async function () {
+    const verificationId = "test-verification-id-s3";
+    const mockStorageService = createMockStorageService(verificationId);
+
+    const verificationService = new VerificationService(
+      {
+        initCompilers: false,
+        sourcifyChainMap: {},
+        solcRepoPath: config.get("solcRepo"),
+        solJsonRepoPath: config.get("solJsonRepo"),
+        vyperRepoPath: config.get("vyperRepo"),
+        debugDataS3Config: {
+          bucket: testS3Bucket,
+          region: "test-region",
+          accessKeyId: "test-key",
+          secretAccessKey: "test-secret",
+        },
+      },
+      mockStorageService,
+    );
+
+    mockWorkerPoolError(verificationService);
+
+    verificationService.verifyFromMetadataViaWorker(
+      "test-endpoint",
+      "1",
+      "0x1234567890123456789012345678901234567890",
+      MockVerificationExport.compilation.metadata!,
+      MockVerificationExport.compilation.sources,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const s3FilePath = path.join(
+      testS3Path,
+      testS3Bucket,
+      "failed-verification-inputs",
+      `${verificationId}.json`,
+    );
+
+    expect(fs.existsSync(s3FilePath)).to.be.true;
+
+    const storedData = JSON.parse(fs.readFileSync(s3FilePath, "utf-8"));
+    expect(storedData).to.deep.include({
+      chainId: "1",
+      address: "0x1234567890123456789012345678901234567890",
+    });
+    expect(storedData.metadata).to.deep.equal(
+      MockVerificationExport.compilation.metadata,
+    );
+    expect(storedData.sources).to.deep.equal(
+      MockVerificationExport.compilation.sources,
+    );
+  });
+
+  it("should not throw if S3 storage fails during failed verification", async function () {
+    const verificationId = "test-verification-id-s3-fail";
+    const mockStorageService = createMockStorageService(verificationId);
+
+    const verificationService = new VerificationService(
+      {
+        initCompilers: false,
+        sourcifyChainMap: {},
+        solcRepoPath: config.get("solcRepo"),
+        solJsonRepoPath: config.get("solJsonRepo"),
+        vyperRepoPath: config.get("vyperRepo"),
+        debugDataS3Config: {
+          bucket: testS3Bucket,
+          region: "test-region",
+          accessKeyId: "test-key",
+          secretAccessKey: "test-secret",
+        },
+      },
+      mockStorageService,
+    );
+
+    mockWorkerPoolError(verificationService);
+
+    const s3ClientStub = sandbox.stub(
+      verificationService["debugDataS3Client"]!,
+      "send",
+    );
+    s3ClientStub.rejects(new Error("S3 storage error"));
+
+    verificationService.verifyFromMetadataViaWorker(
+      "test-endpoint",
+      "1",
+      "0x1234567890123456789012345678901234567890",
+      MockVerificationExport.compilation.metadata!,
+      MockVerificationExport.compilation.sources,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const setJobErrorCall = mockStorageService.performServiceOperation
+      .getCalls()
+      .find((call: any) => call.args[0] === "setJobError");
+    expect(setJobErrorCall).to.not.be.undefined;
+    expect(s3ClientStub.called).to.be.true;
   });
 });

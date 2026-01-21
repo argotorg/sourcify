@@ -8,16 +8,10 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import type { PathConfig } from "../../types";
+import type { PathConfig, S3Config } from "../../types";
 import Path from "path";
 
-export interface S3RepositoryServiceOptions {
-  bucket: string;
-  region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  endpoint?: string;
-}
+export type S3RepositoryServiceOptions = S3Config;
 
 export class S3RepositoryService
   extends RepositoryV2Service
@@ -32,10 +26,13 @@ export class S3RepositoryService
     this.bucket = options.bucket;
     this.s3 = new S3Client({
       region: options.region,
-      credentials: {
-        accessKeyId: options.accessKeyId,
-        secretAccessKey: options.secretAccessKey,
-      },
+      credentials:
+        options.accessKeyId && options.secretAccessKey
+          ? {
+              accessKeyId: options.accessKeyId,
+              secretAccessKey: options.secretAccessKey,
+            }
+          : undefined,
       endpoint: options.endpoint,
     });
   }
