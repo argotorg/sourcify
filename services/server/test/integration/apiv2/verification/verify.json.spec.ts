@@ -519,7 +519,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.have.property("message");
   });
 
-  it("should return a 404 when the chain is not found", async function () {
+  it("should return a 400 when the chain is not found", async function () {
     const unknownChainId = "5";
     const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
@@ -539,7 +539,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
         creationTransactionHash: chainFixture.defaultContractCreatorTx,
       });
 
-    chai.expect(verifyRes.status).to.equal(404);
+    chai.expect(verifyRes.status).to.equal(400);
     chai.expect(verifyRes.body.customCode).to.equal("unsupported_chain");
     chai.expect(verifyRes.body).to.have.property("errorId");
     chai.expect(verifyRes.body).to.have.property("message");

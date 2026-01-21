@@ -148,7 +148,7 @@ describe("GET /v2/contracts/:chainId", function () {
     }
   });
 
-  it("should return a 404 when the chain is not found", async function () {
+  it("should return a 400 when the chain is not found", async function () {
     const unknownChainId = "5";
     const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
@@ -157,7 +157,7 @@ describe("GET /v2/contracts/:chainId", function () {
       .request(serverFixture.server.app)
       .get(`/v2/contracts/${unknownChainId}`);
 
-    chai.expect(res.status).to.equal(404);
+    chai.expect(res.status).to.equal(400);
     chai.expect(res.body.customCode).to.equal("unsupported_chain");
     chai.expect(res.body).to.have.property("errorId");
     chai.expect(res.body).to.have.property("message");
