@@ -1,3 +1,8 @@
+\restrict bOuAI60N9maPdxaaP8cAH7cZ8nZpdqhBKdKYqk7I147B9Ar01WsIlUJ49yXxtVp
+
+-- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -2144,6 +2149,8 @@ ALTER TABLE ONLY public.verified_contracts
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict bOuAI60N9maPdxaaP8cAH7cZ8nZpdqhBKdKYqk7I147B9Ar01WsIlUJ49yXxtVp
 
 
 --
