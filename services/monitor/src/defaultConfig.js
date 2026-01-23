@@ -24,6 +24,14 @@ const defaultConfig = {
     blockIntervalLowerLimit: 25,
     bytecodeInterval: 5000,
     bytecodeNumberOfTries: 5,
+    traceInterval: 15000,
+    traceNumberOfTries: 5,
+    traceDelay: 0,
+  },
+  chainConfigs: {
+    100: {
+      traceDelay: 300000,
+    },
   },
 };
 

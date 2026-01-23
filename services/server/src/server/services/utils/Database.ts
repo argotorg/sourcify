@@ -689,11 +689,12 @@ ${
         FROM ${this.schema}.compiled_contracts
         WHERE 1=1
           AND compiler = $1
-          AND language = $2
-          AND (creation_code_hash = $3 OR (creation_code_hash IS NULL AND $3 IS NULL))
-          AND runtime_code_hash = $4
+          AND version = $2
+          AND language = $3
+          AND (creation_code_hash = $4 OR (creation_code_hash IS NULL AND $4 IS NULL))
+          AND runtime_code_hash = $5
         `,
-        [compiler, language, creation_code_hash, runtime_code_hash],
+        [compiler, version, language, creation_code_hash, runtime_code_hash],
       );
     }
     return compiledContractsInsertResult;

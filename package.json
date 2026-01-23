@@ -44,7 +44,7 @@
     "eslint-config-prettier": "9.1.2",
     "eslint-plugin-no-only-tests": "3.3.0",
     "lerna": "8.2.4",
-    "prettier": "3.7.4",
+    "prettier": "3.8.0",
     "ts-node": "10.9.2",
     "typescript": "5.9.3"
   },

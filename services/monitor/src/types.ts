@@ -26,24 +26,19 @@ export type DecentralizedStorageConfigMap = {
   [K in DecentralizedStorageTypes]?: DecentralizedStorageConfig;
 };
 
-export type ChainMonitorConfig = {
-  startBlock?: number;
-  blockInterval?: number;
-  blockIntervalFactor?: number;
-  blockIntervalUpperLimit?: number;
-  blockIntervalLowerLimit?: number;
-  bytecodeInterval?: number;
-  bytecodeNumberOfTries?: number;
-};
+export type ChainMonitorConfig = Partial<DefatultChainMonitorConfig>;
 
 export type DefatultChainMonitorConfig = {
-  startBlock: undefined; // Default to latest block
+  startBlock?: number; // undefined defaults to latest block
   blockInterval: number;
   blockIntervalFactor: number;
   blockIntervalUpperLimit: number;
   blockIntervalLowerLimit: number;
   bytecodeInterval: number;
   bytecodeNumberOfTries: number;
+  traceInterval: number;
+  traceNumberOfTries: number;
+  traceDelay: number;
 };
 
 export type SourcifyRequestOptions = {
@@ -57,6 +52,7 @@ export type MonitorConfig = {
   sourcifyRequestOptions: SourcifyRequestOptions;
   defaultChainConfig: DefatultChainMonitorConfig;
   similarityVerification: SimilarityVerificationConfig;
+  monitorFactories?: boolean; // gets overwritten by .env if set
   chainConfigs?: {
     [chainId: number]: ChainMonitorConfig;
   };
@@ -66,16 +62,7 @@ export interface SimilarityVerificationConfig {
   requestDelay?: number;
 }
 
-export type PassedMonitorConfig = {
-  decentralizedStorages?: DecentralizedStorageConfigMap;
-  sourcifyServerURLs?: string[];
-  sourcifyRequestOptions?: Partial<SourcifyRequestOptions>;
-  defaultChainConfig?: DefatultChainMonitorConfig;
-  similarityVerification?: SimilarityVerificationConfig;
-  chainConfigs?: {
-    [chainId: number]: ChainMonitorConfig;
-  };
-};
+export type PassedMonitorConfig = Partial<MonitorConfig>;
 
 export type RpcObject = {
   type: "ApiKey";

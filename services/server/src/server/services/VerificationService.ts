@@ -21,8 +21,8 @@ import {
   getSolcExecutable,
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
-import type { VerificationJobId } from "../types";
-import type { StorageService } from "./StorageService";
+import type { S3Config, VerificationJobId } from "../types";
+import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
 import path from "path";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
@@ -42,6 +42,7 @@ import {
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
 import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
@@ -53,6 +54,7 @@ export interface VerificationServiceOptions {
   vyperRepoPath: string;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
+  debugDataS3Config?: S3Config;
 }
 
 export class VerificationService {
@@ -69,6 +71,9 @@ export class VerificationService {
   private workerPool: Piscina;
   private runningTasks: Set<Promise<void>> = new Set();
 
+  private readonly debugDataS3Client?: S3Client;
+  private readonly debugDataS3Bucket?: string;
+
   constructor(
     options: VerificationServiceOptions,
     storageService: StorageService,
@@ -78,6 +83,22 @@ export class VerificationService {
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
+
+    if (options.debugDataS3Config) {
+      const s3Config = options.debugDataS3Config;
+      this.debugDataS3Bucket = s3Config.bucket;
+      this.debugDataS3Client = new S3Client({
+        region: s3Config.region,
+        credentials:
+          s3Config.accessKeyId && s3Config.secretAccessKey
+            ? {
+                accessKeyId: s3Config.accessKeyId,
+                secretAccessKey: s3Config.secretAccessKey,
+              }
+            : undefined,
+        endpoint: s3Config.endpoint,
+      });
+    }
 
     const sourcifyChainInstanceMap = Object.entries(
       options.sourcifyChainMap,
@@ -401,7 +422,7 @@ export class VerificationService {
               chainId,
               address,
             });
-            await this.storageService.performServiceOperation("setJobError", [
+            await this.storeJobError([
               verificationId,
               new Date(),
               {
@@ -429,7 +450,7 @@ export class VerificationService {
             address,
             error,
           });
-          await this.storageService.performServiceOperation("setJobError", [
+          await this.storeJobError([
             verificationId,
             new Date(),
             {
@@ -513,12 +534,72 @@ export class VerificationService {
           });
         }
 
-        return this.storageService.performServiceOperation("setJobError", [
-          verificationId,
-          new Date(),
-          errorExport,
-        ]);
+        return this.storeJobError(
+          [verificationId, new Date(), errorExport],
+          input,
+        );
       });
+  }
+
+  private async storeInputDataToS3(
+    verificationId: VerificationJobId,
+    verificationInput:
+      | VerifyFromJsonInput
+      | VerifyFromMetadataInput
+      | VerifyFromEtherscanInput
+      | VerifySimilarityInput,
+  ): Promise<void> {
+    if (!this.debugDataS3Client || !this.debugDataS3Bucket) {
+      logger.debug(
+        "S3 client not configured, skipping verification input storage",
+      );
+      return;
+    }
+
+    try {
+      const key = `failed-verification-inputs/${verificationId}.json`;
+      const body = JSON.stringify(verificationInput, null, 2);
+
+      const command = new PutObjectCommand({
+        Bucket: this.debugDataS3Bucket,
+        Key: key,
+        Body: body,
+        ContentType: "application/json",
+      });
+
+      await this.debugDataS3Client.send(command);
+      logger.debug("Stored verification input to S3", {
+        verificationId,
+        key,
+      });
+    } catch (error) {
+      logger.error("Failed to store verification input to S3", {
+        verificationId,
+        error,
+      });
+    }
+  }
+
+  private async storeJobError(
+    storageArgs: Parameters<Required<WStorageService>["setJobError"]>,
+    verificationInput?:
+      | VerifyFromJsonInput
+      | VerifyFromMetadataInput
+      | VerifyFromEtherscanInput
+      | VerifySimilarityInput,
+  ): Promise<void> {
+    const promises = [];
+    promises.push(
+      this.storageService.performServiceOperation("setJobError", storageArgs),
+    );
+    if (
+      verificationInput &&
+      ("jsonInput" in verificationInput || "metadata" in verificationInput)
+    ) {
+      const verificationId = storageArgs[0];
+      promises.push(this.storeInputDataToS3(verificationId, verificationInput));
+    }
+    await Promise.all(promises);
   }
 
   private runInBackground(promise: Promise<void>): void {
