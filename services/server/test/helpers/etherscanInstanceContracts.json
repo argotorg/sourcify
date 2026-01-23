@@ -461,5 +461,12 @@
       "type": "single",
       "expectedStatus": "partial"
     }
-  ]
+  ],
+  "1122": [
+   {
+      "address": "0x0f085cD96FC2408D1aB9Fd7A844E58a1F0eE8746",
+      "type": "single",
+      "expectedStatus": "perfect"
+   }
+ ]
 }
