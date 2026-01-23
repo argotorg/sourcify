@@ -2464,9 +2464,10 @@
   },
   
   "1122": {
-    "sourcifyName": "LuxePorts",
-    "supported": true,
-   
-  
+  "sourcifyName": "LuxePorts",
+  "supported": true,
+  "fetchContractCreationTxUsing": {
+    "etherscanApi": true
+  }
 }
 }

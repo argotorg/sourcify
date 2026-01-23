@@ -2032,7 +2032,7 @@ describe("Test Supported Chains", function () {
 
   // LuxePorts MainNet
   verifyContract(
-    "0x5827317D75D53E7a7901657307209bC684B8EcDc",
+    "0x24e66de01322f265fe49103143b16b72a504c4d5",
     "1122",
     "LuxePorts MainNet",
     "shared/",
