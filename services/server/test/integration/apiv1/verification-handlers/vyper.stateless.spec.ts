@@ -180,7 +180,7 @@ describe("/verify/vyper", function () {
       chainFixture.chainId,
       [],
       {},
-      [AuxdataTransformation(158, "1")],
+      [AuxdataTransformation("replace", 158, "1")],
       {
         cborAuxdata: {
           "1": "0x8558201111111111111111111111111111111111111111111111111111111111111111188f8000a1657679706572830004010034",
@@ -224,13 +224,13 @@ describe("/verify/vyper", function () {
       serverFixture.sourcifyDatabase,
       address,
       chainFixture.chainId,
-      [AuxdataTransformation(150, "1")],
+      [AuxdataTransformation("replace", 150, "1")],
       {
         cborAuxdata: {
           "1": "0xa165767970657283000307000b",
         },
       },
-      [AuxdataTransformation(165, "1")],
+      [AuxdataTransformation("replace", 165, "1")],
       {
         cborAuxdata: {
           "1": "0xa165767970657283000307000b",
@@ -274,13 +274,13 @@ describe("/verify/vyper", function () {
       serverFixture.sourcifyDatabase,
       address,
       chainFixture.chainId,
-      [AuxdataTransformation(172, "1")],
+      [AuxdataTransformation("replace", 172, "1")],
       {
         cborAuxdata: {
           "1": "0xa165767970657283000303",
         },
       },
-      [AuxdataTransformation(187, "1")],
+      [AuxdataTransformation("replace", 187, "1")],
       {
         cborAuxdata: {
           "1": "0xa165767970657283000303",
