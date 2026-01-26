@@ -14,7 +14,7 @@ import { logError } from '../logger';
 const abiCoder = AbiCoder.defaultAbiCoder();
 
 export type Transformation = {
-  type: 'insert' | 'replace';
+  type: 'insert' | 'replace' | 'delete';
   reason:
     | 'constructorArguments'
     | 'library'
@@ -23,6 +23,7 @@ export type Transformation = {
     | 'callProtection';
   offset: number;
   id?: string;
+  length?: number;
 };
 
 // Call protection is always at the start of the runtime bytecode
@@ -40,13 +41,17 @@ export const ConstructorTransformation = (offset: number): Transformation => ({
 });
 
 export const AuxdataTransformation = (
+  transformationType: 'replace' | 'delete',
   offset: number,
-  id: string,
+  id?: string,
+  length?: number,
 ): Transformation => ({
-  type: 'replace',
+  type: transformationType,
   reason: 'cborAuxdata',
   offset,
-  id,
+  // Add id or length only if defined
+  ...(id != undefined ? { id } : {}),
+  ...(length != undefined ? { length } : {}),
 });
 
 export const LibraryTransformation = (
@@ -319,11 +324,42 @@ export function extractAuxdataTransformation(
     const transformationValues: TransformationValues = {};
     // Instead of normalizing the onchain bytecode, we use its auxdata values to replace the corresponding sections in the recompiled bytecode.
     Object.values(cborAuxdataPositions).forEach((auxdataValues, index) => {
-      const offsetStart = auxdataValues.offset * 2 + 2;
-      const offsetEnd =
-        auxdataValues.offset * 2 + 2 + auxdataValues.value.length - 2;
+      const recompiledAuxdata = auxdataValues.value.slice(2); // Remove 0x
+      const recompiledAuxdataOffset = auxdataValues.offset * 2 + 2; // Offset is stored in bytes
+
+      const offsetStart = recompiledAuxdataOffset;
+      const offsetEnd = recompiledAuxdataOffset + recompiledAuxdata.length;
       // Instead of zeroing out this segment, get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
+
+      // By default the transformation type is 'replace'
+      let transformationType: 'replace' | 'delete' = 'replace';
+      // By default the transformation index is index + 1
+      let transformationIndex: string | undefined = `${index + 1}`;
+      // By default we don't store the auxdata length, because it's the same as the original one.
+      let transformationLength = undefined;
+
+      // But if the lengths are different we need to store the auxdata length in the transformation
+      if (recompiledAuxdata.length !== onchainAuxdata.length) {
+        transformationLength = recompiledAuxdata.length / 2;
+      }
+      // And if onchain auxdata is empty, we set the transformation index to undefined and the type to 'delete'
+      if (onchainAuxdata.length === 0) {
+        transformationType = 'delete';
+        transformationIndex = undefined;
+      }
+
+      transformations.push(
+        AuxdataTransformation(
+          transformationType,
+          (recompiledAuxdataOffset - 2) / 2, // Convert back length in bytes
+          transformationIndex,
+          transformationLength,
+        ),
+      );
+      if (!transformationValues.cborAuxdata) {
+        transformationValues.cborAuxdata = {};
+      }
       if (
         onchainAuxdata.length === 0
         // TODO with this we could potentially support multiple auxdata sections, but needs more testing
@@ -339,16 +375,11 @@ export function extractAuxdataTransformation(
           populatedRecompiledBytecode.slice(0, offsetStart) +
           onchainAuxdata +
           populatedRecompiledBytecode.slice(offsetEnd);
+        if (transformationIndex) {
+          transformationValues.cborAuxdata[transformationIndex] =
+            `0x${onchainAuxdata}`;
+        }
       }
-      const transformationIndex = `${index + 1}`;
-      transformations.push(
-        AuxdataTransformation(auxdataValues.offset, transformationIndex),
-      );
-      if (!transformationValues.cborAuxdata) {
-        transformationValues.cborAuxdata = {};
-      }
-      transformationValues.cborAuxdata[transformationIndex] =
-        `0x${onchainAuxdata}`;
     });
     return {
       populatedRecompiledBytecode,
