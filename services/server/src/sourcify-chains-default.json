@@ -1467,11 +1467,9 @@
     "sourcifyName": "Arbitrum Nova",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    },
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_ARBITRUM_NOVA"
+      "blockscoutApi": {
+        "url": "https://arbitrum-nova.blockscout.com/"
+      }
     },
     "rpc": [
       "https://nova.arbitrum.io/rpc",
