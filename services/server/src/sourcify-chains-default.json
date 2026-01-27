@@ -2463,11 +2463,6 @@
   
   "1122": {
     "sourcifyName": "LuxePorts MainNet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blocksScanApi": {
-        "url": "https://lxpscan.com/"
-      }
-    }
+    "supported": true
   }
 }
