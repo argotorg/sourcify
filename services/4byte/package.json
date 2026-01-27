@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "chalk": "4.1.2",
-    "cors": "2.8.5",
+    "cors": "2.8.6",
     "dotenv": "16.6.1",
     "ethers": "6.16.0",
     "express": "5.2.1",
