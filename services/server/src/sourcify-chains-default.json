@@ -2459,5 +2459,10 @@
         "url": "https://explorer.jovay.io"
       }
     }
+  },
+  
+  "1122": {
+    "sourcifyName": "LuxePorts MainNet",
+    "supported": true
   }
 }
