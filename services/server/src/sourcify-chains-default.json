@@ -2465,18 +2465,6 @@
   
   "1122": {
     "sourcifyName": "LuxePorts MainNet",
-    "supported": true,
-    "etherscanApi": {
-      "apiURL": "https://i.lxpscan.com/api",
-      "apiKeyEnvName": "",
-      "supported": true
-    },
-    "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    },
-    "rpc": [
-      "https://rpc.luxeports.com",
-      "https://erpc.luxeports.com"
-    ]
+    "supported": true
   }
 }
