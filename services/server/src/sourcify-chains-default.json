@@ -2464,5 +2464,23 @@
   "1122": {
     "sourcifyName": "LuxePorts MainNet",
     "supported": true
+  },
+  "3111": {
+    "sourcifyName": "Alpha Chain Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scan.goalpha.org"
+      }
+    }
+  },
+  "511111": {
+    "sourcifyName": "Alpha Chain  Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet-scan.goalpha.org"
+      }
+    }
   }
 }
