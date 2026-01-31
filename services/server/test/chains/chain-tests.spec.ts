@@ -2052,7 +2052,7 @@ describe("Test Supported Chains", function () {
     "0xf48673E2FaE2B915023D29e3bB4Bc3AB49AAdE66",
     "3111",
     "Alpha Chain Mainnet",
-    "shared/"
+    "shared/",
   );
 
   // Alpha Chain Testnet
@@ -2060,7 +2060,7 @@ describe("Test Supported Chains", function () {
     "0x8b2587F56b7e373F25e661084b3B3AF2a13a611F",
     "511111",
     "Alpha Chain Testnet",
-    "shared/"
+    "shared/",
   );
 
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
