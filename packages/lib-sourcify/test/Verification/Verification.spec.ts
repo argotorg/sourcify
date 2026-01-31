@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
-import type { JsonRpcSigner } from 'ethers';
+import { type JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
   assertCborTransformations,
@@ -727,6 +727,18 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'replace',
+          reason: 'cborAuxdata',
+          offset: 250,
+          length: 53,
+          id: '1',
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({
+          '1': '0xa164736f6c6343000804000a',
+        });
       });
 
       it('should partially match when deployed appendCBOR false is verified with standard metadata', async () => {
@@ -767,6 +779,15 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'delete',
+          reason: 'cborAuxdata',
+          offset: 283,
+          length: 53,
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({});
       });
 
       it('should partially match when deployed appendCBOR false is verified with metadata bytecodeHash none', async () => {
@@ -812,6 +833,15 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'delete',
+          reason: 'cborAuxdata',
+          offset: 283,
+          length: 12,
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({});
       });
     });
   });
