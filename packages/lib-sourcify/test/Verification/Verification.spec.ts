@@ -782,8 +782,17 @@ describe('Verification Class Tests', () => {
         expect(verification.transformations.runtime?.list[0]).to.deep.equal({
           type: 'delete',
           reason: 'cborAuxdata',
-          offset: 283,
-          length: 53,
+          offset: 282, // This offset takes into account also the fe byte added before the auxdata
+          length: 54,
+        });
+        expect(
+          verification.compilation.runtimeBytecodeCborAuxdata,
+        ).to.deep.equal({
+          '1': {
+            offset: 283, // This offset should be the real offset of the auxdata (without the fe byte)
+            value:
+              '0xa2646970667358221220a3e6e8f064de1f9ce708206d52c7a1f6ba8e0f14812bdce51a2d856d2a5a003564736f6c634300081c0033',
+          },
         });
         expect(
           verification.transformations.runtime?.values?.cborAuxdata,
@@ -836,8 +845,16 @@ describe('Verification Class Tests', () => {
         expect(verification.transformations.runtime?.list[0]).to.deep.equal({
           type: 'delete',
           reason: 'cborAuxdata',
-          offset: 283,
-          length: 12,
+          offset: 282, // This offset takes into account also the fe byte added before the auxdata
+          length: 13,
+        });
+        expect(
+          verification.compilation.runtimeBytecodeCborAuxdata,
+        ).to.deep.equal({
+          '1': {
+            offset: 283, // This offset should be the real offset of the auxdata (without the fe byte)
+            value: '0xa164736f6c634300081c000a',
+          },
         });
         expect(
           verification.transformations.runtime?.values?.cborAuxdata,

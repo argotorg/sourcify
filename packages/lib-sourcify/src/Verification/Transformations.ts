@@ -314,21 +314,22 @@ export function extractLibrariesTransformation(
 }
 
 export function extractAuxdataTransformation(
-  recompiledBytecode: string,
-  onchainBytecode: string,
+  recompiledBytecodeWith0x: string,
+  onchainBytecodeWith0x: string,
   cborAuxdataPositions: CompiledContractCborAuxdata,
 ) {
   try {
-    let populatedRecompiledBytecode = recompiledBytecode;
+    const onchainBytecode = onchainBytecodeWith0x.slice(2);
+    let populatedRecompiledBytecode = recompiledBytecodeWith0x.slice(2);
     const transformations: Transformation[] = [];
     const transformationValues: TransformationValues = {};
     // Instead of normalizing the onchain bytecode, we use its auxdata values to replace the corresponding sections in the recompiled bytecode.
     Object.values(cborAuxdataPositions).forEach((auxdataValues, index) => {
       const recompiledAuxdata = auxdataValues.value.slice(2); // Remove 0x
-      const recompiledAuxdataOffset = auxdataValues.offset * 2 + 2; // Offset is stored in bytes
+      const recompiledAuxdataOffset = auxdataValues.offset * 2; // Offset is stored in bytes
 
       const offsetStart = recompiledAuxdataOffset;
-      const offsetEnd = recompiledAuxdataOffset + recompiledAuxdata.length;
+      const offsetEnd = offsetStart + recompiledAuxdata.length;
       // Instead of zeroing out this segment, get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
 
@@ -338,6 +339,8 @@ export function extractAuxdataTransformation(
       let transformationIndex: string | undefined = `${index + 1}`;
       // By default we don't store the auxdata length, because it's the same as the original one.
       let transformationLength = undefined;
+      // By default the transformation offset is the recompiled auxdata offset
+      let transformationOffset = recompiledAuxdataOffset;
 
       // But if the lengths are different we need to store the auxdata length in the transformation
       if (recompiledAuxdata.length !== onchainAuxdata.length) {
@@ -347,12 +350,17 @@ export function extractAuxdataTransformation(
       if (onchainAuxdata.length === 0) {
         transformationType = 'delete';
         transformationIndex = undefined;
+        // By default Solidity adds 'fe' byte before the cborAuxdata when appending it
+        // We need to include this byte in the offset for deletion
+        transformationOffset = recompiledAuxdataOffset - 2;
+        // We need to add this byte in the length for deletion
+        transformationLength = (recompiledAuxdata.length + 2) / 2;
       }
 
       transformations.push(
         AuxdataTransformation(
           transformationType,
-          (recompiledAuxdataOffset - 2) / 2, // Convert back length in bytes
+          transformationOffset / 2, // Convert length in bytes
           transformationIndex,
           transformationLength,
         ),
@@ -365,8 +373,14 @@ export function extractAuxdataTransformation(
         // TODO with this we could potentially support multiple auxdata sections, but needs more testing
         // && (true || index === Object.values(cborAuxdataPositions).length - 1)
       ) {
-        // If cborAuxdata is disabled Solidity adds a ff byte at the end of the bytecode
-        // so we need to remove it from the populated recompiled bytecode to match
+        const isFE =
+          populatedRecompiledBytecode.slice(offsetStart - 2, offsetStart) ===
+          'fe';
+        if (!isFE) {
+          throw new Error(
+            `Unexpected byte before auxdata deletion at offset ${offsetStart - 2}`,
+          );
+        }
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart - 2) +
           populatedRecompiledBytecode.slice(offsetEnd);
@@ -382,7 +396,7 @@ export function extractAuxdataTransformation(
       }
     });
     return {
-      populatedRecompiledBytecode,
+      populatedRecompiledBytecode: `0x${populatedRecompiledBytecode}`,
       transformations,
       transformationValues,
     };
