@@ -348,6 +348,14 @@ export function extractAuxdataTransformation(
       }
       // And if onchain auxdata is empty, we set the transformation index to undefined and the type to 'delete'
       if (onchainAuxdata.length === 0) {
+        const isFE =
+          populatedRecompiledBytecode.slice(offsetStart - 2, offsetStart) ===
+          'fe';
+        if (!isFE) {
+          throw new Error(
+            `Unexpected byte before auxdata deletion at offset ${offsetStart - 2}`,
+          );
+        }
         transformationType = 'delete';
         transformationIndex = undefined;
         // By default Solidity adds 'fe' byte before the cborAuxdata when appending it
@@ -373,14 +381,6 @@ export function extractAuxdataTransformation(
         // TODO with this we could potentially support multiple auxdata sections, but needs more testing
         // && (true || index === Object.values(cborAuxdataPositions).length - 1)
       ) {
-        const isFE =
-          populatedRecompiledBytecode.slice(offsetStart - 2, offsetStart) ===
-          'fe';
-        if (!isFE) {
-          throw new Error(
-            `Unexpected byte before auxdata deletion at offset ${offsetStart - 2}`,
-          );
-        }
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart - 2) +
           populatedRecompiledBytecode.slice(offsetEnd);
