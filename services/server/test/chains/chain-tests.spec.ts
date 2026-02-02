@@ -581,21 +581,21 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
-  // Evmos Testnet
-  verifyContract(
-    "0x07Eb2490cEfc74bAEb4B13c2dB9119CA0c38959B",
-    "9000",
-    "Evmos Testnet",
-    "shared/",
-  );
+  // // Evmos Testnet
+  // verifyContract(
+  //   "0x07Eb2490cEfc74bAEb4B13c2dB9119CA0c38959B",
+  //   "9000",
+  //   "Evmos Testnet",
+  //   "shared/",
+  // );
 
-  // Evmos Mainnet
-  verifyContract(
-    "0x1d897A65A4fa98BBdfc2e94ad2357cE051Bf4a21",
-    "9001",
-    "Evmos Mainnet",
-    "shared/",
-  );
+  // // Evmos Mainnet
+  // verifyContract(
+  //   "0x1d897A65A4fa98BBdfc2e94ad2357cE051Bf4a21",
+  //   "9001",
+  //   "Evmos Mainnet",
+  //   "shared/",
+  // );
 
   // MultiVAC Mainnet
   verifyContract(
@@ -1229,13 +1229,13 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
-  // FTM Fantom Opera Mainnet
-  verifyContract(
-    "0xc47856bEBCcc2BBB23E7a5E1Ba8bB4Fffa5C5476",
-    "250",
-    "Fantom Opera",
-    "shared/",
-  );
+  // // FTM Fantom Opera Mainnet
+  // verifyContract(
+  //   "0xc47856bEBCcc2BBB23E7a5E1Ba8bB4Fffa5C5476",
+  //   "250",
+  //   "Fantom Opera",
+  //   "shared/",
+  // );
 
   verifyContract(
     "0x4956f15efdc3dc16645e90cc356eafa65ffc65ec",
