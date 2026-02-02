@@ -1,0 +1,88 @@
+import type { MetadataOutput } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationTestCase } from "../verification-cases.spec";
+
+// Store Yul match in database
+export default {
+  onchain: {
+    creationBytecode:
+      "0x603780600a5f395ff3fe5f8080803560601c81813b9283923c818073ca11bde05977b3631167028862be2a173976ca115af13d90815f803e156034575ff35b5ffd",
+    deployedBytecode:
+      "0x5f8080803560601c81813b9283923c818073ca11bde05977b3631167028862be2a173976ca115af13d90815f803e156034575ff35b5ffd",
+  },
+  input: {
+    compilerVersion: "0.8.26+commit.8a97fa7a",
+    contractIdentifier: "cas-forwarder.yul:cas-forwarder",
+    stdJsonInput: {
+      language: "Yul",
+      sources: {
+        "cas-forwarder.yul": {
+          content:
+            '// SPDX-License-Identifier: MIT\nobject "cas-forwarder" {\n    code {\n        datacopy(0, dataoffset("runtime"), datasize("runtime"))\n        return(0, datasize("runtime"))\n    }\n    object "runtime" {\n        code {\n            let targetAddress := shr(96, calldataload(0))\n            let codeSize := extcodesize(targetAddress)\n            extcodecopy(targetAddress, 0, 0, codeSize)\n            \n            let success := call(gas(), 0xcA11bde05977b3631167028862bE2a173976CA11, 0, 0, codeSize, 0, 0)\n            \n            let returnSize := returndatasize()\n            returndatacopy(0, 0, returnSize)\n            \n            switch success\n            case 0 {\n                revert(0, returnSize)\n            }\n            default {\n                return(0, returnSize)\n            }\n        }\n    }\n}\n',
+        },
+      },
+      settings: {
+        viaIR: true,
+        optimizer: { details: { yul: true }, enabled: true },
+      },
+    },
+  },
+  output: {
+    creationBytecode:
+      "0x603780600a5f395ff3fe5f8080803560601c81813b9283923c818073ca11bde05977b3631167028862be2a173976ca115af13d90815f803e156034575ff35b5ffd",
+    deployedBytecode:
+      "0x5f8080803560601c81813b9283923c818073ca11bde05977b3631167028862be2a173976ca115af13d90815f803e156034575ff35b5ffd",
+    compilationArtifacts: {
+      abi: null,
+      devdoc: null,
+      sources: null,
+      userdoc: null,
+      storageLayout: null,
+    },
+    creationCodeArtifacts: {
+      sourceMap: "111:19:0:-:0;88:21;;85:1;76:55;85:1;140:30",
+      cborAuxdata: {},
+      linkReferences: {},
+    },
+    runtimeCodeArtifacts: {
+      sourceMap:
+        "269:1:0:-:0;256:15;;;;252:2;248:24;301:26;;;340:42;;;;428:5;;435:42;428:5;423:77;544:16;573:32;;269:1;573:32;;658:60;;;269:1;757:21;665:53;269:1;683:21",
+      cborAuxdata: {},
+      linkReferences: {},
+      immutableReferences: null,
+    },
+    metadata: {
+      compiler: {
+        version: "0.8.26+commit.8a97fa7a",
+      },
+      language: "Yul",
+      output: {} as MetadataOutput,
+      settings: {
+        viaIR: true,
+        optimizer: {
+          details: {
+            yul: true,
+          },
+          enabled: true,
+        },
+        compilationTarget: {
+          "cas-forwarder.yul": "cas-forwarder",
+        },
+      },
+      sources: {
+        "cas-forwarder.yul": {
+          keccak256:
+            "0x8214bd661a3414709488e11f27734e9df895553a0958b84205cfde3e8073cba4",
+        },
+      },
+      version: 1,
+    },
+  },
+  verification: {
+    creationMatch: "match",
+    runtimeMatch: "match",
+    creationTransformations: [],
+    creationValues: {},
+    runtimeTransformations: [],
+    runtimeValues: {},
+  },
+} as const satisfies VerificationTestCase;

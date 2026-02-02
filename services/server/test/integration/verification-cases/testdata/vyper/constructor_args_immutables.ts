@@ -1,0 +1,267 @@
+import type { Devdoc, Userdoc } from "@ethereum-sourcify/lib-sourcify";
+import type { VerificationTestCase } from "../../verification-cases.spec";
+
+// store transformations for constructor arguments and immutables
+export default {
+  onchain: {
+    creationBytecode:
+      "0x60e7515034610035573360a75260206100f560003960005160c75266eca7a2f8618d6f60e7526100a761003a6000396101076000f35b600080fd60003560e01c60026005820660011b61009d01601e39600051565b635f284cb3811861009257346100985760206100c760403960206040f35b63117803e3811861009257346100985760206100a760403960206040f35b633bc72e5e811861009257346100985760206100c760403960206040f35b635acb1ac8811861009257346100985760206100e760403960206040f35b60006000fd5b600080fd001a00920038005600748418a7810a1860a16576797065728300040000140000000000000000000000000000000000000000000000000000000000000005",
+    deployedBytecode:
+      "0x60003560e01c60026005820660011b61009d01601e39600051565b635f284cb3811861009257346100985760206100c760403960206040f35b63117803e3811861009257346100985760206100a760403960206040f35b633bc72e5e811861009257346100985760206100c760403960206040f35b635acb1ac8811861009257346100985760206100e760403960206040f35b60006000fd5b600080fd001a0092003800560074000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000eca7a2f8618d6f",
+  },
+  input: {
+    compilerVersion: "0.4.0+commit.e9db8d9f",
+    contractIdentifier: "test.vy:test",
+    stdJsonInput: {
+      language: "Vyper",
+      sources: {
+        "test.vy": {
+          content:
+            "# pragma version ^0.4.0\n\nOWNER: public(immutable(address))\nMY_IMMUTABLE: public(immutable(uint256))\nMY_IMMUTABLE_2: public(immutable(uint256))\n\n@deploy\ndef __init__(val: uint256):\n    OWNER = msg.sender\n    MY_IMMUTABLE = val\n    MY_IMMUTABLE_2 = 66612412897398127\n\n\n@external\n@view\ndef get_my_immutable() -> uint256:\n  return MY_IMMUTABLE",
+        },
+      },
+      settings: {
+        evmVersion: "london",
+        libraries: {},
+      },
+    },
+  },
+  output: {
+    creationBytecode:
+      "0x60e7515034610035573360a75260206100f560003960005160c75266eca7a2f8618d6f60e7526100a761003a6000396101076000f35b600080fd60003560e01c60026005820660011b61009d01601e39600051565b635f284cb3811861009257346100985760206100c760403960206040f35b63117803e3811861009257346100985760206100a760403960206040f35b633bc72e5e811861009257346100985760206100c760403960206040f35b635acb1ac8811861009257346100985760206100e760403960206040f35b60006000fd5b600080fd001a00920038005600748418a7810a1860a1657679706572830004000014",
+    deployedBytecode:
+      "0x60003560e01c60026005820660011b61009d01601e39600051565b635f284cb3811861009257346100985760206100c760403960206040f35b63117803e3811861009257346100985760206100a760403960206040f35b633bc72e5e811861009257346100985760206100c760403960206040f35b635acb1ac8811861009257346100985760206100e760403960206040f35b60006000fd5b600080fd001a0092003800560074",
+    compilationArtifacts: {
+      abi: [
+        {
+          stateMutability: "view",
+          type: "function",
+          name: "get_my_immutable",
+          inputs: [],
+          outputs: [{ name: "", type: "uint256" }],
+        },
+        {
+          stateMutability: "view",
+          type: "function",
+          name: "OWNER",
+          inputs: [],
+          outputs: [{ name: "", type: "address" }],
+        },
+        {
+          stateMutability: "view",
+          type: "function",
+          name: "MY_IMMUTABLE",
+          inputs: [],
+          outputs: [{ name: "", type: "uint256" }],
+        },
+        {
+          stateMutability: "view",
+          type: "function",
+          name: "MY_IMMUTABLE_2",
+          inputs: [],
+          outputs: [{ name: "", type: "uint256" }],
+        },
+        {
+          stateMutability: "nonpayable",
+          type: "constructor",
+          inputs: [{ name: "val", type: "uint256" }],
+          outputs: [],
+        },
+      ],
+      sources: {
+        "test.vy": {
+          id: 0,
+        },
+      },
+      devdoc: {},
+      userdoc: {},
+      storageLayout: null,
+    },
+    creationCodeArtifacts: {
+      sourceMap: null,
+      linkReferences: null,
+      cborAuxdata: {
+        "1": {
+          offset: 225,
+          value: "0x8418a7810a1860a1657679706572830004000014",
+        },
+      },
+    },
+    runtimeCodeArtifacts: {
+      sourceMap: {
+        breakpoints: [],
+        error_map: {
+          "39": "bad calldatasize or callvalue",
+          "42": "bad calldatasize or callvalue",
+          "69": "bad calldatasize or callvalue",
+          "72": "bad calldatasize or callvalue",
+          "99": "bad calldatasize or callvalue",
+          "102": "bad calldatasize or callvalue",
+          "129": "bad calldatasize or callvalue",
+          "132": "bad calldatasize or callvalue",
+          "151": "fallback function",
+        },
+        pc_breakpoints: [],
+        pc_jump_map: {
+          "0": "-",
+          "25": "-",
+          "26": "-",
+          "37": "-",
+          "42": "-",
+          "56": "-",
+          "67": "-",
+          "72": "-",
+          "86": "-",
+          "97": "-",
+          "102": "-",
+          "116": "-",
+          "127": "-",
+          "132": "-",
+          "146": "-",
+          "152": "-",
+        },
+        pc_pos_map_compressed:
+          "0:339:0:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;283:56:0;-1:-1:-1;283:56:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;25:33:0;-1:-1:-1;25:33:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;59:40:0;-1:-1:-1;59:40:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;100:42:0;-1:-1:-1;100:42:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1",
+        pc_pos_map: {
+          "53": [16, 0, 17, 21],
+          "55": [16, 0, 17, 21],
+          "83": [3, 0, 3, 33],
+          "85": [3, 0, 3, 33],
+          "113": [4, 0, 4, 40],
+          "115": [4, 0, 4, 40],
+          "143": [5, 0, 5, 42],
+          "145": [5, 0, 5, 42],
+          "0": [1, 0, 17, 21],
+        },
+        pc_ast_map: {
+          "53": [0, 57],
+          "55": [0, 57],
+          "83": [0, 1],
+          "85": [0, 1],
+          "113": [0, 12],
+          "115": [0, 12],
+          "143": [0, 23],
+          "145": [0, 23],
+          "0": [0, 0],
+        },
+        pc_ast_map_item_keys: ["source_id", "node_id"],
+      },
+      immutableReferences: null,
+      linkReferences: null,
+      cborAuxdata: {},
+    },
+    metadata: {
+      compiler: {
+        version: "0.4.0+commit.e9db8d9f",
+      },
+      language: "Vyper",
+      output: {
+        abi: [
+          {
+            inputs: [],
+            name: "get_my_immutable",
+            outputs: [
+              {
+                name: "",
+                type: "uint256",
+              },
+            ],
+            stateMutability: "view",
+            type: "function",
+          },
+          {
+            inputs: [],
+            name: "OWNER",
+            outputs: [
+              {
+                name: "",
+                type: "address",
+              },
+            ],
+            stateMutability: "view",
+            type: "function",
+          },
+          {
+            inputs: [],
+            name: "MY_IMMUTABLE",
+            outputs: [
+              {
+                name: "",
+                type: "uint256",
+              },
+            ],
+            stateMutability: "view",
+            type: "function",
+          },
+          {
+            inputs: [],
+            name: "MY_IMMUTABLE_2",
+            outputs: [
+              {
+                name: "",
+                type: "uint256",
+              },
+            ],
+            stateMutability: "view",
+            type: "function",
+          },
+          {
+            inputs: [
+              {
+                name: "val",
+                type: "uint256",
+              },
+            ],
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "constructor",
+          },
+        ],
+        devdoc: {} as Devdoc,
+        userdoc: {} as Userdoc,
+      },
+      settings: {
+        evmVersion: "london",
+        libraries: {},
+        compilationTarget: {
+          "test.vy": "test",
+        },
+      },
+      sources: {
+        "test.vy": {
+          keccak256:
+            "0xee847fef3619fd09eadb5c1b4399d23312d4e2f2e39e8c123c90530f15b14615",
+        },
+      },
+      version: 1,
+    },
+  },
+  verification: {
+    creationMatch: "match",
+    runtimeMatch: "match",
+    creationTransformations: [
+      {
+        type: "insert",
+        reason: "constructorArguments",
+        offset: 245,
+      },
+    ],
+    creationValues: {
+      constructorArguments:
+        "0x0000000000000000000000000000000000000000000000000000000000000005",
+    },
+    runtimeTransformations: [
+      {
+        type: "insert",
+        reason: "immutable",
+        offset: 167,
+        id: "0",
+      },
+    ],
+    runtimeValues: {
+      immutables: {
+        "0": "0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000eca7a2f8618d6f",
+      },
+    },
+  },
+} as const satisfies VerificationTestCase;

@@ -5,7 +5,7 @@ import type {
   JsonRpcProvider,
   BytesLike,
 } from "ethers";
-import { ContractFactory, Wallet, Contract, hexlify } from "ethers";
+import { ContractFactory, Wallet, Contract } from "ethers";
 import { assertVerificationSession, assertVerification } from "./assertions";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
