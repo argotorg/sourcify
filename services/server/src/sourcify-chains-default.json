@@ -753,7 +753,7 @@
     "sourcifyName": "Aurora Testnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
+      "blockscoutApi": {
         "url": "https://explorer.testnet.aurora.dev/"
       }
     }
@@ -855,21 +855,11 @@
   },
   "9000": {
     "sourcifyName": "Evmos Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://testnet.evmos.explorers.guru/"
-      }
-    }
+    "supported": false
   },
   "9001": {
     "sourcifyName": "Evmos Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://evm.evmos.org/"
-      }
-    }
+    "supported": false
   },
   "62621": {
     "sourcifyName": "MultiVAC Mainnet",
@@ -1011,12 +1001,7 @@
   },
   "7700": {
     "sourcifyName": "Canto Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://tuber.build/"
-      }
-    }
+    "supported": true
   },
   "7701": {
     "sourcifyName": "Canto Testnet",
@@ -1050,7 +1035,7 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://blockscout.chiadochain.net/"
+        "url": "https://gnosis-chiado.blockscout.com/"
       }
     }
   },
@@ -1093,8 +1078,8 @@
     "sourcifyName": "ZetaChain: Mainnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://zetachain.blockscout.com/"
+      "blockscoutApi": {
+        "url": "https://zetascan.com/"
       }
     }
   },
@@ -1386,12 +1371,7 @@
   },
   "2222": {
     "sourcifyName": "Kava EVM",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://explorer.kava.io/"
-      }
-    }
+    "supported": true
   },
   "32769": {
     "sourcifyName": "Zilliqa EVM",
@@ -1456,12 +1436,7 @@
   },
   "250": {
     "sourcifyName": "FTM Fantom Opera Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "42170": {
     "sourcifyName": "Arbitrum Nova",
@@ -1781,7 +1756,7 @@
     "sourcifyName": "Mode",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
+      "blockscoutApi": {
         "url": "https://explorer.mode.network/"
       },
       "routescanApi": {
@@ -2197,11 +2172,6 @@
   "1516": {
     "sourcifyName": "Story Odyssey",
     "supported": false,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://odyssey.storyscan.xyz/"
-      }
-    },
     "rpc": ["https://rpc.odyssey.storyrpc.io"]
   },
   "26100": {
