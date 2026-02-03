@@ -35,7 +35,7 @@
     "ethers": "6.16.0",
     "express": "5.2.1",
     "http-status-codes": "2.3.0",
-    "pg": "8.17.2",
+    "pg": "8.18.0",
     "swagger-ui-express": "5.0.1",
     "winston": "3.19.0",
     "yamljs": "0.3.0"
@@ -54,7 +54,7 @@
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
     "csv-parse": "6.1.0",
-    "dbmate": "2.29.3",
+    "dbmate": "2.29.5",
     "mocha": "10.8.2"
   }
 }
