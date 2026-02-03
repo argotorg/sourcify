@@ -1,7 +1,7 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
 import {
-  deployFromAbiAndBytecodeForCreatorTxHash,
+  deployFromBytecodeForCreatorTxHash,
   hookIntoVerificationWorkerRun,
 } from "../helpers/helpers";
 import { id as keccak256str, keccak256 } from "ethers";
@@ -43,16 +43,10 @@ describe("Verifier Alliance database", function () {
   });
 
   const verifierAllianceTest = async (testCase: any) => {
-    const constructorArguments =
-      testCase?.creation_values?.constructorArguments;
     const { contractAddress, txHash, blockNumber, txIndex } =
-      await deployFromAbiAndBytecodeForCreatorTxHash(
+      await deployFromBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        testCase.compilation_artifacts.abi,
-        constructorArguments
-          ? testCase.compiled_creation_code
-          : testCase.deployed_creation_code,
-        constructorArguments ? [constructorArguments] : undefined,
+        testCase.deployed_creation_code,
       );
 
     const compilationTarget: Record<string, string> = {};
@@ -123,16 +117,10 @@ describe("Verifier Alliance database", function () {
   };
 
   const verifierAllianceTestVyper = async (testCase: any) => {
-    const constructorArguments =
-      testCase?.creation_values?.constructorArguments;
     const { contractAddress, txHash, blockNumber, txIndex } =
-      await deployFromAbiAndBytecodeForCreatorTxHash(
+      await deployFromBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        testCase.compilation_artifacts.abi,
-        constructorArguments
-          ? testCase.compiled_creation_code
-          : testCase.deployed_creation_code,
-        constructorArguments ? [constructorArguments] : undefined,
+        testCase.deployed_creation_code,
       );
 
     const { contractPath } = splitFullyQualifiedName(
@@ -160,16 +148,10 @@ describe("Verifier Alliance database", function () {
 
   const verifierAllianceTestYul = async (testCase: any) => {
     const { resolveWorkers } = makeWorkersWait();
-    const constructorArguments =
-      testCase?.creation_values?.constructorArguments;
     const { contractAddress, txHash, blockNumber, txIndex } =
-      await deployFromAbiAndBytecodeForCreatorTxHash(
+      await deployFromBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        testCase.compilation_artifacts.abi,
-        constructorArguments
-          ? testCase.compiled_creation_code
-          : testCase.deployed_creation_code,
-        constructorArguments ? [constructorArguments] : undefined,
+        testCase.deployed_creation_code,
       );
 
     const stdJsonInput = {

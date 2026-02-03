@@ -5,7 +5,7 @@ import type {
   JsonRpcProvider,
   BytesLike,
 } from "ethers";
-import { ContractFactory, Wallet, Contract } from "ethers";
+import { ContractFactory, Wallet, Contract, hexlify } from "ethers";
 import { assertVerificationSession, assertVerification } from "./assertions";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
@@ -81,6 +81,45 @@ export async function deployFromAbiAndBytecodeForCreatorTxHash(
     txHash: creationTx.hash,
     blockNumber: creationTx.blockNumber,
     txIndex: creationTx.index,
+  };
+}
+
+/**
+ * Takes the creation bytecode as it is and runs it in a transaction.
+ * Assumes that constructor arguments are already appended.
+ */
+export async function deployFromBytecodeForCreatorTxHash(
+  signer: JsonRpcSigner,
+  bytecode: string,
+): Promise<DeploymentInfo> {
+  console.log(`Deploying contract from bytecode`);
+  const tx = await signer.sendTransaction({
+    data: bytecode,
+  });
+  const receipt = await tx.wait();
+
+  if (!receipt) {
+    throw new Error(`No receipt found for transaction ${tx.hash}`);
+  }
+  if (!receipt.contractAddress) {
+    throw new Error(
+      `No contract address found in receipt for transaction ${tx.hash}`,
+    );
+  }
+  if (receipt.blockNumber === null) {
+    throw new Error(
+      `No block number found for deployment transaction ${tx.hash}. Block number: ${receipt.blockNumber}`,
+    );
+  }
+  console.log(
+    `Deployed contract at ${receipt.contractAddress} with tx ${tx.hash}`,
+  );
+
+  return {
+    contractAddress: receipt.contractAddress,
+    txHash: tx.hash,
+    blockNumber: receipt.blockNumber,
+    txIndex: receipt.index,
   };
 }
 
