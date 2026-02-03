@@ -1,5 +1,5 @@
-import { JsonFragment } from "ethers";
-import { Devdoc, Userdoc, LinkReferences } from "./CompilationTypes";
+import type { JsonFragment } from "ethers";
+import type { Devdoc, Userdoc, LinkReferences } from "./CompilationTypes";
 
 interface File {
   keccak256?: string;

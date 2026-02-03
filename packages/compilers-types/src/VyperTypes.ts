@@ -1,6 +1,6 @@
-import { JsonFragment } from "ethers";
-import { Devdoc } from "./CompilationTypes";
-import { Userdoc } from "./CompilationTypes";
+import type { JsonFragment } from "ethers";
+import type { Devdoc } from "./CompilationTypes";
+import type { Userdoc } from "./CompilationTypes";
 
 export interface VyperSettings {
   /** EVM version to compile for */
