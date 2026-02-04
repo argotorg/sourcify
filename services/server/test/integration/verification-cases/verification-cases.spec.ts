@@ -22,7 +22,10 @@ import crypto from "crypto";
 import type { Bytes, MatchLevel } from "../../../src/server/types";
 import sinon from "sinon";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
-import { toVerificationStatus } from "../../../src/server/services/utils/util";
+import {
+  getTotalMatchLevel,
+  toVerificationStatus,
+} from "../../../src/server/services/utils/util";
 
 chai.use(chaiHttp);
 
@@ -145,14 +148,22 @@ describe("Specific Verification Cases", function () {
       blockNumber,
       txIndex,
     );
+
+    await assertApiV2Lookup(
+      testCase,
+      contractAddress,
+      txHash,
+      blockNumber,
+      txIndex,
+    );
   };
 
   const assertDatabase = async (
     testCase: VerificationTestCase,
     address: string,
     txHash: string,
-    blockNumber: number | null,
-    txIndex: number | undefined,
+    blockNumber: number,
+    txIndex: number,
   ) => {
     if (!serverFixture.sourcifyDatabase) {
       chai.assert.fail("No database on StorageService");
@@ -230,10 +241,11 @@ describe("Specific Verification Cases", function () {
     const { contractName } = splitFullyQualifiedName(
       testCase.input.contractIdentifier,
     );
-    const compiler = getCompilerNameFromLanguage(
-      testCase.input.stdJsonInput.language,
-    );
-    chai.expect(row.compiler).to.equal(compiler);
+    chai
+      .expect(row.compiler)
+      .to.equal(
+        getCompilerNameFromLanguage(testCase.input.stdJsonInput.language),
+      );
     chai.expect(row.version).to.equal(testCase.input.compilerVersion);
     chai
       .expect(row.language)
@@ -360,6 +372,164 @@ describe("Specific Verification Cases", function () {
       .expect(row.sourcify_runtime_match)
       .to.equal(toVerificationStatus(testCase.verification.runtimeMatch));
     chai.expect(row.metadata).to.deep.equal(testCase.output.metadata);
+  };
+
+  const assertApiV2Lookup = async (
+    testCase: VerificationTestCase,
+    address: string,
+    txHash: string,
+    blockNumber: number,
+    txIndex: number,
+  ) => {
+    const res = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/contract/${chainFixture.chainId}/${address}?fields=all`);
+
+    chai.expect(res.status).to.equal(200);
+
+    // Default fields
+    chai
+      .expect(res.body.match)
+      .to.equal(
+        getTotalMatchLevel(
+          toVerificationStatus(testCase.verification.creationMatch),
+          toVerificationStatus(testCase.verification.runtimeMatch),
+        ),
+      );
+    chai
+      .expect(res.body.creationMatch)
+      .to.equal(testCase.verification.creationMatch);
+    chai
+      .expect(res.body.runtimeMatch)
+      .to.equal(testCase.verification.runtimeMatch);
+    chai.expect(res.body.chainId).to.equal(chainFixture.chainId);
+    chai.expect(res.body.address).to.equal(address);
+
+    // creationBytecode
+    chai.expect(res.body).to.have.property("creationBytecode");
+    chai
+      .expect(res.body.creationBytecode.onchainBytecode)
+      .to.equal(testCase.onchain.creationBytecode);
+    chai
+      .expect(res.body.creationBytecode.recompiledBytecode)
+      .to.equal(testCase.output.creationBytecode);
+    chai
+      .expect(res.body.creationBytecode.transformations)
+      .to.deep.equal(testCase.verification.creationTransformations);
+    chai
+      .expect(res.body.creationBytecode.transformationValues)
+      .to.deep.equal(testCase.verification.creationValues);
+    chai
+      .expect(res.body.creationBytecode.sourceMap)
+      .to.deep.equal(testCase.output.creationCodeArtifacts.sourceMap);
+    chai
+      .expect(res.body.creationBytecode.linkReferences)
+      .to.deep.equal(testCase.output.creationCodeArtifacts.linkReferences);
+    chai
+      .expect(res.body.creationBytecode.cborAuxdata)
+      .to.deep.equal(testCase.output.creationCodeArtifacts.cborAuxdata);
+
+    // runtimeBytecode
+    chai.expect(res.body).to.have.property("runtimeBytecode");
+    chai
+      .expect(res.body.runtimeBytecode.onchainBytecode)
+      .to.equal(testCase.onchain.deployedBytecode);
+    chai
+      .expect(res.body.runtimeBytecode.recompiledBytecode)
+      .to.equal(testCase.output.deployedBytecode);
+    chai
+      .expect(res.body.runtimeBytecode.transformations)
+      .to.deep.equal(testCase.verification.runtimeTransformations);
+    chai
+      .expect(res.body.runtimeBytecode.transformationValues)
+      .to.deep.equal(testCase.verification.runtimeValues);
+    chai
+      .expect(res.body.runtimeBytecode.sourceMap)
+      .to.deep.equal(testCase.output.runtimeCodeArtifacts.sourceMap);
+    chai
+      .expect(res.body.runtimeBytecode.linkReferences)
+      .to.deep.equal(testCase.output.runtimeCodeArtifacts.linkReferences);
+    chai
+      .expect(res.body.runtimeBytecode.cborAuxdata)
+      .to.deep.equal(testCase.output.runtimeCodeArtifacts.cborAuxdata);
+    chai
+      .expect(res.body.runtimeBytecode.immutableReferences)
+      .to.deep.equal(testCase.output.runtimeCodeArtifacts.immutableReferences);
+
+    // deployment
+    chai.expect(res.body).to.have.property("deployment");
+    chai.expect(res.body.deployment.transactionHash).to.equal(txHash);
+    chai
+      .expect(res.body.deployment.blockNumber)
+      .to.equal(blockNumber.toString());
+    chai
+      .expect(res.body.deployment.transactionIndex)
+      .to.equal(txIndex.toString());
+    chai
+      .expect(res.body.deployment.deployer)
+      .to.equal(chainFixture.localSigner.address);
+
+    // sources
+    chai
+      .expect(res.body.sources)
+      .to.deep.equal(testCase.input.stdJsonInput.sources);
+
+    // compilation
+    chai.expect(res.body).to.have.property("compilation");
+    chai
+      .expect(res.body.compilation.language)
+      .to.equal(testCase.input.stdJsonInput.language);
+    chai
+      .expect(res.body.compilation.compiler)
+      .to.equal(
+        getCompilerNameFromLanguage(testCase.input.stdJsonInput.language),
+      );
+    chai
+      .expect(res.body.compilation.compilerVersion)
+      .to.equal(testCase.input.compilerVersion);
+    chai
+      .expect(res.body.compilation.compilerSettings)
+      .to.deep.equal(testCase.input.stdJsonInput.settings);
+    const { contractName } = splitFullyQualifiedName(
+      testCase.input.contractIdentifier,
+    );
+    chai.expect(res.body.compilation.name).to.equal(contractName);
+    chai
+      .expect(res.body.compilation.fullyQualifiedName)
+      .to.equal(testCase.input.contractIdentifier);
+
+    // abi
+    chai
+      .expect(res.body.abi)
+      .to.deep.equal(testCase.output.compilationArtifacts.abi);
+
+    // metadata
+    chai.expect(res.body.metadata).to.deep.equal(testCase.output.metadata);
+
+    // storageLayout
+    chai
+      .expect(res.body.storageLayout)
+      .to.deep.equal(testCase.output.compilationArtifacts.storageLayout);
+
+    // userdoc
+    chai
+      .expect(res.body.userdoc)
+      .to.deep.equal(testCase.output.compilationArtifacts.userdoc);
+
+    // devdoc
+    chai
+      .expect(res.body.devdoc)
+      .to.deep.equal(testCase.output.compilationArtifacts.devdoc);
+
+    // sourceIds
+    chai
+      .expect(res.body.sourceIds)
+      .to.deep.equal(testCase.output.compilationArtifacts.sources);
+
+    // stdJsonInput
+    chai
+      .expect(res.body.stdJsonInput)
+      .to.deep.equal(testCase.input.stdJsonInput);
   };
 
   it("Libraries have been linked manually instead of using compiler settings. Placeholders are replaced with zero addresses", async () => {
