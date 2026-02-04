@@ -18,8 +18,13 @@ import {
   getCompilerNameFromLanguage,
 } from "../../../src/server/services/utils/database-util";
 import type { Tables } from "../../../src/server/services/utils/database-util";
+import { extractSignaturesFromAbi } from "../../../src/server/services/utils/signature-util";
 import crypto from "crypto";
-import type { Bytes, MatchLevel } from "../../../src/server/types";
+import type {
+  Bytes,
+  MatchLevel,
+  SignatureRepresentations,
+} from "../../../src/server/types";
 import sinon from "sinon";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -233,6 +238,20 @@ describe("Specific Verification Cases", function () {
         where cd.address = $1`,
       [addressBuffer],
     );
+    const resSignatures = await serverFixture.sourcifyDatabase.query(
+      `SELECT
+          ccs.signature_type,
+          s.signature,
+          s.signature_hash_32
+        FROM verified_contracts vc
+        JOIN contract_deployments cd ON cd.id = vc.deployment_id
+        JOIN compiled_contracts cc ON cc.id = vc.compilation_id
+        JOIN compiled_contracts_signatures ccs on ccs.compilation_id = cc.id
+        LEFT JOIN signatures s ON s.signature_hash_32 = ccs.signature_hash_32
+        where cd.address = $1
+        ORDER BY ccs.signature_type, s.signature`,
+      [addressBuffer],
+    );
     chai.expect(res.rowCount).to.equal(1);
 
     const row = res.rows[0];
@@ -301,6 +320,27 @@ describe("Specific Verification Cases", function () {
         }, {}),
       )
       .to.deep.equal(expectedSources);
+
+    // signatures and compiled_contracts_signatures columns
+    if (testCase.output.compilationArtifacts.abi) {
+      const expectedSignatures = extractSignaturesFromAbi(
+        testCase.output.compilationArtifacts.abi,
+      );
+      chai.expect(resSignatures.rowCount).to.equal(expectedSignatures.length);
+      const actualSignatures = resSignatures.rows.map((row) => ({
+        signature: row.signature,
+        signatureHash32: `0x${toHexString(row.signature_hash_32)}`,
+        signatureType: row.signature_type,
+      }));
+      const sortSignatures = (a: any, b: any) =>
+        a.signatureType.localeCompare(b.signatureType) ||
+        a.signature.localeCompare(b.signature);
+      chai
+        .expect(actualSignatures.sort(sortSignatures))
+        .to.deep.equal(expectedSignatures.sort(sortSignatures));
+    } else {
+      chai.expect(resSignatures.rowCount).to.equal(0);
+    }
 
     // contract_deployments columns
     chai.expect(row.chain_id).to.equal(chainFixture.chainId);
@@ -530,6 +570,36 @@ describe("Specific Verification Cases", function () {
     chai
       .expect(res.body.stdJsonInput)
       .to.deep.equal(testCase.input.stdJsonInput);
+
+    // signatures
+    chai.expect(res.body).to.have.property("signatures");
+    const extractedSignatures = extractSignaturesFromAbi(
+      testCase.output.compilationArtifacts.abi || [],
+    );
+    const expectedSignatures = extractedSignatures.reduce(
+      (acc, sig) => {
+        acc[sig.signatureType].push({
+          signature: sig.signature,
+          signatureHash32: sig.signatureHash32,
+          signatureHash4: sig.signatureHash32.slice(0, 10),
+        });
+        return acc;
+      },
+      {
+        function: [] as SignatureRepresentations[],
+        event: [] as SignatureRepresentations[],
+        error: [] as SignatureRepresentations[],
+      },
+    );
+    const sortBySignature = (a: any, b: any) =>
+      a.signature.localeCompare(b.signature);
+    expectedSignatures.function.sort(sortBySignature);
+    expectedSignatures.event.sort(sortBySignature);
+    expectedSignatures.error.sort(sortBySignature);
+    res.body.signatures.function.sort(sortBySignature);
+    res.body.signatures.event.sort(sortBySignature);
+    res.body.signatures.error.sort(sortBySignature);
+    chai.expect(res.body.signatures).to.deep.equal(expectedSignatures);
   };
 
   it("Libraries have been linked manually instead of using compiler settings. Placeholders are replaced with zero addresses", async () => {
