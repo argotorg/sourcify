@@ -604,112 +604,112 @@ describe("Specific Verification Cases", function () {
 
   it("Libraries have been linked manually instead of using compiler settings. Placeholders are replaced with zero addresses", async () => {
     const verifierAllianceTestLibrariesManuallyLinked = (
-      await import("./testdata/libraries_manually_linked")
-    ).default;
+      await import("./testdata/libraries_manually_linked.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestLibrariesManuallyLinked);
   });
 
   it("Store full match in database", async () => {
     const verifierAllianceTestFullMatch = (
-      await import("./testdata/full_match")
-    ).default;
+      await import("./testdata/full_match.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestFullMatch);
   });
 
   it("Store match with immutables in sourcify database", async () => {
     const verifierAllianceTestImmutables = (
-      await import("./testdata/immutables")
-    ).default;
+      await import("./testdata/immutables.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestImmutables);
   });
 
   it("Libraries have been linked using compiler settings. The placeholders are already replaced inside the compiled bytecode, and no link references provided", async () => {
     const verifierAllianceTestLibrariesLinkedByCompiler = (
-      await import("./testdata/libraries_linked_by_compiler")
-    ).default;
+      await import("./testdata/libraries_linked_by_compiler.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestLibrariesLinkedByCompiler);
   });
 
   it("Store match without auxdata in database", async () => {
     const verifierAllianceTestMetadataHashAbsent = (
-      await import("./testdata/metadata_hash_absent")
-    ).default;
+      await import("./testdata/metadata_hash_absent.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestMetadataHashAbsent);
   });
 
   it("Store partial match in database", async () => {
     const verifierAllianceTestPartialMatch = (
-      await import("./testdata/partial_match")
-    ).default;
+      await import("./testdata/partial_match.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestPartialMatch);
   });
 
   it("Store match deployed with constructor arguments in database", async () => {
     const verifierAllianceTestConstructorArguments = (
-      await import("./testdata/constructor_arguments")
-    ).default;
+      await import("./testdata/constructor_arguments.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestConstructorArguments);
   });
 
   it("Store partial match in database for a contract with multiple auxdatas", async () => {
     const verifierAllianceTestDoubleAuxdata = (
-      await import("./testdata/partial_match_double_auxdata")
-    ).default;
+      await import("./testdata/partial_match_double_auxdata.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestDoubleAuxdata);
   });
 
   it("Store full match in the database for a contract with multiple auxdatas", async () => {
     const verifierAllianceTestDoubleAuxdata = (
-      await import("./testdata/full_match_double_auxdata")
-    ).default;
+      await import("./testdata/full_match_double_auxdata.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestDoubleAuxdata);
   });
 
   it("Store Yul match in the database", async () => {
-    const verifierAllianceTestYulMatch = (await import("./testdata/yul"))
-      .default;
+    const verifierAllianceTestYulMatch = (await import("./testdata/yul.json"))
+      .default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestYulMatch);
   });
 
   it("Store a partial match in the database when a parameter name was changed", async () => {
     const verifierAllianceTestPartialMatch2 = (
-      await import("./testdata/partial_match_2")
-    ).default;
+      await import("./testdata/partial_match_2.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(verifierAllianceTestPartialMatch2);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.3.4", async () => {
     const vyperTestAuxdata0_3_4 = (
-      await import("./testdata/vyper/auxdata-0.3.4")
-    ).default;
+      await import("./testdata/vyper/auxdata-0.3.4.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_3_4);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
     const vyperTestAuxdata0_3_8 = (
-      await import("./testdata/vyper/auxdata-0.3.8")
-    ).default;
+      await import("./testdata/vyper/auxdata-0.3.8.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_3_8);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {
     const vyperTestAuxdata0_4_0 = (
-      await import("./testdata/vyper/auxdata-0.4.0")
-    ).default;
+      await import("./testdata/vyper/auxdata-0.4.0.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_4_0);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.4.1", async () => {
     const vyperTestAuxdata0_4_1 = (
-      await import("./testdata/vyper/auxdata-0.4.1")
-    ).default;
+      await import("./testdata/vyper/auxdata-0.4.1.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_4_1);
   });
 
   it("should store transformations for a Vyper contract with constructor arguments and immutables", async () => {
     const vyperTestConstructorArgumentsAndImmutables = (
-      await import("./testdata/vyper/constructor_args_immutables")
-    ).default;
+      await import("./testdata/vyper/constructor_args_immutables.json")
+    ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
   });
 });
