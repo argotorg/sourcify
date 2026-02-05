@@ -67,8 +67,8 @@ class Solc implements ISolidityCompiler {
     solcJsonInput: SolidityJsonInput,
     forceEmscripten: boolean = false,
   ): Promise<SolidityOutput> {
-    const compilersPath = path.join('/tmp', 'solc-repo');
-    const solJsonRepo = path.join('/tmp', 'soljson-repo');
+    const compilersPath = path.join('/tmp', 'lib-sourcify-solc-repo');
+    const solJsonRepo = path.join('/tmp', 'lib-sourcify-soljson-repo');
     return await useSolidityCompiler(
       compilersPath,
       solJsonRepo,
@@ -87,7 +87,7 @@ class VyperCompiler implements IVyperCompiler {
     solcJsonInput: VyperJsonInput,
   ): Promise<VyperOutput> {
     return await useVyperCompiler(
-      path.join('/tmp', 'vyper-repo'),
+      path.join('/tmp', 'lib-sourcify-vyper-repo'),
       version,
       solcJsonInput,
     );
@@ -233,8 +233,8 @@ class TestSolidityCompiler implements ISolidityCompiler {
     solcJsonInput: any,
     forceEmscripten = false,
   ): Promise<SolidityOutput> {
-    const compilersPath = path.join('/tmp', 'solc-repo');
-    const solJsonRepo = path.join('/tmp', 'soljson-repo');
+    const compilersPath = path.join('/tmp', 'lib-sourcify-solc-repo');
+    const solJsonRepo = path.join('/tmp', 'lib-sourcify-soljson-repo');
     return await useSolidityCompiler(
       compilersPath,
       solJsonRepo,
