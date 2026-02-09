@@ -350,6 +350,10 @@ export function extractAuxdataTransformation(
     const transformations: Transformation[] = [];
     const transformationValues: TransformationValues = {};
     // Instead of normalizing the onchain bytecode, we use its auxdata values to replace the corresponding sections in the recompiled bytecode.
+    // Known limitation with multiple auxdata but different lengths:
+    // See https://github.com/verifier-alliance/database-specs/issues/39 (section "Multiple auxdata limitation").
+    // If there are multiple auxdatas and their lengths differ between recompiled and onchain bytecode,
+    // auxdata offsets shift and the transformation may be incorrect (notably in creation bytecode where runtime offset bytes can also change).
     Object.values(cborAuxdataPositions).forEach((auxdataValues, index) => {
       const recompiledAuxdata = auxdataValues.value.slice(2); // Remove 0x
       const recompiledAuxdataOffset = auxdataValues.offset * 2; // Offset is stored in bytes
