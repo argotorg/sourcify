@@ -113,7 +113,12 @@
     "creationCodeArtifacts": {
       "linkReferences": {},
       "sourceMap": "141:356:0:-:0;;;;;;;;;;;;;;;;;;;",
-      "cborAuxdata": {}
+      "cborAuxdata": {
+        "1": {
+          "offset": 314,
+          "value": "0xa2646970667358221220d010965a7222c3ef6f6d6fb1897b37df40ea564ad3313c734feb325e939256a564736f6c634300081c0033"
+        }
+      }
     },
     "runtimeCodeArtifacts": {
       "immutableReferences": {},
@@ -122,7 +127,7 @@
       "cborAuxdata": {
         "1": {
           "offset": 283,
-          "value": "0xa2646970667358221220a3e6e8f064de1f9ce708206d52c7a1f6ba8e0f14812bdce51a2d856d2a5a003564736f6c634300081c0033"
+          "value": "0xa2646970667358221220d010965a7222c3ef6f6d6fb1897b37df40ea564ad3313c734feb325e939256a564736f6c634300081c0033"
         }
       }
     },
@@ -227,6 +232,8 @@
         "length": 54
       }
     ],
-    "runtimeValues": {}
+    "runtimeValues": {
+      "cborAuxdata": {}
+    }
   }
 }
