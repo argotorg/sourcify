@@ -154,6 +154,8 @@ export interface StorageLayout {
       encoding: string;
       label: string;
       numberOfBytes: string;
+      key?: string;
+      value?: string;
     };
   };
 }

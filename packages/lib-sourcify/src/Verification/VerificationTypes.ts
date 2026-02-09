@@ -16,6 +16,7 @@ import type {
   VyperSettings,
   SolidityOutputSource,
   VyperOutputSource,
+  VyperSourceMap,
 } from '@ethereum-sourcify/compilers-types';
 import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
 import { SourcifyLibError } from '../SourcifyLibError';
@@ -114,11 +115,11 @@ export interface VerificationExport {
       storageLayout?: StorageLayout;
       evm: {
         bytecode: {
-          sourceMap?: string;
+          sourceMap?: string | VyperSourceMap;
           linkReferences?: LinkReferences;
         };
         deployedBytecode: {
-          sourceMap?: string;
+          sourceMap?: string | VyperSourceMap;
           linkReferences?: LinkReferences;
         };
       };
