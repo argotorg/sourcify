@@ -2452,5 +2452,14 @@
         "url": "https://testnet-scan.goalpha.org"
       }
     }
+  },
+  "4114": {
+    "sourcifyName": "Citrea Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.mainnet.citrea.xyz"
+      }
+    }
   }
 }

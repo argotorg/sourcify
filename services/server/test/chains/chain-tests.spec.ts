@@ -2063,6 +2063,14 @@ describe("Test Supported Chains", function () {
     "shared/",
   );
 
+  // Citrea Mainnet
+  verifyContract(
+    "0xbeD73cF512fB7C5B7BcFF46144E985067b6b284C",
+    "4114",
+    "Citrea Mainnet",
+    "shared/",
+  );
+
   it("should have included Etherscan contracts for all testedChains having etherscanAPI", function (done) {
     const missingEtherscanTests: ChainApiResponse[] = [];
     supportedChains
