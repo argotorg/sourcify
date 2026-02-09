@@ -368,11 +368,10 @@ export function extractAuxdataTransformation(
       // By default the transformation offset is the recompiled auxdata offset
       let transformationOffset = recompiledAuxdataOffset;
 
-      // But if the lengths are different we need to store the auxdata length in the transformation
-      if (recompiledAuxdata.length !== onchainAuxdata.length) {
-        transformationLength = recompiledAuxdata.length / 2;
+      if (transformationValues.cborAuxdata === undefined) {
+        transformationValues.cborAuxdata = {};
       }
-      // And if onchain auxdata is empty, we set the transformation index to undefined and the type to 'delete'
+
       if (onchainAuxdata.length === 0) {
         transformationType = 'delete';
         transformationIndex = undefined;
@@ -385,10 +384,33 @@ export function extractAuxdataTransformation(
             `Unexpected byte before auxdata deletion at offset ${offsetStart - 2}`,
           );
         }
-        // We need to include this byte in the offset for deletion
+        // We need to include the `fe` byte in the offset for deletion
         transformationOffset = recompiledAuxdataOffset - 2;
-        // We need to add this byte in the length for deletion
+        // We need to add the `fe` byte in the length for deletion
         transformationLength = (recompiledAuxdata.length + 2) / 2;
+
+        // We remove the `fe` + auxdata from the recompiled bytecode
+        populatedRecompiledBytecode =
+          populatedRecompiledBytecode.slice(0, offsetStart - 2) +
+          populatedRecompiledBytecode.slice(offsetEnd);
+      } else {
+        transformationType = 'replace';
+        transformationIndex = `${index + 1}`;
+
+        // If the lengths are different we need to store the auxdata length in the transformation
+        if (recompiledAuxdata.length !== onchainAuxdata.length) {
+          transformationLength = recompiledAuxdata.length / 2;
+        }
+
+        // We replace the auxdata in the recompiled bytecode with the onchain auxdata
+        populatedRecompiledBytecode =
+          populatedRecompiledBytecode.slice(0, offsetStart) +
+          onchainAuxdata +
+          populatedRecompiledBytecode.slice(offsetEnd);
+
+        // We store the onchain auxdata value in the transformation values
+        transformationValues.cborAuxdata[transformationIndex] =
+          `0x${onchainAuxdata}`;
       }
 
       transformations.push(
@@ -399,27 +421,6 @@ export function extractAuxdataTransformation(
           transformationLength,
         ),
       );
-      if (!transformationValues.cborAuxdata) {
-        transformationValues.cborAuxdata = {};
-      }
-      if (
-        onchainAuxdata.length === 0
-        // TODO with this we could potentially support multiple auxdata sections, but needs more testing
-        // && (true || index === Object.values(cborAuxdataPositions).length - 1)
-      ) {
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode.slice(0, offsetStart - 2) +
-          populatedRecompiledBytecode.slice(offsetEnd);
-      } else {
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode.slice(0, offsetStart) +
-          onchainAuxdata +
-          populatedRecompiledBytecode.slice(offsetEnd);
-        if (transformationIndex) {
-          transformationValues.cborAuxdata[transformationIndex] =
-            `0x${onchainAuxdata}`;
-        }
-      }
     });
     return {
       populatedRecompiledBytecode: `0x${populatedRecompiledBytecode}`,
