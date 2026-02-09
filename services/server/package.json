@@ -23,6 +23,7 @@
     "test-local": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && SOURCIFY_POSTGRES_HOST=localhost npm run test; status=$?; npm run postgres-test:stop; exit $status",
     "test-local:chains": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && SOURCIFY_POSTGRES_HOST=localhost npm run test:chains; status=$?; npm run postgres-test:stop; exit $status",
     "test-local:etherscan-instances": "export DOCKER_HOST_POSTGRES_TEST_PORT=${DOCKER_HOST_POSTGRES_TEST_PORT:-5431} && npm run postgres-test:start && sleep 2 && SOURCIFY_POSTGRES_HOST=localhost npm run test:etherscan-instances; status=$?; npm run postgres-test:stop; exit $status",
+    "generate-test-case": "ts-node test/integration/verification-cases/generate-test-case.ts",
     "fix": "run-s fix:*",
     "fix:prettier": "prettier \"./**/*.{ts,js,yaml,yml}\" --write",
     "fix:lint": "eslint . --ext .ts --fix",
