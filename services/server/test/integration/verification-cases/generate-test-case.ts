@@ -24,9 +24,19 @@ import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
 import type {
   SolidityOutput,
   SolidityOutputContract,
+  SolidityJsonInput,
 } from "@ethereum-sourcify/compilers-types";
-import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  Metadata,
+  ISolidityCompiler,
+} from "@ethereum-sourcify/lib-sourcify";
+import {
+  Verification,
+  SolidityCompilation,
+} from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
+import { toMatchLevel } from "../../../src/server/services/utils/util";
+import SourcifyChainMock from "../../../src/server/services/utils/SourcifyChainMock";
 
 const solcRepoPath = "/tmp/solc-bin/linux-amd64";
 const solJsonRepoPath = "/tmp/solc-bin/soljson";
@@ -150,6 +160,21 @@ async function getLocalSigner(port: number): Promise<JsonRpcSigner> {
   return await new JsonRpcProvider(`http://localhost:${port}`, ethersNetwork, {
     staticNetwork: ethersNetwork,
   }).getSigner();
+}
+
+// Compiler wrapper to use with lib-sourcify classes
+class SolcCompilerWrapper implements ISolidityCompiler {
+  async compile(
+    version: string,
+    solcJsonInput: SolidityJsonInput,
+  ): Promise<SolidityOutput> {
+    return await useSolidityCompiler(
+      solcRepoPath,
+      solJsonRepoPath,
+      version,
+      solcJsonInput,
+    );
+  }
 }
 
 // Extract contract output from compilation
@@ -387,6 +412,104 @@ async function main() {
       verificationOutput,
     );
 
+    // Step 5.5: Ask if user wants to auto-generate verification results
+    console.log();
+    console.log("STEP 5.5: Auto-generate Verification Results (Optional)");
+    console.log("-".repeat(80));
+
+    const generateVerification = await question(
+      "Do you want to generate verification results too? If you do so, please make sure to\nMANUALLY CHECK the data inside the cborAuxdata and verification fields very thoroughly. (Y/n): ",
+    );
+
+    // Default to yes if empty input or yes/y
+    const shouldGenerateVerification =
+      generateVerification.trim() === "" ||
+      generateVerification.toLowerCase() === "y" ||
+      generateVerification.toLowerCase() === "yes";
+
+    let verificationGenerated = false;
+    let verificationData: VerificationTestCase["verification"] | null = null;
+    let cborAuxdataData: {
+      creation: any;
+      runtime: any;
+    } | null = null;
+
+    if (shouldGenerateVerification) {
+      try {
+        console.log("Generating verification results...");
+
+        // Create SolidityCompilation instance
+        const solcWrapper = new SolcCompilerWrapper();
+        const [sourcePath, contractName] = verificationContractIdentifier
+          .trim()
+          .split(":");
+
+        const compilation = new SolidityCompilation(
+          solcWrapper,
+          verificationCompilerVersion.trim(),
+          verificationStdJsonInput,
+          { path: sourcePath, name: contractName },
+        );
+
+        // Create SourcifyChainMock with the deployment data
+        const mockChain = new SourcifyChainMock(
+          {
+            onchain_runtime_code: deployedBytecode,
+            onchain_creation_code: creationBytecode,
+            block_number: deploymentInfo.blockNumber,
+            transaction_index: deploymentInfo.txIndex,
+            deployer: undefined,
+            transaction_hash: deploymentInfo.txHash,
+          },
+          31337, // Hardhat chainId
+          deploymentInfo.contractAddress,
+        );
+
+        // Create and run verification
+        const verification = new Verification(
+          compilation,
+          mockChain,
+          deploymentInfo.contractAddress,
+          deploymentInfo.txHash,
+        );
+
+        await verification.verify();
+        const verificationExport = verification.export();
+
+        // Extract verification data using toMatchLevel helper
+        verificationData = {
+          creationMatch: toMatchLevel(verificationExport.status.creationMatch),
+          runtimeMatch: toMatchLevel(verificationExport.status.runtimeMatch),
+          creationTransformations:
+            verificationExport.transformations.creation.list,
+          creationValues: verificationExport.transformations.creation.values,
+          runtimeTransformations:
+            verificationExport.transformations.runtime.list,
+          runtimeValues: verificationExport.transformations.runtime.values,
+        };
+
+        // Extract cborAuxdata
+        cborAuxdataData = {
+          creation:
+            verificationExport.compilation.creationBytecodeCborAuxdata || {},
+          runtime:
+            verificationExport.compilation.runtimeBytecodeCborAuxdata || {},
+        };
+
+        verificationGenerated = true;
+        console.log("Verification results generated successfully!");
+        console.log(`  - Creation Match: ${verificationData.creationMatch}`);
+        console.log(`  - Runtime Match: ${verificationData.runtimeMatch}`);
+      } catch (error: any) {
+        console.error(
+          "Failed to generate verification results:",
+          error.message,
+        );
+        console.log("Please create verification data fields manually.");
+        verificationGenerated = false;
+      }
+    }
+
     // Step 6: Get test case description and filename
     console.log();
     console.log("STEP 6: Test Case Description & Output");
@@ -408,6 +531,15 @@ async function main() {
       delete cleanedStdJsonInput.settings.outputSelection;
     }
 
+    // Update cborAuxdata if verification was generated
+    const finalTestCaseOutput = { ...testCaseOutput };
+    if (verificationGenerated && cborAuxdataData) {
+      finalTestCaseOutput.creationCodeArtifacts.cborAuxdata =
+        cborAuxdataData.creation;
+      finalTestCaseOutput.runtimeCodeArtifacts.cborAuxdata =
+        cborAuxdataData.runtime;
+    }
+
     const testCase: VerificationTestCase = {
       onchain: {
         creationBytecode,
@@ -418,15 +550,18 @@ async function main() {
         compilerVersion: verificationCompilerVersion.trim(),
         contractIdentifier: verificationContractIdentifier.trim(),
       },
-      output: testCaseOutput,
-      verification: {
-        creationMatch: "exact_match", // User must fill
-        runtimeMatch: "exact_match", // User must fill
-        creationTransformations: [],
-        creationValues: {},
-        runtimeTransformations: [],
-        runtimeValues: {},
-      },
+      output: finalTestCaseOutput,
+      verification:
+        verificationGenerated && verificationData
+          ? verificationData
+          : {
+              creationMatch: "exact_match" as any, // User must fill
+              runtimeMatch: "exact_match" as any, // User must fill
+              creationTransformations: [],
+              creationValues: {},
+              runtimeTransformations: [],
+              runtimeValues: {},
+            },
     };
 
     // Create output JSON with _comment
@@ -451,21 +586,52 @@ async function main() {
     console.log("Test case file created:");
     console.log(outputPath);
     console.log();
-    console.log("NEXT STEPS - Manual completion required:");
-    console.log();
-    console.log("1. Fill in the verification section:");
-    console.log('   - verification.creationMatch ("exact_match", or "match")');
-    console.log("   - verification.runtimeMatch");
-    console.log("   - verification.creationTransformations");
-    console.log("   - verification.creationValues");
-    console.log("   - verification.runtimeTransformations");
-    console.log("   - verification.runtimeValues");
-    console.log();
-    console.log("2. Fill in the empty cborAuxdata fields:");
-    console.log("   - output.creationCodeArtifacts.cborAuxdata");
-    console.log("   - output.runtimeCodeArtifacts.cborAuxdata");
-    console.log();
-    console.log("3. Add test case to verification-cases.spec.ts");
+
+    if (verificationGenerated) {
+      console.log("NEXT STEPS - Manual verification required:");
+      console.log();
+      console.log(
+        "IMPORTANT: The verification and cborAuxdata fields were auto-generated. This means these",
+      );
+      console.log(
+        "fields are generated by the code you want to actually test. You MUST manually verify",
+      );
+      console.log(
+        "the following fields very thoroughly before using this test case:",
+      );
+      console.log();
+      console.log("1. Verify the verification section is correct:");
+      console.log("   - verification.creationMatch");
+      console.log("   - verification.runtimeMatch");
+      console.log("   - verification.creationTransformations");
+      console.log("   - verification.creationValues");
+      console.log("   - verification.runtimeTransformations");
+      console.log("   - verification.runtimeValues");
+      console.log();
+      console.log("2. Verify the cborAuxdata fields are correct:");
+      console.log("   - output.creationCodeArtifacts.cborAuxdata");
+      console.log("   - output.runtimeCodeArtifacts.cborAuxdata");
+      console.log();
+      console.log("3. Add test case to verification-cases.spec.ts");
+    } else {
+      console.log("NEXT STEPS - Manual completion required:");
+      console.log();
+      console.log("1. Fill in the verification section:");
+      console.log(
+        '   - verification.creationMatch ("exact_match", or "match")',
+      );
+      console.log("   - verification.runtimeMatch");
+      console.log("   - verification.creationTransformations");
+      console.log("   - verification.creationValues");
+      console.log("   - verification.runtimeTransformations");
+      console.log("   - verification.runtimeValues");
+      console.log();
+      console.log("2. Fill in the empty cborAuxdata fields:");
+      console.log("   - output.creationCodeArtifacts.cborAuxdata");
+      console.log("   - output.runtimeCodeArtifacts.cborAuxdata");
+      console.log();
+      console.log("3. Add test case to verification-cases.spec.ts");
+    }
     console.log();
     console.log("=".repeat(80));
   } catch (error) {
