@@ -45,14 +45,40 @@ export const AuxdataTransformation = (
   offset: number,
   id?: string,
   length?: number,
-): Transformation => ({
-  type: transformationType,
-  reason: 'cborAuxdata',
-  offset,
-  // Add id or length only if defined
-  ...(id != undefined ? { id } : {}),
-  ...(length != undefined ? { length } : {}),
-});
+): Transformation => {
+  if (transformationType === 'replace') {
+    if (id === undefined || id.trim().length === 0) {
+      throw new Error(
+        'Invalid cborAuxdata replace transformation: id must be a non-empty string.',
+      );
+    }
+    if (length !== undefined && length <= 0) {
+      throw new Error(
+        'Invalid cborAuxdata replace transformation: if length is specified, it must be a positive integer.',
+      );
+    }
+  } else {
+    if (id !== undefined) {
+      throw new Error(
+        'Invalid cborAuxdata delete transformation: id must be undefined.',
+      );
+    }
+    if (length === undefined) {
+      throw new Error(
+        'Invalid cborAuxdata delete transformation: length is required.',
+      );
+    }
+  }
+
+  return {
+    type: transformationType,
+    reason: 'cborAuxdata',
+    offset,
+    // Add id or length only if defined
+    ...(id !== undefined ? { id } : {}),
+    ...(length !== undefined ? { length } : {}),
+  };
+};
 
 export const LibraryTransformation = (
   offset: number,
