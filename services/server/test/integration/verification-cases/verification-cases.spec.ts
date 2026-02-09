@@ -247,4 +247,25 @@ describe("Specific Verification Cases", function () {
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
   });
+
+  it("should partially match when deployed bytecodeHash none is verified with standard metadata", async () => {
+    const vyperTestConstructorArgumentsAndImmutables = (
+      await import("./testdata/onchain_bytecode_hash_none_compiled_standard.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
+  });
+
+  it("should partially match when deployed appendCBOR false is verified with standard metadata", async () => {
+    const vyperTestConstructorArgumentsAndImmutables = (
+      await import("./testdata/onchain_append_cbor_false_compiled_standard.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
+  });
+
+  it("should partially match when deployed appendCBOR false is verified with metadata bytecodeHash none", async () => {
+    const vyperTestConstructorArgumentsAndImmutables = (
+      await import("./testdata/onchain_append_cbor_false_compiled_bytecode_hash_none.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
+  });
 });

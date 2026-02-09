@@ -252,7 +252,7 @@ export async function assertDatabase(
   // verified_contracts columns
   chai
     .expect(row.creation_match)
-    .to.deep.equal(testCase.verification.creationMatch !== null);
+    .to.equal(testCase.verification.creationMatch !== null);
   chai
     .expect(row.creation_values)
     .to.deep.equal(testCase.verification.creationValues);
@@ -260,11 +260,11 @@ export async function assertDatabase(
     .expect(row.creation_transformations)
     .to.deep.equal(testCase.verification.creationTransformations);
   chai
-    .expect(row.creation_metadata_match)
+    .expect(row.creation_metadata_match ? true : false)
     .to.equal(testCase.verification.creationMatch === "exact_match");
   chai
     .expect(row.runtime_match)
-    .to.deep.equal(testCase.verification.runtimeMatch !== null);
+    .to.equal(testCase.verification.runtimeMatch !== null);
   chai
     .expect(row.runtime_values)
     .to.deep.equal(testCase.verification.runtimeValues);

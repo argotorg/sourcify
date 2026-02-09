@@ -697,6 +697,7 @@ describe('Verification Class Tests', () => {
         const deploymentCompilation = await compileContractWithMetadata(
           STORAGE_CONTRACT_FOLDER,
           (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
             metadata.settings.metadata = {
               ...(metadata.settings.metadata ?? {}),
               bytecodeHash: 'none',
@@ -709,8 +710,11 @@ describe('Verification Class Tests', () => {
           deploymentCompilation,
         );
 
-        const verificationCompilation = await getCompilationFromMetadata(
+        const verificationCompilation = await compileContractWithMetadata(
           STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+          },
         );
 
         const verification = new Verification(
@@ -730,14 +734,14 @@ describe('Verification Class Tests', () => {
         expect(verification.transformations.runtime?.list[0]).to.deep.equal({
           type: 'replace',
           reason: 'cborAuxdata',
-          offset: 250,
+          offset: 283,
           length: 53,
           id: '1',
         });
         expect(
           verification.transformations.runtime?.values?.cborAuxdata,
         ).to.deep.equal({
-          '1': '0xa164736f6c6343000804000a',
+          '1': '0xa164736f6c634300081c000a',
         });
       });
 
