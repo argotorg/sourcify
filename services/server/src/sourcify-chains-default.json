@@ -2435,6 +2435,26 @@
     "sourcifyName": "LuxePorts MainNet",
     "supported": true
   },
+  "190415": {
+    "sourcifyName": "HPP Mainnet",
+    "supported": true,
+    "rpc": ["https://mainnet.hpp.io"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.hpp.io"
+      }
+    }
+  },
+  "181228": {
+    "sourcifyName": "HPP Sepolia Testnet",
+    "supported": true,
+    "rpc": ["https://sepolia.hpp.io"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://sepolia-explorer.hpp.io"
+      }
+    }
+  },
   "3111": {
     "sourcifyName": "Alpha Chain Mainnet",
     "supported": true,
