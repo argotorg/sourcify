@@ -1,4 +1,4 @@
-import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import { AuxdataStyle, isCborEncoded } from '@ethereum-sourcify/bytecode-utils';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -360,8 +360,28 @@ export function extractAuxdataTransformation(
 
       const offsetStart = recompiledAuxdataOffset;
       const offsetEnd = offsetStart + recompiledAuxdata.length;
-      // Instead of zeroing out this segment, get the value from the onchain bytecode.
+
+      // Get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
+      if (
+        // We need to validate the onchain auxdata is actually a valid CBOR object
+        // If the recompiled auxdata length is different from the onchain auxdata length,
+        // then `onchainAuxdata` will contain bytes that are not part of the auxdata.
+        onchainAuxdata.length > 0 &&
+        !(
+          // We first try to decode the auxdata removing the auxdata length bytes,
+          // if it fails we try to decode it as is, since some Vyper auxdata doesn't
+          // include the auxdata length in the bytecode.
+          (
+            isCborEncoded(onchainAuxdata.slice(0, -4)) ||
+            isCborEncoded(onchainAuxdata)
+          )
+        )
+      ) {
+        throw new Error(
+          `Failed to decode onchain auxdata at offset ${offsetStart} with length ${onchainAuxdata.length}.`,
+        );
+      }
 
       if (transformationValues.cborAuxdata === undefined) {
         transformationValues.cborAuxdata = {};
