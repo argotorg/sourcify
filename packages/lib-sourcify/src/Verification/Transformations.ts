@@ -363,22 +363,12 @@ export function extractAuxdataTransformation(
       // Instead of zeroing out this segment, get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
 
-      // By default the transformation type is 'replace'
-      let transformationType: 'replace' | 'delete' = 'replace';
-      // By default the transformation index is index + 1
-      let transformationIndex: string | undefined = `${index + 1}`;
-      // By default we don't store the auxdata length, because it's the same as the original one.
-      let transformationLength = undefined;
-      // By default the transformation offset is the recompiled auxdata offset
-      let transformationOffset = recompiledAuxdataOffset;
-
       if (transformationValues.cborAuxdata === undefined) {
         transformationValues.cborAuxdata = {};
       }
 
       if (onchainAuxdata.length === 0) {
-        transformationType = 'delete';
-        transformationIndex = undefined;
+        // Delete case: onchain bytecode has no auxdata at this offset.
         // By default Solidity adds 'fe' byte before the cborAuxdata when appending it
         const isFE =
           populatedRecompiledBytecode.slice(offsetStart - 2, offsetStart) ===
@@ -389,23 +379,32 @@ export function extractAuxdataTransformation(
           );
         }
         // We need to include the `fe` byte in the offset for deletion
-        transformationOffset = recompiledAuxdataOffset - 2;
+        const transformationOffset = recompiledAuxdataOffset - 2;
         // We need to add the `fe` byte in the length for deletion
-        transformationLength = (recompiledAuxdata.length + 2) / 2;
+        const transformationLength = (recompiledAuxdata.length + 2) / 2;
 
         // We remove the `fe` + auxdata from the recompiled bytecode
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart - 2) +
           populatedRecompiledBytecode.slice(offsetEnd);
+
+        transformations.push(
+          AuxdataTransformation(
+            'delete',
+            transformationOffset / 2, // Convert length in bytes
+            undefined,
+            transformationLength,
+          ),
+        );
       } else {
-        transformationType = 'replace';
-        transformationIndex = `${index + 1}`;
+        // Replace case: onchain bytecode has auxdata to apply at this offset.
+        const transformationIndex = `${index + 1}`;
+        const transformationLength =
+          recompiledAuxdata.length !== onchainAuxdata.length
+            ? recompiledAuxdata.length / 2
+            : undefined;
 
-        // If the lengths are different we need to store the auxdata length in the transformation
-        if (recompiledAuxdata.length !== onchainAuxdata.length) {
-          transformationLength = recompiledAuxdata.length / 2;
-        }
-
+        // Store auxdata length only when onchain and recompiled lengths differ.
         // We replace the auxdata in the recompiled bytecode with the onchain auxdata
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart) +
@@ -415,16 +414,16 @@ export function extractAuxdataTransformation(
         // We store the onchain auxdata value in the transformation values
         transformationValues.cborAuxdata[transformationIndex] =
           `0x${onchainAuxdata}`;
-      }
 
-      transformations.push(
-        AuxdataTransformation(
-          transformationType,
-          transformationOffset / 2, // Convert length in bytes
-          transformationIndex,
-          transformationLength,
-        ),
-      );
+        transformations.push(
+          AuxdataTransformation(
+            'replace',
+            recompiledAuxdataOffset / 2, // Convert length in bytes
+            transformationIndex,
+            transformationLength,
+          ),
+        );
+      }
     });
     return {
       populatedRecompiledBytecode: `0x${populatedRecompiledBytecode}`,
