@@ -2047,6 +2047,22 @@ describe("Test Supported Chains", function () {
     "partial",
   );
 
+  // HPP Mainnet
+  verifyContract(
+    "0x7E89f29793E50d103ceAEc469D2b9e032190db49",
+    "190415",
+    "HPP Mainnet",
+    "shared/",
+  );
+
+  // HPP Sepolia Testnet
+  verifyContract(
+    "0x1BE9388Ce63025326c3200635761C787e62ba5Ce",
+    "181228",
+    "HPP Sepolia Testnet",
+    "shared/",
+  );
+
   // Alpha Chain Mainnet
   verifyContract(
     "0xf48673E2FaE2B915023D29e3bB4Bc3AB49AAdE66",
