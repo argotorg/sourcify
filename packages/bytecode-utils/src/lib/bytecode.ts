@@ -302,7 +302,7 @@ const extractExecutionBytecode = (
  * @param auxdata - The auxdata string to decode
  * @returns True if auxdata is CBOR-encoded, otherwise false
  */
-const isCborEncoded = (auxdata: string): boolean => {
+export const isCborEncoded = (auxdata: string): boolean => {
   try {
     CBOR.decode(arrayify(`0x${auxdata}`));
     return true;
