@@ -1,3 +1,8 @@
+\restrict dbmate
+
+-- Dumped from database version 16.0
+-- Dumped by pg_dump version 18.1
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -2166,6 +2171,8 @@ ALTER TABLE ONLY public.verified_contracts
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict dbmate
 
 
 --
