@@ -152,7 +152,7 @@ jobs:
             # Initialize git submodules
             git submodule update --init
             # Apply migrations using npm script
-            npm run migrate:up
+            DBMATE_SCHEMA_FILE=ci-dump.sql npm run migrate:up
             # Force dump in case problems were ignored
             DBMATE_SCHEMA_FILE=ci-dump.sql npx dbmate dump
 
