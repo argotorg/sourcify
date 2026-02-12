@@ -1,11 +1,7 @@
-\restrict bOuAI60N9maPdxaaP8cAH7cZ8nZpdqhBKdKYqk7I147B9Ar01WsIlUJ49yXxtVp
-
--- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -13,20 +9,6 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
-
---
--- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
-
 
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
@@ -641,6 +623,33 @@ $$;
 
 
 --
+-- Name: validate_transformation_key_length(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN object ? 'length' AND is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0;
+END;
+$$;
+
+
+--
+-- Name: validate_transformation_key_length_optional(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN NOT object ? 'length'
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
+END;
+$$;
+
+
+--
 -- Name: validate_transformation_key_offset(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -730,8 +739,16 @@ CREATE FUNCTION public.validate_transformations_cbor_auxdata(object jsonb) RETUR
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
-        AND validate_transformation_key_id(object);
+    RETURN (
+        validate_transformation_key_type(object, 'replace')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length_optional(object)
+        AND validate_transformation_key_id(object)
+    ) OR (
+        validate_transformation_key_type(object, 'delete')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length(object)
+    );
 END;
 $$;
 
@@ -2150,8 +2167,6 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bOuAI60N9maPdxaaP8cAH7cZ8nZpdqhBKdKYqk7I147B9Ar01WsIlUJ49yXxtVp
-
 
 --
 -- Dbmate schema migrations
@@ -2168,4 +2183,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251023134207'),
     ('20251101120000'),
     ('20251106144315'),
-    ('20251219160923');
+    ('20251219160923'),
+    ('20260126113330');
