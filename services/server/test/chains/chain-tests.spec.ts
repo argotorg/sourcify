@@ -1,19 +1,21 @@
 import { ServerFixture } from "../helpers/ServerFixture";
 import chai from "chai";
 import chaiHttp from "chai-http";
-import fs from "fs";
-import path from "path";
 import addContext from "mochawesome/addContext";
 import testEtherscanContracts from "../helpers/etherscanInstanceContracts.json";
 import config from "config";
 import sourcifyChainsDefault from "../../src/sourcify-chains-default.json";
 import _storageAddresses from "./sources/storage-contract-chain-addresses.json";
 const storageAddresses: Record<string, string> = _storageAddresses; // add types
+import createXInput from "./sources/createX.input.json";
+import multicallInput from "./sources/multicall.input.json";
+import storageInput from "./sources/storage.input.json";
 // @ts-ignore
 config["session"].storeType = "memory";
 
-const TEST_TIME = process.env.TEST_TIME || "120000"; // 2 minutes
+const TEST_TIME = process.env.TEST_TIME || "60000"; // 1 minute
 const CUSTOM_PORT = 5556;
+const POLL_INTERVAL = 3000; // 3 seconds between job polls
 
 const CREATEX_ADDRESS = "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed";
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
@@ -21,6 +23,31 @@ const CREATEX_DEPLOYMENTS_URL =
   "https://raw.githubusercontent.com/pcaversaccio/createx/refs/heads/main/deployments/deployments.json";
 const MULTICALL3_DEPLOYMENTS_URL =
   "https://raw.githubusercontent.com/mds1/multicall3/refs/heads/main/deployments.json";
+
+interface ContractInput {
+  address: string;
+  stdJsonInput: object;
+  compilerVersion: string;
+  contractIdentifier: string;
+}
+
+const CREATEX_CONTRACT: Omit<ContractInput, "address"> = {
+  stdJsonInput: createXInput,
+  compilerVersion: "0.8.23+commit.f704f362",
+  contractIdentifier: "src/CreateX.sol:CreateX",
+};
+
+const MULTICALL3_CONTRACT: Omit<ContractInput, "address"> = {
+  stdJsonInput: multicallInput,
+  compilerVersion: "0.8.12+commit.f00d7308",
+  contractIdentifier: "Multicall3.sol:Multicall3",
+};
+
+const STORAGE_CONTRACT: Omit<ContractInput, "address"> = {
+  stdJsonInput: storageInput,
+  compilerVersion: "0.8.7+commit.e28d00a7",
+  contractIdentifier: "contracts/1_Storage.sol:Storage",
+};
 
 // Extract the chainId from new chain support pull request, if exists
 let newAddedChainIds: string[] = [];
@@ -93,41 +120,30 @@ describe("Test Supported Chains", function () {
     if (newAddedChainIds.length && !newAddedChainIds.includes(chain.chainId))
       continue;
 
-    it(`should verify a contract on ${chain.name} (${chain.chainId})`, function (done) {
+    it(`should verify a contract on ${chain.name} (${chain.chainId})`, async function () {
       addContext(this, {
         title: "Test identifier",
         value: { chainId: chain.chainId, testType: "normal" },
       });
 
       if (createXChainIds.has(chain.chainId)) {
-        verifyContract(
-          CREATEX_ADDRESS,
+        await verifyContract(
+          { address: CREATEX_ADDRESS, ...CREATEX_CONTRACT },
           chain.chainId,
-          "createx/",
-          done,
         );
       } else if (multicall3ChainIds.has(chain.chainId)) {
-        verifyContract(
-          MULTICALL3_ADDRESS,
+        await verifyContract(
+          { address: MULTICALL3_ADDRESS, ...MULTICALL3_CONTRACT },
           chain.chainId,
-          "multicall-src/",
-          done,
         );
-      } else if (
-        storageAddresses[chain.chainId] !==
-        undefined
-      ) {
-        verifyContract(
-          storageAddresses[chain.chainId],
+      } else if (storageAddresses[chain.chainId] !== undefined) {
+        await verifyContract(
+          { address: storageAddresses[chain.chainId], ...STORAGE_CONTRACT },
           chain.chainId,
-          "shared/",
-          done,
         );
       } else {
-        done(
-          new Error(
-            `No test contract found for chain ${chain.name} (${chain.chainId})`,
-          ),
+        throw new Error(
+          `No test contract found for chain ${chain.name} (${chain.chainId})`,
         );
       }
     });
@@ -187,59 +203,45 @@ describe("Test Supported Chains", function () {
   // Helper functions //
   //////////////////////
 
-  function verifyContract(
-    address: string,
-    chainId: string,
-    sourceDir: string,
-    done: Mocha.Done,
-  ) {
-    const fullDir = path.join(__dirname, "sources", sourceDir);
-    const files: Record<string, string> = {};
-    readFilesRecursively(fullDir, files);
+  async function verifyContract(contract: ContractInput, chainId: string) {
+    // Submit verification via v2 API
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(`/v2/verify/${chainId}/${contract.address}`)
+      .send({
+        stdJsonInput: contract.stdJsonInput,
+        compilerVersion: contract.compilerVersion,
+        contractIdentifier: contract.contractIdentifier,
+      });
 
     chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .send({
-        address: address,
-        chain: chainId,
-        files: files,
-      })
-      .end(async (err, res) => {
-        try {
-          chai.expect(err).to.be.null;
-          chai.expect(res.status).to.equal(200);
-          chai.expect(res.body).to.haveOwnProperty("result");
-          const resultArr = res.body.result;
-          chai.expect(resultArr).to.have.a.lengthOf(1);
-          const result = resultArr[0];
-          chai
-            .expect(result.address.toLowerCase())
-            .to.equal(address.toLowerCase());
-          chai.expect(result.chainId).to.equal(chainId);
-          chai.expect(result.status).to.be.oneOf(["perfect", "partial"]);
-          anyTestsPass = true;
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      .expect(verifyRes.status)
+      .to.equal(
+        202,
+        "Response body: " + JSON.stringify(verifyRes.body),
+      );
+    chai.expect(verifyRes.body).to.have.property("verificationId");
+
+    // Poll until the verification job completes (with timeout)
+    const verificationId = verifyRes.body.verificationId;
+    const maxPolls = Math.floor(parseInt(TEST_TIME) / POLL_INTERVAL);
+    let jobRes;
+    let polls = 0;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
+      jobRes = await chai
+        .request(serverFixture.server.app)
+        .get(`/v2/verify/${verificationId}`);
+      polls++;
+    } while (!jobRes.body.isJobCompleted && polls < maxPolls);
+
+    chai.expect(jobRes.body.isJobCompleted).to.be.true;
+
+    // Assert verification succeeded
+    chai
+      .expect(jobRes.body.contract.match)
+      .to.not.be.null;
+
+    anyTestsPass = true;
   }
 });
-
-function readFilesRecursively(
-  directoryPath: string,
-  files: Record<string, string>,
-) {
-  const filesInDirectory = fs.readdirSync(directoryPath);
-
-  filesInDirectory.forEach((file) => {
-    const filePath = path.join(directoryPath, file);
-
-    if (fs.statSync(filePath).isDirectory()) {
-      readFilesRecursively(filePath, files);
-    } else {
-      files[filePath] = fs.readFileSync(filePath).toString();
-    }
-  });
-}
