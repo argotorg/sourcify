@@ -1346,20 +1346,11 @@
   },
   "6119": {
     "sourcifyName": "UPTN Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "13337": {
     "sourcifyName": "BEAM Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true
-    }
+    "supported": false
   },
   "222000222": {
     "sourcifyName": "Kanazawa Testnet",
@@ -1468,13 +1459,7 @@
   },
   "4337": {
     "sourcifyName": "Beam",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "78432": {
     "sourcifyName": "Conduit Subnet",
@@ -1503,13 +1488,7 @@
   },
   "2044": {
     "sourcifyName": "Shrapnel Subnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "10242": {
     "sourcifyName": "Arthera Mainnet",
