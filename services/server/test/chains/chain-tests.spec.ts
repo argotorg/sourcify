@@ -16,6 +16,7 @@ config["session"].storeType = "memory";
 const TEST_TIME = process.env.TEST_TIME || "60000"; // 1 minute
 const CUSTOM_PORT = 5556;
 const POLL_INTERVAL = 3000; // 3 seconds between job polls
+const CONCURRENCY = 20; // max parallel verifications
 
 const CREATEX_ADDRESS = "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed";
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
@@ -81,13 +82,19 @@ describe("Test Supported Chains", function () {
   this.timeout(TEST_TIME);
   const serverFixture = new ServerFixture({
     port: CUSTOM_PORT,
+    skipDatabaseReset: true,
   });
 
   const testedChains = new Set<string>();
   let createXChainIds: Set<string>;
   let multicall3ChainIds: Set<string>;
+  // Store completed verification results (or errors) keyed by chainId
+  const chainResults = new Map<string, any>();
+  const chainErrors = new Map<string, string>();
 
   before(async function () {
+    this.timeout(300000); // 5 minutes for fetching deployments + running all verifications
+
     // Fetch createX and multicall3 deployments in parallel
     const [createXRes, multicall3Res] = await Promise.all([
       fetch(CREATEX_DEPLOYMENTS_URL),
@@ -103,6 +110,31 @@ describe("Test Supported Chains", function () {
     multicall3ChainIds = new Set(
       multicall3Deployments.map((d) => d.chainId.toString()),
     );
+
+    // Run all verifications (submit + poll) with a concurrency limit.
+    // As each one completes, the next chain starts immediately.
+    const pending = new Set<Promise<void>>();
+    for (const chain of chainsToTest) {
+      const task = (async () => {
+        try {
+          const result = await verifyContract(chain.chainId, chain.name);
+          chainResults.set(chain.chainId, result);
+        } catch (err: any) {
+          chainErrors.set(chain.chainId, err.message || String(err));
+        }
+      })(); // run the task immediately
+
+      const tracked = task.then(() => {
+        pending.delete(tracked);
+      }); // add .then() to delete the task from the pending set when it completes
+      pending.add(tracked);
+
+      if (pending.size >= CONCURRENCY) {
+        await Promise.race(pending); // if more than max tasks, let's await until any task completes
+      }
+      // iterate to the next chain (ie. pending)
+    }
+    await Promise.all(pending); // finally let's await until all tasks complete
   });
 
   after(() => {
@@ -120,32 +152,25 @@ describe("Test Supported Chains", function () {
     if (newAddedChainIds.length && !newAddedChainIds.includes(chain.chainId))
       continue;
 
-    it(`should verify a contract on ${chain.name} (${chain.chainId})`, async function () {
+    it(`should verify a contract on ${chain.name} (${chain.chainId})`, function () {
       addContext(this, {
         title: "Test identifier",
         value: { chainId: chain.chainId, testType: "normal" },
       });
 
-      if (createXChainIds.has(chain.chainId)) {
-        await verifyContract(
-          { address: CREATEX_ADDRESS, ...CREATEX_CONTRACT },
-          chain.chainId,
-        );
-      } else if (multicall3ChainIds.has(chain.chainId)) {
-        await verifyContract(
-          { address: MULTICALL3_ADDRESS, ...MULTICALL3_CONTRACT },
-          chain.chainId,
-        );
-      } else if (storageAddresses[chain.chainId] !== undefined) {
-        await verifyContract(
-          { address: storageAddresses[chain.chainId], ...STORAGE_CONTRACT },
-          chain.chainId,
-        );
-      } else {
-        throw new Error(
-          `No test contract found for chain ${chain.name} (${chain.chainId})`,
-        );
-      }
+      const error = chainErrors.get(chain.chainId);
+      if (error) throw new Error(error);
+
+      const result = chainResults.get(chain.chainId);
+      if (!result) throw new Error("No verification result found");
+
+      chai.expect(result.isJobCompleted, "Verification timed out").to.be.true;
+      chai.expect(
+        result.contract.match,
+        result.error?.message || JSON.stringify(result),
+      ).to.not.be.null;
+
+      anyTestsPass = true;
     });
     testedChains.add(chain.chainId);
   }
@@ -199,12 +224,19 @@ describe("Test Supported Chains", function () {
     done();
   });
 
-  //////////////////////
-  // Helper functions //
-  //////////////////////
+  async function verifyContract(chainId: string, name: string) {
+    let contract: ContractInput;
+    if (createXChainIds.has(chainId)) {
+      contract = { address: CREATEX_ADDRESS, ...CREATEX_CONTRACT };
+    } else if (multicall3ChainIds.has(chainId)) {
+      contract = { address: MULTICALL3_ADDRESS, ...MULTICALL3_CONTRACT };
+    } else if (storageAddresses[chainId] !== undefined) {
+      contract = { address: storageAddresses[chainId], ...STORAGE_CONTRACT };
+    } else {
+      throw new Error(`No test contract found for chain ${name} (${chainId})`);
+    }
 
-  async function verifyContract(contract: ContractInput, chainId: string) {
-    // Submit verification via v2 API
+    // Submit verification
     const verifyRes = await chai
       .request(serverFixture.server.app)
       .post(`/v2/verify/${chainId}/${contract.address}`)
@@ -214,15 +246,13 @@ describe("Test Supported Chains", function () {
         contractIdentifier: contract.contractIdentifier,
       });
 
-    chai
-      .expect(verifyRes.status)
-      .to.equal(
-        202,
-        "Response body: " + JSON.stringify(verifyRes.body),
+    if (verifyRes.status !== 202) {
+      throw new Error(
+        `POST returned ${verifyRes.status}: ${JSON.stringify(verifyRes.body)}`,
       );
-    chai.expect(verifyRes.body).to.have.property("verificationId");
+    }
 
-    // Poll until the verification job completes (with timeout)
+    // Poll until the verification job completes
     const verificationId = verifyRes.body.verificationId;
     const maxPolls = Math.floor(parseInt(TEST_TIME) / POLL_INTERVAL);
     let jobRes;
@@ -235,13 +265,6 @@ describe("Test Supported Chains", function () {
       polls++;
     } while (!jobRes.body.isJobCompleted && polls < maxPolls);
 
-    chai.expect(jobRes.body.isJobCompleted).to.be.true;
-
-    // Assert verification succeeded
-    chai
-      .expect(jobRes.body.contract.match)
-      .to.not.be.null;
-
-    anyTestsPass = true;
+    return jobRes.body;
   }
 });
