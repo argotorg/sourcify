@@ -93,6 +93,9 @@ export class RepositoryV2Service implements WStorageService {
   }
 
   public async storeVerification(verification: VerificationExport) {
+    if (verification.compilation.metadata === undefined) {
+      throw new Error("Cannot store contracts without metadata");
+    }
     if (
       verification.address &&
       (verification.status.runtimeMatch === "perfect" ||
