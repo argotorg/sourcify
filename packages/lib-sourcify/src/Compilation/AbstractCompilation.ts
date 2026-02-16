@@ -123,6 +123,7 @@ export abstract class AbstractCompilation {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });
     }
+    // In solcjs, for solidity versions prior to 0.4.9, the contracts are stored without the source path as a key
     if (this.compilerOutput.contracts['']?.[this.compilationTarget.name]) {
       return this.compilerOutput.contracts[''][this.compilationTarget.name];
     }
