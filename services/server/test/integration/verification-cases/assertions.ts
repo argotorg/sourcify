@@ -349,7 +349,10 @@ export async function assertApiV2Lookup(
     .expect(res.body.runtimeBytecode.onchainBytecode)
     .to.equal(testCase.onchain.deployedBytecode);
   // In Solidity < 0.1.3 the compiled_runtime_bytecode is not available in the compilation artifacts
-  if (semver.gte(testCase.input.compilerVersion, "0.1.3")) {
+  if (
+    testCase.input.stdJsonInput.language === "Solidity" &&
+    semver.gte(testCase.input.compilerVersion, "0.1.3")
+  ) {
     chai
       .expect(res.body.runtimeBytecode.recompiledBytecode)
       .to.equal(testCase.output.deployedBytecode);
