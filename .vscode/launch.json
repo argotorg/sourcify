@@ -89,6 +89,7 @@
       "cwd": "${workspaceFolder}/services/server",
       "env": {
         // "DEBUG": "express:*", // Debug all express modules *
+        "TS_NODE_IGNORE": "(^|/)(node_modules|dist|build)/|soljson-v.*[.]js$"
       },
       "preLaunchTask": "server:database-test:up",
       "postDebugTask": "server:database-test:down",
@@ -113,6 +114,7 @@
       "cwd": "${workspaceFolder}/services/server",
       "env": {
         // "TEST_CHAIN": "84532",
+        "TS_NODE_IGNORE": "(^|/)(node_modules|dist|build)/|soljson-v.*[.]js$"
       },
       "preLaunchTask": "server:database-test:up",
       "postDebugTask": "server:database-test:down",
@@ -238,6 +240,7 @@
       "cwd": "${workspaceFolder}/services/server",
       "env": {
         // "NEW_CHAIN_ID": "333000333"
+        "TS_NODE_IGNORE": "(^|/)(node_modules|dist|build)/|soljson-v.*[.]js$"
       },
       "preLaunchTask": "server:database-test:up",
       "postDebugTask": "server:database-test:down",

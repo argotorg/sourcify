@@ -156,9 +156,6 @@ export abstract class AbstractCompilation {
   }
 
   get metadata() {
-    if (!this._metadata) {
-      throw new CompilationError({ code: 'metadata_not_set' });
-    }
     return this._metadata;
   }
 

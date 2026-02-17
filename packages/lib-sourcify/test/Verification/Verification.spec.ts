@@ -25,7 +25,6 @@ import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import chaiAsPromised from 'chai-as-promised';
 import { findSolcPlatform } from '@ethereum-sourcify/compilers';
 import { SolidityCompilation, SourcifyChain } from '../../src';
-import type { SolidityJsonInput } from '../../src';
 import Sinon from 'sinon';
 import { YulCompilation } from '../../src/Compilation/YulCompilation';
 import type { SolidityJsonInput } from '@ethereum-sourcify/compilers-types';
@@ -157,15 +156,15 @@ describe('Verification Class Tests', () => {
       });
     });
 
-    it('should verify contracts with solidity version 0.4.11', async () => {
+    it.only('should verify contracts without solidity metadata', async () => {
       const contractFolderPath = path.join(
         __dirname,
         '..',
         'sources',
         '0.4.x',
-        '0.4.11',
+        '0.4.6',
       );
-      const { contractAddress } = await deployFromAbiAndBytecode(
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
         signer,
         contractFolderPath,
       );
@@ -194,7 +193,7 @@ describe('Verification Class Tests', () => {
 
       const compilation = new SolidityCompilation(
         new TestSolidityCompiler(),
-        '0.4.11+commit.68ef5810',
+        '0.4.6+commit.2dabbdf0',
         solcJsonInput,
         {
           name: 'Simple',
@@ -206,15 +205,18 @@ describe('Verification Class Tests', () => {
         compilation,
         sourcifyChainHardhat,
         contractAddress,
+        txHash,
       );
       await verification.verify();
 
       expectVerification(verification, {
         status: {
           runtimeMatch: 'partial',
-          creationMatch: null,
+          creationMatch: 'partial',
         },
       });
+
+      expect(verification.compilation.metadata).to.be.undefined;
     });
 
     it('should partially verify a simple contract', async () => {

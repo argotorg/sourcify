@@ -268,6 +268,9 @@ export class Verification {
   }
 
   private async checkForPerfectMetadata(forceEmscripten: boolean) {
+    if (this.compilation.metadata === undefined) {
+      return;
+    }
     try {
       const [, onchainAuxdata] = splitAuxdata(
         this.onchainRuntimeBytecode,
