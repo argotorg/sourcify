@@ -124,9 +124,9 @@ describe("Test Supported Chains", function () {
         }
       })(); // run the task immediately
 
-      const tracked = task.then(() => {
+      const tracked = task.finally(() => {
         pending.delete(tracked);
-      }); // add .then() to delete the task from the pending set when it completes
+      }); // add .finally() to delete the task from the pending set when it completes
       pending.add(tracked);
 
       if (pending.size >= CONCURRENCY) {
