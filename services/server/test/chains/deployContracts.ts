@@ -1,5 +1,5 @@
 import { deployFromPrivateKey } from "../helpers/helpers";
-import StorageArtifact from "./sources/shared/1_Storage.json";
+import StorageArtifact from "./sources/storage.artifact.json";
 import { sourcifyChainsMap } from "../../src/sourcify-chains";
 import { program } from "commander";
 import { JsonRpcProvider } from "ethers";
