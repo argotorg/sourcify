@@ -11,6 +11,8 @@ info:
     - **Standard JSON as default**: In the current design we take the standard JSON format as our main verification endpoint. Other methods such as "multi-file" or "single-file" should be handled by frontends or tooling to format into std-json. We still support verification with metadata at `/v2/verify/metadata`.
     - **Lean API**: We keep the number of endpoints minimal compared to v1. We won't have a session API. 
     - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
+
+    By submitting source code for verification, you grant Sourcify (and the Argot Collective) a non-exclusive, worldwide, irrevocable, royalty-free licence to reproduce, store, and publicly display the submitted source code for the purposes of verification, archival, and public inspection.
   license:
     name: MIT
     url: https://github.com/argotorg/sourcify/blob/master/LICENSE
