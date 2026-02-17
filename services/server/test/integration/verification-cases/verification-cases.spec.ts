@@ -269,7 +269,7 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
   });
 
-  it.only("should partially match a contract compiled with Solidity 0.4.6", async () => {
+  it("should partially match a contract compiled with Solidity 0.4.6", async () => {
     const partialMatchSol0_4_6 = (
       await import("./testdata/partial_match_sol_0_4_6.json")
     ).default as unknown as VerificationTestCase;

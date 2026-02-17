@@ -427,7 +427,7 @@ describe('SolidityCompilation', () => {
     }
   });
 
-  it.only('should support solidity versions with no auxdata', async () => {
+  it('should support solidity versions with no auxdata', async () => {
     const contractPath = path.join(__dirname, '..', 'sources', '0.4.x');
     const sources = {
       'Simple.sol': {

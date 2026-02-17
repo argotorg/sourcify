@@ -156,7 +156,7 @@ describe('Verification Class Tests', () => {
       });
     });
 
-    it.only('should verify contracts without solidity metadata', async () => {
+    it('should verify contracts without solidity metadata', async () => {
       const contractFolderPath = path.join(
         __dirname,
         '..',
