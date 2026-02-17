@@ -58,6 +58,16 @@ export async function useSolidityCompiler(
   if (solcPlatform && !forceEmscripten) {
     // Catch, if this fails we'll fall back to solc-js e.g. very early solc 0.1.4
     try {
+      // Early catch for unsupported versions and platforms
+      if (
+        (solcPlatform === 'linux-amd64' && semver.lt(version, '0.4.10')) ||
+        (solcPlatform === 'macosx-amd64' && semver.lt(version, '0.3.6')) ||
+        (solcPlatform === 'windows-amd64' && semver.lt(version, '0.4.1'))
+      ) {
+        throw new Error(
+          `No solc binary available for version ${version} and platform ${solcPlatform}`,
+        );
+      }
       solcPath = await getSolcExecutable(solcRepoPath, solcPlatform, version);
     } catch (error) {
       logError('Error getting solc executable', {
