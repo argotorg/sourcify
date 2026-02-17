@@ -266,7 +266,7 @@ describe("Import From Etherscan and Verify", function () {
         .field("chainId", testChainId)
         .end(async (err, res) => {
           await assertVerification(
-            null,
+            serverFixture,
             err,
             res,
             () => {

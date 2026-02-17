@@ -13,11 +13,7 @@ module.exports = {
   },
   storage: {
     read: RWStorageIdentifiers.SourcifyDatabase,
-    writeOrWarn: [
-      RWStorageIdentifiers.RepositoryV1,
-      WStorageIdentifiers.RepositoryV2,
-      WStorageIdentifiers.S3Repository,
-    ],
+    writeOrWarn: [WStorageIdentifiers.S3Repository],
     writeOrErr: [RWStorageIdentifiers.SourcifyDatabase],
   },
 };

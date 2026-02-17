@@ -614,7 +614,10 @@ export class Verification {
 
     let compilerOutputSources: Record<string, { id: number }> | undefined;
     if (this.compilation.compilerOutput?.sources) {
-      if (semver.lt(this.compilation.compilerVersion, '0.3.6')) {
+      if (
+        this.compilation.language === 'Solidity' &&
+        semver.lt(this.compilation.compilerVersion, '0.3.6')
+      ) {
         // In Solidity versions < 0.3.6 there is no id in sources
         compilerOutputSources = undefined;
       } else {

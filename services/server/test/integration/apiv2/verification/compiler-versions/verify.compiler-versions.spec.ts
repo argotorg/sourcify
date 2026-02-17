@@ -34,7 +34,7 @@ describe("POST /v2/verify/:chainId/:address - Compiler Version Tests", function 
     {
       version: "0.4.10+commit.f0d539ae",
       expectMatch: null,
-      shouldPass: false,
+      shouldPass: true,
     },
   ];
 

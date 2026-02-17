@@ -1,9 +1,5 @@
 import { StatusCodes } from "http-status-codes";
 import chai from "chai";
-import config from "config";
-import path from "path";
-import fs from "fs";
-import { getAddress, id } from "ethers";
 import type { Response } from "superagent";
 import type { Done } from "mocha";
 import type { Pool } from "pg";
@@ -43,7 +39,7 @@ export const assertValidationError = (
 
 // If you pass storageService = false, then the match will not be compared to the database
 export const assertVerification = async (
-  serverFixture: ServerFixture | null,
+  serverFixture: ServerFixture,
   err: Error | null,
   res: Response,
   done: Done | null,
@@ -66,12 +62,10 @@ export const assertVerification = async (
     chai.expect(result.warning).to.equal(VERIFY_ENDPOINTS_DEPRECATION_WARNING);
 
     await assertContractSaved(
-      serverFixture?.sourcifyDatabase ?? null,
+      serverFixture.sourcifyDatabase,
       expectedAddress,
       expectedChain,
       expectedStatus,
-      serverFixture?.testS3Path ?? null,
-      serverFixture?.testS3Bucket ?? null,
     );
     if (done) done();
   } catch (e) {
@@ -129,82 +123,14 @@ export async function assertTransformations(
 }
 
 export async function assertContractSaved(
-  sourcifyDatabase: Pool | null,
+  sourcifyDatabase: Pool,
   expectedAddress: string | undefined,
   expectedChain: string | undefined,
   expectedStatus: VerificationStatus,
-  testS3Path?: string | null,
-  testS3Bucket?: string | null,
 ) {
-  if (expectedStatus === "perfect" || expectedStatus === "partial") {
-    // Check if saved to fs repository
-    const match = expectedStatus === "perfect" ? "full_match" : "partial_match";
-    const getMetadataPath = (match: string) =>
-      path.join(
-        config.get("repositoryV1.path"),
-        "contracts",
-        match,
-        expectedChain ?? "",
-        getAddress(expectedAddress ?? ""),
-        "metadata.json",
-      );
-    const metadataPath = getMetadataPath(match);
-    const matchMetadadataExist = fs.existsSync(metadataPath);
-    chai.expect(matchMetadadataExist, "Contract is not saved to filesystem").to
-      .be.true;
-
-    // If perfect match then check that partial match does not exist in the repository
-    if (expectedStatus === "perfect") {
-      const partialMatchMetadataPath = getMetadataPath("partial_match");
-      chai.expect(
-        fs.existsSync(partialMatchMetadataPath),
-        "Partial match should not exist",
-      ).to.be.false;
-    }
-
-    const expectedMetadataContent = fs.readFileSync(metadataPath).toString();
-    const expectedMetadataHash = id(expectedMetadataContent);
-
-    // Check if saved to S3
-    if (testS3Path && testS3Bucket) {
-      const getS3MetadataPath = (match: string) =>
-        path.join(
-          testS3Path,
-          testS3Bucket,
-          "contracts",
-          match,
-          expectedChain ?? "",
-          getAddress(expectedAddress ?? ""),
-          "metadata.json",
-        );
-      const s3MetadataPath = getS3MetadataPath(match);
-
-      chai.expect(
-        fs.existsSync(s3MetadataPath),
-        "S3 metadata file should exist",
-      ).to.be.true;
-
-      // If perfect match then check that partial match does not exist in s3
-      if (expectedStatus === "perfect") {
-        const partialMatchS3MetadataPath = getS3MetadataPath("partial_match");
-        chai.expect(
-          fs.existsSync(partialMatchS3MetadataPath),
-          "Partial match should not exist",
-        ).to.be.false;
-      }
-      const s3Content = fs.readFileSync(s3MetadataPath).toString();
-      chai
-        .expect(id(s3Content))
-        .to.equal(
-          expectedMetadataHash,
-          "S3 metadata hash doesn't match filesystem metadata hash",
-        );
-    }
-
-    if (sourcifyDatabase) {
-      // Check if saved to the database
-      const res = await sourcifyDatabase.query(
-        `SELECT
+  // Check if saved to the database
+  const res = await sourcifyDatabase.query(
+    `SELECT
         cd.address,
         cd.chain_id,
         sm.creation_match,
@@ -217,33 +143,25 @@ export async function assertContractSaved(
       LEFT JOIN code compiled_runtime_code ON compiled_runtime_code.code_hash = cc.runtime_code_hash
       LEFT JOIN code compiled_creation_code ON compiled_creation_code.code_hash = cc.creation_code_hash
       WHERE cd.address = $1 AND cd.chain_id = $2`,
-        [
-          Buffer.from(expectedAddress?.substring(2) ?? "", "hex"),
-          expectedChain,
-        ],
-      );
+    [Buffer.from(expectedAddress?.substring(2) ?? "", "hex"), expectedChain],
+  );
 
-      const contract = res.rows[0];
-      chai.expect(contract).to.not.be.null;
-      chai
-        .expect("0x" + contract.address.toString("hex"))
-        .to.equal(expectedAddress?.toLowerCase());
-      chai.expect(contract.chain_id).to.equal(expectedChain);
-      chai
-        .expect(id(JSON.stringify(contract.metadata)))
-        .to.equal(expectedMetadataHash);
+  const contract = res.rows[0];
+  chai.expect(contract).to.not.be.null;
+  chai
+    .expect("0x" + contract.address.toString("hex"))
+    .to.equal(expectedAddress?.toLowerCase());
+  chai.expect(contract.chain_id).to.equal(expectedChain);
 
-      // When we'll support runtime_match and creation_match as different statuses we can refine this statement
-      chai
-        .expect(
-          getMatchStatus({
-            runtimeMatch: contract.runtime_match,
-            creationMatch: contract.creation_match,
-          }),
-        )
-        .to.equal(expectedStatus);
-    }
-  }
+  // When we'll support runtime_match and creation_match as different statuses we can refine this statement
+  chai
+    .expect(
+      getMatchStatus({
+        runtimeMatch: contract.runtime_match,
+        creationMatch: contract.creation_match,
+      }),
+    )
+    .to.equal(expectedStatus);
 }
 
 export async function assertJobVerification(
