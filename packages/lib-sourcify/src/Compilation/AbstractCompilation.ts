@@ -152,7 +152,11 @@ export abstract class AbstractCompilation {
   }
 
   get runtimeBytecode() {
-    return `0x${this.contractCompilerOutput.evm.deployedBytecode.object}`;
+    // Solidity versions prior to 0.1.3 do not include the deployedBytecode in the compiler output,
+    // instead of handling the runtime bytecode type as optional, we set it to an empty string if it's not present
+    // otherwise the verification process would need to handle the runtime bytecode as optional
+    // and this would add unnecessary complexity to the verification process
+    return `0x${this.contractCompilerOutput.evm.deployedBytecode.object || ''}`;
   }
 
   get metadata() {

@@ -13,6 +13,7 @@ import type {
   ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
+import semver from 'semver';
 
 import type { Transformation, TransformationValues } from './Transformations';
 import {
@@ -102,7 +103,8 @@ export class Verification {
     const compiledRuntimeBytecode = this.compilation.runtimeBytecode;
     const compiledCreationBytecode = this.compilation.creationBytecode;
 
-    if (compiledRuntimeBytecode === '0x' || compiledCreationBytecode === '0x') {
+    // If compiled creation bytecode is empty it means that the contract is an abstract contract
+    if (compiledCreationBytecode === '0x') {
       throw new VerificationError({
         code: 'compiled_bytecode_is_zero',
       });
@@ -612,13 +614,18 @@ export class Verification {
 
     let compilerOutputSources: Record<string, { id: number }> | undefined;
     if (this.compilation.compilerOutput?.sources) {
-      compilerOutputSources = {};
-      for (const source of Object.keys(
-        this.compilation.compilerOutput.sources,
-      )) {
-        compilerOutputSources[source] = {
-          id: this.compilation.compilerOutput.sources[source].id,
-        };
+      if (semver.lt(this.compilation.compilerVersion, '0.3.6')) {
+        // In Solidity versions < 0.3.6 there is no id in sources
+        compilerOutputSources = undefined;
+      } else {
+        compilerOutputSources = {};
+        for (const source of Object.keys(
+          this.compilation.compilerOutput.sources,
+        )) {
+          compilerOutputSources[source] = {
+            id: this.compilation.compilerOutput.sources[source].id,
+          };
+        }
       }
     }
 

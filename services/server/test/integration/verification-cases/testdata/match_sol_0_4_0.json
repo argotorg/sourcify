@@ -1,0 +1,88 @@
+{
+  "_comment": "Store match of a contract compiled with sol 0.4.0",
+  "onchain": {
+    "creationBytecode": "0x606060405260a18060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460435780636d4ce63c14605d57603f565b6002565b34600257605b60048080359060200190919050506082565b005b34600257606c60048050506090565b6040518082815260200191505060405180910390f35b806000600050819055505b50565b60006000600050549050609e565b9056",
+    "deployedBytecode": "0x60606040526000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460435780636d4ce63c14605d57603f565b6002565b34600257605b60048080359060200190919050506082565b005b34600257606c60048050506090565b6040518082815260200191505060405180910390f35b806000600050819055505b50565b60006000600050549050609e565b9056"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/SimpleStorage.sol": {
+          "content": "pragma solidity ^0.4.0;\n\ncontract SimpleStorage {\n    uint storedData;\n\n    function set(uint x) {\n        storedData = x;\n    }\n\n    function get() constant returns (uint) {\n        return storedData;\n    }\n}"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "enabled": false,
+          "runs": 200
+        },
+        "remappings": []
+      }
+    },
+    "compilerVersion": "0.4.0+commit.acd334c9",
+    "contractIdentifier": "contracts/SimpleStorage.sol:SimpleStorage"
+  },
+  "output": {
+    "creationBytecode": "0x606060405260a18060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460435780636d4ce63c14605d57603f565b6002565b34600257605b60048080359060200190919050506082565b005b34600257606c60048050506090565b6040518082815260200191505060405180910390f35b806000600050819055505b50565b60006000600050549050609e565b9056",
+    "deployedBytecode": "0x60606040526000357c01000000000000000000000000000000000000000000000000000000009004806360fe47b11460435780636d4ce63c14605d57603f565b6002565b34600257605b60048080359060200190919050506082565b005b34600257606c60048050506090565b6040518082815260200191505060405180910390f35b806000600050819055505b50565b60006000600050549050609e565b9056",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "constant": false,
+          "inputs": [
+            {
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "set",
+          "outputs": [],
+          "payable": false,
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "get",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "type": "function"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": null,
+      "sources": {
+        "contracts/SimpleStorage.sol": {
+          "id": "0"
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {},
+      "sourceMap": "25:184:0:-;;;;;;;;;",
+      "cborAuxdata": {}
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {},
+      "sourceMap": "25:184:0:-;;;;;;;;;;;;;;;;;;;;;;;76:52;;;;;;;;;;;;;;;;;;;;;134:73;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;76:52;120:1;107:10;;:14;;;;;76:52;;:::o;134:73::-;167:4;190:10;;;;183:17;;;;134:73;;:::o",
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}

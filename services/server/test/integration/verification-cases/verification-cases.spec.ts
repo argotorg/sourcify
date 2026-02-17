@@ -269,10 +269,45 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
   });
 
-  it("should partially match a contract compiled with Solidity 0.4.6", async () => {
-    const partialMatchSol0_4_6 = (
-      await import("./testdata/partial_match_sol_0_4_6.json")
-    ).default as unknown as VerificationTestCase;
-    await testVerificationCase(partialMatchSol0_4_6);
+  it("should partially match a contract compiled with Solidity 0.1.1", async () => {
+    const matchSol0_1_1 = (await import("./testdata/match_sol_0_1_1.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_1_1);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.1.3", async () => {
+    const matchSol0_1_3 = (await import("./testdata/match_sol_0_1_3.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_1_3);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.1.6", async () => {
+    const matchSol0_1_6 = (await import("./testdata/match_sol_0_1_6.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_1_6);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.3.6", async () => {
+    const matchSol0_3_6 = (await import("./testdata/match_sol_0_3_6.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_3_6);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.4.0", async () => {
+    const matchSol0_4_0 = (await import("./testdata/match_sol_0_4_0.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_4_0);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.4.7", async () => {
+    const matchSol0_4_7 = (await import("./testdata/match_sol_0_4_7.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_4_7);
+  });
+
+  it("should partially match a contract compiled with Solidity 0.4.9", async () => {
+    const matchSol0_4_9 = (await import("./testdata/match_sol_0_4_9.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(matchSol0_4_9);
   });
 });
