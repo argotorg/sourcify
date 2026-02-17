@@ -1,3 +1,8 @@
+\restrict dbmate
+
+-- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -1094,7 +1099,7 @@ CREATE TABLE public.sourcify_matches (
     runtime_match character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json NOT NULL
+    metadata json
 );
 
 
@@ -2147,6 +2152,8 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
+\unrestrict dbmate
+
 
 --
 -- Dbmate schema migrations
@@ -2165,5 +2172,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251106144315'),
     ('20251219160923'),
     ('20260126113330'),
+    ('20260216165100'),
     ('20260302082853'),
     ('20260309080000');

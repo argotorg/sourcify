@@ -131,7 +131,7 @@ interface SolidityOutputEvmDeployedBytecode extends SolidityOutputEvmBytecode {
 }
 
 export interface SolidityOutputSource {
-  id: number;
+  id: number | string;
   ast: any;
   legacyAST: any;
 }

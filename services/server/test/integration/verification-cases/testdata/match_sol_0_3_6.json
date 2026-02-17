@@ -58,40 +58,40 @@
       "storageLayout": null,
       "sources": {
         "Coin": {
-          "id": "0"
+          "id": 0
         },
         "CoinReg": {
-          "id": "1"
+          "id": 1
         },
         "Config": {
-          "id": "2"
+          "id": 2
         },
         "NameReg": {
-          "id": "3"
+          "id": 3
         },
         "coin": {
-          "id": "4"
+          "id": 4
         },
         "configUser": {
-          "id": "5"
+          "id": 5
         },
         "contracts/SimpleStorage.sol": {
-          "id": "6"
+          "id": 6
         },
         "mortal": {
-          "id": "7"
+          "id": 7
         },
         "named": {
-          "id": "8"
+          "id": 8
         },
         "owned": {
-          "id": "9"
+          "id": 9
         },
         "service": {
-          "id": "10"
+          "id": 10
         },
         "std": {
-          "id": "11"
+          "id": 11
         }
       }
     },

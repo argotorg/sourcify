@@ -623,7 +623,12 @@ export class Verification {
           this.compilation.compilerOutput.sources,
         )) {
           compilerOutputSources[source] = {
-            id: this.compilation.compilerOutput.sources[source].id,
+            id:
+              typeof this.compilation.compilerOutput.sources[source].id ===
+              'number'
+                ? this.compilation.compilerOutput.sources[source].id
+                : // In older solidity versions, source ids were strings, so we parse them to numbers
+                  parseInt(this.compilation.compilerOutput.sources[source].id),
           };
         }
       }

@@ -60,7 +60,7 @@
       "storageLayout": null,
       "sources": {
         "contracts/SimpleStorage.sol": {
-          "id": "0"
+          "id": 0
         }
       }
     },
