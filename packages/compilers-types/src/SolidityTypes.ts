@@ -131,6 +131,7 @@ interface SolidityOutputEvmDeployedBytecode extends SolidityOutputEvmBytecode {
 }
 
 export interface SolidityOutputSource {
+  // In older solidity versions, solcjs returns the id as a string
   id: number | string;
   ast: any;
   legacyAST: any;

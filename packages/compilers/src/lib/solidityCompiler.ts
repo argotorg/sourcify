@@ -96,6 +96,8 @@ export async function useSolidityCompiler(
       throw error;
     }
   } else {
+    // Spawn a dedicated worker so the solcjs compilers is released when the worker exits.
+    // Solc versions < 0.4.0 require this isolation for a clean compiler context. See: https://github.com/argotorg/sourcify/issues/1099
     logDebug('Compiling with solc-js in the worker', { version });
     startCompilation = Date.now();
     compiled = await new Promise((resolve, reject) => {

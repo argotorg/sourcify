@@ -186,6 +186,7 @@ function extractContractOutput(
   const [sourcePath, contractName] = contractIdentifier.split(":");
   const contract =
     output.contracts[sourcePath]?.[contractName] ||
+    // In solidity versions < 0.4.9, the source path is empty string
     output.contracts[""]?.[contractName];
   if (!contract) {
     throw new Error(

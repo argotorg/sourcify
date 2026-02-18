@@ -101,6 +101,8 @@ export interface VerificationExport {
     sources: StringMap;
     compilerOutput: {
       // The export should not include the AST object to reduce the size
+      // In older solidity versions, solcjs returns the id as a string,
+      // but we force it to be a number in the compilation export
       sources?: Record<string, { id: number }>;
     };
     contractCompilerOutput: {
