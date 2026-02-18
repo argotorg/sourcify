@@ -350,7 +350,7 @@ export class SourcifyDatabaseService
       )) {
         let formattedKey;
         // Solidity >= 0.5.0 is __$keccak256(file.sol:MyLib)$__ (total 40 characters)
-        if (semver.gte(sourcifyMatch.metadata.compiler.version, "0.5.0")) {
+        if (semver.gte(sourcifyMatch.version, "0.5.0")) {
           formattedKey =
             "__$" + keccak256Str(key).slice(2).slice(0, 34) + "$__";
         } else {
