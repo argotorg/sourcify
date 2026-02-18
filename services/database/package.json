@@ -21,7 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "commander": "12.1.0",
-    "dbmate": "2.29.5",
+    "dbmate": "2.30.0",
     "dotenv": "16.6.1",
     "ethers": "6.16.0",
     "pg": "8.18.0",
