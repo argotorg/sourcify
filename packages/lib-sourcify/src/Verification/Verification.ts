@@ -632,7 +632,10 @@ export class Verification {
               'number'
                 ? this.compilation.compilerOutput.sources[source].id
                 : // In older solidity versions, source ids were strings, so we parse them to numbers
-                  parseInt(this.compilation.compilerOutput.sources[source].id),
+                  parseInt(
+                    this.compilation.compilerOutput.sources[source].id,
+                    10,
+                  ),
           };
         }
       }
