@@ -96,32 +96,19 @@ export async function useSolidityCompiler(
       throw error;
     }
   } else {
-    logDebug('Compiling with solc-js', { version });
+    logDebug('Compiling with solc-js in the worker', { version });
     startCompilation = Date.now();
-    const coercedVersion =
-      semver.coerce(new semver.SemVer(version))?.version ?? '';
-    // Run Worker for solc versions < 0.4.0 for clean compiler context. See https://github.com/argotorg/sourcify/issues/1099
-    if (semver.lt(coercedVersion, '0.4.0')) {
-      compiled = await new Promise((resolve, reject) => {
-        const worker = importWorker(
-          path.resolve(__dirname, './compilerWorker'),
-          {
-            workerData: { solJsonRepoPath, version, inputStringified },
-          },
-        );
-        worker.once('message', (result) => {
-          resolve(result);
-        });
-        worker.once('error', (error) => {
-          reject(error);
-        });
+    compiled = await new Promise((resolve, reject) => {
+      const worker = importWorker(path.resolve(__dirname, './compilerWorker'), {
+        workerData: { solJsonRepoPath, version, inputStringified },
       });
-    } else {
-      const solJson = await getSolcJs(solJsonRepoPath, version);
-      if (solJson) {
-        compiled = solJson.compile(inputStringified);
-      }
-    }
+      worker.once('message', (result) => {
+        resolve(result);
+      });
+      worker.once('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
   const endCompilation = Date.now();
