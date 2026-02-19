@@ -2460,5 +2460,23 @@
         "url": "https://explorer.mainnet.citrea.xyz"
       }
     }
+  },
+  "47763": {
+    "sourcifyName": "Neo X Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://xexplorer.neo.org"
+      }
+    }
+  },
+  "12227332": {
+    "sourcifyName": "Neo X Testnet T4",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://xt4scan.ngd.network"
+      }
+    }
   }
 }
