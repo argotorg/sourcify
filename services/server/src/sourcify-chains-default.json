@@ -2478,5 +2478,15 @@
         "url": "https://xt4scan.ngd.network"
       }
     }
+  },
+  "26217": {
+    "sourcifyName": "Integralayer",
+    "supported": true,
+    "rpc": ["https://adamboudj.integralayer.com/rpc"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.integralayer.com"
+      }
+    }
   }
 }
