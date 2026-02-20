@@ -6,11 +6,11 @@ import type {
   BaseRPC,
   SourcifyChainExtension,
   SourcifyRpc,
+  FetchContractCreationTxMethods,
+  TraceSupport,
 } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import chainsRaw from "./chains.json";
 import extraChainsRaw from "./extra-chains.json";
-import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";
 import fs from "fs";
 import path from "path";
@@ -28,8 +28,45 @@ type FetchRequestRPCWithHeaderEnvName = Omit<FetchRequestRPC, "headers"> & {
   }>;
 };
 
-// Extended type for SourcifyChainsExtensionsObject that uses FetchRequestRPCWithHeaderEnvName
+// Type for the chain-overrides.json file
+interface ChainOverride {
+  sourcifyName: string;
+  supported: boolean;
+  etherscanApiKeyEnvName?: string;
+  traceSupport?: TraceSupport;
+  fetchContractCreationTxUsing?: FetchContractCreationTxMethods;
+  rpc?: Array<
+    string | BaseRPC | APIKeyRPC | FetchRequestRPCWithHeaderEnvName
+  >;
+}
 
+interface ChainOverridesFile {
+  [chainId: string]: ChainOverride;
+}
+
+// Type for the generated-chains.json file
+interface GeneratedChainEntry {
+  name: string;
+  chainId: number;
+  shortName?: string;
+  rpc: string[];
+  rpcProviders: {
+    quicknode?: { networkSlug: string };
+    drpc?: { shortName: string };
+  };
+  blockExplorers: {
+    etherscan?: { apiUrl: string; chainName: string; blockExplorerUrl: string };
+    blockscout?: { url: string; hostedBy: string; name: string };
+    routescan?: { workspace: string; name: string };
+  };
+}
+
+interface GeneratedChainsFile {
+  generatedAt: string;
+  chains: Record<string, GeneratedChainEntry>;
+}
+
+// Extended type for SourcifyChainsExtensionsObject that uses FetchRequestRPCWithHeaderEnvName (for custom deployment override)
 interface SourcifyChainsExtensionsObjectWithHeaderEnvName {
   [chainId: string]: Omit<SourcifyChainExtension, "rpc"> & {
     rpc?: Array<
@@ -38,39 +75,58 @@ interface SourcifyChainsExtensionsObjectWithHeaderEnvName {
   };
 }
 
-let sourcifyChainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName =
-  {};
-
-// If sourcify-chains.json exists, override sourcify-chains-default.json
-if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
+// Load generated-chains.json
+let generatedChains: GeneratedChainsFile;
+const generatedChainsPath = path.resolve(
+  __dirname,
+  "./chain-config/generated-chains.json",
+);
+if (fs.existsSync(generatedChainsPath)) {
+  generatedChains = JSON.parse(
+    fs.readFileSync(generatedChainsPath, "utf8"),
+  ) as GeneratedChainsFile;
+} else {
   logger.warn(
-    "Overriding default chains: using sourcify-chains.json instead of sourcify-chains-default.json",
+    "generated-chains.json not found. Run 'npm run generate:chains' to create it.",
   );
-  const rawSourcifyChainExtentionsFromFile = fs.readFileSync(
-    path.resolve(__dirname, "./sourcify-chains.json"),
-    "utf8",
-  );
-  sourcifyChainsExtensions = JSON.parse(
-    rawSourcifyChainExtentionsFromFile,
-  ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-}
-// sourcify-chains-default.json
-else {
-  sourcifyChainsExtensions =
-    rawSourcifyChainExtentions as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+  generatedChains = { generatedAt: "", chains: {} };
 }
 
-const chainMapById = new Map<number, Chain>();
-// Add chains.json from ethereum-lists (chainId.network/chains.json)
-chainsRaw.forEach((chain) => chainMapById.set(chain.chainId, chain));
-// Chains that we decide to support but that are not in chains.json
+// Load chain overrides
+let chainOverrides: ChainOverridesFile;
+const chainOverridesPath = path.resolve(
+  __dirname,
+  "./chain-config/chain-overrides.json",
+);
+if (fs.existsSync(chainOverridesPath)) {
+  chainOverrides = JSON.parse(
+    fs.readFileSync(chainOverridesPath, "utf8"),
+  ) as ChainOverridesFile;
+} else {
+  logger.warn("chain-overrides.json not found.");
+  chainOverrides = {};
+}
+
+// Build chain metadata map from generated-chains.json + extra-chains.json
+const chainMetadataById = new Map<number, Chain>();
+
+// Add chains from generated-chains.json (which includes chainid.network data)
+for (const [chainIdStr, entry] of Object.entries(generatedChains.chains)) {
+  const chainId = parseInt(chainIdStr, 10);
+  chainMetadataById.set(chainId, {
+    name: entry.name,
+    chainId,
+    shortName: entry.shortName,
+    rpc: entry.rpc,
+  });
+}
+
+// Add extra-chains.json (chains not in chainid.network)
 extraChainsRaw.forEach((chain) => {
-  // Skip if chainsRaw already defines this chainId so canonical entry wins
-  if (!chainMapById.has(chain.chainId)) {
-    chainMapById.set(chain.chainId, chain);
+  if (!chainMetadataById.has(chain.chainId)) {
+    chainMetadataById.set(chain.chainId, chain);
   }
 });
-const allChains = Array.from(chainMapById.values());
 
 export const LOCAL_CHAINS: SourcifyChain[] = [
   new SourcifyChain({
@@ -112,8 +168,8 @@ export const LOCAL_CHAINS: SourcifyChain[] = [
 ];
 
 /**
- * Function to take the rpc format in sourcify-chains.json and convert it to the format SourcifyChain expects.
- * SourcifyChain expects  url strings or ethers.js FetchRequest objects.
+ * Function to take the rpc format in config files and convert it to the format SourcifyChain expects.
+ * SourcifyChain expects url strings or ethers.js FetchRequest objects.
  */
 function buildCustomRpcs(
   sourcifyRpcs: Array<
@@ -239,6 +295,90 @@ function buildCustomRpcs(
   return rpcs;
 }
 
+// QuickNode network slugs that require /ext/bc/C/rpc/ path suffix
+const QUICKNODE_SUBNETS = new Set(["avalanche-mainnet", "avalanche-testnet", "flare-mainnet", "flare-coston2"]);
+
+/**
+ * Build QuickNode RPC config for a chain from generated data.
+ *
+ * URL exceptions:
+ * - "mainnet" (Ethereum): no network slug in subdomain → {SUBDOMAIN}.quiknode.pro/{API_KEY}
+ * - Avalanche/Flare: require /ext/bc/C/rpc/ path suffix
+ */
+function buildQuickNodeRpc(
+  networkSlug: string,
+  traceSupport?: TraceSupport,
+): APIKeyRPC {
+  let url: string;
+  if (networkSlug === "mainnet") {
+    // Ethereum mainnet: slug not embedded in subdomain
+    url = `https://{SUBDOMAIN}.quiknode.pro/{API_KEY}`;
+  } else if (QUICKNODE_SUBNETS.has(networkSlug)) {
+    url = `https://{SUBDOMAIN}.${networkSlug}.quiknode.pro/{API_KEY}/ext/bc/C/rpc/`;
+  } else {
+    url = `https://{SUBDOMAIN}.${networkSlug}.quiknode.pro/{API_KEY}`;
+  }
+  return {
+    type: "APIKeyRPC",
+    url,
+    apiKeyEnvName: "QUICKNODE_API_KEY",
+    subDomainEnvName: "QUICKNODE_SUBDOMAIN",
+    traceSupport,
+  };
+}
+
+/**
+ * Build dRPC RPC config for a chain from generated data.
+ */
+function buildDrpcRpc(shortName: string): APIKeyRPC {
+  return {
+    type: "APIKeyRPC",
+    url: `https://lb.drpc.live/${shortName}/{API_KEY}`,
+    apiKeyEnvName: "DRPC_API_KEY",
+  };
+}
+
+/**
+ * Auto-build fetchContractCreationTxUsing from generated block explorer data,
+ * merged with manual overrides for niche explorers.
+ */
+function buildFetchContractCreationTxUsing(
+  generated: GeneratedChainEntry | undefined,
+  override: ChainOverride | undefined,
+  hasEtherscanApi: boolean,
+): FetchContractCreationTxMethods | undefined {
+  const methods: FetchContractCreationTxMethods = {};
+
+  // Auto: blockscoutApi from generated
+  if (generated?.blockExplorers?.blockscout?.url) {
+    methods.blockscoutApi = {
+      url: generated.blockExplorers.blockscout.url,
+    };
+  }
+
+  // Auto: routescanApi from generated
+  if (generated?.blockExplorers?.routescan) {
+    const workspace = generated.blockExplorers.routescan.workspace;
+    if (workspace === "mainnet" || workspace === "testnet") {
+      methods.routescanApi = {
+        type: workspace,
+      };
+    }
+  }
+
+  // Auto: etherscanApi if chain has etherscan support
+  if (hasEtherscanApi) {
+    methods.etherscanApi = true;
+  }
+
+  // Manual: merge niche explorer methods from override
+  if (override?.fetchContractCreationTxUsing) {
+    Object.assign(methods, override.fetchContractCreationTxUsing);
+  }
+
+  return Object.keys(methods).length > 0 ? methods : undefined;
+}
+
 const sourcifyChainsMap: SourcifyChainMap = {};
 
 // Add test chains too if developing or testing
@@ -248,84 +388,126 @@ if (process.env.NODE_ENV !== "production") {
   }
 }
 
-// iterate over chainid.network's chains.json file and get the chains included in sourcify-chains.json.
-// Merge the chains.json object with the values from sourcify-chains.json
-// Must iterate over all chains because it's not a mapping but an array.
-for (const chain of allChains) {
-  const chainId = chain.chainId;
-  if (chainId in sourcifyChainsMap) {
-    // Don't throw on test chains in development, override the chain.json item as test chains are found in chains.json.
-    if (
-      process.env.NODE_ENV !== "production" &&
-      LOCAL_CHAINS.map((c) => c.chainId).includes(chainId)
-    ) {
-      // do nothing.
-    } else {
-      const err = `Corrupt chains file (chains.json): multiple chains have the same chainId: ${chainId}`;
-      throw new Error(err);
-    }
-  }
+// Check if custom sourcify-chains.json exists (self-hosted deployment override)
+if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
+  logger.warn(
+    "Overriding default chains: using sourcify-chains.json (custom deployment override)",
+  );
+  const rawOverrideFile = fs.readFileSync(
+    path.resolve(__dirname, "./sourcify-chains.json"),
+    "utf8",
+  );
+  const customExtensions = JSON.parse(
+    rawOverrideFile,
+  ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
 
-  if (chainId in sourcifyChainsExtensions) {
-    const sourcifyExtension = sourcifyChainsExtensions[chainId];
+  // Use the legacy merge logic for custom deployments
+  for (const [chainIdStr, extension] of Object.entries(customExtensions)) {
+    const chainId = parseInt(chainIdStr, 10);
+    const chainMetadata = chainMetadataById.get(chainId);
 
     let rpcs: SourcifyRpc[] = [];
-    if (sourcifyExtension.rpc) {
-      rpcs = buildCustomRpcs(sourcifyExtension.rpc);
+    if (extension.rpc) {
+      rpcs = buildCustomRpcs(extension.rpc);
     }
-    // Add rpcs of chains.json as a fallback
-    rpcs = [...rpcs, ...buildCustomRpcs(chain.rpc)];
+    // Add public RPCs from chain metadata as fallback
+    if (chainMetadata?.rpc) {
+      rpcs = [...rpcs, ...buildCustomRpcs(chainMetadata.rpc)];
+    }
 
-    // sourcifyExtension is spread later to overwrite chains.json values
-    // Exclude rpc from sourcifyExtension as we now use rpcs
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { rpc: _rpc, ...sourcifyExtensionWithoutRpc } = sourcifyExtension;
-    const sourcifyChain = new SourcifyChain({
-      ...chain,
-      ...sourcifyExtensionWithoutRpc,
-      rpcs,
-    });
-    sourcifyChainsMap[chainId] = sourcifyChain;
-  }
-}
+    const { rpc: _rpc, ...extensionWithoutRpc } = extension;
 
-// Check if all chains in sourcify-chains.json are in chains.json
-const missingChains = [];
-for (const chainId in sourcifyChainsExtensions) {
-  if (!sourcifyChainsMap[chainId]) {
-    missingChains.push(chainId);
-  }
-}
-if (missingChains.length > 0) {
-  // Don't let CircleCI pass for the main repo if sourcify-chains.json has chains that are not in chains.json
-  if (process.env.CIRCLE_PROJECT_REPONAME === "sourcify") {
-    throw new Error(
-      `Some of the chains in sourcify-chains.json are not in chains.json: ${missingChains.join(
-        ",",
-      )}`,
-    );
-  }
-  // Don't throw for forks or others running Sourcify, instead add them to sourcifyChainsMap
-  else {
-    logger.warn(
-      `Some of the chains in sourcify-chains.json are not in chains.json`,
-      missingChains,
-    );
-    missingChains.forEach((chainId) => {
-      const chain = sourcifyChainsExtensions[chainId];
-      if (!chain.rpc) {
-        throw new Error(
-          `Chain ${chainId} is missing rpc in sourcify-chains.json`,
-        );
-      }
-      const rpcs = buildCustomRpcs(chain.rpc);
-      sourcifyChainsMap[chainId] = new SourcifyChain({
-        name: chain.sourcifyName,
-        chainId: parseInt(chainId),
-        supported: chain.supported,
+    if (chainMetadata) {
+      sourcifyChainsMap[chainIdStr] = new SourcifyChain({
+        ...chainMetadata,
+        ...extensionWithoutRpc,
         rpcs,
-        fetchContractCreationTxUsing: chain.fetchContractCreationTxUsing,
       });
+    } else {
+      // Chain not in chainid.network, create minimal entry
+      sourcifyChainsMap[chainIdStr] = new SourcifyChain({
+        name: extension.sourcifyName,
+        chainId,
+        supported: extension.supported,
+        rpcs,
+        fetchContractCreationTxUsing: extension.fetchContractCreationTxUsing,
+        etherscanApi: extension.etherscanApi,
+      });
+    }
+  }
+} else {
+  // Standard mode: use generated-chains.json + chain-overrides.json
+  for (const [chainIdStr, override] of Object.entries(chainOverrides)) {
+    if (!override.supported) {
+      continue;
+    }
+
+    const chainId = parseInt(chainIdStr, 10);
+    const chainMetadata = chainMetadataById.get(chainId);
+    const generated = generatedChains.chains[chainIdStr];
+
+    // Build RPCs in priority order
+    let rpcs: SourcifyRpc[] = [];
+
+    // 1. Manual RPCs from override (ethpandaops, etc.)
+    if (override.rpc) {
+      rpcs = [...rpcs, ...buildCustomRpcs(override.rpc)];
+    }
+
+    // 2. QuickNode RPC (from generated slug + traceSupport from override)
+    if (generated?.rpcProviders?.quicknode) {
+      rpcs = [
+        ...rpcs,
+        ...buildCustomRpcs([
+          buildQuickNodeRpc(
+            generated.rpcProviders.quicknode.networkSlug,
+            override.traceSupport,
+          ),
+        ]),
+      ];
+    }
+
+    // 3. dRPC RPC (from generated shortName)
+    if (generated?.rpcProviders?.drpc) {
+      rpcs = [
+        ...rpcs,
+        ...buildCustomRpcs([
+          buildDrpcRpc(generated.rpcProviders.drpc.shortName),
+        ]),
+      ];
+    }
+
+    // 4. Public RPCs from chainid.network (fallback)
+    if (chainMetadata?.rpc) {
+      rpcs = [...rpcs, ...buildCustomRpcs(chainMetadata.rpc)];
+    }
+
+    // Build etherscanApi config
+    const hasEtherscanSupport = !!generated?.blockExplorers?.etherscan;
+    const etherscanApi = hasEtherscanSupport
+      ? {
+          supported: true,
+          apiKeyEnvName: override.etherscanApiKeyEnvName,
+        }
+      : undefined;
+
+    // Build fetchContractCreationTxUsing
+    const fetchContractCreationTxUsing =
+      buildFetchContractCreationTxUsing(generated, override, hasEtherscanSupport);
+
+    const baseChain: Chain = chainMetadata || {
+      name: override.sourcifyName,
+      chainId,
+      rpc: [],
+    };
+
+    sourcifyChainsMap[chainIdStr] = new SourcifyChain({
+      ...baseChain,
+      supported: true,
+      rpcs,
+      etherscanApi,
+      fetchContractCreationTxUsing,
     });
   }
 }

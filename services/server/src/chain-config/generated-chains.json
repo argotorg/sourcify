@@ -1,0 +1,6482 @@
+{
+  "generatedAt": "2026-02-20T11:35:18.139Z",
+  "chains": {
+    "1": {
+      "name": "Ethereum Mainnet",
+      "chainId": 1,
+      "shortName": "eth",
+      "rpc": [
+        "https://mainnet.infura.io/v3/${INFURA_API_KEY}",
+        "wss://mainnet.infura.io/ws/v3/${INFURA_API_KEY}",
+        "https://api.mycryptoapi.com/eth",
+        "https://cloudflare-eth.com",
+        "https://ethereum-rpc.publicnode.com",
+        "wss://ethereum-rpc.publicnode.com",
+        "https://mainnet.gateway.tenderly.co",
+        "wss://mainnet.gateway.tenderly.co",
+        "https://rpc.blocknative.com/boost",
+        "https://rpc.flashbots.net",
+        "https://rpc.flashbots.net/fast",
+        "https://rpc.mevblocker.io",
+        "https://rpc.mevblocker.io/fast",
+        "https://rpc.mevblocker.io/noreverts",
+        "https://rpc.mevblocker.io/fullprivacy",
+        "https://eth.drpc.org",
+        "wss://eth.drpc.org",
+        "https://api.securerpc.com/v1"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "mainnet",
+          "name": "Ethereum main"
+        },
+        "drpc": {
+          "shortName": "ethereum"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1",
+          "chainName": "Ethereum Mainnet",
+          "blockExplorerUrl": "https://etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://eth.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Ethereum"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Ethereum"
+        }
+      }
+    },
+    "10": {
+      "name": "OP Mainnet",
+      "chainId": 10,
+      "shortName": "oeth",
+      "rpc": [
+        "https://mainnet.optimism.io",
+        "https://optimism-rpc.publicnode.com",
+        "wss://optimism-rpc.publicnode.com",
+        "https://optimism.gateway.tenderly.co",
+        "wss://optimism.gateway.tenderly.co",
+        "https://optimism.drpc.org",
+        "wss://optimism.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "optimism",
+          "name": "Optimistic ethereum main"
+        },
+        "drpc": {
+          "shortName": "optimism"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=10",
+          "chainName": "OP Mainnet",
+          "blockExplorerUrl": "https://optimistic.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://explorer.optimism.io/",
+          "hostedBy": "blockscout",
+          "name": "OP Mainnet"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Optimism"
+        }
+      }
+    },
+    "14": {
+      "name": "Flare Mainnet",
+      "chainId": 14,
+      "shortName": "flr",
+      "rpc": [
+        "https://flare-api.flare.network/ext/C/rpc",
+        "https://flare.rpc.thirdweb.com",
+        "https://flare-bundler.etherspot.io",
+        "https://rpc.ankr.com/flare",
+        "https://01-gravelines-003-01.rpc.tatum.io/ext/bc/C/rpc",
+        "https://01-vinthill-003-02.rpc.tatum.io/ext/bc/C/rpc",
+        "https://rpc.au.cc/flare",
+        "https://flare.enosys.global/ext/C/rpc",
+        "https://flare.solidifi.app/ext/C/rpc"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "flare-mainnet",
+          "name": "Flare Mainnet"
+        },
+        "drpc": {
+          "shortName": "flare"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://flare-explorer.flare.network/",
+          "hostedBy": "self",
+          "name": "Flare Networks"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Flare Mainnet"
+        }
+      }
+    },
+    "16": {
+      "name": "Songbird Testnet Coston",
+      "chainId": 16,
+      "shortName": "cflr",
+      "rpc": [
+        "https://coston-api.flare.network/ext/C/rpc",
+        "https://songbird-testnet-coston.rpc.thirdweb.com",
+        "https://01-gravelines-004-01.rpc.tatum.io/ext/bc/C/rpc",
+        "https://02-chicago-004-02.rpc.tatum.io/ext/bc/C/rpc",
+        "https://02-tokyo-004-03.rpc.tatum.io/ext/bc/C/rpc",
+        "https://coston.enosys.global/ext/C/rpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "songbird-testnet"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Coston"
+        }
+      }
+    },
+    "18": {
+      "name": "ThunderCore Testnet",
+      "chainId": 18,
+      "shortName": "TST",
+      "rpc": [
+        "https://testnet-rpc.thundercore.com",
+        "https://thundercore-testnet.drpc.org",
+        "wss://thundercore-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "thundercore-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "19": {
+      "name": "Songbird Canary-Network",
+      "chainId": 19,
+      "shortName": "sgb",
+      "rpc": [
+        "https://songbird-api.flare.network/ext/C/rpc",
+        "https://01-gravelines-006-01.rpc.tatum.io/ext/bc/C/rpc",
+        "https://01-vinthill-006-02.rpc.tatum.io/ext/bc/C/rpc",
+        "https://02-tokyo-006-03.rpc.tatum.io/ext/bc/C/rpc",
+        "https://rpc.au.cc/songbird",
+        "https://songbird.enosys.global/ext/C/rpc",
+        "https://songbird.solidifi.app/ext/C/rpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "songbird"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://songbird-explorer.flare.network/",
+          "hostedBy": "self",
+          "name": "Flare Network Songbird Canary"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Songbird Canary"
+        }
+      }
+    },
+    "25": {
+      "name": "Cronos Mainnet",
+      "chainId": 25,
+      "shortName": "cro",
+      "rpc": [
+        "https://evm.cronos.org",
+        "https://cronos-evm-rpc.publicnode.com",
+        "wss://cronos-evm-rpc.publicnode.com",
+        "https://cronos.drpc.org",
+        "wss://cronos.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "cronos"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "30": {
+      "name": "Rootstock Mainnet",
+      "chainId": 30,
+      "shortName": "rsk",
+      "rpc": [
+        "https://public-node.rsk.co",
+        "https://mycrypto.rsk.co"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "rootstock"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://rootstock.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Rootstock"
+        }
+      }
+    },
+    "31": {
+      "name": "Rootstock Testnet",
+      "chainId": 31,
+      "shortName": "trsk",
+      "rpc": [
+        "https://public-node.testnet.rsk.co",
+        "https://mycrypto.testnet.rsk.co"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "rootstock-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://rootstock-testnet.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Rootstock Testnet"
+        }
+      }
+    },
+    "40": {
+      "name": "Telos EVM Mainnet",
+      "chainId": 40,
+      "shortName": "TelosEVM",
+      "rpc": [
+        "https://rpc.telos.net",
+        "https://telos.drpc.org",
+        "wss://telos.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "telos"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://telostx.com/",
+          "hostedBy": "self",
+          "name": "Telos EVM"
+        }
+      }
+    },
+    "41": {
+      "name": "Telos EVM Testnet",
+      "chainId": 41,
+      "shortName": "TelosEVMTestnet",
+      "rpc": [
+        "https://rpc.testnet.telos.net",
+        "https://telos-testnet.drpc.org",
+        "wss://telos-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "telos-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "44": {
+      "name": "Crab Network",
+      "chainId": 44,
+      "shortName": "crab",
+      "rpc": [
+        "https://crab-rpc.darwinia.network",
+        "https://crab-rpc.dcdao.box"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://crab-scan.darwinia.network/",
+          "hostedBy": "self",
+          "name": "Crab"
+        }
+      }
+    },
+    "46": {
+      "name": "Darwinia Network",
+      "chainId": 46,
+      "shortName": "darwinia",
+      "rpc": [
+        "https://rpc.darwinia.network",
+        "https://darwinia-rpc.dcdao.box",
+        "https://darwinia-rpc.dwellir.com",
+        "https://darwinia.rpc.subquery.network/public"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.darwinia.network/",
+          "hostedBy": "self",
+          "name": "Darwinia"
+        }
+      }
+    },
+    "51": {
+      "name": "XDC Apothem Network",
+      "chainId": 51,
+      "shortName": "txdc",
+      "rpc": [
+        "https://rpc.apothem.network",
+        "https://erpc.apothem.network",
+        "https://apothem.xdcrpc.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "xdc-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=51",
+          "chainName": "XDC Apothem Testnet",
+          "blockExplorerUrl": "https://testnet.xdcscan.com/"
+        }
+      }
+    },
+    "56": {
+      "name": "BNB Smart Chain Mainnet",
+      "chainId": 56,
+      "shortName": "bnb",
+      "rpc": [
+        "https://bsc-dataseed1.bnbchain.org",
+        "https://bsc-dataseed2.bnbchain.org",
+        "https://bsc-dataseed3.bnbchain.org",
+        "https://bsc-dataseed4.bnbchain.org",
+        "https://bsc-dataseed1.defibit.io",
+        "https://bsc-dataseed2.defibit.io",
+        "https://bsc-dataseed3.defibit.io",
+        "https://bsc-dataseed4.defibit.io",
+        "https://bsc-dataseed1.ninicoin.io",
+        "https://bsc-dataseed2.ninicoin.io",
+        "https://bsc-dataseed3.ninicoin.io",
+        "https://bsc-dataseed4.ninicoin.io",
+        "https://bsc-rpc.publicnode.com",
+        "wss://bsc-rpc.publicnode.com",
+        "wss://bsc-ws-node.nariox.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bsc",
+          "name": "BNB main"
+        },
+        "drpc": {
+          "shortName": "bsc"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=56",
+          "chainName": "BNB Smart Chain Mainnet",
+          "blockExplorerUrl": "https://bscscan.com/"
+        }
+      }
+    },
+    "57": {
+      "name": "Syscoin Mainnet",
+      "chainId": 57,
+      "shortName": "sys",
+      "rpc": [
+        "https://rpc.syscoin.org",
+        "https://rpc.ankr.com/syscoin/${ANKR_API_KEY}",
+        "https://syscoin.public-rpc.com",
+        "https://57.rpc.thirdweb.com",
+        "wss://rpc.syscoin.org/wss",
+        "https://syscoin-evm.publicnode.com",
+        "wss://syscoin-evm.publicnode.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.syscoin.org",
+          "hostedBy": "self",
+          "name": "Syscoin"
+        }
+      }
+    },
+    "61": {
+      "name": "Ethereum Classic",
+      "chainId": 61,
+      "shortName": "etc",
+      "rpc": [
+        "https://etc.rivet.link",
+        "https://besu-at.etc-network.info",
+        "https://geth-at.etc-network.info",
+        "https://etc.etcdesktop.com",
+        "https://etc.mytokenpocket.vip"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "ethereum-classic"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://etc.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Ethereum Classic"
+        }
+      }
+    },
+    "65": {
+      "name": "OKExChain Testnet",
+      "chainId": 65,
+      "shortName": "tokt",
+      "rpc": [
+        "https://exchaintestrpc.okex.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "oktc-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "66": {
+      "name": "OKXChain Mainnet",
+      "chainId": 66,
+      "shortName": "okt",
+      "rpc": [
+        "https://exchainrpc.okex.org",
+        "https://okc-mainnet.gateway.pokt.network/v1/lb/6275309bea1b320039c893ff"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "oktc"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "81": {
+      "name": "Japan Open Chain Mainnet",
+      "chainId": 81,
+      "shortName": "joc",
+      "rpc": [
+        "https://rpc-1.japanopenchain.org:8545",
+        "https://rpc-2.japanopenchain.org:8545",
+        "https://rpc-3.japanopenchain.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "joc-mainnet",
+          "name": "JOC Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://shibuya.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Astar Shibuya"
+        }
+      }
+    },
+    "82": {
+      "name": "Meter Mainnet",
+      "chainId": 82,
+      "shortName": "Meter",
+      "rpc": [
+        "https://rpc.meter.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "83": {
+      "name": "Meter Testnet",
+      "chainId": 83,
+      "shortName": "MeterTest",
+      "rpc": [
+        "https://rpctest.meter.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "88": {
+      "name": "Viction",
+      "chainId": 88,
+      "shortName": "vic",
+      "rpc": [
+        "https://rpc.viction.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "viction"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://viction.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Viction Network"
+        }
+      }
+    },
+    "89": {
+      "name": "Viction Testnet",
+      "chainId": 89,
+      "shortName": "vict",
+      "rpc": [
+        "https://rpc-testnet.viction.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "viction-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://viction-testnet.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Viction Testnet Network"
+        }
+      }
+    },
+    "96": {
+      "name": "KUB Mainnet",
+      "chainId": 96,
+      "shortName": "kub",
+      "rpc": [
+        "https://rpc.bitkubchain.io",
+        "wss://wss.bitkubchain.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://www.kubscan.com/",
+          "hostedBy": "self",
+          "name": "Bitkub"
+        }
+      }
+    },
+    "97": {
+      "name": "BNB Smart Chain Testnet",
+      "chainId": 97,
+      "shortName": "bnbt",
+      "rpc": [
+        "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+        "https://data-seed-prebsc-2-s1.bnbchain.org:8545",
+        "https://data-seed-prebsc-1-s2.bnbchain.org:8545",
+        "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
+        "https://data-seed-prebsc-1-s3.bnbchain.org:8545",
+        "https://data-seed-prebsc-2-s3.bnbchain.org:8545",
+        "https://bsc-testnet-rpc.publicnode.com",
+        "wss://bsc-testnet-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bsc-testnet",
+          "name": "BNB Smart Chain test"
+        },
+        "drpc": {
+          "shortName": "bsc-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=97",
+          "chainName": "BNB Smart Chain Testnet",
+          "blockExplorerUrl": "https://testnet.bscscan.com/"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "BNB"
+        }
+      }
+    },
+    "100": {
+      "name": "Gnosis",
+      "chainId": 100,
+      "shortName": "gno",
+      "rpc": [
+        "https://rpc.gnosischain.com",
+        "https://rpc.gnosis.gateway.fm",
+        "https://rpc.ankr.com/gnosis",
+        "https://gnosischain-rpc.gateway.pokt.network",
+        "https://gnosis-mainnet.public.blastapi.io",
+        "https://gnosis.api.onfinality.io/public",
+        "https://gnosis.blockpi.network/v1/rpc/public",
+        "https://web3endpoints.com/gnosischain-mainnet",
+        "https://gnosis.oat.farm",
+        "wss://rpc.gnosischain.com/wss",
+        "https://gnosis-rpc.publicnode.com",
+        "wss://gnosis-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "xdai",
+          "name": "Gnosis main"
+        },
+        "drpc": {
+          "shortName": "gnosis"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=100",
+          "chainName": "Gnosis",
+          "blockExplorerUrl": "https://gnosisscan.io/"
+        },
+        "blockscout": {
+          "url": "https://gnosis.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Gnosis"
+        }
+      }
+    },
+    "106": {
+      "name": "Velas EVM Mainnet",
+      "chainId": 106,
+      "shortName": "vlx",
+      "rpc": [
+        "https://evmexplorer.velas.com/rpc",
+        "https://explorer.velas.com/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "108": {
+      "name": "ThunderCore Mainnet",
+      "chainId": 108,
+      "shortName": "TT",
+      "rpc": [
+        "https://mainnet-rpc.thundercore.com",
+        "https://mainnet-rpc.thundertoken.net",
+        "https://mainnet-rpc.thundercore.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "thundercore"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "109": {
+      "name": "Shibarium",
+      "chainId": 109,
+      "shortName": "shibariumecosystem",
+      "rpc": [
+        "https://www.shibrpc.com",
+        "https://rpc.shibrpc.com",
+        "https://shib.nownodes.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "shibarium"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://www.shibariumscan.io/",
+          "hostedBy": "self",
+          "name": "Shibarium"
+        }
+      }
+    },
+    "114": {
+      "name": "Flare Testnet Coston2",
+      "chainId": 114,
+      "shortName": "c2flr",
+      "rpc": [
+        "https://coston2-api.flare.network/ext/C/rpc",
+        "https://flare-testnet-coston2.rpc.thirdweb.com",
+        "https://flaretestnet-bundler.etherspot.io",
+        "https://01-gravelines-005-01.rpc.tatum.io/ext/bc/C/rpc",
+        "https://02-chicago-005-02.rpc.tatum.io/ext/bc/C/rpc",
+        "https://02-tokyo-005-03.rpc.tatum.io/ext/bc/C/rpc",
+        "https://coston2.enosys.global/ext/C/rpc"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "flare-coston2",
+          "name": "Flare Coston2 Testnet"
+        },
+        "drpc": {
+          "shortName": "flare-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://coston2-explorer.flare.network/",
+          "hostedBy": "self",
+          "name": "Flare Network Coston2"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Coston2"
+        }
+      }
+    },
+    "122": {
+      "name": "Fuse Mainnet",
+      "chainId": 122,
+      "shortName": "fuse",
+      "rpc": [
+        "https://rpc.fuse.io",
+        "https://fuse.drpc.org",
+        "wss://fuse.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "fuse"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.fuse.io/",
+          "hostedBy": "blockscout",
+          "name": "Fuse"
+        }
+      }
+    },
+    "128": {
+      "name": "Huobi ECO Chain Mainnet",
+      "chainId": 128,
+      "shortName": "heco",
+      "rpc": [
+        "https://http-mainnet.hecochain.com",
+        "wss://ws-mainnet.hecochain.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "heco"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "130": {
+      "name": "Unichain",
+      "chainId": 130,
+      "shortName": "unichain",
+      "rpc": [
+        "https://mainnet.unichain.org",
+        "https://unichain-rpc.publicnode.com",
+        "wss://unichain-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "unichain-mainnet",
+          "name": "Unichain Mainnet"
+        },
+        "drpc": {
+          "shortName": "unichain"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=130",
+          "chainName": "Unichain Mainnet",
+          "blockExplorerUrl": "https://uniscan.xyz/"
+        },
+        "blockscout": {
+          "url": "https://unichain.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Unichain"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Unichain"
+        }
+      }
+    },
+    "133": {
+      "name": "HashKey Chain Testnet",
+      "chainId": 133,
+      "shortName": "HSKT",
+      "rpc": [
+        "https://hashkeychain-testnet.alt.technology"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hashkey-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet-explorer.hsk.xyz/",
+          "hostedBy": "altlayer-raas",
+          "name": "HashKey Chain Testnet"
+        }
+      }
+    },
+    "137": {
+      "name": "Polygon Mainnet",
+      "chainId": 137,
+      "shortName": "pol",
+      "rpc": [
+        "https://polygon-rpc.com/",
+        "https://rpc-mainnet.matic.network",
+        "https://matic-mainnet.chainstacklabs.com",
+        "https://rpc-mainnet.maticvigil.com",
+        "https://rpc-mainnet.matic.quiknode.pro",
+        "https://matic-mainnet-full-rpc.bwarelabs.com",
+        "https://polygon-bor-rpc.publicnode.com",
+        "wss://polygon-bor-rpc.publicnode.com",
+        "https://polygon.gateway.tenderly.co",
+        "wss://polygon.gateway.tenderly.co",
+        "https://polygon.drpc.org",
+        "wss://polygon.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "matic",
+          "name": "Matic main"
+        },
+        "drpc": {
+          "shortName": "polygon"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=137",
+          "chainName": "Polygon Mainnet",
+          "blockExplorerUrl": "https://polygonscan.com/"
+        },
+        "blockscout": {
+          "url": "https://polygon.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Polygon PoS"
+        }
+      }
+    },
+    "143": {
+      "name": "Monad",
+      "chainId": 143,
+      "shortName": "mon",
+      "rpc": [
+        "https://rpc.monad.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "monad-mainnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=143",
+          "chainName": "Monad Mainnet",
+          "blockExplorerUrl": "https://monadscan.com/"
+        }
+      }
+    },
+    "146": {
+      "name": "Sonic Mainnet",
+      "chainId": 146,
+      "shortName": "sonic",
+      "rpc": [
+        "https://rpc.soniclabs.com",
+        "https://sonic-rpc.publicnode.com",
+        "wss://sonic-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "sonic-mainnet",
+          "name": "Sonic Mainnet"
+        },
+        "drpc": {
+          "shortName": "sonic"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=146",
+          "chainName": "Sonic Mainnet",
+          "blockExplorerUrl": "https://sonicscan.org/"
+        }
+      }
+    },
+    "169": {
+      "name": "Manta Pacific Mainnet",
+      "chainId": 169,
+      "shortName": "manta",
+      "rpc": [
+        "https://pacific-rpc.manta.network/http",
+        "https://manta-pacific.drpc.org",
+        "wss://manta-pacific.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "manta-pacific"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://pacific-explorer.manta.network/",
+          "hostedBy": "caldera",
+          "name": "Manta Pacific"
+        }
+      }
+    },
+    "177": {
+      "name": "HashKey Chain",
+      "chainId": 177,
+      "shortName": "hsk",
+      "rpc": [
+        "https://mainnet.hsk.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hashkey"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://hashkey.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "HashKey"
+        }
+      }
+    },
+    "180": {
+      "name": "AME Chain Mainnet",
+      "chainId": 180,
+      "shortName": "ame",
+      "rpc": [
+        "https://node1.amechain.io/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "196": {
+      "name": "X Layer Mainnet",
+      "chainId": 196,
+      "shortName": "okb",
+      "rpc": [
+        "https://rpc.xlayer.tech",
+        "https://xlayerrpc.okx.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "xlayer-mainnet",
+          "name": "X Layer Mainnet"
+        },
+        "drpc": {
+          "shortName": "xlayer"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "199": {
+      "name": "BitTorrent Chain Mainnet",
+      "chainId": 199,
+      "shortName": "BTT",
+      "rpc": [
+        "https://rpc.bt.io",
+        "https://bittorrent.drpc.org",
+        "wss://bittorrent.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "bittorrent"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=199",
+          "chainName": "BitTorrent Chain Mainnet",
+          "blockExplorerUrl": "https://bttcscan.com/"
+        }
+      }
+    },
+    "204": {
+      "name": "opBNB Mainnet",
+      "chainId": 204,
+      "shortName": "obnb",
+      "rpc": [
+        "https://opbnb-mainnet-rpc.bnbchain.org",
+        "https://opbnb-mainnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3",
+        "wss://opbnb-mainnet.nodereal.io/ws/v1/64a9df0874fb4a93b9d0a3849de012d3",
+        "https://opbnb-mainnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+        "wss://opbnb-mainnet.nodereal.io/ws/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+        "https://opbnb-rpc.publicnode.com",
+        "wss://opbnb-rpc.publicnode.com",
+        "https://opbnb.drpc.org",
+        "wss://opbnb.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "opbnb"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=204",
+          "chainName": "opBNB Mainnet",
+          "blockExplorerUrl": "https://opbnb.bscscan.com/"
+        }
+      }
+    },
+    "212": {
+      "name": "MAPO Makalu",
+      "chainId": 212,
+      "shortName": "makalu",
+      "rpc": [
+        "https://testnet-rpc.maplabs.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "223": {
+      "name": "B2 Mainnet",
+      "chainId": 223,
+      "shortName": "B2-mainnet",
+      "rpc": [
+        "https://mainnet.b2-rpc.com",
+        "https://rpc.bsquared.network",
+        "https://b2-mainnet.alt.technology",
+        "https://b2-mainnet-public.s.chainbase.com",
+        "https://rpc.ankr.com/b2"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "232": {
+      "name": "Lens",
+      "chainId": 232,
+      "shortName": "lens",
+      "rpc": [
+        "https://rpc.lens.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "lens"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "240": {
+      "name": "Cronos zkEVM Testnet",
+      "chainId": 240,
+      "shortName": "zkTCRO",
+      "rpc": [
+        "https://testnet.zkevm.cronos.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "cronos-zkevm-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "246": {
+      "name": "Energy Web Chain",
+      "chainId": 246,
+      "shortName": "ewt",
+      "rpc": [
+        "https://rpc.energyweb.org",
+        "wss://rpc.energyweb.org/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "248": {
+      "name": "Oasys Mainnet",
+      "chainId": 248,
+      "shortName": "OAS",
+      "rpc": [
+        "https://rpc.mainnet.oasys.games"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "oasys"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.oasys.games/",
+          "hostedBy": "self",
+          "name": "Oasys"
+        }
+      }
+    },
+    "250": {
+      "name": "Fantom Opera",
+      "chainId": 250,
+      "shortName": "ftm",
+      "rpc": [
+        "https://rpc.ftm.tools",
+        "https://fantom-rpc.publicnode.com",
+        "wss://fantom-rpc.publicnode.com",
+        "https://fantom.drpc.org",
+        "wss://fantom.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "fantom",
+          "name": "Fantom main"
+        },
+        "drpc": {
+          "shortName": "fantom"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://ftmscout.com/",
+          "hostedBy": "self",
+          "name": "Fantom Chain Mainnet"
+        }
+      }
+    },
+    "252": {
+      "name": "Fraxtal",
+      "chainId": 252,
+      "shortName": "frax",
+      "rpc": [
+        "https://rpc.frax.com",
+        "https://fraxtal-rpc.publicnode.com",
+        "wss://fraxtal-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "fraxtal-mainnet",
+          "name": "Fraxtal Mainnet"
+        },
+        "drpc": {
+          "shortName": "fraxtal"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=252",
+          "chainName": "Fraxtal Mainnet",
+          "blockExplorerUrl": "https://fraxscan.com/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Fraxtal"
+        }
+      }
+    },
+    "255": {
+      "name": "Kroma",
+      "chainId": 255,
+      "shortName": "kroma",
+      "rpc": [
+        "https://api.kroma.network",
+        "https://rpc-kroma.rockx.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "kroma"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://blockscout.kroma.network/",
+          "hostedBy": "self",
+          "name": "Kroma"
+        }
+      }
+    },
+    "256": {
+      "name": "Huobi ECO Chain Testnet",
+      "chainId": 256,
+      "shortName": "hecot",
+      "rpc": [
+        "https://http-testnet.hecochain.com",
+        "wss://ws-testnet.hecochain.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "heco-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "288": {
+      "name": "Boba Network",
+      "chainId": 288,
+      "shortName": "Boba",
+      "rpc": [
+        "https://mainnet.boba.network",
+        "https://replica.boba.network",
+        "https://boba-ethereum.gateway.tenderly.co",
+        "https://gateway.tenderly.co/public/boba-ethereum",
+        "wss://boba-ethereum.gateway.tenderly.co/",
+        "wss://gateway.tenderly.co/public/boba-ethereum",
+        "https://boba-eth.drpc.org",
+        "wss://boba-eth.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "boba-eth"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Boba Ethereum"
+        }
+      }
+    },
+    "295": {
+      "name": "Hedera Mainnet",
+      "chainId": 295,
+      "shortName": "hedera-mainnet",
+      "rpc": [
+        "https://mainnet.hashio.io/api",
+        "https://hedera.linkpool.pro"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "hedera-mainnet",
+          "name": "Hedera Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Hedera"
+        }
+      }
+    },
+    "296": {
+      "name": "Hedera Testnet",
+      "chainId": 296,
+      "shortName": "hedera-testnet",
+      "rpc": [
+        "https://testnet.hashio.io/api"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "hedera-testnet",
+          "name": "Hedera Testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "300": {
+      "name": "zkSync Sepolia Testnet",
+      "chainId": 300,
+      "shortName": "zksync-sepolia",
+      "rpc": [
+        "https://sepolia.era.zksync.dev",
+        "https://zksync-sepolia.drpc.org",
+        "wss://zksync-sepolia.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "zksync-sepolia",
+          "name": "zkSync Era Sepolia"
+        },
+        "drpc": {
+          "shortName": "zksync-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zksync-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "ZKsync Era Sepolia Testnet"
+        }
+      }
+    },
+    "314": {
+      "name": "Filecoin - Mainnet",
+      "chainId": 314,
+      "shortName": "filecoin",
+      "rpc": [
+        "https://api.node.glif.io/",
+        "https://rpc.ankr.com/filecoin",
+        "https://filecoin-mainnet.chainstacklabs.com/rpc/v1",
+        "https://filfox.info/rpc/v1",
+        "https://filecoin.drpc.org",
+        "wss://filecoin.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "filecoin"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://filecoin.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Filecoin Virtual Machine"
+        }
+      }
+    },
+    "324": {
+      "name": "zkSync Mainnet",
+      "chainId": 324,
+      "shortName": "zksync",
+      "rpc": [
+        "https://mainnet.era.zksync.io",
+        "https://zksync.drpc.org",
+        "wss://zksync.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "zksync-mainnet",
+          "name": "zkSync Era Mainnet"
+        },
+        "drpc": {
+          "shortName": "zksync"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zksync.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "ZKsync Era"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "zkSync Era"
+        }
+      }
+    },
+    "335": {
+      "name": "DFK Chain Test",
+      "chainId": 335,
+      "shortName": "DFKTEST",
+      "rpc": [
+        "https://subnets.avax.network/defi-kingdoms/dfk-chain-testnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "DFK"
+        }
+      }
+    },
+    "336": {
+      "name": "Shiden",
+      "chainId": 336,
+      "shortName": "sdn",
+      "rpc": [
+        "https://shiden.api.onfinality.io/public",
+        "https://shiden-rpc.dwellir.com",
+        "https://shiden.public.blastapi.io",
+        "wss://shiden.api.onfinality.io/public-ws",
+        "wss://shiden.public.blastapi.io",
+        "wss://shiden-rpc.dwellir.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "338": {
+      "name": "Cronos Testnet",
+      "chainId": 338,
+      "shortName": "tcro",
+      "rpc": [
+        "https://evm-t3.cronos.org",
+        "https://cronos-testnet.drpc.org",
+        "wss://cronos-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "cronos-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "369": {
+      "name": "PulseChain",
+      "chainId": 369,
+      "shortName": "pls",
+      "rpc": [
+        "https://rpc.pulsechain.com",
+        "https://pulsechain-rpc.publicnode.com",
+        "wss://pulsechain-rpc.publicnode.com",
+        "https://rpc-pulsechain.g4mm4.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://scan.pulsechain.box/",
+          "hostedBy": "self",
+          "name": "PulseChain"
+        }
+      }
+    },
+    "388": {
+      "name": "Cronos zkEVM Mainnet",
+      "chainId": 388,
+      "shortName": "zkCRO",
+      "rpc": [
+        "https://mainnet.zkevm.cronos.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "cronos-zkevm"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "480": {
+      "name": "World Chain",
+      "chainId": 480,
+      "shortName": "wc",
+      "rpc": [
+        "https://worldchain-mainnet.g.alchemy.com/public",
+        "https://480.rpc.thirdweb.com",
+        "https://worldchain-mainnet.gateway.tenderly.co",
+        "wss://worldchain-mainnet.gateway.tenderly.co"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "worldchain-mainnet",
+          "name": "World Chain Mainnet"
+        },
+        "drpc": {
+          "shortName": "worldchain"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=480",
+          "chainName": "World Mainnet",
+          "blockExplorerUrl": "https://worldscan.org/"
+        },
+        "blockscout": {
+          "url": "https://worldchain-mainnet.explorer.alchemy.com",
+          "hostedBy": "alchemy",
+          "name": "World Chain"
+        }
+      }
+    },
+    "545": {
+      "name": "Flow EVM Testnet",
+      "chainId": 545,
+      "shortName": "flow-testnet",
+      "rpc": [
+        "https://testnet.evm.nodes.onflow.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "flow-testnet",
+          "name": "Flow Testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://evm-testnet.flowscan.io/",
+          "hostedBy": "self",
+          "name": "Flow Testnet"
+        }
+      }
+    },
+    "648": {
+      "name": "Endurance Smart Chain Mainnet",
+      "chainId": 648,
+      "shortName": "ace",
+      "rpc": [
+        "https://rpc-endurance.fusionist.io/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer-endurance.fusionist.io/",
+          "hostedBy": "self",
+          "name": "Endurance"
+        }
+      }
+    },
+    "690": {
+      "name": "Redstone",
+      "chainId": 690,
+      "shortName": "redstone",
+      "rpc": [
+        "https://rpc.redstonechain.com",
+        "wss://rpc.redstonechain.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "redstone-mainnet",
+          "name": "Redstone Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.redstone.xyz/",
+          "hostedBy": "blockscout",
+          "name": "Redstone"
+        }
+      }
+    },
+    "747": {
+      "name": "Flow EVM Mainnet",
+      "chainId": 747,
+      "shortName": "flow-mainnet",
+      "rpc": [
+        "https://mainnet.evm.nodes.onflow.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "flow-mainnet",
+          "name": "Flow Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://alveyscan.com/",
+          "hostedBy": "self",
+          "name": "Alvey Chain"
+        }
+      }
+    },
+    "841": {
+      "name": "Taraxa Mainnet",
+      "chainId": 841,
+      "shortName": "tara",
+      "rpc": [
+        "https://rpc.mainnet.taraxa.io/",
+        "https://ws.mainnet.taraxa.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://tara.to",
+          "hostedBy": "self",
+          "name": "Taraxa Mainnet"
+        }
+      }
+    },
+    "888": {
+      "name": "Wanchain",
+      "chainId": 888,
+      "shortName": "wan",
+      "rpc": [
+        "https://gwan-ssl.wandevs.org:56891/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "919": {
+      "name": "Mode Testnet",
+      "chainId": 919,
+      "shortName": "modesep",
+      "rpc": [
+        "https://sepolia.mode.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "mode-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia.explorer.mode.network/",
+          "hostedBy": "conduit",
+          "name": "Mode Sepolia Testnet"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Mode"
+        }
+      }
+    },
+    "945": {
+      "name": "Subtensor EVM Testnet",
+      "chainId": 945,
+      "shortName": "bittensor-evm-testnet",
+      "rpc": [
+        "https://test.chain.opentensor.ai"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "bittensor-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "957": {
+      "name": "Lyra Chain",
+      "chainId": 957,
+      "shortName": "lyra",
+      "rpc": [
+        "https://rpc.lyra.finance"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.derive.xyz/",
+          "hostedBy": "conduit",
+          "name": "Derive Mainnet"
+        }
+      }
+    },
+    "964": {
+      "name": "Subtensor EVM",
+      "chainId": 964,
+      "shortName": "bittensor-evm-mainnet",
+      "rpc": [
+        "https://lite.chain.opentensor.ai"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "bittensor"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "970": {
+      "name": "Oort Mainnet",
+      "chainId": 970,
+      "shortName": "ccn",
+      "rpc": [
+        "https://mainnet-rpc.oortech.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "998": {
+      "name": "Hyperliquid EVM Testnet",
+      "chainId": 998,
+      "shortName": "hype-evm-testnet",
+      "rpc": [
+        "https://api.hyperliquid-testnet.xyz/evm"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hyperliquid-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "999": {
+      "name": "Wanchain Testnet",
+      "chainId": 999,
+      "shortName": "twan",
+      "rpc": [
+        "https://gwan-ssl.wandevs.org:46891/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hyperliquid"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=999",
+          "chainName": "HyperEVM Mainnet",
+          "blockExplorerUrl": "https://hyperevmscan.io/"
+        },
+        "blockscout": {
+          "url": "https://www.hyperscan.com/",
+          "hostedBy": "self",
+          "name": "HyperEVM Mainnet"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Hyperliquid EVM"
+        }
+      }
+    },
+    "1001": {
+      "name": "Kaia Kairos Testnet",
+      "chainId": 1001,
+      "shortName": "kaia-kairos",
+      "rpc": [
+        "https://public-en-kairos.node.kaia.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "kaia-kairos",
+          "name": "Kaia Kairos Testnet"
+        },
+        "drpc": {
+          "shortName": "klaytn-baobab"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1028": {
+      "name": "BitTorrent Chain Testnet",
+      "chainId": 1028,
+      "shortName": "tbtt-deprecated",
+      "rpc": [
+        "https://testrpc.bittorrentchain.io/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "bittorrent-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1030": {
+      "name": "Conflux eSpace",
+      "chainId": 1030,
+      "shortName": "cfx",
+      "rpc": [
+        "https://evm.confluxrpc.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "1088": {
+      "name": "Metis Andromeda Mainnet",
+      "chainId": 1088,
+      "shortName": "metis-andromeda",
+      "rpc": [
+        "https://andromeda.metis.io/?owner=1088",
+        "https://metis.drpc.org",
+        "wss://metis.drpc.org",
+        "https://metis-rpc.publicnode.com",
+        "wss://metis-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "metis"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://andromeda-explorer.metis.io/",
+          "hostedBy": "self",
+          "name": "Metis"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Metis"
+        }
+      }
+    },
+    "1100": {
+      "name": "Dymension",
+      "chainId": 1100,
+      "shortName": "dymension",
+      "rpc": [
+        "https://dymension-evm.blockpi.network/v1/rpc/public",
+        "https://dymension-evm-rpc.publicnode.com",
+        "wss://dymension-evm-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "dymension"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1101": {
+      "name": "Polygon zkEVM",
+      "chainId": 1101,
+      "shortName": "zkevm",
+      "rpc": [
+        "https://zkevm-rpc.com",
+        "https://polygon-zkevm.drpc.org",
+        "wss://polygon-zkevm.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "zkevm-mainnet",
+          "name": "Polygon zkEVM Mainnet"
+        },
+        "drpc": {
+          "shortName": "polygon-zkevm"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1111": {
+      "name": "WEMIX3.0 Mainnet",
+      "chainId": 1111,
+      "shortName": "wemix",
+      "rpc": [
+        "https://api.wemix.com",
+        "wss://ws.wemix.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "wemix"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.moonchain.com/",
+          "hostedBy": "self",
+          "name": "Moonchain"
+        }
+      }
+    },
+    "1112": {
+      "name": "WEMIX3.0 Testnet",
+      "chainId": 1112,
+      "shortName": "twemix",
+      "rpc": [
+        "https://api.test.wemix.com",
+        "wss://ws.test.wemix.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "wemix-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1114": {
+      "name": "Core Blockchain Testnet2",
+      "chainId": 1114,
+      "shortName": "tcore2",
+      "rpc": [
+        "https://rpc.test2.btcs.network/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "core-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.oasys.homeverse.games/",
+          "hostedBy": "self",
+          "name": "Oasys HOME Verse Mainnet"
+        }
+      }
+    },
+    "1115": {
+      "name": "Core Blockchain Testnet",
+      "chainId": 1115,
+      "shortName": "tcore",
+      "rpc": [
+        "https://rpc.test.btcs.network/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "1116": {
+      "name": "Core Blockchain Mainnet",
+      "chainId": 1116,
+      "shortName": "core",
+      "rpc": [
+        "https://rpc.coredao.org/",
+        "https://rpc-core.icecreamswap.com",
+        "https://core.drpc.org",
+        "wss://core.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "core"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1122": {
+      "name": "LuxePorts",
+      "chainId": 1122,
+      "shortName": "lxp",
+      "rpc": [
+        "https://rpc.luxeports.com",
+        "https://erpc.luxeports.com",
+        "wss://rpc.luxeports.com/ws",
+        "wss://erpc.luxeports.com/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "1135": {
+      "name": "Lisk",
+      "chainId": 1135,
+      "shortName": "lisk",
+      "rpc": [
+        "https://rpc.api.lisk.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "lisk-mainnet",
+          "name": "Lisk Mainnet"
+        },
+        "drpc": {
+          "shortName": "lisk"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://blockscout.lisk.com/",
+          "hostedBy": "gelato-raas",
+          "name": "Lisk "
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Lisk"
+        }
+      }
+    },
+    "1284": {
+      "name": "Moonbeam",
+      "chainId": 1284,
+      "shortName": "mbeam",
+      "rpc": [
+        "https://rpc.api.moonbeam.network",
+        "wss://wss.api.moonbeam.network",
+        "https://moonbeam.public.blastapi.io",
+        "wss://moonbeam.public.blastapi.io",
+        "https://moonbeam-rpc.dwellir.com",
+        "wss://moonbeam-rpc.dwellir.com",
+        "https://moonbeam.api.onfinality.io/public",
+        "wss://moonbeam.api.onfinality.io/public-ws",
+        "https://moonbeam.unitedbloc.com",
+        "wss://moonbeam.unitedbloc.com",
+        "https://moonbeam-rpc.publicnode.com",
+        "wss://moonbeam-rpc.publicnode.com",
+        "https://moonbeam.drpc.org",
+        "wss://moonbeam.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "moonbeam"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1284",
+          "chainName": "Moonbeam Mainnet",
+          "blockExplorerUrl": "https://moonbeam.moonscan.io/"
+        }
+      }
+    },
+    "1285": {
+      "name": "Moonriver",
+      "chainId": 1285,
+      "shortName": "mriver",
+      "rpc": [
+        "https://rpc.api.moonriver.moonbeam.network",
+        "wss://wss.api.moonriver.moonbeam.network",
+        "https://moonriver.public.blastapi.io",
+        "wss://moonriver.public.blastapi.io",
+        "https://moonriver-rpc.dwellir.com",
+        "wss://moonriver-rpc.dwellir.com",
+        "https://moonriver.api.onfinality.io/public",
+        "wss://moonriver.api.onfinality.io/public-ws",
+        "https://moonriver.unitedbloc.com",
+        "wss://moonriver.unitedbloc.com",
+        "https://moonriver-rpc.publicnode.com",
+        "wss://moonriver-rpc.publicnode.com",
+        "https://moonriver.drpc.org",
+        "wss://moonriver.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "moonriver"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1285",
+          "chainName": "Moonriver Mainnet",
+          "blockExplorerUrl": "https://moonriver.moonscan.io/"
+        }
+      }
+    },
+    "1287": {
+      "name": "Moonbase Alpha",
+      "chainId": 1287,
+      "shortName": "mbase",
+      "rpc": [
+        "https://rpc.api.moonbase.moonbeam.network",
+        "wss://wss.api.moonbase.moonbeam.network",
+        "https://moonbase-alpha.public.blastapi.io",
+        "wss://moonbase-alpha.public.blastapi.io",
+        "https://moonbase-rpc.dwellir.com",
+        "wss://moonbase-rpc.dwellir.com",
+        "https://moonbeam-alpha.api.onfinality.io/public",
+        "wss://moonbeam-alpha.api.onfinality.io/public-ws",
+        "https://moonbase.unitedbloc.com",
+        "wss://moonbase.unitedbloc.com",
+        "https://moonbase-alpha.drpc.org",
+        "wss://moonbase-alpha.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "moonbase-alpha"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1287",
+          "chainName": "Moonbase Alpha Testnet",
+          "blockExplorerUrl": "https://moonbase.moonscan.io/"
+        }
+      }
+    },
+    "1301": {
+      "name": "Unichain Sepolia Testnet",
+      "chainId": 1301,
+      "shortName": "unichain-sep",
+      "rpc": [
+        "https://sepolia.unichain.org",
+        "https://unichain-sepolia-rpc.publicnode.com",
+        "wss://unichain-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "unichain-sepolia",
+          "name": "Unichain Sepolia"
+        },
+        "drpc": {
+          "shortName": "unichain-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1301",
+          "chainName": "Unichain Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.uniscan.xyz/"
+        },
+        "blockscout": {
+          "url": "https://unichain-sepolia.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Unichain Sepolia Testnet"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Unichain"
+        }
+      }
+    },
+    "1315": {
+      "name": "Story Aeneid Testnet",
+      "chainId": 1315,
+      "shortName": "story-aeneid",
+      "rpc": [
+        "https://aeneid.storyrpc.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "story-aeneid",
+          "name": "Story Aeneid"
+        },
+        "drpc": {
+          "shortName": "story-aeneid-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://aeneid.storyscan.io/",
+          "hostedBy": "blockscout",
+          "name": "Story Aeneid"
+        }
+      }
+    },
+    "1328": {
+      "name": "Sei Testnet",
+      "chainId": 1328,
+      "shortName": "sei-testnet",
+      "rpc": [
+        "https://evm-rpc-testnet.sei-apis.com",
+        "wss://evm-ws-testnet.sei-apis.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "sei-atlantic",
+          "name": "Sei Atlantic-2 Testnet"
+        },
+        "drpc": {
+          "shortName": "sei-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1328",
+          "chainName": "Sei Testnet",
+          "blockExplorerUrl": "https://testnet.seiscan.io/"
+        }
+      }
+    },
+    "1329": {
+      "name": "Sei Network",
+      "chainId": 1329,
+      "shortName": "sei",
+      "rpc": [
+        "https://evm-rpc.sei-apis.com",
+        "wss://evm-ws.sei-apis.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "sei-pacific",
+          "name": "Sei Pacific-1 Mainnet"
+        },
+        "drpc": {
+          "shortName": "sei"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1329",
+          "chainName": "Sei Mainnet",
+          "blockExplorerUrl": "https://seiscan.io/"
+        }
+      }
+    },
+    "1339": {
+      "name": "Elysium Mainnet",
+      "chainId": 1339,
+      "shortName": "ELY",
+      "rpc": [
+        "https://rpc.elysiumchain.tech",
+        "https://rpc.elysiumchain.us"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "1480": {
+      "name": "Vana",
+      "chainId": 1480,
+      "shortName": "vana",
+      "rpc": [
+        "https://rpc.vana.org/"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "vana-mainnet",
+          "name": "Vana Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://vanascan.io/",
+          "hostedBy": "protofire",
+          "name": "Vana"
+        }
+      }
+    },
+    "1513": {
+      "name": "Story Testnet",
+      "chainId": 1513,
+      "shortName": "Story",
+      "rpc": [
+        "https://testnet.storyrpc.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "story-testnet",
+          "name": "Story Iliad Testnet"
+        },
+        "drpc": {
+          "shortName": "story-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1514": {
+      "name": "Story",
+      "chainId": 1514,
+      "shortName": "sty",
+      "rpc": [
+        "https://mainnet.storyrpc.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "story"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://www.storyscan.io/",
+          "hostedBy": "blockscout",
+          "name": "Story"
+        }
+      }
+    },
+    "1597": {
+      "name": "Reactive Mainnet",
+      "chainId": 1597,
+      "shortName": "react",
+      "rpc": [
+        "https://mainnet-rpc.rnk.dev"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "1625": {
+      "name": "Gravity Alpha Mainnet",
+      "chainId": 1625,
+      "shortName": "gravity",
+      "rpc": [
+        "https://rpc.gravity.xyz",
+        "https://rpc.ankr.com/gravity"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "gravity-alpha"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.gravity.xyz/",
+          "hostedBy": "conduit",
+          "name": "Gravity"
+        }
+      }
+    },
+    "1740": {
+      "name": "Metal L2 Testnet",
+      "chainId": 1740,
+      "shortName": "metall2-testnet",
+      "rpc": [
+        "https://testnet.rpc.metall2.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "metall2-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1750": {
+      "name": "Metal L2",
+      "chainId": 1750,
+      "shortName": "metall2",
+      "rpc": [
+        "https://rpc.metall2.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "metall2"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.metall2.com/",
+          "hostedBy": "self",
+          "name": "Metal L2"
+        }
+      }
+    },
+    "1829": {
+      "name": "PlayBlock",
+      "chainId": 1829,
+      "shortName": "playblock",
+      "rpc": [
+        "https://rpc.playblock.io",
+        "wss://ws.playblock.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "playnance"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.playblock.io/",
+          "hostedBy": "gelato-raas",
+          "name": "Playnance Playblock"
+        }
+      }
+    },
+    "1868": {
+      "name": "Soneium",
+      "chainId": 1868,
+      "shortName": "soneium",
+      "rpc": [
+        "https://rpc.soneium.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "soneium"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://soneium.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Soneium"
+        }
+      }
+    },
+    "1890": {
+      "name": "Lightlink Phoenix Mainnet",
+      "chainId": 1890,
+      "shortName": "lightlink_phoenix",
+      "rpc": [
+        "https://replicator.phoenix.lightlink.io/rpc/v1"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://phoenix.lightlink.io/",
+          "hostedBy": "blockscout",
+          "name": "LightLink Phoenix Mainnet"
+        }
+      }
+    },
+    "1891": {
+      "name": "Lightlink Pegasus Testnet",
+      "chainId": 1891,
+      "shortName": "lightlink_pegasus",
+      "rpc": [
+        "https://replicator.pegasus.lightlink.io/rpc/v1"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://pegasus.lightlink.io/",
+          "hostedBy": "blockscout",
+          "name": "LightLink Pegasus Testnet"
+        }
+      }
+    },
+    "1923": {
+      "name": "Swellchain",
+      "chainId": 1923,
+      "shortName": "swellchain",
+      "rpc": [
+        "https://swell-mainnet.alt.technology",
+        "https://rpc.ankr.com/swell"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "swell"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1923",
+          "chainName": "Swellchain Mainnet",
+          "blockExplorerUrl": "https://swellchainscan.io/"
+        },
+        "blockscout": {
+          "url": "https://explorer.swellnetwork.io/",
+          "hostedBy": "altlayer-raas",
+          "name": "Swell Chain"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Swell"
+        }
+      }
+    },
+    "1924": {
+      "name": "Swellchain Testnet",
+      "chainId": 1924,
+      "shortName": "swellchain-sep",
+      "rpc": [
+        "https://swell-testnet.alt.technology",
+        "https://rpc.ankr.com/swell-testnet"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "swell-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=1924",
+          "chainName": "Swellchain Testnet",
+          "blockExplorerUrl": "https://sepolia.swellchainscan.io/"
+        },
+        "blockscout": {
+          "url": "https://swell-testnet-explorer.alt.technology/",
+          "hostedBy": "altlayer-raas",
+          "name": "Swell Testnet"
+        }
+      }
+    },
+    "1946": {
+      "name": "Soneium Testnet Minato",
+      "chainId": 1946,
+      "shortName": "soneium-minato",
+      "rpc": [
+        "https://rpc.minato.soneium.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "soneium-minato"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://soneium-minato.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Soneium Minato Testnet"
+        }
+      }
+    },
+    "1952": {
+      "name": "Chain 1952",
+      "chainId": 1952,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "xlayer-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1993": {
+      "name": "B3 Sepolia Testnet",
+      "chainId": 1993,
+      "shortName": "b3-sepolia",
+      "rpc": [
+        "https://sepolia.b3.fun"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "b3-sepolia",
+          "name": "B3 Sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia.explorer.b3.fun/",
+          "hostedBy": "self",
+          "name": "B3 Testnet"
+        }
+      }
+    },
+    "2000": {
+      "name": "Dogechain Mainnet",
+      "chainId": 2000,
+      "shortName": "dc",
+      "rpc": [
+        "https://rpc.dogechain.dog",
+        "https://rpc01-sg.dogechain.dog",
+        "https://rpc.ankr.com/dogechain"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.dogechain.dog/",
+          "hostedBy": "self",
+          "name": "Dogechain"
+        }
+      }
+    },
+    "2020": {
+      "name": "Ronin Mainnet",
+      "chainId": 2020,
+      "shortName": "ron",
+      "rpc": [
+        "https://api.roninchain.com/rpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "ronin"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://b-network.alastria.izer.tech/",
+          "hostedBy": "self",
+          "name": "Alastria"
+        }
+      }
+    },
+    "2021": {
+      "name": "Edgeware EdgeEVM Mainnet",
+      "chainId": 2021,
+      "shortName": "edg",
+      "rpc": [
+        "https://edgeware-evm.jelliedowl.net",
+        "https://edgeware-evm0.jelliedowl.net",
+        "https://edgeware-evm1.jelliedowl.net",
+        "https://edgeware-evm2.jelliedowl.net",
+        "https://edgeware-evm3.jelliedowl.net",
+        "wss://edgeware.jelliedowl.net",
+        "wss://edgeware-rpc0.jelliedowl.net",
+        "wss://edgeware-rpc1.jelliedowl.net",
+        "wss://edgeware-rpc2.jelliedowl.net",
+        "wss://edgeware-rpc3.jelliedowl.net"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "2039": {
+      "name": "Aleph Zero",
+      "chainId": 2039,
+      "shortName": "aleph",
+      "rpc": [
+        "https://rpc.alephzero-testnet.gelato.digital",
+        "wss://rpc.alephzero-testnet.gelato.digital"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "alephzero-sepolia"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2047": {
+      "name": "Stratos Testnet",
+      "chainId": 2047,
+      "shortName": "stos-testnet",
+      "rpc": [
+        "https://web3-rpc-mesos.thestratos.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "2048": {
+      "name": "Stratos",
+      "chainId": 2048,
+      "shortName": "stos-mainnet",
+      "rpc": [
+        "https://web3-rpc.thestratos.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://web3-explorer-mesos.thestratos.org/",
+          "hostedBy": "self",
+          "name": "Stratos"
+        }
+      }
+    },
+    "2192": {
+      "name": "SnaxChain",
+      "chainId": 2192,
+      "shortName": "snax",
+      "rpc": [
+        "https://mainnet.snaxchain.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "snaxchain"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.snaxchain.io/",
+          "hostedBy": "conduit",
+          "name": "SnaxChain Mainnet"
+        }
+      }
+    },
+    "2221": {
+      "name": "Kava Testnet",
+      "chainId": 2221,
+      "shortName": "tkava",
+      "rpc": [
+        "https://evm.testnet.kava.io",
+        "https://kava-evm-testnet.rpc.thirdweb.com",
+        "wss://wevm.testnet.kava.io",
+        "https://kava-testnet.drpc.org",
+        "wss://kava-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "kava-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2222": {
+      "name": "Kava",
+      "chainId": 2222,
+      "shortName": "kava",
+      "rpc": [
+        "https://evm.kava.io",
+        "https://kava-rpc.gateway.pokt.network",
+        "https://kava-evm.rpc.thirdweb.com",
+        "wss://wevm.kava.io",
+        "https://kava-evm-rpc.publicnode.com",
+        "wss://kava-evm-rpc.publicnode.com",
+        "https://evm.kava-rpc.com",
+        "https://rpc.ankr.com/kava_evm",
+        "wss://wevm.kava-rpc.com",
+        "https://kava.drpc.org",
+        "wss://kava.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "kava"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2288": {
+      "name": "Chain 2288",
+      "chainId": 2288,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "moca"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2345": {
+      "name": "GOAT Network",
+      "chainId": 2345,
+      "shortName": "goat",
+      "rpc": [
+        "https://rpc.goat.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "goat-mainnet-alpha"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2442": {
+      "name": "Polygon zkEVM Cardona Testnet",
+      "chainId": 2442,
+      "shortName": "zkevm-testnet-cardona",
+      "rpc": [
+        "https://rpc.cardona.zkevm-rpc.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "zkevm-cardona",
+          "name": "zkEVM Cardona Testnet"
+        },
+        "drpc": {
+          "shortName": "polygon-zkevm-cardona"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2523": {
+      "name": "Fraxtal Hoodi Testnet",
+      "chainId": 2523,
+      "shortName": "fraxtal-hoodi-testnet",
+      "rpc": [
+        "https://rpc.testnet.frax.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "fraxtal-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=2523",
+          "chainName": "Fraxtal Hoodi Testnet",
+          "blockExplorerUrl": "https://hoodi.fraxscan.com/"
+        }
+      }
+    },
+    "2741": {
+      "name": "Abstract",
+      "chainId": 2741,
+      "shortName": "abstract",
+      "rpc": [
+        "https://api.mainnet.abs.xyz"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "abstract-mainnet",
+          "name": "Abstract Mainnet"
+        },
+        "drpc": {
+          "shortName": "abstract"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=2741",
+          "chainName": "Abstract Mainnet",
+          "blockExplorerUrl": "https://abscan.org/"
+        }
+      }
+    },
+    "2810": {
+      "name": "Morph Holesky",
+      "chainId": 2810,
+      "shortName": "hmorph",
+      "rpc": [
+        "https://rpc-quicknode-holesky.morphl2.io",
+        "wss://rpc-quicknode-holesky.morphl2.io",
+        "https://rpc-holesky.morphl2.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "morph-holesky",
+          "name": "Morph Holesky"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer-holesky.morphl2.io/",
+          "hostedBy": "self",
+          "name": "Morph"
+        }
+      }
+    },
+    "2818": {
+      "name": "Morph",
+      "chainId": 2818,
+      "shortName": "morph",
+      "rpc": [
+        "https://rpc.morphl2.io",
+        "wss://rpc.morphl2.io:8443",
+        "https://rpc-quicknode.morphl2.io",
+        "wss://rpc-quicknode.morphl2.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "morph-mainnet",
+          "name": "Morph Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.morphl2.io/",
+          "hostedBy": "self",
+          "name": "Morph"
+        }
+      }
+    },
+    "3111": {
+      "name": "Alpha Chain Mainnet",
+      "chainId": 3111,
+      "shortName": "alpha",
+      "rpc": [
+        "https://rpc.goalpha.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "3338": {
+      "name": "peaq",
+      "chainId": 3338,
+      "shortName": "PEAQ",
+      "rpc": [
+        "https://quicknode1.peaq.xyz",
+        "https://quicknode2.peaq.xyz",
+        "https://quicknode3.peaq.xyz"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "peaq-mainnet",
+          "name": "Peaq Mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "3737": {
+      "name": "Crossbell",
+      "chainId": 3737,
+      "shortName": "csb",
+      "rpc": [
+        "https://rpc.crossbell.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://scan.crossbell.io/",
+          "hostedBy": "self",
+          "name": "Crossbell"
+        }
+      }
+    },
+    "4000": {
+      "name": "Ozone Chain Mainnet",
+      "chainId": 4000,
+      "shortName": "ozo",
+      "rpc": [
+        "https://node1.ozonechain.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "4002": {
+      "name": "Fantom Testnet",
+      "chainId": 4002,
+      "shortName": "tftm",
+      "rpc": [
+        "https://rpc.testnet.fantom.network",
+        "https://fantom-testnet-rpc.publicnode.com",
+        "wss://fantom-testnet-rpc.publicnode.com",
+        "https://fantom-testnet.drpc.org",
+        "wss://fantom-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "fantom-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "4114": {
+      "name": "Citrea Mainnet",
+      "chainId": 4114,
+      "shortName": "citrea",
+      "rpc": [
+        "https://rpc.mainnet.citrea.xyz"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "4157": {
+      "name": "CrossFi Testnet",
+      "chainId": 4157,
+      "shortName": "crossfi-testnet",
+      "rpc": [
+        "https://rpc.testnet.ms"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "4200": {
+      "name": "Merlin Mainnet",
+      "chainId": 4200,
+      "shortName": "Merlin-Mainnet",
+      "rpc": [
+        "https://rpc.merlinchain.io",
+        "https://merlin-mainnet-enterprise.unifra.io",
+        "https://rpc-merlin.rockx.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "merlin"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "4202": {
+      "name": "Lisk Sepolia Testnet",
+      "chainId": 4202,
+      "shortName": "lisksep",
+      "rpc": [
+        "https://rpc.sepolia-api.lisk.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "lisk-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia-blockscout.lisk.com/",
+          "hostedBy": "gelato-raas",
+          "name": "Lisk Sepolia Testnet"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Lisk"
+        }
+      }
+    },
+    "4217": {
+      "name": "Chain 4217",
+      "chainId": 4217,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "tempo-mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "4326": {
+      "name": "MegaETH Mainnet",
+      "chainId": 4326,
+      "shortName": "megaeth",
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "megaeth"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=4326",
+          "chainName": "MegaETH Mainnet",
+          "blockExplorerUrl": "https://mega.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://megaeth.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "MegaETH"
+        }
+      }
+    },
+    "4689": {
+      "name": "IoTeX Network Mainnet",
+      "chainId": 4689,
+      "shortName": "iotex-mainnet",
+      "rpc": [
+        "https://babel-api.mainnet.iotex.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "iotex"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "4690": {
+      "name": "IoTeX Network Testnet",
+      "chainId": 4690,
+      "shortName": "iotex-testnet",
+      "rpc": [
+        "https://babel-api.testnet.iotex.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "iotex-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "4801": {
+      "name": "World Chain Sepolia Testnet",
+      "chainId": 4801,
+      "shortName": "wcsep",
+      "rpc": [
+        "https://worldchain-sepolia.g.alchemy.com/public",
+        "https://4801.rpc.thirdweb.com",
+        "https://worldchain-sepolia.gateway.tenderly.co",
+        "wss://worldchain-sepolia.gateway.tenderly.co"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "worldchain-sepolia",
+          "name": "World Chain Sepolia"
+        },
+        "drpc": {
+          "shortName": "worldchain-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=4801",
+          "chainName": "World Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.worldscan.org/"
+        },
+        "blockscout": {
+          "url": "https://worldchain-sepolia.explorer.alchemy.com",
+          "hostedBy": "alchemy",
+          "name": "World Chain Testnet"
+        }
+      }
+    },
+    "5000": {
+      "name": "Mantle",
+      "chainId": 5000,
+      "shortName": "mantle",
+      "rpc": [
+        "https://rpc.mantle.xyz",
+        "https://mantle-rpc.publicnode.com",
+        "wss://mantle-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "mantle-mainnet",
+          "name": "Mantle Mainnet"
+        },
+        "drpc": {
+          "shortName": "mantle"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=5000",
+          "chainName": "Mantle Mainnet",
+          "blockExplorerUrl": "https://mantlescan.xyz/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Mantle"
+        }
+      }
+    },
+    "5003": {
+      "name": "Mantle Sepolia Testnet",
+      "chainId": 5003,
+      "shortName": "mnt-sep",
+      "rpc": [
+        "https://rpc.sepolia.mantle.xyz"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "mantle-sepolia",
+          "name": "Mantle Sepolia"
+        },
+        "drpc": {
+          "shortName": "mantle-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=5003",
+          "chainName": "Mantle Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.mantlescan.xyz/"
+        }
+      }
+    },
+    "5031": {
+      "name": "Somnia Mainnet",
+      "chainId": 5031,
+      "shortName": "SomniaMainnet",
+      "rpc": [
+        "https://api.infra.mainnet.somnia.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "somnia"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "5115": {
+      "name": "Citrea Testnet",
+      "chainId": 5115,
+      "shortName": "citrea-testnet",
+      "rpc": [
+        "https://rpc.testnet.citrea.xyz"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Citrea"
+        }
+      }
+    },
+    "5330": {
+      "name": "Superseed",
+      "chainId": 5330,
+      "shortName": "sseed",
+      "rpc": [
+        "https://mainnet.superseed.xyz",
+        "wss://mainnet.superseed.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "superseed"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.superseed.xyz/",
+          "hostedBy": "self",
+          "name": "Superseed"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Superseed"
+        }
+      }
+    },
+    "5611": {
+      "name": "opBNB Testnet",
+      "chainId": 5611,
+      "shortName": "obnbt",
+      "rpc": [
+        "https://opbnb-testnet-rpc.bnbchain.org",
+        "https://opbnb-testnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3",
+        "wss://opbnb-testnet.nodereal.io/ws/v1/64a9df0874fb4a93b9d0a3849de012d3",
+        "https://opbnb-testnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+        "wss://opbnb-testnet.nodereal.io/ws/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+        "https://opbnb-testnet-rpc.publicnode.com",
+        "wss://opbnb-testnet-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "opbnb-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=5611",
+          "chainName": "opBNB Testnet",
+          "blockExplorerUrl": "https://opbnb-testnet.bscscan.com/"
+        }
+      }
+    },
+    "5700": {
+      "name": "Syscoin Tanenbaum Testnet",
+      "chainId": 5700,
+      "shortName": "tsys",
+      "rpc": [
+        "https://rpc.tanenbaum.io",
+        "wss://rpc.tanenbaum.io/wss",
+        "https://syscoin-tanenbaum-evm.publicnode.com",
+        "wss://syscoin-tanenbaum-evm.publicnode.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "5845": {
+      "name": "Tangle",
+      "chainId": 5845,
+      "shortName": "tangle",
+      "rpc": [
+        "https://rpc.tangle.tools",
+        "wss://rpc.tangle.tools"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.tangle.tools",
+          "hostedBy": "self",
+          "name": "Tangle"
+        }
+      }
+    },
+    "6322": {
+      "name": "Aura Mainnet",
+      "chainId": 6322,
+      "shortName": "aura",
+      "rpc": [
+        "https://jsonrpc.aura.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "6342": {
+      "name": "MegaETH Testnet",
+      "chainId": 6342,
+      "shortName": "megatest",
+      "rpc": [
+        "https://carrot.megaeth.com/rpc",
+        "wss://carrot.megaeth.com/ws"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "megaeth-deprecated"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://megaeth-testnet.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "MegaETH Testnet"
+        }
+      }
+    },
+    "6343": {
+      "name": "Chain 6343",
+      "chainId": 6343,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "megaeth-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=6343",
+          "chainName": "MegaETH Testnet",
+          "blockExplorerUrl": "https://testnet-mega.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://megaeth-testnet-v2.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "MegaETH Testnet v2"
+        }
+      }
+    },
+    "6398": {
+      "name": "Connext Sepolia",
+      "chainId": 6398,
+      "shortName": "connext-sepolia",
+      "rpc": [
+        "https://rpc.connext-sepolia.gelato.digital/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "everclear-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://scan.testnet.everclear.org/",
+          "hostedBy": "gelato-raas",
+          "name": "Everclear Testnet"
+        }
+      }
+    },
+    "7000": {
+      "name": "ZetaChain Mainnet",
+      "chainId": 7000,
+      "shortName": "zetachain-mainnet",
+      "rpc": [
+        "https://zetachain-evm.blockpi.network/v1/rpc/public",
+        "https://zetachain-mainnet.g.allthatnode.com/archive/evm",
+        "https://zeta-chain.drpc.org",
+        "https://zetachain-mainnet.public.blastapi.io",
+        "https://7000.rpc.thirdweb.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zeta-chain"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zetachain.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "ZetaChain"
+        }
+      }
+    },
+    "7001": {
+      "name": "ZetaChain Testnet",
+      "chainId": 7001,
+      "shortName": "zetachain-testnet",
+      "rpc": [
+        "https://zetachain-athens-evm.blockpi.network/v1/rpc/public",
+        "https://zetachain-testnet.public.blastapi.io",
+        "https://zetachain-athens.g.allthatnode.com/archive/evm",
+        "https://7001.rpc.thirdweb.com",
+        "https://zeta-chain-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zeta-chain-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zetachain-athens-3.blockscout.com/",
+          "hostedBy": "gelato-raas",
+          "name": "ZetaChain Testnet"
+        }
+      }
+    },
+    "7200": {
+      "name": "exSat Mainnet",
+      "chainId": 7200,
+      "shortName": "xsat",
+      "rpc": [
+        "https://evm.exsat.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "7560": {
+      "name": "Cyber Mainnet",
+      "chainId": 7560,
+      "shortName": "cyeth",
+      "rpc": [
+        "https://cyber.alt.technology/",
+        "wss://cyber-ws.alt.technology/",
+        "https://rpc.cyber.co/",
+        "wss://rpc.cyber.co/"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "cyber-mainnet",
+          "name": "Cyber L2 Mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "7668": {
+      "name": "The Root Network - Mainnet",
+      "chainId": 7668,
+      "shortName": "trn-mainnet",
+      "rpc": [
+        "https://root.rootnet.live/archive",
+        "wss://root.rootnet.live/archive/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "7672": {
+      "name": "The Root Network - Porcini Testnet",
+      "chainId": 7672,
+      "shortName": "trn-porcini",
+      "rpc": [
+        "https://porcini.rootnet.app/archive",
+        "wss://porcini.rootnet.app/archive/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "7700": {
+      "name": "Canto",
+      "chainId": 7700,
+      "shortName": "canto",
+      "rpc": [
+        "https://canto.slingshot.finance",
+        "https://canto-rpc.ansybl.io",
+        "https://mainnode.plexnode.org:8545",
+        "https://canto.gravitychain.io/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "8217": {
+      "name": "Kaia Mainnet",
+      "chainId": 8217,
+      "shortName": "kaia-mainnet",
+      "rpc": [
+        "https://public-en.node.kaia.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "kaia-mainnet",
+          "name": "Kaia Mainnet"
+        },
+        "drpc": {
+          "shortName": "klaytn"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "8333": {
+      "name": "B3",
+      "chainId": 8333,
+      "shortName": "b3",
+      "rpc": [
+        "https://mainnet-rpc.b3.fun"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "b3-mainnet",
+          "name": "B3 Mainnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.b3.fun",
+          "hostedBy": "caldera",
+          "name": "B3 Mainnet"
+        }
+      }
+    },
+    "8453": {
+      "name": "Base",
+      "chainId": 8453,
+      "shortName": "base",
+      "rpc": [
+        "https://mainnet.base.org/",
+        "https://developer-access-mainnet.base.org/",
+        "https://base.gateway.tenderly.co",
+        "wss://base.gateway.tenderly.co",
+        "https://base-rpc.publicnode.com",
+        "wss://base-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "base-mainnet",
+          "name": "Base Mainnet"
+        },
+        "drpc": {
+          "shortName": "base"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=8453",
+          "chainName": "Base Mainnet",
+          "blockExplorerUrl": "https://basescan.org/"
+        },
+        "blockscout": {
+          "url": "https://base.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Base"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Base"
+        }
+      }
+    },
+    "9001": {
+      "name": "Evmos",
+      "chainId": 9001,
+      "shortName": "evmos",
+      "rpc": [
+        "https://evmos.lava.build",
+        "wss://evmos.lava.build/websocket",
+        "https://evmos-evm-rpc.publicnode.com",
+        "wss://evmos-evm-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "evmos"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "9372": {
+      "name": "Oasys Testnet",
+      "chainId": 9372,
+      "shortName": "OAS_TEST",
+      "rpc": [
+        "https://rpc.testnet.oasys.games"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "oasys-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.testnet.oasys.games/",
+          "hostedBy": "self",
+          "name": "Oasys Testnet"
+        }
+      }
+    },
+    "9700": {
+      "name": "Oort MainnetDev",
+      "chainId": 9700,
+      "shortName": "MainnetDev",
+      "rpc": [
+        "https://dev-rpc.oortech.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "9745": {
+      "name": "Plasma Mainnet",
+      "chainId": 9745,
+      "shortName": "plasma",
+      "rpc": [
+        "https://rpc.plasma.to"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "plasma-mainnet",
+          "name": "Plasma Mainnet"
+        },
+        "drpc": {
+          "shortName": "plasma"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=9745",
+          "chainName": "Plasma Mainnet",
+          "blockExplorerUrl": "https://plasmascan.to/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Plasma"
+        }
+      }
+    },
+    "9746": {
+      "name": "Plasma Testnet",
+      "chainId": 9746,
+      "shortName": "plasma-testnet",
+      "rpc": [
+        "https://testnet-rpc.plasma.to"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "plasma-testnet",
+          "name": "Plasma Testnet"
+        },
+        "drpc": {
+          "shortName": "plasma-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=9746",
+          "chainName": "Plasma Testnet",
+          "blockExplorerUrl": "https://testnet.plasmascan.to/"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Plasma"
+        }
+      }
+    },
+    "9996": {
+      "name": "Mind Smart Chain Mainnet",
+      "chainId": 9996,
+      "shortName": "MIND",
+      "rpc": [
+        "https://rpc-msc.mindchain.info/",
+        "https://seednode.mindchain.info",
+        "https://archive.mindchain.info/",
+        "https://mind-smart-chain.rpc.thirdweb.com",
+        "wss://archive.mindchain.info/ws",
+        "wss://seednode.mindchain.info/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://mainnet.mindscan.info/",
+          "hostedBy": "self",
+          "name": "Mind Smart Chain"
+        }
+      }
+    },
+    "10143": {
+      "name": "Monad Testnet",
+      "chainId": 10143,
+      "shortName": "mon-testnet",
+      "rpc": [
+        "https://testnet-rpc.monad.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "monad-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=10143",
+          "chainName": "Monad Testnet",
+          "blockExplorerUrl": "https://testnet.monadscan.com/"
+        }
+      }
+    },
+    "10200": {
+      "name": "Gnosis Chiado Testnet",
+      "chainId": 10200,
+      "shortName": "chi",
+      "rpc": [
+        "https://rpc.chiadochain.net",
+        "https://rpc.chiado.gnosis.gateway.fm",
+        "wss://rpc.chiadochain.net/wss",
+        "https://gnosis-chiado-rpc.publicnode.com",
+        "wss://gnosis-chiado-rpc.publicnode.com",
+        "https://gnosis-chiado.drpc.org",
+        "wss://gnosis-chiado.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "gnosis-chiado"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://gnosis-chiado.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Gnosis Chiado Testnet"
+        }
+      }
+    },
+    "10849": {
+      "name": "Lamina1",
+      "chainId": 10849,
+      "shortName": "lamina1",
+      "rpc": [
+        "https://subnets.avax.network/lamina1/mainnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Lamina1"
+        }
+      }
+    },
+    "10850": {
+      "name": "Lamina1 Identity",
+      "chainId": 10850,
+      "shortName": "lamina1id",
+      "rpc": [
+        "https://subnets.avax.network/lamina1id/mainnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Lamina1 Identity"
+        }
+      }
+    },
+    "10888": {
+      "name": "GameSwift Chain Testnet",
+      "chainId": 10888,
+      "shortName": "gameswift-chain-testnet",
+      "rpc": [
+        "https://rpc-testnet.gameswift.io",
+        "wss://ws-testnet.gameswift.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "gameswift-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "11124": {
+      "name": "Abstract Sepolia Testnet",
+      "chainId": 11124,
+      "shortName": "abstract-sepolia",
+      "rpc": [
+        "https://api.testnet.abs.xyz"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "abstract-testnet",
+          "name": "Abstract Testnet"
+        },
+        "drpc": {
+          "shortName": "abstract-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=11124",
+          "chainName": "Abstract Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.abscan.org/"
+        }
+      }
+    },
+    "11235": {
+      "name": "Haqq Network",
+      "chainId": 11235,
+      "shortName": "ISLM",
+      "rpc": [
+        "https://rpc.eth.haqq.network",
+        "https://haqq-evm-rpc.publicnode.com",
+        "wss://haqq-evm-rpc.publicnode.com",
+        "https://haqq.drpc.org",
+        "wss://haqq.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "haqq"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.haqq.network/",
+          "hostedBy": "self",
+          "name": "HAQQ"
+        }
+      }
+    },
+    "13371": {
+      "name": "Immutable zkEVM",
+      "chainId": 13371,
+      "shortName": "imx",
+      "rpc": [
+        "https://rpc.immutable.com",
+        "https://immutable-zkevm.drpc.org",
+        "wss://immutable-zkevm.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "imx-mainnet",
+          "name": "Immutable Mainnet"
+        },
+        "drpc": {
+          "shortName": "immutable-zkevm"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.immutable.com/",
+          "hostedBy": "blockscout",
+          "name": "Immutable zkEVM"
+        }
+      }
+    },
+    "13473": {
+      "name": "Immutable zkEVM Testnet",
+      "chainId": 13473,
+      "shortName": "imx-testnet",
+      "rpc": [
+        "https://rpc.testnet.immutable.com",
+        "https://immutable-zkevm-testnet.drpc.org",
+        "wss://immutable-zkevm-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "imx-testnet",
+          "name": "Immutable Testnet"
+        },
+        "drpc": {
+          "shortName": "immutable-zkevm-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.testnet.immutable.com/",
+          "hostedBy": "blockscout",
+          "name": "Immutable zkEVM Testnet"
+        }
+      }
+    },
+    "13505": {
+      "name": "Gravity Alpha Testnet Sepolia",
+      "chainId": 13505,
+      "shortName": "gravitysep",
+      "rpc": [
+        "https://rpc-sepolia.gravity.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "gravity-alpha-sepolia"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "14601": {
+      "name": "Sonic Testnet",
+      "chainId": 14601,
+      "shortName": "sonic-testnet",
+      "rpc": [
+        "https://rpc.testnet.soniclabs.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "sonic-testnet-v2"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=14601",
+          "chainName": "Sonic Testnet",
+          "blockExplorerUrl": "https://testnet.sonicscan.org/"
+        }
+      }
+    },
+    "14800": {
+      "name": "Vana Moksha Testnet",
+      "chainId": 14800,
+      "shortName": "vana-moksha",
+      "rpc": [
+        "https://rpc.moksha.vana.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "vana-moksha",
+          "name": "Vana Moksha Testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://moksha.vanascan.io/",
+          "hostedBy": "protofire",
+          "name": "Vana Moksha Testnet"
+        }
+      }
+    },
+    "16180": {
+      "name": "PLYR PHI",
+      "chainId": 16180,
+      "shortName": "plyr-phi",
+      "rpc": [
+        "https://subnets.avax.network/plyr/mainnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.plyr.network/",
+          "hostedBy": "self",
+          "name": "PLYR PHI L1"
+        }
+      }
+    },
+    "16600": {
+      "name": "0G-Newton-Testnet",
+      "chainId": 16600,
+      "shortName": "0gai-testnet",
+      "rpc": [],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "0g-newton",
+          "name": "0g Newton Testnet"
+        },
+        "drpc": {
+          "shortName": "0g-newton-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "16602": {
+      "name": "0G-Testnet-Galileo",
+      "chainId": 16602,
+      "shortName": "0g-testnet-galileo",
+      "rpc": [
+        "https://evmrpc-testnet.0g.ai"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "0g-galileo-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "16661": {
+      "name": "0G Mainnet",
+      "chainId": 16661,
+      "shortName": "0g",
+      "rpc": [
+        "https://evmrpc.0g.ai"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "0g-mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "17000": {
+      "name": "Holesky",
+      "chainId": 17000,
+      "shortName": "holesky",
+      "rpc": [
+        "https://rpc.holesky.ethpandaops.io",
+        "https://ethereum-holesky-rpc.publicnode.com",
+        "wss://ethereum-holesky-rpc.publicnode.com",
+        "https://holesky.drpc.org",
+        "wss://holesky.drpc.org",
+        "https://rpc-holesky.rockx.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "ethereum-holesky",
+          "name": "Ethereum Holesky Testnet"
+        },
+        "drpc": {
+          "shortName": "holesky"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://eth-holesky.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Holesky"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Holesky"
+        }
+      }
+    },
+    "19011": {
+      "name": "HOME Verse Mainnet",
+      "chainId": 19011,
+      "shortName": "HMV",
+      "rpc": [
+        "https://rpc.mainnet.oasys.homeverse.games/"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "22776": {
+      "name": "MAP Protocol",
+      "chainId": 22776,
+      "shortName": "mapo",
+      "rpc": [
+        "https://rpc.maplabs.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.mapprotocol.io/",
+          "hostedBy": "self",
+          "name": "MAP Relay Chain"
+        }
+      }
+    },
+    "23294": {
+      "name": "Oasis Sapphire",
+      "chainId": 23294,
+      "shortName": "sapphire",
+      "rpc": [
+        "https://sapphire.oasis.io",
+        "wss://sapphire.oasis.io/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "23295": {
+      "name": "Oasis Sapphire Testnet",
+      "chainId": 23295,
+      "shortName": "sapphire-testnet",
+      "rpc": [
+        "https://testnet.sapphire.oasis.io",
+        "wss://testnet.sapphire.oasis.io/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "25327": {
+      "name": "Everclear Mainnet",
+      "chainId": 25327,
+      "shortName": "Everclear",
+      "rpc": [
+        "https://rpc.everclear.raas.gelato.cloud"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "everclear"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "25925": {
+      "name": "KUB Testnet",
+      "chainId": 25925,
+      "shortName": "kubt",
+      "rpc": [
+        "https://rpc-testnet.bitkubchain.io",
+        "wss://wss-testnet.bitkubchain.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet.bkcscan.com/",
+          "hostedBy": "self",
+          "name": "Bitkub Testnet"
+        }
+      }
+    },
+    "31611": {
+      "name": "Mezo Testnet",
+      "chainId": 31611,
+      "shortName": "mezo-testnet",
+      "rpc": [
+        "https://rpc.test.mezo.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "mezo-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "31612": {
+      "name": "Mezo",
+      "chainId": 31612,
+      "shortName": "mezo",
+      "rpc": [
+        "https://rpc_evm-mezo.imperator.co",
+        "wss://ws_evm-mezo.imperator.co",
+        "https://rpc-http.mezo.boar.network",
+        "wss://rpc-ws.mezo.boar.network",
+        "https://mainnet.mezo.public.validationcloud.io",
+        "wss://mainnet.mezo.public.validationcloud.io",
+        "https://rpc-internal.mezo.org",
+        "wss://rpc-ws-internal.mezo.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "mezo"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "31911": {
+      "name": "Chain 31911",
+      "chainId": 31911,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "ozean-poseidon-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "32769": {
+      "name": "Zilliqa 2",
+      "chainId": 32769,
+      "shortName": "zil",
+      "rpc": [
+        "https://api.zilliqa.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zilliqa.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Zilliqa 2 Mainnet"
+        }
+      }
+    },
+    "33101": {
+      "name": "Zilliqa 2 Testnet",
+      "chainId": 33101,
+      "shortName": "zil-testnet",
+      "rpc": [
+        "https://api.testnet.zilliqa.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet.zilliqa.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Zilliqa 2 Testnet"
+        }
+      }
+    },
+    "33111": {
+      "name": "Curtis",
+      "chainId": 33111,
+      "shortName": "curtis",
+      "rpc": [
+        "https://rpc.curtis.apechain.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "apechain-curtis"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=33111",
+          "chainName": "ApeChain Curtis Testnet",
+          "blockExplorerUrl": "https://curtis.apescan.io/"
+        },
+        "blockscout": {
+          "url": "https://curtis.explorer.caldera.xyz/",
+          "hostedBy": "caldera",
+          "name": "APE Curtis"
+        }
+      }
+    },
+    "33139": {
+      "name": "ApeChain",
+      "chainId": 33139,
+      "shortName": "apechain",
+      "rpc": [
+        "https://rpc.apechain.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "apechain"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=33139",
+          "chainName": "ApeChain Mainnet",
+          "blockExplorerUrl": "https://apescan.io/"
+        },
+        "blockscout": {
+          "url": "https://apechain.calderaexplorer.xyz/",
+          "hostedBy": "caldera",
+          "name": "ApeChain"
+        }
+      }
+    },
+    "34443": {
+      "name": "Mode",
+      "chainId": 34443,
+      "shortName": "mode",
+      "rpc": [
+        "https://mainnet.mode.network",
+        "https://mode.drpc.org",
+        "wss://mode.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "mode-mainnet",
+          "name": "Mode Mainnet"
+        },
+        "drpc": {
+          "shortName": "mode"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.mode.network/",
+          "hostedBy": "conduit",
+          "name": "Mode"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Mode"
+        }
+      }
+    },
+    "35441": {
+      "name": "Q Mainnet",
+      "chainId": 35441,
+      "shortName": "q",
+      "rpc": [
+        "https://rpc.q.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.q.org/",
+          "hostedBy": "self",
+          "name": "Q"
+        }
+      }
+    },
+    "35443": {
+      "name": "Q Testnet",
+      "chainId": 35443,
+      "shortName": "q-testnet",
+      "rpc": [
+        "https://rpc.qtestnet.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "37111": {
+      "name": "Lens Testnet",
+      "chainId": 37111,
+      "shortName": "lens-sepolia",
+      "rpc": [
+        "https://rpc.testnet.lens.dev"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "lens-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "39797": {
+      "name": "Energi Mainnet",
+      "chainId": 39797,
+      "shortName": "nrg",
+      "rpc": [
+        "https://nodeapi.energi.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "41455": {
+      "name": "Aleph Zero EVM",
+      "chainId": 41455,
+      "shortName": "aleph-zero",
+      "rpc": [
+        "https://rpc.alephzero.raas.gelato.cloud",
+        "wss://ws.alephzero.raas.gelato.cloud"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "alephzero"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "42161": {
+      "name": "Arbitrum One",
+      "chainId": 42161,
+      "shortName": "arb1",
+      "rpc": [
+        "https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}",
+        "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}",
+        "https://arb1.arbitrum.io/rpc",
+        "https://arbitrum-one-rpc.publicnode.com",
+        "wss://arbitrum-one-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "arbitrum-mainnet",
+          "name": "Arbitrum main"
+        },
+        "drpc": {
+          "shortName": "arbitrum"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=42161",
+          "chainName": "Arbitrum One Mainnet",
+          "blockExplorerUrl": "https://arbiscan.io/"
+        },
+        "blockscout": {
+          "url": "https://arbitrum.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Arbitrum One Nitro"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Arbitrum One"
+        }
+      }
+    },
+    "42170": {
+      "name": "Arbitrum Nova",
+      "chainId": 42170,
+      "shortName": "arb-nova",
+      "rpc": [
+        "https://nova.arbitrum.io/rpc",
+        "https://arbitrum-nova-rpc.publicnode.com",
+        "wss://arbitrum-nova-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "nova-mainnet",
+          "name": "Nova main"
+        },
+        "drpc": {
+          "shortName": "arbitrum-nova"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://arbitrum-nova.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Arbitrum Nova"
+        }
+      }
+    },
+    "42220": {
+      "name": "Celo Mainnet",
+      "chainId": 42220,
+      "shortName": "celo",
+      "rpc": [
+        "https://forno.celo.org",
+        "wss://forno.celo.org/ws"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "celo-mainnet",
+          "name": "CELO main"
+        },
+        "drpc": {
+          "shortName": "celo"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=42220",
+          "chainName": "Celo Mainnet",
+          "blockExplorerUrl": "https://celoscan.io/"
+        },
+        "blockscout": {
+          "url": "https://celo.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Celo"
+        }
+      }
+    },
+    "42261": {
+      "name": "Oasis Emerald Testnet",
+      "chainId": 42261,
+      "shortName": "emerald-testnet",
+      "rpc": [
+        "https://testnet.emerald.oasis.io/",
+        "wss://testnet.emerald.oasis.io/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "42262": {
+      "name": "Oasis Emerald",
+      "chainId": 42262,
+      "shortName": "emerald",
+      "rpc": [
+        "https://emerald.oasis.io",
+        "wss://emerald.oasis.io/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "42429": {
+      "name": "Tempo Testnet Andantino (Deprecated)",
+      "chainId": 42429,
+      "shortName": "tempo-andantino",
+      "rpc": [
+        "https://rpc.testnet.tempo.xyz"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "tempo-testnet",
+          "name": "Tempo Testnet"
+        },
+        "drpc": {
+          "shortName": "tempo-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "42431": {
+      "name": "Tempo Testnet Moderato",
+      "chainId": 42431,
+      "shortName": "tempo-moderato",
+      "rpc": [
+        "https://rpc.moderato.tempo.xyz",
+        "wss://rpc.moderato.tempo.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "tempo-moderato-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "42766": {
+      "name": "ZKFair Mainnet",
+      "chainId": 42766,
+      "shortName": "ZKFair-Mainnet",
+      "rpc": [
+        "https://rpc.zkfair.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://scan.zkfair.io/",
+          "hostedBy": "self",
+          "name": "zkFair"
+        }
+      }
+    },
+    "42793": {
+      "name": "Etherlink Mainnet",
+      "chainId": 42793,
+      "shortName": "etlk",
+      "rpc": [
+        "https://node.mainnet.etherlink.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.etherlink.com/",
+          "hostedBy": "blockscout",
+          "name": "Etherlink"
+        }
+      }
+    },
+    "43111": {
+      "name": "Hemi",
+      "chainId": 43111,
+      "shortName": "hemi",
+      "rpc": [
+        "https://rpc.hemi.network/rpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hemi"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.hemi.xyz/",
+          "hostedBy": "self",
+          "name": "Hemi"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Hemi"
+        }
+      }
+    },
+    "43113": {
+      "name": "Avalanche Fuji Testnet",
+      "chainId": 43113,
+      "shortName": "Fuji",
+      "rpc": [
+        "https://api.avax-test.network/ext/bc/C/rpc",
+        "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+        "wss://avalanche-fuji-c-chain-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "avalanche-testnet",
+          "name": "Avalanche Fuji Testnet"
+        },
+        "drpc": {
+          "shortName": "avalanche-fuji"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=43113",
+          "chainName": "Avalanche Fuji Testnet",
+          "blockExplorerUrl": "https://testnet.snowscan.xyz/"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Fuji"
+        }
+      }
+    },
+    "43114": {
+      "name": "Avalanche C-Chain",
+      "chainId": 43114,
+      "shortName": "avax",
+      "rpc": [
+        "https://api.avax.network/ext/bc/C/rpc",
+        "https://avalanche-c-chain-rpc.publicnode.com",
+        "wss://avalanche-c-chain-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "avalanche-mainnet",
+          "name": "Avalanche Mainnet"
+        },
+        "drpc": {
+          "shortName": "avalanche"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=43114",
+          "chainName": "Avalanche C-Chain",
+          "blockExplorerUrl": "https://snowscan.xyz/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "C-Chain"
+        }
+      }
+    },
+    "48816": {
+      "name": "Chain 48816",
+      "chainId": 48816,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "goat-testnet3"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "48898": {
+      "name": "Zircuit Garfield Testnet",
+      "chainId": 48898,
+      "shortName": "zircuit-garfield-testnet",
+      "rpc": [
+        "https://garfield-testnet.zircuit.com/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zircuit-garfield-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "48900": {
+      "name": "Zircuit Mainnet",
+      "chainId": 48900,
+      "shortName": "zircuit-mainnet",
+      "rpc": [
+        "https://mainnet.zircuit.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zircuit-mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "49797": {
+      "name": "Energi Testnet",
+      "chainId": 49797,
+      "shortName": "tnrg",
+      "rpc": [
+        "https://nodeapi.test.energi.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "50104": {
+      "name": "Sophon",
+      "chainId": 50104,
+      "shortName": "sophon",
+      "rpc": [
+        "https://rpc.sophon.xyz",
+        "wss://rpc.sophon.xyz/ws"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "sophon"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Sophon"
+        }
+      }
+    },
+    "50312": {
+      "name": "Somnia Testnet",
+      "chainId": 50312,
+      "shortName": "SomniaTestnet",
+      "rpc": [
+        "https://dream-rpc.somnia.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "somnia-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://shannon-explorer.somnia.network/",
+          "hostedBy": "self",
+          "name": "Somnia Testnet"
+        }
+      }
+    },
+    "53302": {
+      "name": "Superseed Sepolia Testnet",
+      "chainId": 53302,
+      "shortName": "seedsep",
+      "rpc": [
+        "https://sepolia.superseed.xyz",
+        "wss://sepolia.superseed.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "superseed-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia-explorer.superseed.xyz/",
+          "hostedBy": "self",
+          "name": "Superseed Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Superseed"
+        }
+      }
+    },
+    "53935": {
+      "name": "DFK Chain",
+      "chainId": 53935,
+      "shortName": "DFK",
+      "rpc": [
+        "https://subnets.avax.network/defi-kingdoms/dfk-chain/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "DFK"
+        }
+      }
+    },
+    "54211": {
+      "name": "Haqq Chain Testnet",
+      "chainId": 54211,
+      "shortName": "ISLMT",
+      "rpc": [
+        "https://rpc.eth.testedge2.haqq.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "haqq-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.testedge2.haqq.network/",
+          "hostedBy": "self",
+          "name": "HAQQ Testnet"
+        }
+      }
+    },
+    "56288": {
+      "name": "Boba BNB Mainnet",
+      "chainId": 56288,
+      "shortName": "BobaBnb",
+      "rpc": [
+        "https://bnb.boba.network",
+        "https://boba-bnb.gateway.tenderly.co/",
+        "https://gateway.tenderly.co/public/boba-bnb",
+        "https://replica.bnb.boba.network",
+        "wss://boba-bnb.gateway.tenderly.co/",
+        "wss://gateway.tenderly.co/public/boba-bnb"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "boba-bnb"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Boba BNB"
+        }
+      }
+    },
+    "57054": {
+      "name": "Sonic Blaze Testnet",
+      "chainId": 57054,
+      "shortName": "blaze",
+      "rpc": [
+        "https://rpc.blaze.soniclabs.com",
+        "https://sonic-blaze-rpc.publicnode.com",
+        "wss://sonic-blaze-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "sonic-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "57073": {
+      "name": "Ink",
+      "chainId": 57073,
+      "shortName": "ink",
+      "rpc": [
+        "https://rpc-gel.inkonchain.com",
+        "https://rpc-qnd.inkonchain.com",
+        "wss://rpc-gel.inkonchain.com",
+        "wss://rpc-qnd.inkonchain.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "ink"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.inkonchain.com/",
+          "hostedBy": "gelato-raas",
+          "name": "Ink"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Ink"
+        }
+      }
+    },
+    "59141": {
+      "name": "Linea Sepolia",
+      "chainId": 59141,
+      "shortName": "linea-sepolia",
+      "rpc": [
+        "https://rpc.sepolia.linea.build",
+        "wss://rpc.sepolia.linea.build",
+        "https://linea-sepolia.infura.io/v3/${INFURA_API_KEY}",
+        "wss://linea-sepolia.infura.io/ws/v3/${INFURA_API_KEY}",
+        "https://linea-sepolia-rpc.publicnode.com",
+        "wss://linea-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "linea-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=59141",
+          "chainName": "Linea Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.lineascan.build/"
+        }
+      }
+    },
+    "59144": {
+      "name": "Linea",
+      "chainId": 59144,
+      "shortName": "linea",
+      "rpc": [
+        "https://rpc.linea.build",
+        "wss://rpc.linea.build",
+        "https://linea-mainnet.infura.io/v3/${INFURA_API_KEY}",
+        "wss://linea-mainnet.infura.io/ws/v3/${INFURA_API_KEY}",
+        "https://linea-rpc.publicnode.com",
+        "wss://linea-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "linea-mainnet",
+          "name": "Linea Mainnet"
+        },
+        "drpc": {
+          "shortName": "linea"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=59144",
+          "chainName": "Linea Mainnet",
+          "blockExplorerUrl": "https://lineascan.build/"
+        },
+        "blockscout": {
+          "url": "https://explorer.linea.build/",
+          "hostedBy": "self",
+          "name": "Linea"
+        }
+      }
+    },
+    "59901": {
+      "name": "Chain 59901",
+      "chainId": 59901,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "metis-sepolia"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "59902": {
+      "name": "Metis Sepolia Testnet",
+      "chainId": 59902,
+      "shortName": "metis-sepolia",
+      "rpc": [
+        "https://sepolia.metisdevops.link",
+        "https://metis-sepolia-rpc.publicnode.com",
+        "wss://metis-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "60808": {
+      "name": "BOB",
+      "chainId": 60808,
+      "shortName": "bob",
+      "rpc": [
+        "https://rpc.gobob.xyz",
+        "wss://rpc.gobob.xyz",
+        "https://bob-mainnet.public.blastapi.io",
+        "wss://bob-mainnet.public.blastapi.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "snaxchain-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.gobob.xyz/",
+          "hostedBy": "self",
+          "name": "BOB"
+        }
+      }
+    },
+    "62621": {
+      "name": "MultiVAC Mainnet",
+      "chainId": 62621,
+      "shortName": "mtv",
+      "rpc": [
+        "https://rpc.mtv.ac",
+        "https://rpc-eu.mtv.ac"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "62831": {
+      "name": "PLYR TAU Testnet",
+      "chainId": 62831,
+      "shortName": "plyr-tau-testnet",
+      "rpc": [
+        "https://subnets.avax.network/plyr/testnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Plyr"
+        }
+      }
+    },
+    "71402": {
+      "name": "Godwoken Mainnet",
+      "chainId": 71402,
+      "shortName": "gw-mainnet-v1",
+      "rpc": [
+        "https://v1.mainnet.godwoken.io/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "73799": {
+      "name": "Energy Web Volta Testnet",
+      "chainId": 73799,
+      "shortName": "vt",
+      "rpc": [
+        "https://volta-rpc.energyweb.org",
+        "wss://volta-rpc.energyweb.org/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "80002": {
+      "name": "Amoy",
+      "chainId": 80002,
+      "shortName": "polygonamoy",
+      "rpc": [
+        "https://rpc-amoy.polygon.technology",
+        "https://polygon-amoy-bor-rpc.publicnode.com",
+        "wss://polygon-amoy-bor-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "matic-amoy",
+          "name": "Polygon Amoy Testnet"
+        },
+        "drpc": {
+          "shortName": "polygon-amoy"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=80002",
+          "chainName": "Polygon Amoy Testnet",
+          "blockExplorerUrl": "https://amoy.polygonscan.com/"
+        }
+      }
+    },
+    "80069": {
+      "name": "Berachain Bepolia",
+      "chainId": 80069,
+      "shortName": "berachain-bepolia",
+      "rpc": [
+        "https://bepolia.rpc.berachain.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bera-bepolia",
+          "name": "Berachain Bepolia Testnet"
+        },
+        "drpc": {
+          "shortName": "berachain-bepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=80069",
+          "chainName": "Berachain Bepolia Testnet",
+          "blockExplorerUrl": "https://testnet.berascan.com/"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Berachain bepolia"
+        }
+      }
+    },
+    "80084": {
+      "name": "Berachain bArtio",
+      "chainId": 80084,
+      "shortName": "berachainbArtio",
+      "rpc": [],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bera-bartio",
+          "name": "Berachain bArtio Testnet"
+        },
+        "drpc": {
+          "shortName": "bartio"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "80085": {
+      "name": "Berachain Artio",
+      "chainId": 80085,
+      "shortName": "berachainArtio",
+      "rpc": [],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bera-artio",
+          "name": "Berachain Artio Testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "80094": {
+      "name": "Berachain",
+      "chainId": 80094,
+      "shortName": "berachain",
+      "rpc": [
+        "https://rpc.berachain.com",
+        "https://berachain-rpc.publicnode.com",
+        "wss://berachain-rpc.publicnode.com",
+        "https://rpc.berachain-apis.com",
+        "wss://rpc.berachain-apis.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "bera-mainnet",
+          "name": "Berachain Mainnet"
+        },
+        "drpc": {
+          "shortName": "berachain"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=80094",
+          "chainName": "Berachain Mainnet",
+          "blockExplorerUrl": "https://berascan.com/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Berachain"
+        }
+      }
+    },
+    "81457": {
+      "name": "Blast",
+      "chainId": 81457,
+      "shortName": "blastmainnet",
+      "rpc": [
+        "https://rpc.blast.io",
+        "https://rpc.ankr.com/blast",
+        "https://blast.din.dev/rpc",
+        "https://blastl2-mainnet.public.blastapi.io",
+        "https://blast.blockpi.network/v1/rpc/public",
+        "https://blast-rpc.publicnode.com",
+        "wss://blast-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "blast-mainnet",
+          "name": "Blast Mainnet"
+        },
+        "drpc": {
+          "shortName": "blast"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=81457",
+          "chainName": "Blast Mainnet",
+          "blockExplorerUrl": "https://blastscan.io/"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Blast"
+        }
+      }
+    },
+    "84532": {
+      "name": "Base Sepolia Testnet",
+      "chainId": 84532,
+      "shortName": "basesep",
+      "rpc": [
+        "https://sepolia.base.org",
+        "https://base-sepolia-rpc.publicnode.com",
+        "wss://base-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "base-sepolia",
+          "name": "Base Sepolia Testnet"
+        },
+        "drpc": {
+          "shortName": "base-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=84532",
+          "chainName": "Base Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.basescan.org/"
+        },
+        "blockscout": {
+          "url": "https://base-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Base Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Base Sepolia"
+        }
+      }
+    },
+    "97476": {
+      "name": "Doma Testnet",
+      "chainId": 97476,
+      "shortName": "doma-testnet",
+      "rpc": [
+        "https://rpc-testnet.doma.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "doma-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer-testnet.doma.xyz/",
+          "hostedBy": "conduit",
+          "name": "Doma Testnet"
+        }
+      }
+    },
+    "97477": {
+      "name": "Doma",
+      "chainId": 97477,
+      "shortName": "doma",
+      "rpc": [
+        "https://rpc.doma.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "doma"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.doma.xyz/",
+          "hostedBy": "conduit",
+          "name": "Doma Mainnet"
+        }
+      }
+    },
+    "98866": {
+      "name": "Plume Mainnet",
+      "chainId": 98866,
+      "shortName": "plume-mainnet",
+      "rpc": [
+        "https://rpc.plume.org",
+        "wss://rpc.plume.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "plume"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "100009": {
+      "name": "VeChain",
+      "chainId": 100009,
+      "shortName": "vechain",
+      "rpc": [
+        "https://rpc-mainnet.vechain.energy"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "vechain"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "100010": {
+      "name": "VeChain Testnet",
+      "chainId": 100010,
+      "shortName": "vechain-testnet",
+      "rpc": [
+        "https://rpc-testnet.vechain.energy"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "vechain-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "102030": {
+      "name": "Creditcoin",
+      "chainId": 102030,
+      "shortName": "ctc",
+      "rpc": [
+        "https://mainnet3.creditcoin.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "creditcoin"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://creditcoin.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Creditcoin"
+        }
+      }
+    },
+    "102031": {
+      "name": "Creditcoin Testnet",
+      "chainId": 102031,
+      "shortName": "ctctest",
+      "rpc": [
+        "https://rpc.cc3-testnet.creditcoin.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "creditcoin-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://creditcoin-testnet.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Creditcoin Testnet"
+        }
+      }
+    },
+    "102032": {
+      "name": "Creditcoin Devnet",
+      "chainId": 102032,
+      "shortName": "ctcdev",
+      "rpc": [
+        "https://rpc.cc3-devnet.creditcoin.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "creditcoin-devnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://creditcoin-devnet.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Creditcoin Devnet"
+        }
+      }
+    },
+    "105105": {
+      "name": "Xertra Mainnet",
+      "chainId": 105105,
+      "shortName": "xertra",
+      "rpc": [
+        "https://rpc.xertra.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "111000": {
+      "name": "Siberium Test Network",
+      "chainId": 111000,
+      "shortName": "testsbr",
+      "rpc": [
+        "https://rpc.test.siberium.net"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "111188": {
+      "name": "re.al",
+      "chainId": 111188,
+      "shortName": "re-al",
+      "rpc": [
+        "https://rpc.realforreal.gelato.digital",
+        "wss://ws.realforreal.gelato.digital",
+        "https://tangible-real.gateway.tenderly.co",
+        "https://real.drpc.org",
+        "wss://real.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "real"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "128123": {
+      "name": "Etherlink Ghostnet Testnet",
+      "chainId": 128123,
+      "shortName": "etlt",
+      "rpc": [
+        "https://node.ghostnet.etherlink.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet.explorer.etherlink.com/",
+          "hostedBy": "blockscout",
+          "name": "Etherlink Testnet"
+        }
+      }
+    },
+    "167000": {
+      "name": "Taiko Alethia",
+      "chainId": 167000,
+      "shortName": "tko-mainnet",
+      "rpc": [
+        "https://rpc.mainnet.taiko.xyz",
+        "https://taiko-rpc.publicnode.com",
+        "wss://taiko-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "taiko"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=167000",
+          "chainName": "Taiko Mainnet",
+          "blockExplorerUrl": "https://taikoscan.io/"
+        },
+        "blockscout": {
+          "url": "https://blockscout.mainnet.taiko.xyz/",
+          "hostedBy": "self",
+          "name": "Taiko Alethia"
+        }
+      }
+    },
+    "167009": {
+      "name": "Taiko Hekla (deprecated)",
+      "chainId": 167009,
+      "shortName": "tko-hekla",
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "taiko-hekla"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Taiko Hekla"
+        }
+      }
+    },
+    "167013": {
+      "name": "Taiko Hoodi",
+      "chainId": 167013,
+      "shortName": "tko-hoodi",
+      "rpc": [
+        "https://rpc.hoodi.taiko.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "taiko-hoodi"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=167013",
+          "chainName": "Taiko Hoodi",
+          "blockExplorerUrl": "https://hoodi.taikoscan.io/"
+        }
+      }
+    },
+    "181228": {
+      "name": "HPP Sepolia Testnet",
+      "chainId": 181228,
+      "shortName": "hpp-sepolia",
+      "rpc": [
+        "https://sepolia.hpp.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia-explorer.hpp.io",
+          "hostedBy": "conduit",
+          "name": "HPP Sepolia"
+        }
+      }
+    },
+    "190415": {
+      "name": "HPP Mainnet",
+      "chainId": 190415,
+      "shortName": "hpp-mainnet",
+      "rpc": [
+        "https://mainnet.hpp.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.hpp.io",
+          "hostedBy": "conduit",
+          "name": "HPP Mainnet"
+        }
+      }
+    },
+    "200810": {
+      "name": "Bitlayer Testnet",
+      "chainId": 200810,
+      "shortName": "btrt",
+      "rpc": [
+        "https://testnet-rpc.bitlayer.org",
+        "wss://testnet-ws.bitlayer.org",
+        "https://testnet-rpc.bitlayer-rpc.com",
+        "wss://testnet-ws.bitlayer-rpc.com",
+        "https://rpc.ankr.com/bitlayer_testnet"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "200901": {
+      "name": "Bitlayer Mainnet",
+      "chainId": 200901,
+      "shortName": "btr",
+      "rpc": [
+        "https://rpc.bitlayer.org",
+        "https://rpc.bitlayer-rpc.com",
+        "https://rpc.ankr.com/bitlayer",
+        "https://rpc-bitlayer.rockx.com",
+        "wss://ws.bitlayer.org",
+        "wss://ws.bitlayer-rpc.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "202601": {
+      "name": "Ronin Saigon Testnet",
+      "chainId": 202601,
+      "shortName": "ronin-saigon",
+      "rpc": [
+        "https://saigon-testnet.roninchain.com/rpc",
+        "https://ronin-saigon.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "ronin-saigon"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "205205": {
+      "name": "Auroria Testnet",
+      "chainId": 205205,
+      "shortName": "auroria",
+      "rpc": [
+        "https://auroria.rpc.xertra.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "210425": {
+      "name": "PlatON Mainnet",
+      "chainId": 210425,
+      "shortName": "platon",
+      "rpc": [
+        "https://openapi2.platon.network/rpc",
+        "wss://openapi2.platon.network/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://blockscout.platon.network/",
+          "hostedBy": "self",
+          "name": "PlatON network"
+        }
+      }
+    },
+    "222888": {
+      "name": "Chain 222888",
+      "chainId": 222888,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "moca-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet-scan.mocachain.org/",
+          "hostedBy": "self",
+          "name": "Moca Chain"
+        }
+      }
+    },
+    "314159": {
+      "name": "Filecoin - Calibration testnet",
+      "chainId": 314159,
+      "shortName": "filecoin-calibration",
+      "rpc": [
+        "https://api.calibration.node.glif.io/rpc/v1",
+        "https://rpc.ankr.com/filecoin_testnet",
+        "https://filecoin-calibration.chainstacklabs.com/rpc/v1",
+        "https://filecoin-calibration.chainup.net/rpc/v1",
+        "https://calibration.filfox.info/rpc/v1",
+        "https://filecoin-calibration.drpc.org",
+        "wss://filecoin-calibration.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "filecoin-calibration"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://filecoin-testnet.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Filecoin Calibration Testnet"
+        }
+      }
+    },
+    "421614": {
+      "name": "Arbitrum Sepolia",
+      "chainId": 421614,
+      "shortName": "arb-sep",
+      "rpc": [
+        "https://sepolia-rollup.arbitrum.io/rpc",
+        "https://arbitrum-sepolia.infura.io/v3/${INFURA_API_KEY}",
+        "https://arbitrum-sepolia-rpc.publicnode.com",
+        "wss://arbitrum-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "arbitrum-sepolia",
+          "name": "Arbitrum Sepolia Testnet"
+        },
+        "drpc": {
+          "shortName": "arbitrum-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=421614",
+          "chainName": "Arbitrum Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.arbiscan.io/"
+        },
+        "blockscout": {
+          "url": "https://arbitrum-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Arbitrum Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Arbitrum Sepolia"
+        }
+      }
+    },
+    "432201": {
+      "name": "Dexalot Subnet Testnet",
+      "chainId": 432201,
+      "shortName": "dexalot-testnet",
+      "rpc": [
+        "https://subnets.avax.network/dexalot/testnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Dexalot"
+        }
+      }
+    },
+    "432204": {
+      "name": "Dexalot Subnet",
+      "chainId": 432204,
+      "shortName": "dexalot",
+      "rpc": [
+        "https://subnets.avax.network/dexalot/mainnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Dexalot"
+        }
+      }
+    },
+    "511111": {
+      "name": "Alpha Chain Testnet",
+      "chainId": 511111,
+      "shortName": "alpha-testnet",
+      "rpc": [
+        "https://testnet-rpc.goalpha.org"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "534351": {
+      "name": "Scroll Sepolia Testnet",
+      "chainId": 534351,
+      "shortName": "scr-sepolia",
+      "rpc": [
+        "https://sepolia-rpc.scroll.io",
+        "https://rpc.ankr.com/scroll_sepolia_testnet",
+        "https://scroll-sepolia.chainstacklabs.com",
+        "https://scroll-testnet-public.unifra.io",
+        "https://scroll-sepolia-rpc.publicnode.com",
+        "wss://scroll-sepolia-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "scroll-testnet",
+          "name": "Scroll Testnet"
+        },
+        "drpc": {
+          "shortName": "scroll-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=534351",
+          "chainName": "Scroll Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.scrollscan.com/"
+        },
+        "blockscout": {
+          "url": "https://scroll-sepolia.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Scroll Testnet"
+        }
+      }
+    },
+    "534352": {
+      "name": "Scroll",
+      "chainId": 534352,
+      "shortName": "scr",
+      "rpc": [
+        "https://rpc.scroll.io",
+        "https://rpc.ankr.com/scroll",
+        "https://scroll-mainnet.chainstacklabs.com",
+        "https://scroll-rpc.publicnode.com",
+        "wss://scroll-rpc.publicnode.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "scroll-mainnet",
+          "name": "Scroll Mainnet"
+        },
+        "drpc": {
+          "shortName": "scroll"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=534352",
+          "chainName": "Scroll Mainnet",
+          "blockExplorerUrl": "https://scrollscan.com/"
+        },
+        "blockscout": {
+          "url": "https://scroll.blockscout.com",
+          "hostedBy": "blockscout",
+          "name": "Scroll"
+        }
+      }
+    },
+    "543210": {
+      "name": "ZERO Network",
+      "chainId": 543210,
+      "shortName": "zero-network",
+      "rpc": [
+        "https://rpc.zerion.io/v1/zero"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zero"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zero-network.calderaexplorer.xyz/",
+          "hostedBy": "caldera",
+          "name": "ZERϴ Network"
+        }
+      }
+    },
+    "560048": {
+      "name": "Ethereum Hoodi",
+      "chainId": 560048,
+      "shortName": "hoe",
+      "rpc": [
+        "https://rpc.hoodi.ethpandaops.io"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "ethereum-hoodi",
+          "name": "Ethereum Hoodi Testnet"
+        },
+        "drpc": {
+          "shortName": "hoodi"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=560048",
+          "chainName": "Hoodi Testnet",
+          "blockExplorerUrl": "https://hoodi.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://eth-hoodi.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Hoodi"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Hoodi"
+        }
+      }
+    },
+    "641230": {
+      "name": "Bear Network Chain Mainnet",
+      "chainId": 641230,
+      "shortName": "BRNKC",
+      "rpc": [
+        "https://brnkc-mainnet.bearnetwork.net",
+        "https://brnkc-mainnet1.bearnetwork.net"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "656476": {
+      "name": "EDU Chain Testnet",
+      "chainId": 656476,
+      "shortName": "open-campus-codex",
+      "rpc": [
+        "https://rpc.open-campus-codex.gelato.digital"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "open-campus-codex-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://edu-chain-testnet.blockscout.com",
+          "hostedBy": "gelato-raas",
+          "name": "EDU Chain Testnet"
+        }
+      }
+    },
+    "660279": {
+      "name": "Xai Mainnet",
+      "chainId": 660279,
+      "shortName": "xai",
+      "rpc": [
+        "https://xai-chain.net/rpc"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "xai-mainnet",
+          "name": "Xai Mainnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "686868": {
+      "name": "Won Network",
+      "chainId": 686868,
+      "shortName": "WonChain",
+      "rpc": [
+        "https://rpc.wonnetwork.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "merlin-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "713715": {
+      "name": "Sei Devnet",
+      "chainId": 713715,
+      "shortName": "sei-devnet",
+      "rpc": [
+        "https://evm-rpc-arctic-1.sei-apis.com",
+        "https://evm-rpc.arctic-1.seinetwork.io"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "sei-devnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "723107": {
+      "name": "TixChain Testnet",
+      "chainId": 723107,
+      "shortName": "tixchain",
+      "rpc": [
+        "https://subnets.avax.network/tixchain/testnet/rpc"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Tixchain"
+        }
+      }
+    },
+    "737373": {
+      "name": "bokuto",
+      "chainId": 737373,
+      "shortName": "bokuto",
+      "rpc": [
+        "https://rpc-bokuto.katanarpc.com"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "katana-testnet"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=737373",
+          "chainName": "Katana Bokuto",
+          "blockExplorerUrl": "https://bokuto.katanascan.com/"
+        }
+      }
+    },
+    "743111": {
+      "name": "Hemi Sepolia",
+      "chainId": 743111,
+      "shortName": "hemi-sep",
+      "rpc": [
+        "https://testnet.rpc.hemi.network/rpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "hemi-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet.explorer.hemi.xyz/",
+          "hostedBy": "self",
+          "name": "Hemi Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Hemi"
+        }
+      }
+    },
+    "747474": {
+      "name": "katana",
+      "chainId": 747474,
+      "shortName": "katana",
+      "rpc": [
+        "https://rpc.katana.network",
+        "https://katana.gateway.tenderly.co/",
+        "https://rpc.katanarpc.com/"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "katana"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=747474",
+          "chainName": "Katana Mainnet",
+          "blockExplorerUrl": "https://katanascan.com/"
+        }
+      }
+    },
+    "763373": {
+      "name": "Ink Sepolia",
+      "chainId": 763373,
+      "shortName": "inksepolia",
+      "rpc": [
+        "https://rpc-gel-sepolia.inkonchain.com",
+        "wss://ws-gel-sepolia.inkonchain.com"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "ink-sepolia",
+          "name": "Ink Sepolia"
+        },
+        "drpc": {
+          "shortName": "ink-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer-sepolia.inkonchain.com",
+          "hostedBy": "gelato-raas",
+          "name": "Ink Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Ink"
+        }
+      }
+    },
+    "808813": {
+      "name": "BOB Sepolia",
+      "chainId": 808813,
+      "shortName": "bob-sepolia",
+      "rpc": [
+        "https://bob-sepolia.rpc.gobob.xyz",
+        "wss://bob-sepolia.rpc.gobob.xyz"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "bob-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://bob-sepolia.explorer.gobob.xyz/",
+          "hostedBy": "self",
+          "name": "BOB Sepolia"
+        }
+      }
+    },
+    "1440000": {
+      "name": "XRPL EVM Sidechain",
+      "chainId": 1440000,
+      "shortName": "xrplevm",
+      "rpc": [
+        "https://rpc.xrplevm.org",
+        "wss://ws.xrplevm.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "xrpl"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.xrplevm.org/",
+          "hostedBy": "self",
+          "name": "XRPL EVM Mainnet"
+        }
+      }
+    },
+    "1440002": {
+      "name": "XRPL EVM Sidechain Devnet",
+      "chainId": 1440002,
+      "shortName": "xrplevmdevnet",
+      "rpc": [
+        "https://rpc.devnet.xrplevm.org",
+        "wss://ws.devnet.xrplevm.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "xrpl-devnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "1449000": {
+      "name": "XRPL EVM Sidechain Testnet",
+      "chainId": 1449000,
+      "shortName": "xrplevmtestnet",
+      "rpc": [
+        "https://rpc.testnet.xrplevm.org",
+        "wss://ws.testnet.xrplevm.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "xrpl-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.testnet.xrplevm.org/",
+          "hostedBy": "self",
+          "name": "XRPL EVM Testnet"
+        }
+      }
+    },
+    "2019775": {
+      "name": "Jovay Sepolia Testnet",
+      "chainId": 2019775,
+      "shortName": "jovay-sepolia",
+      "rpc": [
+        "https://api.zan.top/public/jovay-testnet",
+        "https://api.zan.top/node/v1/jovay/testnet/${ZAN_API_KEY}",
+        "wss://api.zan.top/node/ws/v1/jovay/testnet/${ZAN_API_KEY}"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "2206132": {
+      "name": "PlatON Dev Testnet2",
+      "chainId": 2206132,
+      "shortName": "platondev2",
+      "rpc": [
+        "https://devnet2openapi.platon.network/rpc",
+        "wss://devnet2openapi.platon.network/ws"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://devnet2blockscout.platon.network/",
+          "hostedBy": "self",
+          "name": "PlatON testnet"
+        }
+      }
+    },
+    "3441006": {
+      "name": "Manta Pacific Sepolia Testnet",
+      "chainId": 3441006,
+      "shortName": "mantaSepoliaTestnet",
+      "rpc": [
+        "https://pacific-rpc.sepolia-testnet.manta.network/http"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "manta-pacific-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://manta-sepolia.explorer.caldera.xyz/",
+          "hostedBy": "caldera",
+          "name": "Manta Sepolia"
+        }
+      }
+    },
+    "5042002": {
+      "name": "Arc Network Testnet",
+      "chainId": 5042002,
+      "shortName": "arc-testnet",
+      "rpc": [
+        "https://rpc.testnet.arc.network",
+        "wss://rpc.testnet.arc.network",
+        "https://rpc.quicknode.testnet.arc.network",
+        "wss://rpc.quicknode.testnet.arc.network",
+        "https://rpc.blockdaemon.testnet.arc.network"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "arc-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://testnet.arcscan.app/",
+          "hostedBy": "alchemy",
+          "name": "Arc Testnet"
+        }
+      }
+    },
+    "5734951": {
+      "name": "Jovay Mainnet",
+      "chainId": 5734951,
+      "shortName": "jovay",
+      "rpc": [
+        "https://rpc.jovay.io",
+        "https://api.zan.top/node/v1/jovay/mainnet/${ZAN_API_KEY}",
+        "wss://api.zan.top/node/ws/v1/jovay/mainnet/${ZAN_API_KEY}"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "6281971": {
+      "name": "Chain 6281971",
+      "chainId": 6281971,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "dogeos-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "7777777": {
+      "name": "Zora",
+      "chainId": 7777777,
+      "shortName": "zora",
+      "rpc": [
+        "https://rpc.zora.energy/"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "zora-mainnet",
+          "name": "Zora Mainnet"
+        },
+        "drpc": {
+          "shortName": "zora"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.zora.energy/",
+          "hostedBy": "blockscout",
+          "name": "Zora"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Zora"
+        }
+      }
+    },
+    "11142220": {
+      "name": "Celo Sepolia Testnet",
+      "chainId": 11142220,
+      "shortName": "celo-sep",
+      "rpc": [
+        "https://forno.celo-sepolia.celo-testnet.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "celo-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=11142220",
+          "chainName": "Celo Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.celoscan.io/"
+        },
+        "blockscout": {
+          "url": "https://celo-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Celo Sepolia"
+        }
+      }
+    },
+    "11155111": {
+      "name": "Ethereum Sepolia",
+      "chainId": 11155111,
+      "shortName": "sep",
+      "rpc": [
+        "https://rpc.sepolia.org",
+        "https://rpc2.sepolia.org",
+        "https://rpc.sepolia.ethpandaops.io",
+        "https://sepolia.infura.io/v3/${INFURA_API_KEY}",
+        "wss://sepolia.infura.io/v3/${INFURA_API_KEY}",
+        "https://sepolia.gateway.tenderly.co",
+        "wss://sepolia.gateway.tenderly.co",
+        "https://ethereum-sepolia-rpc.publicnode.com",
+        "wss://ethereum-sepolia-rpc.publicnode.com",
+        "https://sepolia.drpc.org",
+        "wss://sepolia.drpc.org",
+        "https://eth-sepolia.g.alchemy.com/v2/WddzdzI2o9S3COdT73d5w6AIogbKq4X-"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "ethereum-sepolia",
+          "name": "Ethereum Sepolia"
+        },
+        "drpc": {
+          "shortName": "sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=11155111",
+          "chainName": "Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://eth-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Ethereum Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Sepolia"
+        }
+      }
+    },
+    "11155420": {
+      "name": "OP Sepolia Testnet",
+      "chainId": 11155420,
+      "shortName": "opsep",
+      "rpc": [
+        "https://sepolia.optimism.io",
+        "https://optimism-sepolia.drpc.org",
+        "wss://optimism-sepolia.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "optimism-sepolia",
+          "name": "Optimism Sepolia Testnet"
+        },
+        "drpc": {
+          "shortName": "optimism-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=11155420",
+          "chainName": "OP Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia-optimism.etherscan.io/"
+        },
+        "blockscout": {
+          "url": "https://optimism-sepolia.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "OP Sepolia"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "OP Sepolia"
+        }
+      }
+    },
+    "21000000": {
+      "name": "Corn",
+      "chainId": 21000000,
+      "shortName": "corn",
+      "rpc": [
+        "https://mainnet.corn-rpc.com",
+        "https://rpc.ankr.com/corn_maizenet",
+        "https://maizenet-rpc.usecorn.com"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://maizenet-explorer.usecorn.com/",
+          "hostedBy": "self",
+          "name": "Corn Maizenet"
+        },
+        "routescan": {
+          "workspace": "mainnet",
+          "name": "Corn"
+        }
+      }
+    },
+    "94204209": {
+      "name": "Polygon Blackberry",
+      "chainId": 94204209,
+      "shortName": "polygon-blackberry",
+      "rpc": [
+        "https://rpc.polygon-blackberry.gelato.digital",
+        "wss://ws.polygon-blackberry.gelato.digital"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "polygon-blackberry-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "111557560": {
+      "name": "Cyber Testnet",
+      "chainId": 111557560,
+      "shortName": "cysep",
+      "rpc": [
+        "https://cyber-testnet.alt.technology/",
+        "wss://cyber-testnet.alt.technology/ws",
+        "https://rpc.testnet.cyber.co/",
+        "wss://rpc.testnet.cyber.co/"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "cyber-sepolia",
+          "name": "Cyber L2 Sepolia"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "123420111": {
+      "name": "OP Celestia Raspberry",
+      "chainId": 123420111,
+      "shortName": "opcelestia-raspberry",
+      "rpc": [
+        "https://rpc.opcelestia-raspberry.gelato.digital",
+        "wss://ws.opcelestia-raspberry.gelato.digital"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "opcelestia-raspberry-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "161221135": {
+      "name": "Plume Testnet (Legacy)",
+      "chainId": 161221135,
+      "shortName": "plume-testnet-legacy",
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "plume-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "168587773": {
+      "name": "Blast Sepolia Testnet",
+      "chainId": 168587773,
+      "shortName": "blastsepolia",
+      "rpc": [
+        "https://sepolia.blast.io",
+        "https://blast-sepolia.drpc.org",
+        "wss://blast-sepolia.drpc.org"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "blast-sepolia",
+          "name": "Blast Sepolia"
+        },
+        "drpc": {
+          "shortName": "blast-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "etherscan": {
+          "apiUrl": "https://api.etherscan.io/v2/api?chainid=168587773",
+          "chainName": "Blast Sepolia Testnet",
+          "blockExplorerUrl": "https://sepolia.blastscan.io/"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Blast Sepolia"
+        }
+      }
+    },
+    "245022926": {
+      "name": "Neon EVM Devnet",
+      "chainId": 245022926,
+      "shortName": "neonevm-devnet",
+      "rpc": [
+        "https://devnet.neonevm.org",
+        "https://neon-evm-devnet.drpc.org",
+        "wss://neon-evm-devnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "neon-evm-devnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://neon-devnet.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Neon Devnet"
+        }
+      }
+    },
+    "245022934": {
+      "name": "Neon EVM Mainnet",
+      "chainId": 245022934,
+      "shortName": "neonevm-mainnet",
+      "rpc": [
+        "https://neon-proxy-mainnet.solana.p2p.org",
+        "https://neon-evm.drpc.org",
+        "wss://neon-evm.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "neon-evm"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://neon.blockscout.com/",
+          "hostedBy": "blockscout",
+          "name": "Neon"
+        }
+      }
+    },
+    "311752642": {
+      "name": "OneLedger Mainnet",
+      "chainId": 311752642,
+      "shortName": "oneledger",
+      "rpc": [
+        "https://mainnet-rpc.oneledger.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "531050104": {
+      "name": "Sophon Testnet",
+      "chainId": 531050104,
+      "shortName": "sophon-testnet",
+      "rpc": [
+        "https://rpc.testnet.sophon.xyz",
+        "wss://rpc.testnet.sophon.xyz/ws"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "sophon-testnet"
+        }
+      },
+      "blockExplorers": {
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Sophon"
+        }
+      }
+    },
+    "666666666": {
+      "name": "Degen Chain",
+      "chainId": 666666666,
+      "shortName": "degen-chain",
+      "rpc": [
+        "https://rpc.degen.tips"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.degen.tips/",
+          "hostedBy": "alchemy",
+          "name": "Degen Chain"
+        }
+      }
+    },
+    "728126428": {
+      "name": "Tron Mainnet",
+      "chainId": 728126428,
+      "shortName": "tron",
+      "rpc": [
+        "https://rpc.ankr.com/tron_jsonrpc",
+        "https://api.trongrid.io/jsonrpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "tron"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "999999999": {
+      "name": "Zora Sepolia Testnet",
+      "chainId": 999999999,
+      "shortName": "zsep",
+      "rpc": [
+        "https://sepolia.rpc.zora.energy"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "zora-sepolia"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://sepolia.explorer.zora.energy/",
+          "hostedBy": "conduit",
+          "name": "Zora Sepolia Testnet"
+        },
+        "routescan": {
+          "workspace": "testnet",
+          "name": "Zora Sepolia"
+        }
+      }
+    },
+    "1313161554": {
+      "name": "Aurora Mainnet",
+      "chainId": 1313161554,
+      "shortName": "aurora",
+      "rpc": [
+        "https://mainnet.aurora.dev",
+        "https://aurora.drpc.org",
+        "wss://aurora.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "aurora"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.mainnet.aurora.dev/",
+          "hostedBy": "self",
+          "name": "Aurora Mainnet"
+        }
+      }
+    },
+    "1313161555": {
+      "name": "Aurora Testnet",
+      "chainId": 1313161555,
+      "shortName": "aurora-testnet",
+      "rpc": [
+        "https://testnet.aurora.dev/",
+        "https://aurora-testnet.drpc.org",
+        "wss://aurora-testnet.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "aurora-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.testnet.aurora.dev/",
+          "hostedBy": "self",
+          "name": "Aurora Testnet"
+        }
+      }
+    },
+    "1666600000": {
+      "name": "Harmony Mainnet Shard 0",
+      "chainId": 1666600000,
+      "shortName": "hmy-s0",
+      "rpc": [
+        "https://api.harmony.one",
+        "https://a.api.s0.t.hmny.io",
+        "https://api.s0.t.hmny.io",
+        "https://rpc.ankr.com/harmony",
+        "https://1rpc.io/one",
+        "https://harmony-0.drpc.org",
+        "wss://harmony-0.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "harmony-0"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://explorer.harmony.one/",
+          "hostedBy": "protofire",
+          "name": "Harmony"
+        }
+      }
+    },
+    "1666600001": {
+      "name": "Harmony Mainnet Shard 1",
+      "chainId": 1666600001,
+      "shortName": "hmy-s1",
+      "rpc": [
+        "https://api.s1.t.hmny.io",
+        "https://harmony-1.drpc.org",
+        "wss://harmony-1.drpc.org"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "harmony-1"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "2494104990": {
+      "name": "Tron Shasta",
+      "chainId": 2494104990,
+      "shortName": "tron-shasta",
+      "rpc": [
+        "https://api.shasta.trongrid.io/jsonrpc"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "tron-shasta"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "11297108099": {
+      "name": "Palm Testnet",
+      "chainId": 11297108099,
+      "shortName": "tpalm",
+      "rpc": [
+        "https://palm-testnet.infura.io/v3/${INFURA_API_KEY}",
+        "https://palm-testnet.public.blastapi.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "11297108109": {
+      "name": "Palm",
+      "chainId": 11297108109,
+      "shortName": "palm",
+      "rpc": [
+        "https://palm-mainnet.infura.io/v3/${INFURA_API_KEY}",
+        "https://palm-mainnet.public.blastapi.io"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {}
+    },
+    "37714555429": {
+      "name": "Xai Testnet v2",
+      "chainId": 37714555429,
+      "shortName": "xaitestnet",
+      "rpc": [
+        "https://testnet-v2.xai-chain.net/rpc"
+      ],
+      "rpcProviders": {
+        "quicknode": {
+          "networkSlug": "xai-testnet",
+          "name": "Xai Testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "80998896642": {
+      "name": "Chain 80998896642",
+      "chainId": 80998896642,
+      "rpc": [],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "playnance-testnet"
+        }
+      },
+      "blockExplorers": {}
+    },
+    "88153591557": {
+      "name": "Arbitrum Blueberry",
+      "chainId": 88153591557,
+      "shortName": "arb-blueberry",
+      "rpc": [
+        "https://rpc.arb-blueberry.gelato.digital",
+        "wss://ws.arb-blueberry.gelato.digital"
+      ],
+      "rpcProviders": {
+        "drpc": {
+          "shortName": "arb-blueberry-testnet"
+        }
+      },
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://arb-blueberry.gelatoscout.com/",
+          "hostedBy": "gelato-raas",
+          "name": "Gelato - Arbitrum Blueberry"
+        }
+      }
+    },
+    "383414847825": {
+      "name": "Zeniq",
+      "chainId": 383414847825,
+      "shortName": "zeniq",
+      "rpc": [
+        "https://api.zeniq.network"
+      ],
+      "rpcProviders": {},
+      "blockExplorers": {
+        "blockscout": {
+          "url": "https://zeniqscan.com",
+          "hostedBy": "self",
+          "name": "Zeniq Smartchain"
+        }
+      }
+    }
+  }
+}
