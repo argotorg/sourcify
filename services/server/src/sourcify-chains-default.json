@@ -2482,7 +2482,7 @@
   "26217": {
     "sourcifyName": "Integralayer",
     "supported": true,
-    "rpc": ["https://adamboudj.integralayer.com/rpc"],
+    "rpc": ["https://evm.integralayer.com"],
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://blockscout.integralayer.com"
