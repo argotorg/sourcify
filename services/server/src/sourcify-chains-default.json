@@ -2482,10 +2482,6 @@
   "202601": {
     "sourcifyName": "Ronin Saigon Testnet",
     "supported": true,
-    "rpc": [
-      "https://saigon-testnet.roninchain.com/rpc",
-      "https://ronin-saigon.drpc.org"
-    ],
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://saigon-explorer.roninchain.com"
