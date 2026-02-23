@@ -2478,5 +2478,14 @@
         "url": "https://xt4scan.ngd.network"
       }
     }
+  },
+  "202601": {
+    "sourcifyName": "Ronin Saigon Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://saigon-explorer.roninchain.com"
+      }
+    }
   }
 }
