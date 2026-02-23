@@ -2260,6 +2260,16 @@
       }
     }
   },
+  "4217": {
+    "sourcifyName": "Tempo Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.tempo.xyz/"
+      }
+    },
+    "rpc": ["https://tempo-mainnet.drpc.org"]
+  },
   "42429": {
     "sourcifyName": "Tempo Testnet (Andantino)",
     "supported": true,
