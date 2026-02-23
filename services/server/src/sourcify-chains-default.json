@@ -124,6 +124,15 @@
       }
     ]
   },
+  "8150": {
+    "sourcifyName": "Alpen Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.alpenlabs.io/"
+      }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": false
