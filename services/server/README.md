@@ -10,7 +10,7 @@ There is a docker compose file which makes running the latest published Sourcify
 
 Keep in mind this is not recommended for production use. You should run a production instance of a Postgres database, add your user, run the migrations, and then run the server.
 
-You should change the chains you want to support in the `sourcify-chains-example.json` file (see [Chains Config](#chains-config)) and the server's `.env.docker` file with the required and optional values (see `.env.dev` file).
+Set your chain configuration (see [Chains Config](#chains-config)) and the server's `.env.docker` file with the required and optional values (see `.env.dev` file).
 
 ```bash
 cd ../.. ## Run from the project root
@@ -118,21 +118,15 @@ cp .env.dev .env
 
 The `.env.dev` contains the default database credentials for the Sourcify database. You should change the values to match your Postgres instance.
 
-You can run without filling the optional values in `.env` but to connect to some RPCs you need to add API keys as env vars. Check the `sourcify-chains-default.json` file if the chain you are interested in has an authenticated RPC or create your own `sourcify-chains.json` file. See [Chains Config](#chains-config) for more details.
+You can run without filling the optional values in `.env` but to connect to some RPCs you need to add API keys as env vars. See [Chains Config](#chains-config) for more details.
 
 ### 7. Set supported chains
 
-Copy the example chains config file as the main chains config file. You can change the chains you want to support here.
+Set the `chains.remoteUrl` in your `src/config/local.js` to point to the Sourcify chains config file (see [Chains Config](#chains-config)).
 
-If there is a `src/sourcify-chains.json` file already, the server will use it. Otherwise, it will use the `src/sourcify-chains-default.json` file.
-
-```bash
-cp src/sourcify-chains-example.json src/sourcify-chains.json
-```
+Alternatively, you can create a `src/sourcify-chains.json` file to fully override the default chains — this takes priority over the remote URL.
 
 ### 8. Build the server
-
-Build the server to generate the chains config file in `dist/sourcify-chains.json`
 
 ```bash
 npm run build
@@ -235,9 +229,9 @@ module.exports = {
 
 ### Chains Config
 
-The chains supported by the Sourcify server are defined in `src/sourcify-chains-default.json`.
+At startup, the server fetches its chain configuration from the URL set in `config.chains.remoteUrl`. This URL should point to a JSON file in the same format as the [sourcifyeth/sourcify-chains](https://github.com/sourcifyeth/sourcify-chains) repository, which publishes the canonical Sourcify chain list.
 
-To support a different set of chains, you can create a `src/sourcify-chains.json` file and completely override the default chains.
+To override the default chains entirely, place a `src/sourcify-chains.json` file in the server's source directory — this file takes priority over the remote URL. Use this for self-hosted deployments that need a custom or restricted set of chains.
 
 A full example of a chain entry is as follows:
 
@@ -266,7 +260,7 @@ A full example of a chain entry is as follows:
       },
       "avalancheApi": true // avalanche subnets at glacier-api.avax.network have an api endpoint for this
     },
-    // optional. If not provided, the default rpc will be the ones from src/chains.json. This file is manually synced from chainid.network/chains.json.
+    // optional. RPC endpoints for this chain.
     "rpc": [
       "https://rpc.sepolia.io", // can be a simple url string
       {
@@ -367,12 +361,22 @@ cd sourcify/ && docker build -f services/server/Dockerfile .
 
 ### Running the image directly
 
-You can run the server using Docker and pass in a custom `sourcify-chains.json` (see above [Chains Config](#chains-config)) and `local.js` (see above [Server Config](#server-config)) config file.
+You can run the server using Docker and pass in a custom `local.js` (see above [Server Config](#server-config)) config file. If you want to use a custom chain list, you can also mount a `sourcify-chains.json` override (see above [Chains Config](#chains-config)).
 
 Also set up the environment variables in the `.env` file. You can see the list of required environment variables in the `.env.dev` file. Pass it with the `--env-file` flag or use the `--env` flag to pass individual environment variables.
 
 ```bash
 $ docker pull ghcr.io/argotorg/sourcify/server:latest
+$ docker run \
+  -p 5555:5555 \
+  -v path/to/custom/config.js:/home/app/services/server/dist/config/local.js \
+  --env-file path/to/your-server/.env \
+  ghcr.io/argotorg/sourcify/server:latest
+```
+
+To use a custom chain list instead of fetching from the remote URL, mount a `sourcify-chains.json` override:
+
+```bash
 $ docker run \
   -p 5555:5555 \
   -v path/to/custom/sourcify-chains.json:/home/app/services/server/dist/sourcify-chains.json \

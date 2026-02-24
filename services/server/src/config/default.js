@@ -55,4 +55,10 @@ module.exports = {
   // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
   replaceContract: false,
+  chains: {
+    // URL to fetch the chains config (sourcify-chains.json format) from at server startup.
+    // Set to the raw GitHub URL of the sourcifyeth/sourcify-chains repo once it exists.
+    // If empty, the server will only start if a local sourcify-chains.json override is present.
+    remoteUrl: "tobefilled",
+  },
 };
