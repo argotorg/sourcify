@@ -57,8 +57,8 @@ module.exports = {
   replaceContract: false,
   chains: {
     // URL to fetch the chains config (sourcify-chains.json format) from at server startup.
-    // Set to the raw GitHub URL of the sourcifyeth/sourcify-chains repo once it exists.
-    // If empty, the server will only start if a local sourcify-chains.json override is present.
-    remoteUrl: "tobefilled",
+    // To use a different set of chains, create a sourcify-chains.json override file — it takes priority.
+    remoteUrl:
+      "https://raw.githubusercontent.com/sourcifyeth/sourcify-chains/main/sourcify-chains-default.json",
   },
 };
