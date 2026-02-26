@@ -17,6 +17,7 @@ import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   deployFromAbiAndBytecode,
   testPartialUpgrade,
+  callContractMethodWithTx,
 } from "../../../helpers/helpers";
 import hardhatOutputJSON from "../../../sources/hardhat-output/output.json";
 import {
@@ -627,6 +628,126 @@ describe("/", function () {
       ),
     );
     chai.expect(isExist, "Immutable references not saved").to.be.true;
+  });
+
+  it("should verify a contract created by a factory contract and has immutables", async () => {
+    const deployValue = 12345;
+
+    const artifact = (
+      await import("../../../testcontracts/FactoryImmutable/Factory.json")
+    ).default;
+    const factoryAddress = await deployFromAbiAndBytecode(
+      chainFixture.localSigner,
+      artifact.abi,
+      artifact.bytecode,
+    );
+
+    // Deploy child by calling deploy(uint)
+    const childMetadata = (
+      await import("../../../testcontracts/FactoryImmutable/Child_metadata.json")
+    ).default;
+    const txReceipt = await callContractMethodWithTx(
+      chainFixture.localSigner,
+      artifact.abi,
+      factoryAddress,
+      "deploy",
+      [deployValue],
+    );
+
+    if (!txReceipt) {
+      chai.assert.fail("Didn't get a txReceipt from factory contract call");
+    }
+    // @ts-ignore
+    const childAddress = txReceipt.logs[0].args[0];
+    const sourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "testcontracts",
+      "FactoryImmutable",
+      "FactoryTest.sol",
+    );
+    const sourceBuffer = fs.readFileSync(sourcePath);
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/")
+      .send({
+        address: childAddress,
+        chain: chainFixture.chainId,
+        files: {
+          "metadata.json": JSON.stringify(childMetadata),
+          "FactoryTest.sol": sourceBuffer.toString(),
+        },
+      });
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      childAddress,
+      chainFixture.chainId,
+    );
+  });
+
+  it("should verify a contract created by a factory contract and has immutables without constructor arguments but with msg.sender assigned immutable", async () => {
+    const artifact = (
+      await import("../../../testcontracts/FactoryImmutableWithoutConstrArg/Factory3.json")
+    ).default;
+    const factoryAddress = await deployFromAbiAndBytecode(
+      chainFixture.localSigner,
+      artifact.abi,
+      artifact.bytecode,
+    );
+
+    // Deploy child by calling createChild()
+    const childMetadata = (
+      await import("../../../testcontracts/FactoryImmutableWithoutConstrArg/Child3_metadata.json")
+    ).default;
+    const txReceipt = await callContractMethodWithTx(
+      chainFixture.localSigner,
+      artifact.abi,
+      factoryAddress,
+      "createChild",
+      [],
+    );
+
+    if (!txReceipt) {
+      chai.assert.fail("Didn't get a txReceipt from factory contract call");
+    }
+    // @ts-ignore
+    const childAddress = txReceipt.logs[0].args[0];
+    const sourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "testcontracts",
+      "FactoryImmutableWithoutConstrArg",
+      "FactoryTest3.sol",
+    );
+    const sourceBuffer = fs.readFileSync(sourcePath);
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/")
+      .send({
+        address: childAddress,
+        chain: chainFixture.chainId,
+        files: {
+          "metadata.json": JSON.stringify(childMetadata),
+          "FactoryTest3.sol": sourceBuffer.toString(),
+        },
+      });
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      childAddress,
+      chainFixture.chainId,
+    );
   });
 
   it("should store the correct/recompiled metadata file if a wrong metadata input yields a match", async () => {

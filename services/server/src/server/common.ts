@@ -37,15 +37,3 @@ export type ContractWrapperData = {
 export type ContractWrapper = ContractMeta & {
   contract: ContractWrapperData;
 };
-
-export interface ContractWrapperMap {
-  [id: string]: ContractWrapper;
-}
-
-declare module "express-session" {
-  interface Session {
-    inputFiles: PathContentMap;
-    contractWrappers: ContractWrapperMap;
-    unusedSources: string[];
-  }
-}
