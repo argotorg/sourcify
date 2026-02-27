@@ -17,7 +17,10 @@ import genFunc from "connect-pg-simple";
 
 // local imports
 import logger from "../common/logger";
-import { initializeSourcifyChains, sourcifyChainsMap } from "../sourcify-chains";
+import {
+  initializeSourcifyChains,
+  sourcifyChainsMap,
+} from "../sourcify-chains";
 import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";

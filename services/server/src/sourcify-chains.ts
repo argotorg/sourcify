@@ -219,11 +219,12 @@ export async function initializeSourcifyChains(): Promise<void> {
 
   // Priority 1: local sourcify-chains.json (self-hosted override)
   if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
-    logger.warn(
-      "Overriding default chains: using sourcify-chains.json",
-    );
+    logger.warn("Overriding default chains: using sourcify-chains.json");
     chainsExtensions = JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, "./sourcify-chains.json"), "utf8"),
+      fs.readFileSync(
+        path.resolve(__dirname, "./sourcify-chains.json"),
+        "utf8",
+      ),
     ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
   }
   // Priority 2: fetch from configured remote URL

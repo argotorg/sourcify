@@ -315,7 +315,11 @@ export class Server {
         storageServiceOptions,
       );
     }
-    return new Server(options, verificationServiceOptions, storageServiceOptions);
+    return new Server(
+      options,
+      verificationServiceOptions,
+      storageServiceOptions,
+    );
   }
 
   async listen(callback?: () => void): Promise<void> {
