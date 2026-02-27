@@ -2,12 +2,6 @@ import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
 import logger from "../../../common/logger";
 
-const ETHERSCAN_REGEX = ["at txn.*href=.*/tx/(0x.{64})"]; // save as string to be able to return the txRegex in /chains response. If stored as RegExp returns {}
-const ETHERSCAN_SUFFIX = "address/${ADDRESS}";
-const BLOCKSCOUT_REGEX_OLD =
-  'transaction_hash_link" href="${BLOCKSCOUT_PREFIX}/tx/(.*?)"';
-const BLOCKSCOUT_REGEX_NEW = "at txn.*href.*/tx/(0x.{64}?)";
-const BLOCKSCOUT_SUFFIX = "address/${ADDRESS}/transactions";
 const ETHERSCAN_API =
   "https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}&apikey=";
 const BLOCKSSCAN_SUFFIX = "api/accounts/${ADDRESS}";
@@ -24,11 +18,10 @@ const VECHAIN_API_URL =
 export const BINARY_SEARCH_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 interface ContractCreationFetcher {
-  type: "scrape" | "api";
+  type: "api";
   url: string;
   maskedUrl?: string;
   responseParser?: Function;
-  scrapeRegex?: string[];
 }
 
 function getApiContractCreationFetcher(
@@ -42,44 +35,6 @@ function getApiContractCreationFetcher(
     maskedUrl: maskedUrl || url,
     responseParser,
   };
-}
-
-function getScrapeContractCreationFetcher(
-  url: string,
-  scrapeRegex: string[],
-): ContractCreationFetcher {
-  return {
-    type: "scrape",
-    url,
-    scrapeRegex,
-  };
-}
-
-function getEtherscanScrapeContractCreatorFetcher(
-  apiURL: string,
-): ContractCreationFetcher {
-  return getScrapeContractCreationFetcher(
-    apiURL + ETHERSCAN_SUFFIX,
-    ETHERSCAN_REGEX,
-  );
-}
-
-function getBlockscoutRegex(blockscoutPrefix = "") {
-  const tempBlockscoutOld = BLOCKSCOUT_REGEX_OLD.replace(
-    "${BLOCKSCOUT_PREFIX}",
-    blockscoutPrefix,
-  );
-  return [tempBlockscoutOld, BLOCKSCOUT_REGEX_NEW];
-}
-
-function getBlockscoutScrapeContractCreatorFetcher(
-  apiURL: string,
-  blockscoutPrefix = "",
-): ContractCreationFetcher {
-  return getScrapeContractCreationFetcher(
-    apiURL + BLOCKSCOUT_SUFFIX,
-    getBlockscoutRegex(blockscoutPrefix),
-  );
 }
 
 function getEtherscanApiContractCreatorFetcher(
@@ -204,40 +159,17 @@ async function getCreatorTxUsingFetcher(
   if (!contractFetchAddressFilled) return null;
 
   try {
-    switch (fetcher.type) {
-      case "scrape": {
-        if (fetcher?.scrapeRegex) {
-          const creatorTx = await getCreatorTxByScraping(
-            contractFetchAddressFilled,
-            fetcher?.scrapeRegex,
-          );
-          if (creatorTx) {
-            logger.debug("Fetched and found creator Tx", {
-              fetcherUrl: fetcher?.maskedUrl,
-              contractFetchAddressFilled,
-              contractAddress,
-              creatorTx,
-            });
-            return creatorTx;
-          }
-        }
-        break;
-      }
-      case "api": {
-        if (fetcher?.responseParser) {
-          const response = await fetchFromApi(contractFetchAddressFilled);
-          const creatorTx = fetcher?.responseParser(response);
-          logger.debug("Fetched Creator Tx", {
-            fetcherUrl: fetcher?.maskedUrl,
-            contractFetchAddressFilled,
-            contractAddress,
-            creatorTx,
-          });
-          if (creatorTx) {
-            return creatorTx;
-          }
-        }
-        break;
+    if (fetcher?.responseParser) {
+      const response = await fetchFromApi(contractFetchAddressFilled);
+      const creatorTx = fetcher?.responseParser(response);
+      logger.debug("Fetched Creator Tx", {
+        fetcherUrl: fetcher?.maskedUrl,
+        contractFetchAddressFilled,
+        contractAddress,
+        creatorTx,
+      });
+      if (creatorTx) {
+        return creatorTx;
       }
     }
   } catch (e: any) {
@@ -252,7 +184,7 @@ async function getCreatorTxUsingFetcher(
 }
 
 /**
- * Finds the transaction that created the contract by either scraping a block explorer or querying a provided API.
+ * Finds the transaction that created the contract by querying a provided API.
  *
  * @param sourcifyChain
  * @param address
@@ -313,15 +245,6 @@ export const getCreatorTx = async (
     }
   }
 
-  if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutScrape) {
-    const fetcher = getBlockscoutScrapeContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blockscoutScrape.url,
-    );
-    const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
-    if (result) {
-      return result;
-    }
-  }
   if (sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi) {
     const fetcher = getBlocksScanApiContractCreatorFetcher(
       sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi.url,
@@ -334,15 +257,6 @@ export const getCreatorTx = async (
   if (sourcifyChain.fetchContractCreationTxUsing?.telosApi) {
     const fetcher = getTelosApiContractCreatorFetcher(
       sourcifyChain.fetchContractCreationTxUsing?.telosApi.url,
-    );
-    const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
-    if (result) {
-      return result;
-    }
-  }
-  if (sourcifyChain.fetchContractCreationTxUsing?.etherscanScrape) {
-    const fetcher = getEtherscanScrapeContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.etherscanScrape.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
@@ -391,57 +305,6 @@ export const getCreatorTx = async (
 
   return null;
 };
-
-/**
- * Fetches the block explorer page (Etherscan, Blockscout etc.) of the contract and extracts the transaction hash that created the contract from the page with the provided regex for that explorer.
- *
- * @param fetchAddress the URL from which to fetch the page to be scrapd
- * @param txRegex regex whose first group matches the transaction hash on the page
- * @returns a promise of the tx hash that created the contract
- */
-async function getCreatorTxByScraping(
-  fetchAddress: string,
-  txRegexs: string[],
-): Promise<string | null> {
-  const res = await fetch(fetchAddress);
-  const arrayBuffer = await res.arrayBuffer();
-  const page = Buffer.from(arrayBuffer).toString();
-  if (res.status === StatusCodes.OK) {
-    for (const txRegex of txRegexs) {
-      const matched = page.match(txRegex);
-      if (matched && matched[1]) {
-        const txHash = matched[1];
-        return txHash;
-      } else {
-        if (page.includes("captcha") || page.includes("CAPTCHA")) {
-          logger.warn("Scraping the creator tx failed because of CAPTCHA", {
-            fetchAddress,
-          });
-          throw new Error(
-            `Scraping the creator tx failed because of CAPTCHA at ${fetchAddress}`,
-          );
-        }
-      }
-    }
-  }
-  if (res.status === StatusCodes.FORBIDDEN) {
-    logger.warn("Scraping the creator tx failed", {
-      fetchAddress,
-      status: res.status,
-    });
-    throw new Error(
-      `Scraping the creator tx failed at ${fetchAddress} because of HTTP status code ${res.status} (Forbidden)
-      
-      Try manually putting the creator tx hash in the "Creator tx hash" field.`,
-    );
-  }
-
-  logger.debug("Couldn't find creator tx via scraping", {
-    fetchAddress,
-    status: res.status,
-  });
-  return null;
-}
 
 async function fetchFromApi(fetchAddress: string) {
   const res = await fetch(fetchAddress);

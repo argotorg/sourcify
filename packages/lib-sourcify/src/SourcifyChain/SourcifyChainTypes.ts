@@ -18,17 +18,10 @@ export interface FetchContractCreationTxMethods {
   blockscoutApi?: {
     url: string;
   };
-  blockscoutScrape?: {
-    url: string;
-    blockscoutPrefix?: string;
-  };
   routescanApi?: {
     type: 'mainnet' | 'testnet';
   };
   etherscanApi?: boolean;
-  etherscanScrape?: {
-    url: string;
-  };
   blocksScanApi?: {
     url: string;
   };

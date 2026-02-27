@@ -20,6 +20,10 @@ import getSessionMiddleware from "./session";
 import { Services } from "./services/services";
 import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
+import {
+  initializeSourcifyChains,
+  sourcifyChainsMap,
+} from "../sourcify-chains";
 import type {
   ISolidityCompiler,
   IVyperCompiler,
@@ -55,7 +59,8 @@ export interface ServerOptions {
   port: string | number;
   maxFileSize: number;
   corsAllowedOrigins: string[];
-  chains: SourcifyChainMap;
+  /** Chain map to use. If omitted, Server.init() will populate it via initializeSourcifyChains(). */
+  chains?: SourcifyChainMap;
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
   verifyDeprecated: boolean;
@@ -103,7 +108,7 @@ export class Server {
       logLevel: getLibSourcifyLoggerLevel(),
     });
 
-    this.chainRepository = new ChainRepository(options.chains);
+    this.chainRepository = new ChainRepository(options.chains || {});
     logger.info("SourcifyChains.Initialized", {
       supportedChainsCount: this.chainRepository.supportedChainsArray.length,
       allChainsCount: this.chainRepository.sourcifyChainsArray.length,
@@ -290,6 +295,31 @@ export class Server {
     this.app.use("/v2", v2ErrorHandler);
 
     this.app.use(genericErrorHandler);
+  }
+
+  /**
+   * Factory method that loads chain configuration before constructing the Server.
+   * When options.chains is omitted, calls initializeSourcifyChains() to fetch
+   * chains from the remote URL (or local sourcify-chains.json override).
+   */
+  static async init(
+    options: ServerOptions,
+    verificationServiceOptions: VerificationServiceOptions,
+    storageServiceOptions: StorageServiceOptions,
+  ): Promise<Server> {
+    if (!options.chains) {
+      await initializeSourcifyChains();
+      return new Server(
+        { ...options, chains: sourcifyChainsMap },
+        verificationServiceOptions,
+        storageServiceOptions,
+      );
+    }
+    return new Server(
+      options,
+      verificationServiceOptions,
+      storageServiceOptions,
+    );
   }
 
   async listen(callback?: () => void): Promise<void> {
