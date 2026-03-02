@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.10.0 - 2026-03-02
+
+- Support verification when cbor auxdata lengths differ between onchain and recompilation (#2619)
+- Remove /session API endpoints (#2671)
+- Update error handling to return 400 for unsupported chains (#2615)
+- Store failed verification inputs in a S3 bucket for debugging purposes (#2613)
+- Add API terms (#2651)
+- Fix chain explorer configurations for contract creation fetching (#2626)
+- New chains:
+  - LuxePorts MainNet (1122)
+  - Citrea Mainnet (4114)
+  - HPP Mainnet (190415)
+  - HPP Sepolia Testnet (181228)
+  - Neo X Mainnet (47763)
+  - Neo X Testnet T4 (12227332)
+  - Ronin Saigon Testnet (202601)
+  - Tempo Mainnet (4217)
+- Arbitrum Nova (42170): Replace contract creation fetching via Etherscan with Blockscout (#2618)
+
 ## sourcify-server@3.9.1 - 2026-01-20
 
 - Retry external verification if contract is not indexed yet (#2588)

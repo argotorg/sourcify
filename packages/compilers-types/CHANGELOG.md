@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers-types@1.0.12 - 2026-03-02
+
+- improved types for StorageLayout and VyperSourceMap
+
 ## @ethereum-sourcify/compilers-types@1.0.11 - 2026-01-07
 
 - Add `AnyJsonInput` type
