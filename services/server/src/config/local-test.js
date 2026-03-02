@@ -11,9 +11,6 @@ module.exports = {
   repositoryV2: {
     path: "/tmp/repositoryV2-test/",
   },
-  session: {
-    storeType: "database",
-  },
   storage: {
     read: RWStorageIdentifiers.SourcifyDatabase,
     writeOrWarn: [
