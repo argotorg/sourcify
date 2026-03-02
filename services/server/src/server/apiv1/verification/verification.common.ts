@@ -39,7 +39,7 @@ const extractFilesFromForm = (files: any): PathBuffer[] => {
   return files.map((f: any) => ({ path: f.name, buffer: f.data }));
 };
 
-export const extractFilesFromJSON = (files: {
+const extractFilesFromJSON = (files: {
   [key: string]: string;
 }): PathBuffer[] => {
   logger.debug("extractFilesFromJSON", { files: Object.keys(files) });

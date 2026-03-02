@@ -6,7 +6,7 @@ import type {
   BytesLike,
 } from "ethers";
 import { ContractFactory, Wallet, Contract } from "ethers";
-import { assertVerificationSession, assertVerification } from "./assertions";
+import { assertVerification } from "./assertions";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
 import path from "path";
@@ -268,31 +268,6 @@ export function verifyAndAssertEtherscanViaApiV1(
       expectedStatus,
     );
   });
-}
-
-export function verifyAndAssertEtherscanSession(
-  serverFixture: ServerFixture,
-  chainId: string,
-  address: string,
-  expectedStatus: VerificationStatus,
-  done: Done,
-) {
-  chai
-    .request(serverFixture.server.app)
-    .post("/session/verify/etherscan")
-    .field("address", address)
-    .field("chainId", chainId)
-    .end(async (err, res) => {
-      await assertVerificationSession(
-        null,
-        err,
-        res,
-        done,
-        address,
-        chainId,
-        expectedStatus,
-      );
-    });
 }
 
 export async function readFilesFromDirectory(dirPath: string) {
