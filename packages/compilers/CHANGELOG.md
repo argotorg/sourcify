@@ -1,5 +1,9 @@
 
 
+## @ethereum-sourcify/compilers@1.0.18 - 2026-03-02
+
+- update dependencies
+
 ## @ethereum-sourcify/compilers@1.0.17 - 2026-01-20
 
 - Improve log levels (#2601)
