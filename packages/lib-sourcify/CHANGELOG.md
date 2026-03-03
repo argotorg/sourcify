@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.2.0 - 2026-03-02
+
+- Support verification when cbor auxdata lengths differ between onchain and recompilation (#2619)
+
 ## @ethereum-sourcify/lib-sourcify@3.1.1 - 2026-01-20
 
 - Remove Meter API fetching from contract creation utilities (#2578)

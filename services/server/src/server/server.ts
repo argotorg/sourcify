@@ -16,7 +16,6 @@ import logger, { setLogLevel } from "../common/logger";
 import routes from "./routes";
 import genericErrorHandler from "../common/errors/GenericErrorHandler";
 import { initDeprecatedRoutes } from "./apiv1/deprecated.routes";
-import getSessionMiddleware from "./session";
 import { Services } from "./services/services";
 import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
@@ -31,7 +30,6 @@ import {
   SourcifyChain,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ChainRepository } from "../sourcify-chain-repository";
-import type { SessionOptions } from "express-session";
 import { makeV1ValidatorFormats } from "./apiv1/validation";
 import { errorHandler as v2ErrorHandler } from "./apiv2/errors";
 import type http from "http";
@@ -60,7 +58,6 @@ export interface ServerOptions {
   vyper: IVyperCompiler;
   verifyDeprecated: boolean;
   replaceContract: boolean;
-  sessionOptions: SessionOptions;
   sourcifyPrivateToken?: string;
   libSourcifyConfig?: LibSourcifyConfig;
   logLevel?: string;
@@ -142,22 +139,7 @@ export class Server {
     this.app.set("sourcifyVerifyUi", options.sourcifyVerifyUi);
     this.app.set("sourcifyRepoUi", options.sourcifyRepoUi);
 
-    // Session API endpoints require non "*" origins because of the session cookies
-    const sessionPaths = [
-      "/session", // all paths /session/verify /session/input-files etc.
-      // legacy endpoint naming below
-      "/input-files",
-      "/restart-session",
-      "/verify-validated",
-    ];
     this.app.use((req, res, next) => {
-      // startsWith to match /session*
-      if (sessionPaths.some((substr) => req.path.startsWith(substr))) {
-        return cors({
-          origin: options.corsAllowedOrigins,
-          credentials: true,
-        })(req, res, next);
-      }
       // * for all non-session paths
       return cors({
         origin: "*",
@@ -281,8 +263,6 @@ export class Server {
     // Assuming the client ip is 2.2.2.2, reverse proxy 192.168.1.5
     // for the case "X-Forwarded-For: 2.2.2.2, 192.168.1.5", we want 2.2.2.2 to be used
     this.app.set("trust proxy", true);
-    // Enable session only for session endpoints
-    this.app.use("/session", getSessionMiddleware(options.sessionOptions));
 
     this.app.use("/", routes);
 

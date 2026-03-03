@@ -124,6 +124,15 @@
       }
     ]
   },
+  "8150": {
+    "sourcifyName": "Alpen Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.alpenlabs.io/"
+      }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": false
@@ -2260,6 +2269,16 @@
       }
     }
   },
+  "4217": {
+    "sourcifyName": "Tempo Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.tempo.xyz/"
+      }
+    },
+    "rpc": ["https://tempo-mainnet.drpc.org"]
+  },
   "42429": {
     "sourcifyName": "Tempo Testnet (Andantino)",
     "supported": true,
@@ -2486,6 +2505,15 @@
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://blockscout.integralayer.com"
+      }
+    }
+  },
+  "202601": {
+    "sourcifyName": "Ronin Saigon Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://saigon-explorer.roninchain.com"
       }
     }
   }

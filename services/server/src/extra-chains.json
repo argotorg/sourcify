@@ -1,5 +1,24 @@
 [
   {
+    "name": "Tempo Mainnet",
+    "chain": "USD",
+    "rpc": ["https://tempo-mainnet.drpc.org"],
+    "faucets": [],
+    "nativeCurrency": { "name": "Tempo USD", "symbol": "USD", "decimals": 18 },
+    "infoURL": "https://tempo.xyz/",
+    "shortName": "tempo",
+    "chainId": 4217,
+    "networkId": 4217,
+    "icon": "tempo",
+    "explorers": [
+      {
+        "name": "explorer-tempo",
+        "url": "https://explorer.tempo.xyz/",
+        "standard": "EIP3091"
+      }
+    ]
+  },
+  {
     "name": "Tempo Moderato Testnet",
     "title": "Tempo Testnet (Moderato)",
     "chain": "USD",

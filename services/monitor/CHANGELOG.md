@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.5.1 - 2026-03-02
+
+- update dependencies
+
 ## sourcify-monitor@1.5.0 - 2026-01-20
 
 - Support factory contracts in Monitor (#2585)

@@ -1,7 +1,7 @@
-\restrict A83zy5tw1A1hwszb9MuDfllmOnsJ9RjmflyL7FtxK1HcwQB5JaRhShE0bFShJal
+\restrict dbmate
 
--- Dumped from database version 16.0
--- Dumped by pg_dump version 16.11 (Homebrew)
+-- Dumped from database version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1035,17 +1035,6 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: session; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.session (
-    sid character varying NOT NULL,
-    sess json NOT NULL,
-    expire timestamp(6) without time zone NOT NULL
-);
-
-
---
 -- Name: signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1394,14 +1383,6 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: session session_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.session
-    ADD CONSTRAINT session_pkey PRIMARY KEY (sid);
-
-
---
 -- Name: signatures signatures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1479,13 +1460,6 @@ ALTER TABLE ONLY public.verified_contracts
 
 ALTER TABLE ONLY public.verified_contracts
     ADD CONSTRAINT verified_contracts_pseudo_pkey UNIQUE (compilation_id, deployment_id);
-
-
---
--- Name: IDX_session_expire; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_session_expire" ON public.session USING btree (expire);
 
 
 --
@@ -2171,7 +2145,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A83zy5tw1A1hwszb9MuDfllmOnsJ9RjmflyL7FtxK1HcwQB5JaRhShE0bFShJal
+\unrestrict dbmate
 
 
 --
@@ -2190,4 +2164,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251101120000'),
     ('20251106144315'),
     ('20251219160923'),
-    ('20260126113330');
+    ('20260126113330'),
+    ('20260302082853');

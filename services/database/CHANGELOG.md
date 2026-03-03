@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.11.0 - 2026-03-02
+
+- Add migration allow_delete_cbor_auxdata_transformations (#2619)
+- Add migration drop_session_table (#2671)
+
 ## sourcify-database@2.10.4 - 2026-01-20
 
 - Update dependencies
