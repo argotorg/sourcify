@@ -11,6 +11,8 @@ info:
     - **Standard JSON as default**: In the current design we take the standard JSON format as our main verification endpoint. Other methods such as "multi-file" or "single-file" should be handled by frontends or tooling to format into std-json. We still support verification with metadata at `/v2/verify/metadata`.
     - **Lean API**: We keep the number of endpoints minimal compared to v1. We won't have a session API. 
     - **Detailed contract response**: Prev. we only returned contract files of a contract. Now we can return details at `/contract/{chainId}/{address}`.
+
+    By submitting source code for verification, you grant Sourcify (and the Argot Collective) a non-exclusive, worldwide, irrevocable, royalty-free licence to reproduce, store, and publicly display the submitted source code for the purposes of verification, archival, and public inspection.
   license:
     name: MIT
     url: https://github.com/argotorg/sourcify/blob/master/LICENSE
@@ -36,8 +38,6 @@ tags:
     description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
   - name: (Deprecated) Repository
     description: API v1 - Access to already verified contracts and files. - Deprecated. Please use the API v2 Contract Lookup instead.
-  - name: (Deprecated) Session Verification
-    description: API v1 - Used by the Sourcify UI to verify contracts. Not intended for external usage. Will require CORS.
   - name: Other
     description: General server endpoints
 paths:
@@ -217,20 +217,6 @@ paths:
     $ref: "server/apiv1/repository/get-file-tree-all.stateless.paths.yaml#/paths/~1files~1tree~1any~1{chain}~1{address}"
   /files/tree/{chain}/{address}:
     $ref: "server/apiv1/repository/get-file-tree-full.stateless.paths.yaml#/paths/~1files~1tree~1{chain}~1{address}"
-  /session/data:
-    $ref: "server/apiv1/verification/session-state/data.session-state.paths.yaml#/paths/~1session~1data"
-  /session/clear:
-    $ref: "server/apiv1/verification/session-state/clear.session-state.paths.yaml#/paths/~1session~1clear"
-  /session/input-files:
-    $ref: "server/apiv1/verification/session-state/input-files.session-state.paths.yaml#/paths/~1session~1input-files"
-  /session/input-contract:
-    $ref: "server/apiv1/verification/session-state/input-contract.session-state.paths.yaml#/paths/~1session~1input-contract"
-  /session/verify-checked:
-    $ref: "server/apiv1/verification/verify/session/verify.session.paths.yaml#/paths/~1session~1verify-checked"
-  /session/input-solc-json:
-    $ref: "server/apiv1/verification/solc-json/session/solc-json.session.paths.yaml#/paths/~1session~1input-solc-json"
-  /session/verify/etherscan:
-    $ref: "server/apiv1/verification/etherscan/session/etherscan.session.paths.yaml#/paths/~1session~1verify~1etherscan"
   /private/change-log-level:
     post:
       summary: Change the logging level of the application

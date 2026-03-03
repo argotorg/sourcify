@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/compilers-types",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "TypeScript types for Sourcify compilers",
   "main": "build/main/index.js",
   "module": "build/module/index.js",
@@ -9,7 +9,13 @@
     "build": "run-p build:*",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "fix": "run-s fix:*",
+    "fix:prettier": "prettier \"./**/*.ts\" --write",
+    "fix:lint": "eslint . --ext .ts --fix",
+    "check": "run-s check:*",
+    "check:eslint": "eslint . --ext .ts",
+    "check:prettier": "prettier \"./**/*.ts\" --check"
   },
   "files": [
     "build/main",

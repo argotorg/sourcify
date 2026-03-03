@@ -234,10 +234,6 @@ export type MethodReturnType<T, K extends keyof T> = T[K] extends (
   ? R
   : never;
 
-export type Mandatory<T> = {
-  [P in keyof T]-?: T[P];
-};
-
 export type Nullable<T> = T | null;
 
 // Declare a unique symbol to be used as a brand key
@@ -288,3 +284,11 @@ export type SimilarityCandidate = Required<
     | "metadata"
   >
 >;
+
+export interface S3Config {
+  bucket: string;
+  region: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  endpoint?: string;
+}

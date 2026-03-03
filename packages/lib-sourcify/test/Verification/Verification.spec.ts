@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
-import type { JsonRpcSigner } from 'ethers';
+import { type JsonRpcSigner } from 'ethers';
 import path from 'path';
 import {
   assertCborTransformations,
@@ -697,6 +697,7 @@ describe('Verification Class Tests', () => {
         const deploymentCompilation = await compileContractWithMetadata(
           STORAGE_CONTRACT_FOLDER,
           (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
             metadata.settings.metadata = {
               ...(metadata.settings.metadata ?? {}),
               bytecodeHash: 'none',
@@ -709,8 +710,11 @@ describe('Verification Class Tests', () => {
           deploymentCompilation,
         );
 
-        const verificationCompilation = await getCompilationFromMetadata(
+        const verificationCompilation = await compileContractWithMetadata(
           STORAGE_CONTRACT_FOLDER,
+          (metadata) => {
+            metadata.compiler.version = APPEND_CBOR_SUPPORTED_VERSION;
+          },
         );
 
         const verification = new Verification(
@@ -727,6 +731,18 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'replace',
+          reason: 'cborAuxdata',
+          offset: 283,
+          length: 53,
+          id: '1',
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({
+          '1': '0xa164736f6c634300081c000a',
+        });
       });
 
       it('should partially match when deployed appendCBOR false is verified with standard metadata', async () => {
@@ -767,6 +783,24 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'delete',
+          reason: 'cborAuxdata',
+          offset: 282, // This offset takes into account also the fe byte added before the auxdata
+          length: 54,
+        });
+        expect(
+          verification.compilation.runtimeBytecodeCborAuxdata,
+        ).to.deep.equal({
+          '1': {
+            offset: 283, // This offset should be the real offset of the auxdata (without the fe byte)
+            value:
+              '0xa2646970667358221220a3e6e8f064de1f9ce708206d52c7a1f6ba8e0f14812bdce51a2d856d2a5a003564736f6c634300081c0033',
+          },
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({});
       });
 
       it('should partially match when deployed appendCBOR false is verified with metadata bytecodeHash none', async () => {
@@ -812,6 +846,23 @@ describe('Verification Class Tests', () => {
           },
         });
         assertCborTransformations(verification.transformations.runtime?.list);
+        expect(verification.transformations.runtime?.list[0]).to.deep.equal({
+          type: 'delete',
+          reason: 'cborAuxdata',
+          offset: 282, // This offset takes into account also the fe byte added before the auxdata
+          length: 13,
+        });
+        expect(
+          verification.compilation.runtimeBytecodeCborAuxdata,
+        ).to.deep.equal({
+          '1': {
+            offset: 283, // This offset should be the real offset of the auxdata (without the fe byte)
+            value: '0xa164736f6c634300081c000a',
+          },
+        });
+        expect(
+          verification.transformations.runtime?.values?.cborAuxdata,
+        ).to.deep.equal({});
       });
     });
   });

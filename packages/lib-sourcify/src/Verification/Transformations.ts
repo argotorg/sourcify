@@ -1,4 +1,4 @@
-import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import { AuxdataStyle, isCborEncoded } from '@ethereum-sourcify/bytecode-utils';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -14,7 +14,7 @@ import { logError } from '../logger';
 const abiCoder = AbiCoder.defaultAbiCoder();
 
 export type Transformation = {
-  type: 'insert' | 'replace';
+  type: 'insert' | 'replace' | 'delete';
   reason:
     | 'constructorArguments'
     | 'library'
@@ -23,6 +23,7 @@ export type Transformation = {
     | 'callProtection';
   offset: number;
   id?: string;
+  length?: number;
 };
 
 // Call protection is always at the start of the runtime bytecode
@@ -40,14 +41,44 @@ export const ConstructorTransformation = (offset: number): Transformation => ({
 });
 
 export const AuxdataTransformation = (
+  transformationType: 'replace' | 'delete',
   offset: number,
-  id: string,
-): Transformation => ({
-  type: 'replace',
-  reason: 'cborAuxdata',
-  offset,
-  id,
-});
+  id?: string,
+  length?: number,
+): Transformation => {
+  if (transformationType === 'replace') {
+    if (id === undefined || id.trim().length === 0) {
+      throw new Error(
+        'Invalid cborAuxdata replace transformation: id must be a non-empty string.',
+      );
+    }
+    if (length !== undefined && length <= 0) {
+      throw new Error(
+        'Invalid cborAuxdata replace transformation: if length is specified, it must be a positive integer.',
+      );
+    }
+  } else {
+    if (id !== undefined) {
+      throw new Error(
+        'Invalid cborAuxdata delete transformation: id must be undefined.',
+      );
+    }
+    if (length === undefined) {
+      throw new Error(
+        'Invalid cborAuxdata delete transformation: length is required.',
+      );
+    }
+  }
+
+  return {
+    type: transformationType,
+    reason: 'cborAuxdata',
+    offset,
+    // Add id or length only if defined
+    ...(id !== undefined ? { id } : {}),
+    ...(length !== undefined ? { length } : {}),
+  };
+};
 
 export const LibraryTransformation = (
   offset: number,
@@ -309,49 +340,113 @@ export function extractLibrariesTransformation(
 }
 
 export function extractAuxdataTransformation(
-  recompiledBytecode: string,
-  onchainBytecode: string,
+  recompiledBytecodeWith0x: string,
+  onchainBytecodeWith0x: string,
   cborAuxdataPositions: CompiledContractCborAuxdata,
 ) {
   try {
-    let populatedRecompiledBytecode = recompiledBytecode;
+    const onchainBytecode = onchainBytecodeWith0x.slice(2);
+    let populatedRecompiledBytecode = recompiledBytecodeWith0x.slice(2);
     const transformations: Transformation[] = [];
     const transformationValues: TransformationValues = {};
     // Instead of normalizing the onchain bytecode, we use its auxdata values to replace the corresponding sections in the recompiled bytecode.
+    // Known limitation with multiple auxdata but different lengths:
+    // See https://github.com/verifier-alliance/database-specs/issues/39 (section "Multiple auxdata limitation").
+    // If there are multiple auxdatas and their lengths differ between recompiled and onchain bytecode,
+    // auxdata offsets shift and the transformation may be incorrect (notably in creation bytecode where runtime offset bytes can also change).
     Object.values(cborAuxdataPositions).forEach((auxdataValues, index) => {
-      const offsetStart = auxdataValues.offset * 2 + 2;
-      const offsetEnd =
-        auxdataValues.offset * 2 + 2 + auxdataValues.value.length - 2;
-      // Instead of zeroing out this segment, get the value from the onchain bytecode.
+      const recompiledAuxdata = auxdataValues.value.slice(2); // Remove 0x
+      const recompiledAuxdataOffset = auxdataValues.offset * 2; // Offset is stored in bytes
+
+      const offsetStart = recompiledAuxdataOffset;
+      const offsetEnd = offsetStart + recompiledAuxdata.length;
+
+      // Get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
       if (
-        onchainAuxdata.length === 0
-        // TODO with this we could potentially support multiple auxdata sections, but needs more testing
-        // && (true || index === Object.values(cborAuxdataPositions).length - 1)
+        // We need to validate the onchain auxdata is actually a valid CBOR object
+        // If the recompiled auxdata length is different from the onchain auxdata length,
+        // then `onchainAuxdata` will contain bytes that are not part of the auxdata.
+        onchainAuxdata.length > 0 &&
+        !(
+          // We first try to decode the auxdata removing the auxdata length bytes,
+          // if it fails we try to decode it as is, since some Vyper auxdata doesn't
+          // include the auxdata length in the bytecode.
+          (
+            isCborEncoded(onchainAuxdata.slice(0, -4)) ||
+            isCborEncoded(onchainAuxdata)
+          )
+        )
       ) {
-        // If cborAuxdata is disabled Solidity adds a ff byte at the end of the bytecode
-        // so we need to remove it from the populated recompiled bytecode to match
+        throw new Error(
+          `Failed to decode onchain auxdata at offset ${offsetStart} with length ${onchainAuxdata.length}.`,
+        );
+      }
+
+      if (transformationValues.cborAuxdata === undefined) {
+        transformationValues.cborAuxdata = {};
+      }
+
+      if (onchainAuxdata.length === 0) {
+        // Delete case: onchain bytecode has no auxdata at this offset.
+        // By default Solidity adds 'fe' byte before the cborAuxdata when appending it
+        const isFE =
+          populatedRecompiledBytecode.slice(offsetStart - 2, offsetStart) ===
+          'fe';
+        if (!isFE) {
+          throw new Error(
+            `Unexpected byte before auxdata deletion at offset ${offsetStart - 2}`,
+          );
+        }
+        // We need to include the `fe` byte in the offset for deletion
+        const transformationOffset = recompiledAuxdataOffset - 2;
+        // We need to add the `fe` byte in the length for deletion
+        const transformationLength = (recompiledAuxdata.length + 2) / 2;
+
+        // We remove the `fe` + auxdata from the recompiled bytecode
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart - 2) +
           populatedRecompiledBytecode.slice(offsetEnd);
+
+        transformations.push(
+          AuxdataTransformation(
+            'delete',
+            transformationOffset / 2, // Convert length in bytes
+            undefined,
+            transformationLength,
+          ),
+        );
       } else {
+        // Replace case: onchain bytecode has auxdata to apply at this offset.
+        const transformationIndex = `${index + 1}`;
+        const transformationLength =
+          recompiledAuxdata.length !== onchainAuxdata.length
+            ? recompiledAuxdata.length / 2
+            : undefined;
+
+        // Store auxdata length only when onchain and recompiled lengths differ.
+        // We replace the auxdata in the recompiled bytecode with the onchain auxdata
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, offsetStart) +
           onchainAuxdata +
           populatedRecompiledBytecode.slice(offsetEnd);
+
+        // We store the onchain auxdata value in the transformation values
+        transformationValues.cborAuxdata[transformationIndex] =
+          `0x${onchainAuxdata}`;
+
+        transformations.push(
+          AuxdataTransformation(
+            'replace',
+            recompiledAuxdataOffset / 2, // Convert length in bytes
+            transformationIndex,
+            transformationLength,
+          ),
+        );
       }
-      const transformationIndex = `${index + 1}`;
-      transformations.push(
-        AuxdataTransformation(auxdataValues.offset, transformationIndex),
-      );
-      if (!transformationValues.cborAuxdata) {
-        transformationValues.cborAuxdata = {};
-      }
-      transformationValues.cborAuxdata[transformationIndex] =
-        `0x${onchainAuxdata}`;
     });
     return {
-      populatedRecompiledBytecode,
+      populatedRecompiledBytecode: `0x${populatedRecompiledBytecode}`,
       transformations,
       transformationValues,
     };

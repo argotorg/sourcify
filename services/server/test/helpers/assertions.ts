@@ -77,52 +77,6 @@ export const assertVerification = async (
   }
 };
 
-export const assertVerificationSession = async (
-  serverFixture: ServerFixture | null,
-  err: Error | null,
-  res: Response,
-  done: Done | null,
-  expectedAddress: string | undefined,
-  expectedChain: string | undefined,
-  expectedStatus: VerificationStatus,
-) => {
-  try {
-    chai.expect(err).to.be.null;
-    chai.expect(res.status).to.equal(StatusCodes.OK);
-
-    const contracts = res.body.contracts;
-    chai.expect(contracts).to.have.a.lengthOf(1);
-    const contract = contracts[0];
-
-    chai.expect(contract.status).to.equal(expectedStatus);
-    chai.expect(contract.address).to.equal(expectedAddress);
-    chai.expect(contract.chainId).to.equal(expectedChain);
-
-    chai.expect(contract.storageTimestamp).to.not.exist;
-    chai.expect(contract.files.missing).to.be.empty;
-    chai.expect(contract.files.invalid).to.be.empty;
-
-    await assertContractSaved(
-      serverFixture?.sourcifyDatabase ?? null,
-      expectedAddress,
-      expectedChain,
-      expectedStatus,
-      serverFixture?.testS3Path ?? null,
-      serverFixture?.testS3Bucket ?? null,
-    );
-    if (done) done();
-  } catch (e) {
-    console.log(
-      `Failing verification for ${expectedAddress} on chain #${expectedChain}.`,
-    );
-    console.log("Response body:");
-    console.log(JSON.stringify(res.body, null, 2));
-    console.log("Chai Error:");
-    console.log(e);
-    throw e;
-  }
-};
-
 export async function assertTransformations(
   sourcifyDatabase: Pool,
   expectedAddress: string | undefined,

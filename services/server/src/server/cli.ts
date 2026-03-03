@@ -10,10 +10,6 @@ process.env["NODE_CONFIG_DIR"] = path.resolve(__dirname, "..", "config");
 import config from "config";
 import swaggerUi from "swagger-ui-express";
 import yamljs from "yamljs";
-import expressSession from "express-session";
-import createMemoryStore from "memorystore";
-import { Pool } from "pg";
-import genFunc from "connect-pg-simple";
 
 // local imports
 import logger from "../common/logger";
@@ -21,7 +17,6 @@ import { sourcifyChainsMap } from "../sourcify-chains";
 import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
-import type session from "express-session";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 
 export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
@@ -98,7 +93,6 @@ const server = new Server(
     chains: sourcifyChainsMap,
     verifyDeprecated: config.get("verifyDeprecated"),
     replaceContract: config.get("replaceContract"),
-    sessionOptions: getSessionOptions(),
     sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
     logLevel,
     libSourcifyConfig,
@@ -118,6 +112,16 @@ const server = new Server(
       .CONCURRENT_VERIFICATIONS_PER_WORKER
       ? parseInt(process.env.CONCURRENT_VERIFICATIONS_PER_WORKER)
       : undefined,
+    debugDataS3Config:
+      process.env.DEBUG_DATA_S3_BUCKET && process.env.DEBUG_DATA_S3_REGION
+        ? {
+            bucket: process.env.DEBUG_DATA_S3_BUCKET,
+            region: process.env.DEBUG_DATA_S3_REGION,
+            accessKeyId: process.env.DEBUG_DATA_S3_ACCESS_KEY_ID,
+            secretAccessKey: process.env.DEBUG_DATA_S3_SECRET_ACCESS_KEY,
+            endpoint: process.env.DEBUG_DATA_S3_ENDPOINT,
+          }
+        : undefined,
   },
   {
     serverUrl: config.get("serverUrl"),
@@ -219,105 +223,3 @@ server.services.init().then(() => {
       });
     });
 });
-
-function initMemoryStore() {
-  const MemoryStore = createMemoryStore(expressSession);
-
-  logger.warn(
-    "Using memory based session. Don't use memory session in production!",
-  );
-  return new MemoryStore({
-    checkPeriod: config.get("session.maxAge"),
-  });
-}
-
-function initDatabaseStore() {
-  const pool = new Pool({
-    host: process.env.SOURCIFY_POSTGRES_HOST,
-    database: process.env.SOURCIFY_POSTGRES_DB,
-    user: process.env.SOURCIFY_POSTGRES_USER,
-    password: process.env.SOURCIFY_POSTGRES_PASSWORD,
-    port: parseInt(process.env.SOURCIFY_POSTGRES_PORT || "5432"),
-    ssl:
-      process.env.SOURCIFY_POSTGRES_SSL === "true"
-        ? {
-            rejectUnauthorized:
-              process.env.SOURCIFY_POSTGRES_SSL_REJECT_UNAUTHORIZED === "true",
-          }
-        : undefined,
-  });
-
-  // This listener is necessary otherwise the sourcify process crashes if the database is closed
-  pool.prependListener("error", (e) => {
-    logger.error("Database connection lost for session pool", {
-      error: e,
-    });
-    throw new Error("Database connection lost for session pool");
-  });
-
-  const PostgresqlStore = genFunc(expressSession);
-
-  logger.info("Using database based session");
-  return new PostgresqlStore({
-    pool: pool,
-    // Pruning expired sessions every 12 hours
-    pruneSessionInterval: 12 * 60 * 60,
-    schemaName: process.env.SOURCIFY_POSTGRES_SCHEMA as string,
-  });
-}
-
-function getSessionStore() {
-  const sessionStoreType = config.get("session.storeType");
-
-  switch (sessionStoreType) {
-    case "database": {
-      if (
-        process.env.SOURCIFY_POSTGRES_HOST &&
-        process.env.SOURCIFY_POSTGRES_DB &&
-        process.env.SOURCIFY_POSTGRES_USER &&
-        process.env.SOURCIFY_POSTGRES_PASSWORD
-      ) {
-        return initDatabaseStore();
-      } else {
-        logger.error(
-          "Database session enabled in config but the environment variables are not specified",
-        );
-        throw new Error(
-          "Database session enabled in config but the environment variables are not specified",
-        );
-      }
-    }
-
-    case "memory": {
-      return initMemoryStore();
-    }
-    default:
-      // Throw an error if an unrecognized session storage type is selected
-      throw new Error(
-        `Selected session storage type '${sessionStoreType}' doesn't exist.`,
-      );
-  }
-}
-
-export function getSessionOptions(): session.SessionOptions {
-  if (config.get("session.secret") === "CHANGE_ME") {
-    const msg =
-      "The session secret is not set, please set it in the config file";
-    process.env.NODE_ENV === "production"
-      ? logger.error(msg)
-      : logger.warn(msg);
-  }
-  return {
-    secret: config.get("session.secret"),
-    name: "sourcify_vid",
-    rolling: true,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      maxAge: config.get("session.maxAge"),
-      secure: config.get("session.secure"),
-      sameSite: "lax",
-    },
-    store: getSessionStore(),
-  };
-}

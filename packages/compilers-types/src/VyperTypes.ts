@@ -1,6 +1,6 @@
-import { JsonFragment } from "ethers";
-import { Devdoc } from "./CompilationTypes";
-import { Userdoc } from "./CompilationTypes";
+import type { JsonFragment } from "ethers";
+import type { Devdoc } from "./CompilationTypes";
+import type { Userdoc } from "./CompilationTypes";
 
 export interface VyperSettings {
   /** EVM version to compile for */
@@ -62,6 +62,17 @@ export interface VyperOutputSources {
   [sourcePath: string]: VyperOutputSource;
 }
 
+export interface VyperSourceMap {
+  breakpoints: [];
+  error_map: Record<string, string>;
+  pc_ast_map: Record<string, number[]>;
+  pc_ast_map_item_keys: string[];
+  pc_breakpoints: [];
+  pc_jump_map: Record<string, string>;
+  pc_pos_map: Record<string, number[]>;
+  pc_pos_map_compressed: string;
+}
+
 export interface VyperOutputContract {
   abi: JsonFragment[];
   userdoc: Userdoc;
@@ -75,7 +86,7 @@ export interface VyperOutputContract {
     deployedBytecode: {
       object: string;
       opcodes: string;
-      sourceMap: string;
+      sourceMap: string | VyperSourceMap;
     };
     methodIdentifiers: {
       [methodName: string]: string;

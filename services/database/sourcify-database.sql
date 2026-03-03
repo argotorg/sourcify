@@ -1,3 +1,8 @@
+\restrict dbmate
+
+-- Dumped from database version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -8,20 +13,6 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
-
---
--- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
-
 
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
@@ -636,6 +627,33 @@ $$;
 
 
 --
+-- Name: validate_transformation_key_length(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN object ? 'length' AND is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0;
+END;
+$$;
+
+
+--
+-- Name: validate_transformation_key_length_optional(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN NOT object ? 'length'
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
+END;
+$$;
+
+
+--
 -- Name: validate_transformation_key_offset(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -725,8 +743,16 @@ CREATE FUNCTION public.validate_transformations_cbor_auxdata(object jsonb) RETUR
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
-        AND validate_transformation_key_id(object);
+    RETURN (
+        validate_transformation_key_type(object, 'replace')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length_optional(object)
+        AND validate_transformation_key_id(object)
+    ) OR (
+        validate_transformation_key_type(object, 'delete')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length(object)
+    );
 END;
 $$;
 
@@ -1005,17 +1031,6 @@ CREATE TABLE public.contracts (
 
 CREATE TABLE public.schema_migrations (
     version character varying NOT NULL
-);
-
-
---
--- Name: session; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.session (
-    sid character varying NOT NULL,
-    sess json NOT NULL,
-    expire timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1368,14 +1383,6 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: session session_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.session
-    ADD CONSTRAINT session_pkey PRIMARY KEY (sid);
-
-
---
 -- Name: signatures signatures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1453,13 +1460,6 @@ ALTER TABLE ONLY public.verified_contracts
 
 ALTER TABLE ONLY public.verified_contracts
     ADD CONSTRAINT verified_contracts_pseudo_pkey UNIQUE (compilation_id, deployment_id);
-
-
---
--- Name: IDX_session_expire; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_session_expire" ON public.session USING btree (expire);
 
 
 --
@@ -2145,6 +2145,8 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
+\unrestrict dbmate
+
 
 --
 -- Dbmate schema migrations
@@ -2161,4 +2163,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251023134207'),
     ('20251101120000'),
     ('20251106144315'),
-    ('20251219160923');
+    ('20251219160923'),
+    ('20260126113330'),
+    ('20260302082853');

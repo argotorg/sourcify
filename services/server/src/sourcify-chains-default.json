@@ -124,6 +124,15 @@
       }
     ]
   },
+  "8150": {
+    "sourcifyName": "Alpen Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.alpenlabs.io/"
+      }
+    }
+  },
   "17000": {
     "sourcifyName": "Ethereum Holesky Testnet",
     "supported": false
@@ -753,7 +762,7 @@
     "sourcifyName": "Aurora Testnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
+      "blockscoutApi": {
         "url": "https://explorer.testnet.aurora.dev/"
       }
     }
@@ -855,21 +864,11 @@
   },
   "9000": {
     "sourcifyName": "Evmos Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://testnet.evmos.explorers.guru/"
-      }
-    }
+    "supported": false
   },
   "9001": {
     "sourcifyName": "Evmos Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://evm.evmos.org/"
-      }
-    }
+    "supported": false
   },
   "62621": {
     "sourcifyName": "MultiVAC Mainnet",
@@ -1011,12 +1010,7 @@
   },
   "7700": {
     "sourcifyName": "Canto Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://tuber.build/"
-      }
-    }
+    "supported": true
   },
   "7701": {
     "sourcifyName": "Canto Testnet",
@@ -1050,7 +1044,7 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://blockscout.chiadochain.net/"
+        "url": "https://gnosis-chiado.blockscout.com/"
       }
     }
   },
@@ -1093,8 +1087,8 @@
     "sourcifyName": "ZetaChain: Mainnet",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://zetachain.blockscout.com/"
+      "blockscoutApi": {
+        "url": "https://zetascan.com/"
       }
     }
   },
@@ -1361,20 +1355,11 @@
   },
   "6119": {
     "sourcifyName": "UPTN Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "13337": {
     "sourcifyName": "BEAM Testnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true
-    }
+    "supported": false
   },
   "222000222": {
     "sourcifyName": "Kanazawa Testnet",
@@ -1386,12 +1371,7 @@
   },
   "2222": {
     "sourcifyName": "Kava EVM",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://explorer.kava.io/"
-      }
-    }
+    "supported": true
   },
   "32769": {
     "sourcifyName": "Zilliqa EVM",
@@ -1456,22 +1436,15 @@
   },
   "250": {
     "sourcifyName": "FTM Fantom Opera Mainnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "42170": {
     "sourcifyName": "Arbitrum Nova",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "etherscanApi": true
-    },
-    "etherscanApi": {
-      "supported": true,
-      "apiKeyEnvName": "ETHERSCAN_API_KEY_ARBITRUM_NOVA"
+      "blockscoutApi": {
+        "url": "https://arbitrum-nova.blockscout.com/"
+      }
     },
     "rpc": [
       "https://nova.arbitrum.io/rpc",
@@ -1495,13 +1468,7 @@
   },
   "4337": {
     "sourcifyName": "Beam",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "78432": {
     "sourcifyName": "Conduit Subnet",
@@ -1530,13 +1497,7 @@
   },
   "2044": {
     "sourcifyName": "Shrapnel Subnet",
-    "supported": true,
-    "fetchContractCreationTxUsing": {
-      "avalancheApi": true,
-      "routescanApi": {
-        "type": "mainnet"
-      }
-    }
+    "supported": false
   },
   "10242": {
     "sourcifyName": "Arthera Mainnet",
@@ -1783,7 +1744,7 @@
     "sourcifyName": "Mode",
     "supported": true,
     "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
+      "blockscoutApi": {
         "url": "https://explorer.mode.network/"
       },
       "routescanApi": {
@@ -2199,11 +2160,6 @@
   "1516": {
     "sourcifyName": "Story Odyssey",
     "supported": false,
-    "fetchContractCreationTxUsing": {
-      "blockscoutScrape": {
-        "url": "https://odyssey.storyscan.xyz/"
-      }
-    },
     "rpc": ["https://rpc.odyssey.storyrpc.io"]
   },
   "26100": {
@@ -2312,6 +2268,16 @@
         "url": "https://scan.platon.network"
       }
     }
+  },
+  "4217": {
+    "sourcifyName": "Tempo Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.tempo.xyz/"
+      }
+    },
+    "rpc": ["https://tempo-mainnet.drpc.org"]
   },
   "42429": {
     "sourcifyName": "Tempo Testnet (Andantino)",
@@ -2459,6 +2425,85 @@
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://explorer.jovay.io"
+      }
+    }
+  },
+  
+  "1122": {
+    "sourcifyName": "LuxePorts MainNet",
+    "supported": true
+  },
+  "190415": {
+    "sourcifyName": "HPP Mainnet",
+    "supported": true,
+    "rpc": ["https://mainnet.hpp.io"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.hpp.io"
+      }
+    }
+  },
+  "181228": {
+    "sourcifyName": "HPP Sepolia Testnet",
+    "supported": true,
+    "rpc": ["https://sepolia.hpp.io"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://sepolia-explorer.hpp.io"
+      }
+    }
+  },
+  "3111": {
+    "sourcifyName": "Alpha Chain Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://scan.goalpha.org"
+      }
+    }
+  },
+  "511111": {
+    "sourcifyName": "Alpha Chain  Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet-scan.goalpha.org"
+      }
+    }
+  },
+  "4114": {
+    "sourcifyName": "Citrea Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.mainnet.citrea.xyz"
+      }
+    }
+  },
+  "47763": {
+    "sourcifyName": "Neo X Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://xexplorer.neo.org"
+      }
+    }
+  },
+  "12227332": {
+    "sourcifyName": "Neo X Testnet T4",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://xt4scan.ngd.network"
+      }
+    }
+  },
+  "202601": {
+    "sourcifyName": "Ronin Saigon Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://saigon-explorer.roninchain.com"
       }
     }
   }

@@ -9,8 +9,8 @@ import { keccak256 } from 'ethers';
 import path from 'path';
 
 describe('Verify Solidity Compiler', () => {
-  const compilersPath = path.join('/tmp', 'solc-repo');
-  const solJsonRepo = path.join('/tmp', 'soljson-repo');
+  const compilersPath = path.join('/tmp', 'compilers-solc-repo');
+  const solJsonRepo = path.join('/tmp', 'compilers-soljson-repo');
 
   it('Should fetch latest SolcJS compiler', async () => {
     expect(await getSolcJs(solJsonRepo, 'latest')).not.equals(null);

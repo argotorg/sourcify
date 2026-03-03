@@ -23,12 +23,6 @@ export function checksumAddresses(
   if (req.body?.address) {
     req.body.address = getAddress(req.body.address);
   }
-  // session
-  if (req.body?.contracts) {
-    req.body.contracts.forEach((contract: any) => {
-      contract.address = getAddress(contract.address);
-    });
-  }
   if (req.query.addresses) {
     req.query.addresses = (req.query.addresses as string)
       .split(",")

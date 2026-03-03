@@ -3,7 +3,7 @@ import { useVyperCompiler } from '../src/lib/vyperCompiler';
 import path from 'path';
 
 describe('Verify Vyper Compiler', () => {
-  const vyperRepoPath = path.join('/tmp', 'vyper-repo');
+  const vyperRepoPath = path.join('/tmp', 'compilers-vyper-repo');
 
   it('Should compile with vyper', async function () {
     const compiledJSON = await useVyperCompiler(

@@ -356,7 +356,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     expect(verifyRes.body).to.have.property("message");
   });
 
-  it("should return a 404 when the chain is not found", async function () {
+  it("should return a 400 when the chain is not found", async function () {
     const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
     sandbox.stub(chainMap, testChainId).value(undefined);
 
@@ -366,7 +366,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       )
       .send({});
 
-    expect(verifyRes.status).to.equal(404);
+    expect(verifyRes.status).to.equal(400);
     expect(verifyRes.body.customCode).to.equal("unsupported_chain");
     expect(verifyRes.body).to.have.property("errorId");
     expect(verifyRes.body).to.have.property("message");

@@ -18,6 +18,9 @@ import type {
   SourcifyLibErrorData,
   ISolidityCompiler,
   IVyperCompiler,
+  Userdoc,
+  Devdoc,
+  VyperSourceMap,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   PreRunCompilation,
@@ -72,12 +75,10 @@ export namespace Tables {
     fully_qualified_name: string;
     compilation_artifacts: {
       abi: Nullable<JsonFragment[]>;
-      userdoc: Nullable<any>;
-      devdoc: Nullable<any>;
+      userdoc: Nullable<Userdoc> | {};
+      devdoc: Nullable<Devdoc> | {};
       storageLayout: Nullable<StorageLayout>;
       sources: Nullable<CompilationArtifactsSources>;
-      methodIdentifiers?: Nullable<any>;
-      ir?: any;
     };
     compiler_settings: Omit<
       SoliditySettings | VyperSettings,
@@ -86,12 +87,12 @@ export namespace Tables {
     creation_code_hash?: BytesSha;
     runtime_code_hash: BytesSha;
     creation_code_artifacts: {
-      sourceMap: Nullable<string>;
+      sourceMap: Nullable<string | VyperSourceMap>;
       linkReferences: Nullable<LinkReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
     runtime_code_artifacts: {
-      sourceMap: Nullable<string>;
+      sourceMap: Nullable<string | VyperSourceMap>;
       linkReferences: Nullable<LinkReferences>;
       immutableReferences: Nullable<ImmutableReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
@@ -667,6 +668,19 @@ function getKeccak256Bytecodes(
     ),
   };
 }
+
+export function getCompilerNameFromLanguage(language: string): string {
+  switch (language.toLocaleLowerCase()) {
+    case "yul":
+    case "solidity":
+      return "solc";
+    case "vyper":
+      return "vyper";
+    default:
+      throw new Error("Language not supported");
+  }
+}
+
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
@@ -815,19 +829,6 @@ export async function getDatabaseColumnsFromVerification(
     },
   );
 
-  let compiler;
-  switch (verification.compilation.language.toLocaleLowerCase()) {
-    case "yul":
-    case "solidity":
-      compiler = "solc";
-      break;
-    case "vyper":
-      compiler = "vyper";
-      break;
-    default:
-      throw new Error("Language not supported");
-  }
-
   return {
     recompiledCreationCode,
     recompiledRuntimeCode: {
@@ -853,7 +854,7 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler,
+      compiler: getCompilerNameFromLanguage(verification.compilation.language),
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,
