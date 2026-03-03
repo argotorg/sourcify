@@ -341,8 +341,8 @@ create_gh_release() {
   pkg_name=$1
   tag=$2
   release_notes=$3
-  # Set --latest=false unless the pkg_name is sourcify-monorepo. In that case set explicitly --latest
-  if [ "$pkg_name" == "sourcify-monorepo" ]; then
+  # Set --latest=false unless the pkg_name is sourcify-server. In that case set explicitly --latest
+  if [ "$pkg_name" == "sourcify-server" ]; then
     echo "$release_notes" | gh release create "$tag" -F - --title "$tag" --notes "$release_notes" --latest
   else
     echo "$release_notes" | gh release create "$tag" -F - --title "$tag" --notes "$release_notes" --latest=false
