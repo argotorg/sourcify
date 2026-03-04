@@ -1,7 +1,5 @@
 import { assertValidationError } from "../../../helpers/assertions";
-import {
-  CHECK_ENDPOINTS_DEPRECATION_WARNING,
-} from "../../../../src/server/apiv1/controllers.common";
+import { CHECK_ENDPOINTS_DEPRECATION_WARNING } from "../../../../src/server/apiv1/controllers.common";
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
