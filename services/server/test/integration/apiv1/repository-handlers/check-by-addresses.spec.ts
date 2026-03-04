@@ -1,4 +1,7 @@
 import { assertValidationError } from "../../../helpers/assertions";
+import {
+  CHECK_ENDPOINTS_DEPRECATION_WARNING,
+} from "../../../../src/server/apiv1/controllers.common";
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
@@ -35,6 +38,7 @@ const assertLookup = (
   const result = resultArray[0];
   chai.expect(result.status).to.equal(expectedStatus);
   chai.expect(result.address).to.equal(expectedAddress);
+  chai.expect(result.warning).to.equal(CHECK_ENDPOINTS_DEPRECATION_WARNING);
   if (done) done();
 };
 
@@ -61,7 +65,15 @@ const assertLookupAll = (
   chai.expect(resultArray).to.have.a.lengthOf(1);
   const result = resultArray[0];
   chai.expect(result.address).to.equal(expectedAddress);
-  chai.expect(result.chainIds).to.deep.equal(expectedChainIds);
+  // Assert warning in each chainId entry
+  result.chainIds.forEach(({ warning }: { warning: string }) => {
+    chai.expect(warning).to.equal(CHECK_ENDPOINTS_DEPRECATION_WARNING);
+  });
+  // Compare chainId entries without the warning field
+  const chainIdsWithoutWarning = result.chainIds.map(
+    ({ warning: _w, ...rest }: Record<string, unknown>) => rest,
+  );
+  chai.expect(chainIdsWithoutWarning).to.deep.equal(expectedChainIds);
   if (done) done();
 };
 

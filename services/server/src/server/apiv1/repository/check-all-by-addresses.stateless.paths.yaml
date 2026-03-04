@@ -43,6 +43,12 @@ paths:
                   properties:
                     address:
                       type: string
+                    status:
+                      type: string
+                      description: Set to "false" when the contract is not found on any of the requested chains.
+                    warning:
+                      type: string
+                      description: Deprecation warning. This endpoint will be removed. Use the v2 API instead.
                     chainIds:
                       type: array
                       items:
@@ -67,6 +73,9 @@ paths:
                                   type: string
                           proxyResolutionError:
                             type: string
+                          warning:
+                            type: string
+                            description: Deprecation warning. This endpoint will be removed. Use the v2 API instead.
               examples:
                 multiple results:
                   value:
@@ -126,12 +135,15 @@ paths:
                       chainIds:
                         - chainId: "43114"
                           status: "perfect"
+                          warning: "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. Full API docs: https://sourcify.dev/server/api-docs/swagger.json"
                 not found:
                   value:
                     - address: "0x1f9cA631AE0C4890F99b38634C969b7E4f8719F0"
                       status: "false"
+                      warning: "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. Full API docs: https://sourcify.dev/server/api-docs/swagger.json"
                     - address: "0x8D2548A5f641b00Cf0f5B693d4A72D8c0aE24d31"
                       status: "false"
+                      warning: "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. Full API docs: https://sourcify.dev/server/api-docs/swagger.json"
                 proxy resolution error:
                   value:
                     - address: "0xEb30853fc616Bbb8f1444451A3c202cbcd08Fb47"

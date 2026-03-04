@@ -13,7 +13,10 @@ import type {
   VerificationStatus,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { ServerFixture } from "./ServerFixture";
-import { getMatchStatus } from "../../src/server/apiv1/controllers.common";
+import {
+  getMatchStatus,
+  VERIFY_ENDPOINTS_DEPRECATION_WARNING,
+} from "../../src/server/apiv1/controllers.common";
 import type { MatchLevel } from "../../src/server/types";
 import { toVerificationStatus } from "../../src/server/services/utils/util";
 import chaiHttp from "chai-http";
@@ -60,6 +63,7 @@ export const assertVerification = async (
       .to.equal(expectedAddress.toLowerCase());
     chai.expect(result.chainId).to.equal(expectedChain);
     chai.expect(result.status).to.equal(expectedStatus);
+    chai.expect(result.warning).to.equal(VERIFY_ENDPOINTS_DEPRECATION_WARNING);
 
     await assertContractSaved(
       serverFixture?.sourcifyDatabase ?? null,
