@@ -205,11 +205,7 @@ function mapToTestCaseOutput(
   let metadata: Metadata | undefined = undefined;
 
   if (contractOutput.metadata) {
-    try {
-      metadata = JSON.parse(contractOutput.metadata);
-    } catch (e) {
-      console.warn("Failed to parse metadata JSON:", e);
-    }
+    metadata = JSON.parse(contractOutput.metadata);
   }
 
   // Build compilation artifacts sources
