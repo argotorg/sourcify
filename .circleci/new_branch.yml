@@ -25,7 +25,7 @@ workflows:
 jobs:
   node-v22:
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
       - image: postgres:15-alpine
         name: sourcify-db
         environment:
@@ -83,7 +83,7 @@ jobs:
     resource_class: large
   test-new-chain:
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
       - image: postgres:15-alpine
         name: sourcify-db
         environment:
@@ -117,7 +117,7 @@ jobs:
             SOURCIFY_POSTGRES_PORT: 5432
   validate-database-schema:
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
       - image: postgres:15-alpine
         environment:
           POSTGRES_PASSWORD: password

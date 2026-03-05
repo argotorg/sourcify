@@ -32,7 +32,7 @@ jobs:
       - store_artifacts: # Store and publish test results for reference
           path: ./services/server/chain-tests-report
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
       - image: postgres:15-alpine
         environment:
           POSTGRES_DB: sourcify
