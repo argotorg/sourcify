@@ -45,3 +45,7 @@ paths:
                       items:
                         type: string
                       example: ["43114", "137"]
+                    warning:
+                      type: string
+                      description: Deprecation warning. This endpoint will be removed. Use the v2 API instead.
+                      example: "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. Full API docs: https://sourcify.dev/server/api-docs/swagger.json"
