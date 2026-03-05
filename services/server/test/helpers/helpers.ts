@@ -251,6 +251,7 @@ export function verifyAndAssertEtherscanViaApiV1(
   address: string,
   expectedStatus: VerificationStatus,
   done: Done,
+  metadataExpected: boolean = true,
 ) {
   const request = chai
     .request(serverFixture.server.app)
@@ -266,6 +267,7 @@ export function verifyAndAssertEtherscanViaApiV1(
       address,
       chainId,
       expectedStatus,
+      metadataExpected,
     );
   });
 }

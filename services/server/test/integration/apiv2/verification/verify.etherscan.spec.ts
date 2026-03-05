@@ -160,6 +160,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testChainId,
       testAddress,
       expectedStatus,
+      false,
     );
   });
 
@@ -185,6 +186,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testChainId,
       testAddress,
       expectedStatus,
+      false,
     );
   });
 
