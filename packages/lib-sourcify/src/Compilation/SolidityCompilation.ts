@@ -263,9 +263,9 @@ export class SolidityCompilation extends AbstractCompilation {
   public async compile(forceEmscripten = false) {
     const contract =
       await this.compileAndReturnCompilationTarget(forceEmscripten);
-    try {
+    if (contract.metadata) {
       this._metadata = JSON.parse(contract.metadata.trim());
-    } catch (error: any) {
+    } else {
       this._metadata = undefined;
     }
   }

@@ -162,7 +162,7 @@ export interface StorageLayout {
 }
 export interface SolidityOutputContract {
   abi: JsonFragment[];
-  metadata: string;
+  metadata?: string;
   userdoc?: Userdoc;
   devdoc?: Devdoc;
   ir?: string;
