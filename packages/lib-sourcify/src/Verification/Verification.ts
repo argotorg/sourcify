@@ -624,16 +624,10 @@ export class Verification {
         for (const source of Object.keys(
           this.compilation.compilerOutput.sources,
         )) {
+          const id = this.compilation.compilerOutput.sources[source].id;
           compilerOutputSources[source] = {
-            id:
-              typeof this.compilation.compilerOutput.sources[source].id ===
-              'number'
-                ? this.compilation.compilerOutput.sources[source].id
-                : // In older solidity versions, source ids were strings, so we parse them to numbers
-                  parseInt(
-                    this.compilation.compilerOutput.sources[source].id,
-                    10,
-                  ),
+            // In older solidity versions, source ids were strings, so we parse them to numbers
+            id: typeof id === 'number' ? id : parseInt(id, 10),
           };
         }
       }
