@@ -103,9 +103,7 @@ export class Verification {
     const compiledRuntimeBytecode = this.compilation.runtimeBytecode;
     const compiledCreationBytecode = this.compilation.creationBytecode;
 
-    // If compiled creation bytecode is empty it means that the contract is an abstract contract
-    // Compiled runtime bytecode is empty in < 0.1.3 Solidity versions, but we can still verify the contract with creation bytecode
-    if (compiledCreationBytecode === '0x') {
+    if (compiledRuntimeBytecode === '0x' || compiledCreationBytecode === '0x') {
       throw new VerificationError({
         code: 'compiled_bytecode_is_zero',
       });

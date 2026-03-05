@@ -43,6 +43,12 @@ export class SolidityCompilation extends AbstractCompilation {
   ) {
     super(compilerVersion, jsonInput);
 
+    if (semver.lt(this.compilerVersion, '0.1.3')) {
+      throw new CompilationError({
+        code: 'unsupported_compiler_version',
+      });
+    }
+
     this.initSolidityJsonInput();
   }
 
