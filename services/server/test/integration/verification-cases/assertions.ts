@@ -273,7 +273,7 @@ export async function assertDatabase(
     .expect(row.runtime_transformations)
     .to.deep.equal(testCase.verification.runtimeTransformations);
   chai
-    .expect(row.runtime_metadata_match ? true : false)
+    .expect(row.runtime_metadata_match)
     .to.equal(testCase.verification.runtimeMatch === "exact_match");
 
   // sourcify_matches columns
@@ -348,15 +348,9 @@ export async function assertApiV2Lookup(
   chai
     .expect(res.body.runtimeBytecode.onchainBytecode)
     .to.equal(testCase.onchain.deployedBytecode);
-  // In Solidity < 0.1.3 the compiled_runtime_bytecode is not available in the compilation artifacts
-  if (
-    testCase.input.stdJsonInput.language === "Solidity" &&
-    semver.gte(testCase.input.compilerVersion, "0.1.3")
-  ) {
-    chai
-      .expect(res.body.runtimeBytecode.recompiledBytecode)
-      .to.equal(testCase.output.deployedBytecode);
-  }
+  chai
+    .expect(res.body.runtimeBytecode.recompiledBytecode)
+    .to.equal(testCase.output.deployedBytecode);
   chai
     .expect(res.body.runtimeBytecode.transformations)
     .to.deep.equal(testCase.verification.runtimeTransformations);
