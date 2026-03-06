@@ -2370,6 +2370,16 @@
       }
     }
   },
+  "5318007": {
+    "sourcifyName": "Reactive Network Lasna",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": false,
+      "blockscoutApi": {
+        "url": "https://lasna-api.reactscan.net"
+      }
+    }
+  },
   "5042002": {
     "sourcifyName": "ARC-testnet",
     "supported": true,
@@ -2428,7 +2438,7 @@
       }
     }
   },
-  
+
   "1122": {
     "sourcifyName": "LuxePorts MainNet",
     "supported": true
