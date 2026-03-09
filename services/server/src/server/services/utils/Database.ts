@@ -441,11 +441,11 @@ ${
       ? "ORDER BY sourcify_matches.id DESC"
       : "ORDER BY sourcify_matches.id ASC";
 
-    let queryWhere = "";
+    let queryCursorCondition = "";
     if (afterId) {
-      queryWhere = descending
-        ? "WHERE sourcify_matches.id < $3"
-        : "WHERE sourcify_matches.id > $3";
+      queryCursorCondition = descending
+        ? "AND sourcify_matches.id < $3"
+        : "AND sourcify_matches.id > $3";
       values.push(afterId);
     }
 
@@ -462,10 +462,10 @@ ${
       ${selectors.join(", ")}
     FROM ${this.schema}.sourcify_matches
     JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
-    JOIN ${this.schema}.contract_deployments ON 
+    JOIN ${this.schema}.contract_deployments ON
         contract_deployments.id = verified_contracts.deployment_id
-        AND contract_deployments.chain_id = $1
-    ${queryWhere}
+    WHERE contract_deployments.chain_id = $1
+    ${queryCursorCondition}
     ${orderBy}
     LIMIT $2
     `,
