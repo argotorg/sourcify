@@ -206,10 +206,11 @@ export async function assertContractSaved(
           "S3 metadata hash doesn't match filesystem metadata hash",
         );
     }
+  }
 
-    // Check if saved to the database
-    const res = await sourcifyDatabase.query(
-      `SELECT
+  // Check if saved to the database
+  const res = await sourcifyDatabase.query(
+    `SELECT
         cd.address,
         cd.chain_id,
         sm.creation_match,
@@ -222,26 +223,25 @@ export async function assertContractSaved(
       LEFT JOIN code compiled_runtime_code ON compiled_runtime_code.code_hash = cc.runtime_code_hash
       LEFT JOIN code compiled_creation_code ON compiled_creation_code.code_hash = cc.creation_code_hash
       WHERE cd.address = $1 AND cd.chain_id = $2`,
-      [Buffer.from(expectedAddress?.substring(2) ?? "", "hex"), expectedChain],
-    );
+    [Buffer.from(expectedAddress?.substring(2) ?? "", "hex"), expectedChain],
+  );
 
-    const contract = res.rows[0];
-    chai.expect(contract).to.not.be.null;
-    chai
-      .expect("0x" + contract.address.toString("hex"))
-      .to.equal(expectedAddress?.toLowerCase());
-    chai.expect(contract.chain_id).to.equal(expectedChain);
+  const contract = res.rows[0];
+  chai.expect(contract).to.not.be.null;
+  chai
+    .expect("0x" + contract.address.toString("hex"))
+    .to.equal(expectedAddress?.toLowerCase());
+  chai.expect(contract.chain_id).to.equal(expectedChain);
 
-    // When we'll support runtime_match and creation_match as different statuses we can refine this statement
-    chai
-      .expect(
-        getMatchStatus({
-          runtimeMatch: contract.runtime_match,
-          creationMatch: contract.creation_match,
-        }),
-      )
-      .to.equal(expectedStatus);
-  }
+  // When we'll support runtime_match and creation_match as different statuses we can refine this statement
+  chai
+    .expect(
+      getMatchStatus({
+        runtimeMatch: contract.runtime_match,
+        creationMatch: contract.creation_match,
+      }),
+    )
+    .to.equal(expectedStatus);
 }
 
 export async function assertJobVerification(
