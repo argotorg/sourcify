@@ -18,7 +18,6 @@ import {
 } from "../../../src/server/services/utils/util";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import type { DeploymentInfo } from "../../helpers/helpers";
-import semver from "semver";
 
 function toHexString(byteArray: number[]) {
   return Array.from(byteArray, function (byte) {
