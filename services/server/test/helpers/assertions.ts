@@ -139,6 +139,7 @@ export async function assertContractSaved(
   testS3Bucket?: string | null,
   metadataExpected: boolean = true,
 ) {
+  let expectedMetadataHash: string | undefined;
   if (
     (expectedStatus === "perfect" || expectedStatus === "partial") &&
     metadataExpected
@@ -169,7 +170,7 @@ export async function assertContractSaved(
     }
 
     const expectedMetadataContent = fs.readFileSync(metadataPath).toString();
-    const expectedMetadataHash = id(expectedMetadataContent);
+    expectedMetadataHash = id(expectedMetadataContent);
 
     // Check if saved to S3
     if (testS3Path && testS3Bucket) {
@@ -232,6 +233,11 @@ export async function assertContractSaved(
     .expect("0x" + contract.address.toString("hex"))
     .to.equal(expectedAddress?.toLowerCase());
   chai.expect(contract.chain_id).to.equal(expectedChain);
+  if (expectedMetadataHash) {
+    chai
+      .expect(id(JSON.stringify(contract.metadata)))
+      .to.equal(expectedMetadataHash);
+  }
 
   // When we'll support runtime_match and creation_match as different statuses we can refine this statement
   chai
