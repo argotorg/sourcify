@@ -1,8 +1,3 @@
-\restrict dbmate
-
--- Dumped from database version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.13 (Ubuntu 16.13-1.pgdg24.04+1)
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -13,6 +8,20 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: pg_cron; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION pg_cron; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_cron IS 'Job scheduler for PostgreSQL';
+
 
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
@@ -1547,6 +1556,13 @@ CREATE INDEX contract_deployments_address ON public.contract_deployments USING b
 
 
 --
+-- Name: contract_deployments_chain_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_deployments_chain_id ON public.contract_deployments USING btree (chain_id);
+
+
+--
 -- Name: contract_deployments_contract_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2145,8 +2161,6 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dbmate
-
 
 --
 -- Dbmate schema migrations
@@ -2165,4 +2179,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251106144315'),
     ('20251219160923'),
     ('20260126113330'),
-    ('20260302082853');
+    ('20260302082853'),
+    ('20260309080000');
