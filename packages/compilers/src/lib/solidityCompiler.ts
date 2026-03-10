@@ -96,29 +96,21 @@ export async function useSolidityCompiler(
       throw error;
     }
   } else {
-    const solJson = await getSolcJs(solJsonRepoPath, version);
-    if (solJson) {
-      // Spawn a dedicated worker so the solcjs compilers is released when the worker exits.
-      // Solc versions < 0.4.0 require this isolation for a clean compiler context. See: https://github.com/argotorg/sourcify/issues/1099
-      logDebug('Compiling with solc-js in the worker', { version });
-      startCompilation = Date.now();
-      compiled = await new Promise((resolve, reject) => {
-        const worker = importWorker(
-          path.resolve(__dirname, './compilerWorker'),
-          {
-            workerData: { solJsonRepoPath, version, inputStringified },
-          },
-        );
-        worker.once('message', (result) => {
-          resolve(result);
-        });
-        worker.once('error', (error) => {
-          reject(error);
-        });
+    // Spawn a dedicated worker so the solcjs compilers is released when the worker exits.
+    // Solc versions < 0.4.0 require this isolation for a clean compiler context. See: https://github.com/argotorg/sourcify/issues/1099
+    logDebug('Compiling with solc-js in the worker', { version });
+    startCompilation = Date.now();
+    compiled = await new Promise((resolve, reject) => {
+      const worker = importWorker(path.resolve(__dirname, './compilerWorker'), {
+        workerData: { solJsonRepoPath, version, inputStringified },
       });
-    } else {
-      throw new Error(`No solcJs version ${version} found`);
-    }
+      worker.once('message', (result) => {
+        resolve(result);
+      });
+      worker.once('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
   const endCompilation = Date.now();
