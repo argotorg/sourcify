@@ -2526,5 +2526,29 @@
         "url": "https://saigon-explorer.roninchain.com"
       }
     }
+  },
+  "747": {
+    "sourcifyName": "Flow EVM Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://evm.flow.com/"
+      }
+    },
+    "rpc": [
+      "https://mainnet.evm.nodes.onflow.org"
+    ]
+  },
+  "545": {
+    "sourcifyName": "Flow EVM Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet.evm.flow.com/"
+      }
+    },
+    "rpc": [
+      "https://testnet.evm.nodes.onflow.org"
+    ]
   }
 }
