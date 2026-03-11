@@ -160,14 +160,11 @@ jobs:
             # Define cleanup function to remove:
             # - SQL comments (lines starting with --)
             # - psql meta-commands (\restrict, \unrestrict)
-            # - pg_cron extension lines (optional extension, not available in all environments)
             # - blank lines (pg_dump formatting varies across OS/distributions)
             clean_sql() {
               sed -e '/^--/d' \
                   -e '/^\\restrict/d' \
                   -e '/^\\unrestrict/d' \
-                  -e '/^CREATE EXTENSION.*pg_cron/d' \
-                  -e '/^COMMENT ON EXTENSION pg_cron/d' \
                   -e '/^$/d' \
                   "$1"
             }
