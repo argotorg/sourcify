@@ -12,6 +12,8 @@ import { ServerFixture } from "../../../helpers/ServerFixture";
 import path from "path";
 import fs from "fs";
 import { RWStorageIdentifiers } from "../../../../src/server/services/storageServices/identifiers";
+import { id as keccak256 } from "ethers";
+import contractVyperArtifact from "../../../sources/vyper/testcontract/artifact.json";
 
 chai.use(chaiHttp);
 
@@ -667,5 +669,86 @@ describe("Verify repository endpoints", function () {
           );
       });
     }
+  });
+
+  it("should generate metadata.json on the fly for Vyper contracts stored without metadata", async function () {
+    // Vyper contracts no longer have metadata stored in the DB (generateMetadata() was removed).
+    // SourcifyDatabaseService.getFiles() must regenerate it via generateMetadataOnTheFly().
+    const contractFileName = "test.vy";
+    const contractName = contractFileName.split(".")[0];
+    const compilerVersion = "0.3.10+commit.91361694";
+    const evmVersion = "istanbul";
+    const contractSourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "sources",
+      "vyper",
+      "testcontract",
+      contractFileName,
+    );
+    const contractFileContent = fs.readFileSync(contractSourcePath, "utf8");
+
+    const contractAddress = await deployFromAbiAndBytecode(
+      chainFixture.localSigner,
+      contractVyperArtifact.abi,
+      contractVyperArtifact.bytecode,
+    );
+
+    await chai
+      .request(serverFixtureWithDatabase.server.app)
+      .post("/verify/vyper")
+      .send({
+        address: contractAddress,
+        chain: chainFixture.chainId,
+        files: { [contractFileName]: contractFileContent },
+        contractPath: contractFileName,
+        contractName,
+        compilerVersion,
+        compilerSettings: {
+          evmVersion,
+          outputSelection: { "*": ["evm.bytecode"] },
+        },
+      });
+
+    const res = await chai
+      .request(serverFixtureWithDatabase.server.app)
+      .get(`/files/any/${chainFixture.chainId}/${contractAddress}`);
+
+    chai.expect(res.status).to.equal(200);
+    const metadataFile = res.body.files.find(
+      (f: { name: string }) => f.name === "metadata.json",
+    );
+    chai.expect(metadataFile, "metadata.json should be present").to.exist;
+
+    const metadata = JSON.parse(metadataFile.content);
+    chai.expect(metadata).to.deep.equal({
+      compiler: { version: compilerVersion },
+      language: "Vyper",
+      output: {
+        abi: [
+          {
+            inputs: [],
+            name: "helloWorld",
+            outputs: [{ name: "", type: "string" }],
+            stateMutability: "view",
+            type: "function",
+          },
+        ],
+        devdoc: {},
+        userdoc: {},
+      },
+      settings: {
+        evmVersion,
+        compilationTarget: { [contractFileName]: contractName },
+      },
+      sources: {
+        [contractFileName]: {
+          keccak256: keccak256(contractFileContent),
+        },
+      },
+      version: 1,
+    });
   });
 });
