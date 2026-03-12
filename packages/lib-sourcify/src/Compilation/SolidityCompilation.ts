@@ -60,6 +60,7 @@ export class SolidityCompilation extends AbstractCompilation {
           'devdoc',
           'userdoc',
           'storageLayout',
+          'transientStorageLayout',
           'evm.legacyAssembly',
           'evm.bytecode.object',
           'evm.bytecode.sourceMap',

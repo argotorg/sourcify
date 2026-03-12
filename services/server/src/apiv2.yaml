@@ -182,7 +182,7 @@ paths:
           allowReserved: true
           schema:
             type: string
-            example: "userdoc,devdoc,storageLayout,compilation.sources"
+            example: "userdoc,devdoc,storageLayout,transientStorageLayout,compilation.sources"
         - $ref: "#/components/parameters/chainId"
         - $ref: "#/components/parameters/address"
       responses:
@@ -705,6 +705,8 @@ components:
                     type: object
                   storageLayout:
                     type: object
+                  transientStorageLayout:
+                    type: object
                   userdoc:
                     type: object
                   devdoc:
@@ -767,6 +769,8 @@ components:
                               devdoc:
                                 type: object
                               storageLayout:
+                                type: object
+                              transientStorageLayout:
                                 type: object
                               metadata:
                                 type: string
@@ -971,6 +975,7 @@ components:
                 userdoc: {}
                 devdoc: {}
                 storageLayout: {}
+                transientStorageLayout: {}
                 metadata: {}
                 sourceIds:
                   contracts/UniswapV3Pool.sol:
@@ -1074,6 +1079,7 @@ components:
                 userdoc: {}
                 devdoc: {}
                 storageLayout: {}
+                transientStorageLayout: {}
                 metadata: {}
                 sourceIds:
                   contracts/UniswapV3Pool.sol:

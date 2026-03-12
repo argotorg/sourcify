@@ -10,6 +10,7 @@ import {
 } from '../../src/Compilation/CompilationTypes';
 import type {
   SolidityJsonInput,
+  SolidityOutputContract,
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import chaiAsPromised from 'chai-as-promised';
@@ -428,6 +429,37 @@ describe('SolidityCompilation', () => {
         /^0x[a-fA-F0-9]+$/,
       );
     }
+  });
+
+  it('should output transientStorageLayout for contracts with transient storage variables', async () => {
+    const source = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+contract TransientStorage {
+    uint256 transient public counter;
+    function increment() external { counter++; }
+}`;
+
+    const solcJsonInput: SolidityJsonInput = {
+      language: 'Solidity',
+      sources: { 'TransientStorage.sol': { content: source } },
+      settings: {},
+    };
+
+    const compilation = new SolidityCompilation(
+      solc,
+      '0.8.28+commit.7893614a',
+      solcJsonInput,
+      { name: 'TransientStorage', path: 'TransientStorage.sol' },
+    );
+
+    await compilation.compile();
+
+    const contractOutput =
+      compilation.contractCompilerOutput as SolidityOutputContract;
+    expect(contractOutput.transientStorageLayout).to.exist;
+    expect(
+      contractOutput.transientStorageLayout?.storage,
+    ).to.have.length.greaterThan(0);
   });
 
   it('should throw CompilationError for unsupported compiler versions < 0.1.3', () => {

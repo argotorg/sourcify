@@ -304,4 +304,11 @@ describe("Specific Verification Cases", function () {
       .default as unknown as VerificationTestCase;
     await testVerificationCase(matchSol0_4_9);
   });
+
+  it("should store transientStorageLayout for a contract that uses the transient keyword", async () => {
+    const transientStorageLayout = (
+      await import("./testdata/transient_storage_layout.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(transientStorageLayout);
+  });
 });

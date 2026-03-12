@@ -29,7 +29,8 @@
       "devdoc": null,
       "sources": null,
       "userdoc": null,
-      "storageLayout": null
+      "storageLayout": null,
+      "transientStorageLayout": null
     },
     "creationCodeArtifacts": {
       "sourceMap": "111:19:0:-:0;88:21;;85:1;76:55;85:1;140:30",

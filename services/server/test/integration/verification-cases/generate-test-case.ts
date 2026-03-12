@@ -224,6 +224,7 @@ function mapToTestCaseOutput(
       devdoc: contractOutput.devdoc || null,
       userdoc: contractOutput.userdoc || null,
       storageLayout: contractOutput.storageLayout || null,
+      transientStorageLayout: contractOutput.transientStorageLayout || null,
       sources: compilationArtifactsSources,
     },
     creationCodeArtifacts: {
@@ -395,6 +396,28 @@ async function main() {
     console.log("STEP 5: Verification Compilation");
     console.log("-".repeat(80));
     console.log("Compiling verification contract...");
+
+    verificationStdJsonInput.settings.outputSelection = {
+      "*": {
+        "*": [
+          "abi",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "transientStorageLayout",
+          "evm.legacyAssembly",
+          "evm.bytecode.object",
+          "evm.bytecode.sourceMap",
+          "evm.bytecode.linkReferences",
+          "evm.bytecode.generatedSources",
+          "evm.deployedBytecode.object",
+          "evm.deployedBytecode.sourceMap",
+          "evm.deployedBytecode.linkReferences",
+          "evm.deployedBytecode.immutableReferences",
+          "metadata",
+        ],
+      },
+    };
 
     const verificationOutput = await useSolidityCompiler(
       solcRepoPath,
