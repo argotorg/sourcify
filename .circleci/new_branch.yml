@@ -133,13 +133,13 @@ jobs:
           name: Install PostgreSQL client tools
           command: |
             sudo apt-get update
-            # Add PostgreSQL official APT repository for version 16
+            # Add PostgreSQL official APT repository for version 15
             sudo apt-get install -y wget ca-certificates
             wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
             echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
             sudo apt-get update
-            # Install PostgreSQL 16 client tools
-            sudo apt-get install -y postgresql-client-16
+            # Install PostgreSQL 15 client tools to match the postgres:15-alpine server image
+            sudo apt-get install -y postgresql-client-15
       - run:
           name: Install Node.js dependencies
           command: |
@@ -157,9 +157,16 @@ jobs:
             DBMATE_SCHEMA_FILE=ci-dump.sql npx dbmate dump
 
             # Check if the schema file has changed
-            # Define cleanup function to remove comments and psql meta-commands
+            # Define cleanup function to remove:
+            # - SQL comments (lines starting with --)
+            # - psql meta-commands (\restrict, \unrestrict)
+            # - blank lines (pg_dump formatting varies across OS/distributions)
             clean_sql() {
-              sed -e '/^--/d' -e '/^\\restrict/d' -e '/^\\unrestrict/d' "$1"
+              sed -e '/^--/d' \
+                  -e '/^\\restrict/d' \
+                  -e '/^\\unrestrict/d' \
+                  -e '/^$/d' \
+                  "$1"
             }
 
             if diff -u <(clean_sql sourcify-database.sql) <(clean_sql ci-dump.sql); then
