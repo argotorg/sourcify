@@ -33,6 +33,7 @@ import type {
 import {
   Verification,
   SolidityCompilation,
+  DEFAULT_OUTPUT_SELECTION,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import { toMatchLevel } from "../../../src/server/services/utils/util";
@@ -397,27 +398,8 @@ async function main() {
     console.log("-".repeat(80));
     console.log("Compiling verification contract...");
 
-    verificationStdJsonInput.settings.outputSelection = {
-      "*": {
-        "*": [
-          "abi",
-          "devdoc",
-          "userdoc",
-          "storageLayout",
-          "transientStorageLayout",
-          "evm.legacyAssembly",
-          "evm.bytecode.object",
-          "evm.bytecode.sourceMap",
-          "evm.bytecode.linkReferences",
-          "evm.bytecode.generatedSources",
-          "evm.deployedBytecode.object",
-          "evm.deployedBytecode.sourceMap",
-          "evm.deployedBytecode.linkReferences",
-          "evm.deployedBytecode.immutableReferences",
-          "metadata",
-        ],
-      },
-    };
+    verificationStdJsonInput.settings.outputSelection =
+      DEFAULT_OUTPUT_SELECTION;
 
     const verificationOutput = await useSolidityCompiler(
       solcRepoPath,
