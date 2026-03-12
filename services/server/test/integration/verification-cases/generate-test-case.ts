@@ -173,6 +173,7 @@ class SolcCompilerWrapper implements ISolidityCompiler {
       solJsonRepoPath,
       version,
       solcJsonInput,
+      true,
     );
   }
 }
@@ -183,7 +184,10 @@ function extractContractOutput(
   contractIdentifier: string,
 ): SolidityOutputContract {
   const [sourcePath, contractName] = contractIdentifier.split(":");
-  const contract = output.contracts[sourcePath]?.[contractName];
+  const contract =
+    output.contracts[sourcePath]?.[contractName] ||
+    // In solidity versions < 0.4.9, the source path is empty string
+    output.contracts[""]?.[contractName];
   if (!contract) {
     throw new Error(
       `Contract ${contractIdentifier} not found in compilation output`,
@@ -198,7 +202,11 @@ function mapToTestCaseOutput(
   output: SolidityOutput,
 ) {
   // Extract metadata
-  const metadata: Metadata = JSON.parse(contractOutput.metadata);
+  let metadata: Metadata | undefined = undefined;
+
+  if (contractOutput.metadata) {
+    metadata = JSON.parse(contractOutput.metadata);
+  }
 
   // Build compilation artifacts sources
   const compilationArtifactsSources: any = {};
@@ -284,6 +292,7 @@ async function main() {
       solJsonRepoPath,
       deploymentCompilerVersion.trim(),
       deploymentStdJsonInput,
+      true,
     );
 
     if (deploymentOutput.errors?.some((e) => e.severity === "error")) {

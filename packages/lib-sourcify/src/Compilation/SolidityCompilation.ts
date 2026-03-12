@@ -43,8 +43,7 @@ export class SolidityCompilation extends AbstractCompilation {
   ) {
     super(compilerVersion, jsonInput);
 
-    // Throw error for unsupported compiler versions
-    if (semver.lt(this.compilerVersion, '0.4.11')) {
+    if (semver.lt(this.compilerVersion, '0.1.3')) {
       throw new CompilationError({
         code: 'unsupported_compiler_version',
       });
@@ -270,7 +269,11 @@ export class SolidityCompilation extends AbstractCompilation {
   public async compile(forceEmscripten = false) {
     const contract =
       await this.compileAndReturnCompilationTarget(forceEmscripten);
-    this._metadata = JSON.parse(contract.metadata.trim());
+    if (contract.metadata) {
+      this._metadata = JSON.parse(contract.metadata.trim());
+    } else {
+      this._metadata = undefined;
+    }
   }
 
   get immutableReferences(): ImmutableReferences {

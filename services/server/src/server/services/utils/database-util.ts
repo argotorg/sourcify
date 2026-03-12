@@ -227,7 +227,7 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
     Tables.VerifiedContract,
     "creation_values" | "runtime_values" | "compilation_id"
   > &
-  Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name"> &
+  Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name" | "version"> &
   Pick<Tables.ContractDeployment, "transaction_hash"> & {
     onchain_runtime_code: string;
   };

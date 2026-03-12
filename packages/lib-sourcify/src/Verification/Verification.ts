@@ -13,6 +13,7 @@ import type {
   ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
+import semver from 'semver';
 
 import type { Transformation, TransformationValues } from './Transformations';
 import {
@@ -268,6 +269,9 @@ export class Verification {
   }
 
   private async checkForPerfectMetadata(forceEmscripten: boolean) {
+    if (this.compilation.metadata === undefined) {
+      return;
+    }
     try {
       const [, onchainAuxdata] = splitAuxdata(
         this.onchainRuntimeBytecode,
@@ -609,13 +613,23 @@ export class Verification {
 
     let compilerOutputSources: Record<string, { id: number }> | undefined;
     if (this.compilation.compilerOutput?.sources) {
-      compilerOutputSources = {};
-      for (const source of Object.keys(
-        this.compilation.compilerOutput.sources,
-      )) {
-        compilerOutputSources[source] = {
-          id: this.compilation.compilerOutput.sources[source].id,
-        };
+      if (
+        this.compilation.language === 'Solidity' &&
+        semver.lt(this.compilation.compilerVersion, '0.3.6')
+      ) {
+        // In Solidity versions < 0.3.6 there is no id in sources
+        compilerOutputSources = undefined;
+      } else {
+        compilerOutputSources = {};
+        for (const source of Object.keys(
+          this.compilation.compilerOutput.sources,
+        )) {
+          const id = this.compilation.compilerOutput.sources[source].id;
+          compilerOutputSources[source] = {
+            // In older solidity versions, source ids were strings, so we parse them to numbers
+            id: typeof id === 'number' ? id : parseInt(id, 10),
+          };
+        }
       }
     }
 

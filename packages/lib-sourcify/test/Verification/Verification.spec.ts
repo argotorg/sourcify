@@ -13,6 +13,7 @@ import {
   expectVerification,
   getCompilationFromMetadata,
   solc,
+  TestSolidityCompiler,
   vyperCompiler,
 } from '../utils';
 import {
@@ -23,7 +24,7 @@ import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import chaiAsPromised from 'chai-as-promised';
 import { findSolcPlatform } from '@ethereum-sourcify/compilers';
-import { SourcifyChain } from '../../src';
+import { SolidityCompilation, SourcifyChain } from '../../src';
 import Sinon from 'sinon';
 import { YulCompilation } from '../../src/Compilation/YulCompilation';
 import type { SolidityJsonInput } from '@ethereum-sourcify/compilers-types';
@@ -153,6 +154,69 @@ describe('Verification Class Tests', () => {
           creationMatch: 'partial',
         },
       });
+    });
+
+    it('should verify contracts without solidity metadata', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        '0.4.x',
+        '0.4.6',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const contractPath = path.join(__dirname, '..', 'sources', '0.4.x');
+      const sources = {
+        'Simple.sol': {
+          content: fs.readFileSync(
+            path.join(contractPath, 'Simple.sol'),
+            'utf8',
+          ),
+        },
+      };
+
+      const solcJsonInput: SolidityJsonInput = {
+        language: 'Solidity',
+        sources,
+        settings: {
+          outputSelection: {
+            '*': {
+              '*': ['*'],
+            },
+          },
+        },
+      };
+
+      const compilation = new SolidityCompilation(
+        new TestSolidityCompiler(),
+        '0.4.6+commit.2dabbdf0',
+        solcJsonInput,
+        {
+          name: 'Simple',
+          path: 'Simple.sol',
+        },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
+          creationMatch: 'partial',
+        },
+      });
+
+      expect(verification.compilation.metadata).to.be.undefined;
     });
 
     it('should partially verify a simple contract', async () => {

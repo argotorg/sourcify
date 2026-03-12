@@ -43,13 +43,14 @@ export const assertValidationError = (
 
 // If you pass storageService = false, then the match will not be compared to the database
 export const assertVerification = async (
-  serverFixture: ServerFixture | null,
+  serverFixture: ServerFixture,
   err: Error | null,
   res: Response,
   done: Done | null,
   expectedAddress: string,
   expectedChain: string,
   expectedStatus: VerificationStatus = "perfect",
+  metadataExpected: boolean = true,
 ) => {
   try {
     chai.expect(err).to.be.null;
@@ -66,12 +67,13 @@ export const assertVerification = async (
     chai.expect(result.warning).to.equal(VERIFY_ENDPOINTS_DEPRECATION_WARNING);
 
     await assertContractSaved(
-      serverFixture?.sourcifyDatabase ?? null,
+      serverFixture.sourcifyDatabase,
       expectedAddress,
       expectedChain,
       expectedStatus,
       serverFixture?.testS3Path ?? null,
       serverFixture?.testS3Bucket ?? null,
+      metadataExpected,
     );
     if (done) done();
   } catch (e) {
@@ -129,14 +131,19 @@ export async function assertTransformations(
 }
 
 export async function assertContractSaved(
-  sourcifyDatabase: Pool | null,
+  sourcifyDatabase: Pool,
   expectedAddress: string | undefined,
   expectedChain: string | undefined,
   expectedStatus: VerificationStatus,
   testS3Path?: string | null,
   testS3Bucket?: string | null,
+  metadataExpected: boolean = true,
 ) {
-  if (expectedStatus === "perfect" || expectedStatus === "partial") {
+  let expectedMetadataHash: string | undefined;
+  if (
+    (expectedStatus === "perfect" || expectedStatus === "partial") &&
+    metadataExpected
+  ) {
     // Check if saved to fs repository
     const match = expectedStatus === "perfect" ? "full_match" : "partial_match";
     const getMetadataPath = (match: string) =>
@@ -163,7 +170,7 @@ export async function assertContractSaved(
     }
 
     const expectedMetadataContent = fs.readFileSync(metadataPath).toString();
-    const expectedMetadataHash = id(expectedMetadataContent);
+    expectedMetadataHash = id(expectedMetadataContent);
 
     // Check if saved to S3
     if (testS3Path && testS3Bucket) {
@@ -200,11 +207,11 @@ export async function assertContractSaved(
           "S3 metadata hash doesn't match filesystem metadata hash",
         );
     }
+  }
 
-    if (sourcifyDatabase) {
-      // Check if saved to the database
-      const res = await sourcifyDatabase.query(
-        `SELECT
+  // Check if saved to the database
+  const res = await sourcifyDatabase.query(
+    `SELECT
         cd.address,
         cd.chain_id,
         sm.creation_match,
@@ -217,33 +224,30 @@ export async function assertContractSaved(
       LEFT JOIN code compiled_runtime_code ON compiled_runtime_code.code_hash = cc.runtime_code_hash
       LEFT JOIN code compiled_creation_code ON compiled_creation_code.code_hash = cc.creation_code_hash
       WHERE cd.address = $1 AND cd.chain_id = $2`,
-        [
-          Buffer.from(expectedAddress?.substring(2) ?? "", "hex"),
-          expectedChain,
-        ],
-      );
+    [Buffer.from(expectedAddress?.substring(2) ?? "", "hex"), expectedChain],
+  );
 
-      const contract = res.rows[0];
-      chai.expect(contract).to.not.be.null;
-      chai
-        .expect("0x" + contract.address.toString("hex"))
-        .to.equal(expectedAddress?.toLowerCase());
-      chai.expect(contract.chain_id).to.equal(expectedChain);
-      chai
-        .expect(id(JSON.stringify(contract.metadata)))
-        .to.equal(expectedMetadataHash);
-
-      // When we'll support runtime_match and creation_match as different statuses we can refine this statement
-      chai
-        .expect(
-          getMatchStatus({
-            runtimeMatch: contract.runtime_match,
-            creationMatch: contract.creation_match,
-          }),
-        )
-        .to.equal(expectedStatus);
-    }
+  const contract = res.rows[0];
+  chai.expect(contract).to.not.be.null;
+  chai
+    .expect("0x" + contract.address.toString("hex"))
+    .to.equal(expectedAddress?.toLowerCase());
+  chai.expect(contract.chain_id).to.equal(expectedChain);
+  if (expectedMetadataHash) {
+    chai
+      .expect(id(JSON.stringify(contract.metadata)))
+      .to.equal(expectedMetadataHash);
   }
+
+  // When we'll support runtime_match and creation_match as different statuses we can refine this statement
+  chai
+    .expect(
+      getMatchStatus({
+        runtimeMatch: contract.runtime_match,
+        creationMatch: contract.creation_match,
+      }),
+    )
+    .to.equal(expectedStatus);
 }
 
 export async function assertJobVerification(
@@ -253,6 +257,7 @@ export async function assertJobVerification(
   testChainId: string,
   testAddress: string,
   expectedMatch: MatchLevel,
+  metadataExpected: boolean = true,
 ) {
   chai
     .expect(verifyResponse.status)
@@ -320,5 +325,8 @@ export async function assertJobVerification(
     testAddress,
     testChainId,
     toVerificationStatus(expectedMatch),
+    undefined,
+    undefined,
+    metadataExpected,
   );
 }

@@ -1,3 +1,8 @@
+\restrict dbmate
+
+-- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -216,6 +221,26 @@ $$;
 
 
 --
+-- Name: validate_additional_input(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_additional_input(obj jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN obj IS NULL OR (
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['storage_layout_overrides']
+        )
+    );
+END;
+$$;
+
+
+--
 -- Name: validate_code_artifacts_cbor_auxdata(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -401,8 +426,8 @@ BEGIN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj,
-            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
-            array []::text[]
+            array ['abi', 'sources'],
+            array ['userdoc', 'devdoc', 'storageLayout', 'transientStorageLayout']
         ) AND
         validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
@@ -953,6 +978,8 @@ CREATE TABLE public.compiled_contracts (
     creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
+    additional_input jsonb,
+    CONSTRAINT additional_input_json_schema CHECK (public.validate_additional_input(additional_input)),
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
     CONSTRAINT creation_code_artifacts_json_schema CHECK (public.validate_creation_code_artifacts(creation_code_artifacts)),
     CONSTRAINT runtime_code_artifacts_json_schema CHECK (public.validate_runtime_code_artifacts(runtime_code_artifacts))
@@ -1094,7 +1121,7 @@ CREATE TABLE public.sourcify_matches (
     runtime_match character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json NOT NULL
+    metadata json
 );
 
 
@@ -2147,6 +2174,8 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
+\unrestrict dbmate
+
 
 --
 -- Dbmate schema migrations
@@ -2165,5 +2194,9 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251106144315'),
     ('20251219160923'),
     ('20260126113330'),
+    ('20260216165100'),
+    ('20260224135405'),
+    ('20260224171441'),
+    ('20260225083159'),
     ('20260302082853'),
     ('20260309080000');

@@ -123,6 +123,10 @@ export abstract class AbstractCompilation {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });
     }
+    // In solcjs, for solidity versions prior to 0.4.9, the contracts are stored without the source path as a key
+    if (this.compilerOutput.contracts['']?.[this.compilationTarget.name]) {
+      return this.compilerOutput.contracts[''][this.compilationTarget.name];
+    }
     if (
       !this.compilerOutput.contracts ||
       !this.compilerOutput.contracts[this.compilationTarget.path] ||
@@ -148,13 +152,14 @@ export abstract class AbstractCompilation {
   }
 
   get runtimeBytecode() {
-    return `0x${this.contractCompilerOutput.evm.deployedBytecode.object}`;
+    // Solidity versions prior to 0.1.3 do not include the deployedBytecode in the compiler output,
+    // instead of handling the runtime bytecode type as optional, we set it to an empty string if it's not present
+    // otherwise the verification process would need to handle the runtime bytecode as optional
+    // and this would add unnecessary complexity to the verification process
+    return `0x${this.contractCompilerOutput.evm.deployedBytecode.object || ''}`;
   }
 
   get metadata() {
-    if (!this._metadata) {
-      throw new CompilationError({ code: 'metadata_not_set' });
-    }
     return this._metadata;
   }
 

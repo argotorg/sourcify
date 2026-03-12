@@ -138,37 +138,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     );
   });
 
-  it("should surface unsupported compiler version when Etherscan returns solc 1.1", async () => {
-    const testAddress = "0x1111111111111111111111111111111111111111";
-
-    const { resolveWorkers } = makeWorkersWait();
-    mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
-      testAddress,
-      SOLC_1_1_CONTRACT_RESPONSE,
-    );
-
-    const verifyRes = await request(serverFixture.server.app)
-      .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
-      .send({});
-
-    expect(verifyRes.status).to.equal(202);
-    expect(verifyRes.body).to.have.property("verificationId");
-
-    await resolveWorkers();
-
-    const jobStatusRes = await request(serverFixture.server.app).get(
-      `/v2/verify/${verifyRes.body.verificationId}`,
-    );
-
-    expect(jobStatusRes.status).to.equal(200);
-    expect(jobStatusRes.body.isJobCompleted).to.be.true;
-    expect(jobStatusRes.body.error).to.exist;
-    expect(jobStatusRes.body.error.customCode).to.equal(
-      "unsupported_compiler_version",
-    );
-  });
-
   it("should import a contract from Etherscan via vyper single contract response", async () => {
     const testAddress = "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc";
     const expectedStatus = "match";
@@ -191,6 +160,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testChainId,
       testAddress,
       expectedStatus,
+      false,
     );
   });
 
@@ -216,6 +186,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testChainId,
       testAddress,
       expectedStatus,
+      false,
     );
   });
 
