@@ -160,6 +160,9 @@ export interface StorageLayout {
     };
   };
 }
+
+export type TransientStorageLayout = StorageLayout;
+
 export interface SolidityOutputContract {
   abi: JsonFragment[];
   metadata?: string;
@@ -170,6 +173,7 @@ export interface SolidityOutputContract {
   irOptimized?: string;
   irOptimizedAst?: any;
   storageLayout?: StorageLayout;
+  transientStorageLayout?: TransientStorageLayout;
   evm: {
     assembly?: string;
     legacyAssembly?: any;

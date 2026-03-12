@@ -56,6 +56,7 @@
       "devdoc": null,
       "userdoc": null,
       "storageLayout": null,
+      "transientStorageLayout": null,
       "sources": {
         "Coin": {
           "id": 0

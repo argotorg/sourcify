@@ -9,6 +9,7 @@ import type {
   ImmutableReferences,
   SoliditySettings,
   StorageLayout,
+  TransientStorageLayout,
   Devdoc,
   LinkReferences,
   Metadata,
@@ -110,6 +111,7 @@ export interface VerificationExport {
       userdoc?: Userdoc;
       devdoc?: Devdoc;
       storageLayout?: StorageLayout;
+      transientStorageLayout?: TransientStorageLayout;
       evm: {
         bytecode: {
           sourceMap?: string | VyperSourceMap;

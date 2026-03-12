@@ -707,6 +707,9 @@ export class Verification {
           devdoc: contractCompilerOutput?.devdoc,
           storageLayout: (contractCompilerOutput as SolidityOutputContract)
             ?.storageLayout,
+          transientStorageLayout: (
+            contractCompilerOutput as SolidityOutputContract
+          )?.transientStorageLayout,
           evm: {
             bytecode: {
               sourceMap: (contractCompilerOutput as SolidityOutputContract)?.evm

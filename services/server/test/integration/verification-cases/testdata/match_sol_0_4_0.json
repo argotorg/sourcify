@@ -58,6 +58,7 @@
       "devdoc": null,
       "userdoc": null,
       "storageLayout": null,
+      "transientStorageLayout": null,
       "sources": {
         "contracts/SimpleStorage.sol": {
           "id": 0

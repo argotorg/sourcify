@@ -8,6 +8,7 @@ import type {
   Metadata,
   SolidityOutput,
   StorageLayout,
+  TransientStorageLayout,
   Transformation,
   TransformationValues,
   Userdoc,
@@ -95,6 +96,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   abi?: Nullable<JsonFragment[]>;
   metadata?: Nullable<Metadata>;
   storageLayout?: Nullable<StorageLayout>;
+  transientStorageLayout?: Nullable<TransientStorageLayout>;
   userdoc?: Nullable<Userdoc>;
   devdoc?: Nullable<Devdoc>;
   sourceIds?: Nullable<

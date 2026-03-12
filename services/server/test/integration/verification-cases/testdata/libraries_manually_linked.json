@@ -111,6 +111,7 @@
           }
         }
       },
+      "transientStorageLayout": null,
       "sources": { "contracts/1_Storage.sol": { "id": 0 } }
     },
     "creationCodeArtifacts": {

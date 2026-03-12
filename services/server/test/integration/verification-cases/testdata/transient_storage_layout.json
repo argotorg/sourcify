@@ -1,0 +1,190 @@
+{
+  "_comment": "store transientStorageLayout for a contract that uses the transient keyword",
+  "onchain": {
+    "creationBytecode": "0x6080604052348015600e575f5ffd5b5060c180601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806361bc221a146034578063d09de08a14604d575b5f5ffd5b603b5f5c81565b60405190815260200160405180910390f35b60536055565b005b5f805c90806061836068565b9190505d50565b5f60018201608457634e487b7160e01b5f52601160045260245ffd5b506001019056fea2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033",
+    "deployedBytecode": "0x6080604052348015600e575f5ffd5b50600436106030575f3560e01c806361bc221a146034578063d09de08a14604d575b5f5ffd5b603b5f5c81565b60405190815260200160405180910390f35b60536055565b005b5f805c90806061836068565b9190505d50565b5f60018201608457634e487b7160e01b5f52601160045260245ffd5b506001019056fea2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "metadata": {
+          "appendCBOR": true
+        },
+        "remappings": []
+      },
+      "sources": {
+        "transient.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\ncontract TransientStorage {\n    uint256 transient public counter;\n    function increment() external { counter++; }\n}"
+        }
+      }
+    },
+    "compilerVersion": "0.8.28+commit.7893614a",
+    "contractIdentifier": "transient.sol:TransientStorage"
+  },
+  "output": {
+    "creationBytecode": "0x6080604052348015600e575f5ffd5b5060c180601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806361bc221a146034578063d09de08a14604d575b5f5ffd5b603b5f5c81565b60405190815260200160405180910390f35b60536055565b005b5f805c90806061836068565b9190505d50565b5f60018201608457634e487b7160e01b5f52601160045260245ffd5b506001019056fea2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033",
+    "deployedBytecode": "0x6080604052348015600e575f5ffd5b50600436106030575f3560e01c806361bc221a146034578063d09de08a14604d575b5f5ffd5b603b5f5c81565b60405190815260200160405180910390f35b60536055565b005b5f805c90806061836068565b9190505d50565b5f60018201608457634e487b7160e01b5f52601160045260245ffd5b506001019056fea2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [],
+          "name": "counter",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "increment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      },
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [
+          {
+            "astId": 3,
+            "contract": "transient.sol:TransientStorage",
+            "label": "counter",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "encoding": "inplace",
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        }
+      },
+      "sources": {
+        "transient.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {},
+      "sourceMap": "57:116:0:-:0;;;;;;;;;;;;;;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 166,
+          "value": "0xa2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {},
+      "sourceMap": "57:116:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;89:32;;;;;;;;;160:25:1;;;148:2;133:18;89:32:0;;;;;;;127:44;;;:::i;:::-;;;159:7;:9;;;:7;:9;;;:::i;:::-;;;;;;127:44::o;196:232:1:-;235:3;256:17;;;253:140;;315:10;310:3;306:20;303:1;296:31;350:4;347:1;340:15;378:4;375:1;368:15;253:140;-1:-1:-1;420:1:1;409:13;;196:232::o",
+      "cborAuxdata": {
+        "1": {
+          "offset": 140,
+          "value": "0xa2646970667358221220c46ce0593e9d8abd16f598eb329dd796a45850259df2d257967d7ad4ba1581e164736f6c634300081c0033"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "version": "0.8.28+commit.7893614a"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [],
+            "name": "counter",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "increment",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          }
+        ],
+        "devdoc": {
+          "kind": "dev",
+          "methods": {},
+          "version": 1
+        },
+        "userdoc": {
+          "kind": "user",
+          "methods": {},
+          "version": 1
+        }
+      },
+      "settings": {
+        "compilationTarget": {
+          "transient.sol": "TransientStorage"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "remappings": []
+      },
+      "sources": {
+        "transient.sol": {
+          "keccak256": "0x3b2ed4b54e22a1d1354d6e670d807a1b067a2d9249233dbc7856762ae2376341",
+          "license": "MIT",
+          "urls": [
+            "bzz-raw://8f4c5f6e7c5458981155bb1debcebccedf046dba1ef6e9561b70173c265be3c4",
+            "dweb:/ipfs/QmPihzV9WsGe5EBoB6RgXuzy3YYzTAJxKrugwsCnmwgkuS"
+          ]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}
