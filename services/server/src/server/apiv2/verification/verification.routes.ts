@@ -6,6 +6,7 @@ import {
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
   validateStandardJsonInput,
+  validateAndNormalizeFeInput,
 } from "../middlewares";
 import {
   verifyFromJsonInputEndpoint,
@@ -23,6 +24,7 @@ router
     validateChainId,
     validateAddress,
     validateStandardJsonInput,
+    validateAndNormalizeFeInput,
     validateContractIdentifier,
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,

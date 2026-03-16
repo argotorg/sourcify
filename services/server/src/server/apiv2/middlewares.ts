@@ -226,6 +226,59 @@ export function validateMetadata(
   next();
 }
 
+export function validateAndNormalizeFeInput(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const stdJsonInput = req.body.stdJsonInput;
+  if (stdJsonInput?.language !== 'Fe') {
+    return next();
+  }
+
+  const sources = stdJsonInput.sources as Record<string, { content: string }>;
+  const keys = Object.keys(sources);
+  const withSrc = keys.filter((k) => k.startsWith('src/'));
+
+  // Reject mixed paths (some with src/, some without)
+  if (withSrc.length > 0 && withSrc.length < keys.length) {
+    throw new InvalidParametersError(
+      'Fe sources must either all have a "src/" prefix or none. Mixed paths are not allowed.',
+    );
+  }
+
+  // If no keys have src/ prefix: add it to all keys
+  if (withSrc.length === 0) {
+    const normalized: Record<string, { content: string }> = {};
+    for (const [k, v] of Object.entries(sources)) {
+      normalized[`src/${k}`] = v;
+    }
+    req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
+  }
+
+  // Normalize contractIdentifier for Fe:
+  // - No colon (e.g. "Counter"): default path to src/lib.fe → "src/lib.fe:Counter"
+  // - Has colon (e.g. "src/counter.fe:Counter"): path must start with "src/" and end with ".fe"
+  const ci: string | undefined = req.body.contractIdentifier;
+  if (ci) {
+    const colonIdx = ci.lastIndexOf(':');
+    if (colonIdx === -1) {
+      // Just a contract name — default path to src/lib.fe
+      req.body.contractIdentifier = `src/lib.fe:${ci}`;
+    } else {
+      const contractPath = ci.slice(0, colonIdx);
+      if (!contractPath.startsWith('src/') || !contractPath.endsWith('.fe')) {
+        throw new InvalidParametersError(
+          'For Fe contracts, contractIdentifier path must be a "src/**/*.fe" path ' +
+            '(e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter").',
+        );
+      }
+    }
+  }
+
+  next();
+}
+
 export async function checkIfAlreadyVerified(
   req: Request,
   res: Response,
