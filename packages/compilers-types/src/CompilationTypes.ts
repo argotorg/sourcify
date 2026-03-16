@@ -5,6 +5,7 @@ import type {
   SoliditySettings,
 } from "./SolidityTypes";
 import type { VyperJsonInput, VyperOutputError } from "./VyperTypes";
+import type { FeJsonInput } from "./FeTypes";
 
 export interface LinkReferences {
   [filePath: string]: {
@@ -112,4 +113,4 @@ export interface Metadata {
   version: number;
 }
 
-export type AnyJsonInput = SolidityJsonInput | VyperJsonInput;
+export type AnyJsonInput = SolidityJsonInput | VyperJsonInput | FeJsonInput;

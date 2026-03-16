@@ -10,15 +10,19 @@ import type {
   LinkReferences,
   VyperJsonInput,
   SolidityJsonInput,
+  FeJsonInput,
   SolidityOutput,
   VyperOutput,
+  FeOutput,
   VerificationExport,
   SolidityOutputContract,
   SoliditySettings,
   VyperSettings,
+  FeSettings,
   SourcifyLibErrorData,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
   Userdoc,
   Devdoc,
   VyperSourceMap,
@@ -683,6 +687,8 @@ export function getCompilerNameFromLanguage(language: string): string {
       return "solc";
     case "vyper":
       return "vyper";
+    case "fe":
+      return "fe";
     default:
       throw new Error("Language not supported");
   }
@@ -898,7 +904,11 @@ export function prepareCompilerSettingsFromVerification(
 }
 
 export function createPreRunCompilationFromStoredCandidate(
-  { solc, vyper }: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+  {
+    solc,
+    vyper,
+    fe,
+  }: { solc: ISolidityCompiler; vyper: IVyperCompiler; fe: IFeCompiler },
   candidate: SimilarityCandidate,
 ): PreRunCompilation {
   const {
@@ -918,8 +928,14 @@ export function createPreRunCompilationFromStoredCandidate(
     path: contractPath,
   };
 
+  const compiler =
+    jsonInput.language === "Fe"
+      ? fe
+      : jsonInput.language === "Vyper"
+        ? vyper
+        : solc;
   const compilation = new PreRunCompilation(
-    jsonInput.language === "Solidity" ? solc : vyper,
+    compiler,
     version,
     jsonInput,
     jsonOutput,

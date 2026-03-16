@@ -1,6 +1,7 @@
 import type {
   SolidityJsonInput,
   VyperJsonInput,
+  FeJsonInput,
   VerificationExport,
   CompilationTarget,
   Metadata,
@@ -17,7 +18,7 @@ export interface VerificationWorkerInput {
 export interface VerifyFromJsonInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
-  jsonInput: SolidityJsonInput | VyperJsonInput;
+  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
   compilerVersion: string;
   compilationTarget: CompilationTarget;
   creationTransactionHash?: string;

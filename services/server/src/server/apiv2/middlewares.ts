@@ -15,8 +15,9 @@ import type { Services } from "../services/services";
 import type {
   Metadata,
   SolidityJsonInput,
+  VyperJsonInput,
+  FeJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
-import type { VyperJsonInput } from "@ethereum-sourcify/lib-sourcify";
 
 export function validateChainId(
   req: Request,
@@ -149,7 +150,8 @@ export function validateStandardJsonInput(
 
   const stdJsonInput = req.body.stdJsonInput as
     | SolidityJsonInput
-    | VyperJsonInput;
+    | VyperJsonInput
+    | FeJsonInput;
   if (!stdJsonInput.language) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a language field.",

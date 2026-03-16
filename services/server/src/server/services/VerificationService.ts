@@ -3,6 +3,7 @@ import type {
   ISolidityCompiler,
   SolidityJsonInput,
   VyperJsonInput,
+  FeJsonInput,
   PathBuffer,
   SourcifyChainMap,
   VerificationExport,
@@ -52,6 +53,7 @@ export interface VerificationServiceOptions {
   solcRepoPath: string;
   solJsonRepoPath: string;
   vyperRepoPath: string;
+  feRepoPath: string;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
@@ -131,6 +133,7 @@ export class VerificationService {
         solcRepoPath: options.solcRepoPath,
         solJsonRepoPath: options.solJsonRepoPath,
         vyperRepoPath: options.vyperRepoPath,
+        feRepoPath: options.feRepoPath,
       },
       minThreads,
       maxThreads,
@@ -253,7 +256,7 @@ export class VerificationService {
     verificationEndpoint: string,
     chainId: string,
     address: string,
-    jsonInput: SolidityJsonInput | VyperJsonInput,
+    jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
     compilerVersion: string,
     compilationTarget: CompilationTarget,
     creationTransactionHash?: string,
