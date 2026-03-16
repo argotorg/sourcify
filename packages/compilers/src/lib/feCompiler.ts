@@ -134,12 +134,9 @@ export async function useFeCompiler(
     const feToml = `[ingot]\nname = "sourcify_verification"\nversion = "0.1.0"\n`;
     await fs.promises.writeFile(path.join(tmpDir, 'fe.toml'), feToml);
 
-    const srcDir = path.join(tmpDir, 'src');
-    await fs.promises.mkdir(srcDir, { recursive: true });
-
-    // Write source files
+    // Write source files (sourcePaths already have src/ prefix, e.g. 'src/lib.fe')
     for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
-      const fullPath = path.join(srcDir, sourcePath);
+      const fullPath = path.join(tmpDir, sourcePath);
       await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.promises.writeFile(fullPath, source.content);
     }
@@ -176,6 +173,15 @@ export async function useFeCompiler(
       }
     }
 
+    // Build contractName → sourcePath map by scanning source files for "pub contract Name"
+    const contractToSourcePath: Record<string, string> = {};
+    for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
+      const matches = source.content.matchAll(/pub\s+contract\s+(\w+)/g);
+      for (const match of matches) {
+        contractToSourcePath[match[1]] = sourcePath;
+      }
+    }
+
     for (const contractName of contractNames) {
       const binPath = path.join(outDir, `${contractName}.bin`);
       const runtimeBinPath = path.join(outDir, `${contractName}.runtime.bin`);
@@ -187,8 +193,10 @@ export async function useFeCompiler(
         await fs.promises.readFile(runtimeBinPath, 'utf8')
       ).trim();
 
-      // Map back to the source path (use the first source file as the key)
-      const sourcePath = Object.keys(feJsonInput.sources)[0];
+      // Map back to the source path using regex scan; fallback to first source
+      const sourcePath =
+        contractToSourcePath[contractName] ??
+        Object.keys(feJsonInput.sources)[0];
       if (!contracts[sourcePath]) {
         contracts[sourcePath] = {};
       }
