@@ -6,3 +6,4 @@ export type ICompilersLogger = ILogger;
 
 export * from './lib/solidityCompiler';
 export * from './lib/vyperCompiler';
+export * from './lib/feCompiler';

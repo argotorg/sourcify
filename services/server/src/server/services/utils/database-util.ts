@@ -893,8 +893,8 @@ export function prepareCompilerSettingsFromVerification(
 ): Omit<SoliditySettings | VyperSettings, "outputSelection"> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { outputSelection, ...restSettings } =
-    verification.compilation.jsonInput.settings;
-  return restSettings;
+    verification.compilation.jsonInput.settings ?? {};
+  return restSettings as Omit<SoliditySettings | VyperSettings, "outputSelection">;
 }
 
 export function createPreRunCompilationFromStoredCandidate(

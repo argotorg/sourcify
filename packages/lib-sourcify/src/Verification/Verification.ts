@@ -33,6 +33,7 @@ import type {
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
+  FeOutputContract,
   SoliditySettings,
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
@@ -636,6 +637,7 @@ export class Verification {
     let contractCompilerOutput:
       | SolidityOutputContract
       | VyperOutputContract
+      | FeOutputContract
       | undefined;
     try {
       contractCompilerOutput = this.compilation.contractCompilerOutput;
@@ -702,7 +704,7 @@ export class Verification {
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {
-          abi: contractCompilerOutput?.abi,
+          abi: contractCompilerOutput?.abi ?? undefined,
           userdoc: contractCompilerOutput?.userdoc,
           devdoc: contractCompilerOutput?.devdoc,
           storageLayout: (contractCompilerOutput as SolidityOutputContract)

@@ -32,6 +32,7 @@ export enum AuxdataStyle {
   VYPER = 'vyper',
   VYPER_LT_0_3_10 = 'vyper_lt_0_3_10',
   VYPER_LT_0_3_5 = 'vyper_lt_0_3_5',
+  FE = 'fe',
 }
 
 /**
@@ -157,6 +158,11 @@ export const splitAuxdata = (
 ): string[] => {
   validateBytecode(bytecode);
   bytecode = ensureHexPrefix(bytecode);
+
+  // Fe has no CBOR metadata — return the full bytecode with no auxdata
+  if (auxdataStyle === AuxdataStyle.FE) {
+    return [bytecode];
+  }
 
   const bytesLength = 4;
   const cborBytesLength = getCborBytesLength(
