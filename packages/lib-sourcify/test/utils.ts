@@ -6,6 +6,7 @@ import { ContractFactory, type JsonRpcSigner } from 'ethers';
 import {
   useSolidityCompiler,
   useVyperCompiler,
+  useFeCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
   Metadata,
@@ -14,12 +15,15 @@ import type {
   SolidityOutputContract,
   VyperJsonInput,
   VyperOutput,
+  FeJsonInput,
+  FeOutput,
 } from '@ethereum-sourcify/compilers-types';
 import type { Verification } from '../src/Verification/Verification';
 import type {
   CompiledContractCborAuxdata,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
@@ -95,6 +99,18 @@ class VyperCompiler implements IVyperCompiler {
 }
 
 export const vyperCompiler = new VyperCompiler();
+
+class FeCompiler implements IFeCompiler {
+  async compile(version: string, feJsonInput: FeJsonInput): Promise<FeOutput> {
+    return await useFeCompiler(
+      path.join('/tmp', 'lib-sourcify-fe-repo'),
+      version,
+      feJsonInput,
+    );
+  }
+}
+
+export const feCompiler = new FeCompiler();
 
 /**
  * Helper function to verify a Verification object using its getters
