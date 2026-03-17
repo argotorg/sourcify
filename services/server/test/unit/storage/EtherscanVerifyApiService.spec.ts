@@ -10,6 +10,7 @@ import { WStorageIdentifiers } from "../../../src/server/services/storageService
 import { MockVerificationExport } from "../../helpers/mocks";
 import type { SourcifyDatabaseService } from "../../../src/server/services/storageServices/SourcifyDatabaseService";
 import type { Database } from "../../../src/server/services/utils/Database";
+import type { VyperSettings } from "@ethereum-sourcify/compilers-types";
 
 use(chaiAsPromised);
 
@@ -301,7 +302,8 @@ describe("EtherscanVerifyApiService", function () {
     expect(body.get("compiler_version")).to.equal("v0.3.10");
     expect(body.get("license_type")).to.equal("");
     expect(body.get("evm_version")).to.equal(
-      vyperVerification.compilation.jsonInput.settings.evmVersion,
+      (vyperVerification.compilation.jsonInput.settings as VyperSettings)
+        .evmVersion,
     );
 
     const file = body.get("files[0]") as Blob | null;

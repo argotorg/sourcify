@@ -232,13 +232,13 @@ export function validateAndNormalizeFeInput(
   next: NextFunction,
 ) {
   const stdJsonInput = req.body.stdJsonInput;
-  if (stdJsonInput?.language !== 'Fe') {
+  if (stdJsonInput?.language !== "Fe") {
     return next();
   }
 
   const sources = stdJsonInput.sources as Record<string, { content: string }>;
   const keys = Object.keys(sources);
-  const withSrc = keys.filter((k) => k.startsWith('src/'));
+  const withSrc = keys.filter((k) => k.startsWith("src/"));
 
   // Reject mixed paths (some with src/, some without)
   if (withSrc.length > 0 && withSrc.length < keys.length) {
@@ -261,14 +261,14 @@ export function validateAndNormalizeFeInput(
   // - Path must start with "src/" and end with ".fe"
   const ci: string | undefined = req.body.contractIdentifier;
   if (ci) {
-    const colonIdx = ci.lastIndexOf(':');
+    const colonIdx = ci.lastIndexOf(":");
     if (colonIdx === -1) {
       throw new InvalidParametersError(
         'For Fe contracts, contractIdentifier must include the source file path, e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter".',
       );
     } else {
       const contractPath = ci.slice(0, colonIdx);
-      if (!contractPath.startsWith('src/') || !contractPath.endsWith('.fe')) {
+      if (!contractPath.startsWith("src/") || !contractPath.endsWith(".fe")) {
         throw new InvalidParametersError(
           'For Fe contracts, contractIdentifier path must be a "src/**/*.fe" path ' +
             '(e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter").',

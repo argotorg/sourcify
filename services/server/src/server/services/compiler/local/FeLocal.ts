@@ -1,4 +1,8 @@
-import type { IFeCompiler, FeJsonInput, FeOutput } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  IFeCompiler,
+  FeJsonInput,
+  FeOutput,
+} from "@ethereum-sourcify/lib-sourcify";
 import { useFeCompiler } from "@ethereum-sourcify/compilers";
 
 export class FeLocal implements IFeCompiler {

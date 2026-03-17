@@ -6,8 +6,7 @@ import { CompilerError, fetchWithBackoff } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
 
-const HOST_FE_REPO =
-  'https://github.com/argotorg/fe/releases/download/';
+const HOST_FE_REPO = 'https://github.com/argotorg/fe/releases/download/';
 
 /**
  * Returns the platform-specific asset name for the Fe binary.
@@ -148,14 +147,23 @@ export async function useFeCompiler(
       maxBuffer: 250 * 1024 * 1024,
     });
     const endCompilation = Date.now();
-    logInfo('Fe compilation done', { timeInMs: endCompilation - startCompilation });
+    logInfo('Fe compilation done', {
+      timeInMs: endCompilation - startCompilation,
+    });
 
     if (spawned.status !== 0) {
       const stderr = spawned.stderr?.toString() || '';
-      const errorMessage = spawned.error?.message || stderr || 'Compilation failed';
+      const errorMessage =
+        spawned.error?.message || stderr || 'Compilation failed';
       logError('Fe compiler error', { errorMessage });
       throw new CompilerError('Fe compiler error', [
-        { severity: 'error', message: errorMessage, type: 'CompilerError', component: 'general', formattedMessage: errorMessage },
+        {
+          severity: 'error',
+          message: errorMessage,
+          type: 'CompilerError',
+          component: 'general',
+          formattedMessage: errorMessage,
+        },
       ]);
     }
 

@@ -4,11 +4,7 @@ import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
 import { type JsonRpcSigner } from 'ethers';
 import path from 'path';
-import {
-  deployFeContract,
-  expectVerification,
-  feCompiler,
-} from '../utils';
+import { deployFeContract, expectVerification, feCompiler } from '../utils';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
