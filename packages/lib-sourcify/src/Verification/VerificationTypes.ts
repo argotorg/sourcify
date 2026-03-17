@@ -130,7 +130,11 @@ export interface VerificationExport {
     immutableReferences?: ImmutableReferences;
     metadata?: Metadata;
     jsonInput: {
-      settings: SoliditySettings | VyperSettings | Record<string, never> | undefined;
+      settings:
+        | SoliditySettings
+        | VyperSettings
+        | Record<string, never>
+        | undefined;
     };
     compilationTime?: number;
   };

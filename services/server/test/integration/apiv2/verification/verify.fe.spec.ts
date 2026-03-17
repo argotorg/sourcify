@@ -46,7 +46,7 @@ describe("POST /v2/verify/:chainId/:address - Fe contracts", function () {
     const { contractAddress, txHash } =
       await deployFromBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        "0x" + artifact.creationBytecode,
+        artifact.creationBytecode,
       );
 
     const verifyRes = await chai
@@ -102,7 +102,7 @@ describe("POST /v2/verify/:chainId/:address - Fe contracts", function () {
     const { contractAddress, txHash } =
       await deployFromBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        "0x" + artifact.creationBytecode,
+        artifact.creationBytecode,
       );
 
     const verifyRes = await chai

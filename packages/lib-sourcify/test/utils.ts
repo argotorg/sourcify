@@ -370,7 +370,7 @@ export async function deployFeContract(
   signer: JsonRpcSigner,
   creationBytecode: string,
 ): Promise<{ contractAddress: string; txHash: string }> {
-  const factory = new ContractFactory([], '0x' + creationBytecode, signer);
+  const factory = new ContractFactory([], creationBytecode, signer);
   const deployment = await factory.deploy();
   await deployment.waitForDeployment();
   const contractAddress = await deployment.getAddress();

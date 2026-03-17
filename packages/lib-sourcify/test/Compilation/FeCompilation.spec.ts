@@ -39,8 +39,8 @@ describe('FeCompilation', () => {
 
       await compilation.compile();
 
-      expect(compilation.creationBytecode).to.equal('0x' + artifact.creationBytecode);
-      expect(compilation.runtimeBytecode).to.equal('0x' + artifact.runtimeBytecode);
+      expect(compilation.creationBytecode).to.equal(artifact.creationBytecode);
+      expect(compilation.runtimeBytecode).to.equal(artifact.runtimeBytecode);
     });
 
     it('should set empty CBOR auxdata positions (Fe has no metadata)', async () => {
@@ -129,8 +129,12 @@ describe('FeCompilation', () => {
       const multiArtifact = JSON.parse(
         fs.readFileSync(path.join(MULTI_FILE_DIR, 'artifact.json'), 'utf8'),
       );
-      expect(compilation.creationBytecode).to.equal('0x' + multiArtifact.creationBytecode);
-      expect(compilation.runtimeBytecode).to.equal('0x' + multiArtifact.runtimeBytecode);
+      expect(compilation.creationBytecode).to.equal(
+        multiArtifact.creationBytecode,
+      );
+      expect(compilation.runtimeBytecode).to.equal(
+        multiArtifact.runtimeBytecode,
+      );
     });
   });
 });
