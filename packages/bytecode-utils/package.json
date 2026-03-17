@@ -41,7 +41,7 @@
     "@ethersproject/bytes": "5.8.0",
     "base-x": "4.0.1",
     "bs58": "5.0.0",
-    "cbor-x": "1.6.3",
+    "cbor-x": "1.6.4",
     "semver": "7.7.4"
   },
   "devDependencies": {
