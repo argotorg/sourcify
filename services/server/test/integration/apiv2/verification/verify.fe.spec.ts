@@ -187,11 +187,13 @@ describe("POST /v2/verify/:chainId/:address - Fe contracts", function () {
     const lookupRes = await chai
       .request(serverFixture.server.app)
       .get(
-        `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=compilation,abi,metadata,storageLayout,sources,runtimeBytecode`,
+        `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=compilation,abi,metadata,storageLayout,sources,creationBytecode,runtimeBytecode`,
       );
 
     chai.expect(lookupRes.status).to.equal(200);
     chai.expect(lookupRes.body.match).to.equal("match");
+    chai.expect(lookupRes.body.runtimeMatch).to.equal("match");
+    chai.expect(lookupRes.body.creationMatch).to.equal("match");
     chai.expect(lookupRes.body.abi).to.be.null;
     chai.expect(lookupRes.body.metadata).to.be.null;
     chai.expect(lookupRes.body.storageLayout).to.be.null;
@@ -206,13 +208,19 @@ describe("POST /v2/verify/:chainId/:address - Fe contracts", function () {
     chai.expect(lookupRes.body.sources).to.deep.equal({
       "src/lib.fe": { content: counterSource },
     });
+    // Fe emits no source maps, no link references, no immutables, no CBOR
+    chai.expect(lookupRes.body.creationBytecode.cborAuxdata).to.deep.equal({});
     chai.expect(lookupRes.body.runtimeBytecode.cborAuxdata).to.deep.equal({});
+    chai.expect(lookupRes.body.runtimeBytecode.sourceMap).to.be.null;
+    chai.expect(lookupRes.body.runtimeBytecode.linkReferences).to.be.null;
+    chai.expect(lookupRes.body.runtimeBytecode.immutableReferences).to.be.null;
 
     // 2. Direct DB query — validates what's actually stored in compiled_contracts
     const addressBuffer = Buffer.from(contractAddress.substring(2), "hex");
     const dbRes = await serverFixture.sourcifyDatabase!.query(
       `SELECT cc.compiler, cc.language, cc.name, cc.fully_qualified_name,
-              cc.compiler_settings, cc.compilation_artifacts
+              cc.compiler_settings, cc.compilation_artifacts,
+              cc.creation_code_artifacts, cc.runtime_code_artifacts
        FROM compiled_contracts cc
        JOIN verified_contracts vc ON vc.compilation_id = cc.id
        JOIN contract_deployments cd ON cd.id = vc.deployment_id
@@ -225,9 +233,21 @@ describe("POST /v2/verify/:chainId/:address - Fe contracts", function () {
     chai.expect(row.name).to.equal("Counter");
     chai.expect(row.fully_qualified_name).to.equal("src/lib.fe:Counter");
     chai.expect(row.compiler_settings).to.deep.equal({});
+    // compilation_artifacts: all Solidity/Vyper-specific fields are null
     chai.expect(row.compilation_artifacts.abi).to.be.null;
-    chai.expect(row.compilation_artifacts.storageLayout).to.be.null;
-    chai.expect(row.compilation_artifacts.devdoc).to.be.null;
     chai.expect(row.compilation_artifacts.userdoc).to.be.null;
+    chai.expect(row.compilation_artifacts.devdoc).to.be.null;
+    chai.expect(row.compilation_artifacts.storageLayout).to.be.null;
+    chai.expect(row.compilation_artifacts.transientStorageLayout).to.be.null;
+    chai.expect(row.compilation_artifacts.sources).to.be.null;
+    // creation_code_artifacts: no source map, no link references, empty CBOR
+    chai.expect(row.creation_code_artifacts.sourceMap).to.be.null;
+    chai.expect(row.creation_code_artifacts.linkReferences).to.be.null;
+    chai.expect(row.creation_code_artifacts.cborAuxdata).to.deep.equal({});
+    // runtime_code_artifacts: no source map, no link references, no immutables, empty CBOR
+    chai.expect(row.runtime_code_artifacts.sourceMap).to.be.null;
+    chai.expect(row.runtime_code_artifacts.linkReferences).to.be.null;
+    chai.expect(row.runtime_code_artifacts.immutableReferences).to.be.null;
+    chai.expect(row.runtime_code_artifacts.cborAuxdata).to.deep.equal({});
   });
 });
