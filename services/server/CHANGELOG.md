@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.11.0 - 2026-03-17
+
+- Support all Solidity versions >= 0.1.3 and drop the metadata dependency (#2652)
+- Add index on contract_deployments.chain_id for /v2/contracts pagination (#2684)
+- Add deprecation warning field and Warning HTTP header to legacy v1 API responses (#2678)
+- Add chains:
+  - Flow EVM Mainnet (747)
+  - Flow EVM Testnet (545)
+  - RISE (4153)
+  - Reactive Network Lasna (5318007)
+  - Integralayer (26217)
+
+
 ## sourcify-server@3.10.0 - 2026-03-02
 
 - Support verification when cbor auxdata lengths differ between onchain and recompilation (#2619)
