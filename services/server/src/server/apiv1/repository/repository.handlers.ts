@@ -9,6 +9,7 @@ import type {
   Match,
 } from "../../types";
 import { NotFoundError } from "../../../common/errors";
+import { CHECK_ENDPOINTS_DEPRECATION_WARNING } from "../controllers.common";
 import logger from "../../../common/logger";
 import type { Services } from "../../services/services";
 import type {
@@ -199,6 +200,7 @@ export async function checkAllByChainAndAddressEndpoint(
             chainId,
             status: found[0].runtimeMatch,
             ...proxyStatus,
+            warning: CHECK_ENDPOINTS_DEPRECATION_WARNING,
           });
         }
       } catch (error) {
@@ -215,6 +217,7 @@ export async function checkAllByChainAndAddressEndpoint(
       map.set(address, {
         address: address,
         status: "false",
+        warning: CHECK_ENDPOINTS_DEPRECATION_WARNING,
       });
     }
   }
@@ -268,7 +271,12 @@ export async function checkByChainAndAddressesEnpoint(
         );
         if (found.length != 0) {
           if (!map.has(address)) {
-            map.set(address, { address, status: "perfect", chainIds: [] });
+            map.set(address, {
+              address,
+              status: "perfect",
+              chainIds: [],
+              warning: CHECK_ENDPOINTS_DEPRECATION_WARNING,
+            });
           }
 
           map.get(address).chainIds.push(chainId);
@@ -281,6 +289,7 @@ export async function checkByChainAndAddressesEnpoint(
       map.set(address, {
         address: address,
         status: "false",
+        warning: CHECK_ENDPOINTS_DEPRECATION_WARNING,
       });
     }
   }

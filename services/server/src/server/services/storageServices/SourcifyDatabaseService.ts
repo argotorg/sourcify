@@ -6,7 +6,11 @@ import type {
   IVyperCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
-import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
+import {
+  splitFullyQualifiedName,
+  convertLibrariesToMetadataFormat,
+} from "@ethereum-sourcify/lib-sourcify";
+import type { Libraries } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
 import type { RWStorageService } from "../StorageService";
@@ -283,6 +287,90 @@ export class SourcifyDatabaseService
   };
 
   /**
+   * Generates a metadata.json on the fly for contracts that don't have one stored
+   * (e.g. Vyper and Yul contracts verified after metadata generation was removed).
+   * Replicates the format previously produced by VyperCompilation.generateMetadata()
+   * and YulCompilation.generateMetadata().
+   */
+  private async generateMetadataOnTheFly(
+    chainId: string,
+    address: string,
+    compilerVersion: string,
+  ): Promise<object | null> {
+    const result =
+      await this.database.getSourcifyMatchByChainAddressWithProperties(
+        parseInt(chainId),
+        bytesFromString(address)!,
+        [
+          "language",
+          "fully_qualified_name",
+          "compiler_settings",
+          "abi",
+          "userdoc",
+          "devdoc",
+          "sources",
+        ],
+      );
+
+    if (!result.rows[0]) return null;
+
+    const {
+      language,
+      fully_qualified_name,
+      compiler_settings,
+      abi,
+      userdoc,
+      devdoc,
+      sources,
+    } = result.rows[0];
+
+    if (!language || !fully_qualified_name || !compiler_settings || !sources) {
+      return null;
+    }
+
+    const { contractPath, contractName } =
+      splitFullyQualifiedName(fully_qualified_name);
+
+    const sourcesWithHashes = Object.entries(
+      sources as Record<string, { content: string }>,
+    ).reduce(
+      (acc, [path, source]) => ({
+        ...acc,
+        [path]: { keccak256: keccak256Str(source.content) },
+      }),
+      {} as Record<string, { keccak256: string }>,
+    );
+
+    // compiler_settings is stored without outputSelection already
+    const { libraries, ...settingsWithoutLibraries } = compiler_settings as {
+      libraries?: Libraries;
+      [key: string]: unknown;
+    };
+
+    // Yul uses Solidity settings which may have libraries in jsonInput format;
+    // convert them to metadata format as the old generateMetadata() did
+    const metadataSettings =
+      language === "Yul"
+        ? {
+            ...settingsWithoutLibraries,
+            libraries: convertLibrariesToMetadataFormat(libraries),
+          }
+        : compiler_settings;
+
+    return {
+      compiler: { version: compilerVersion },
+      language,
+      output: { abi, devdoc, userdoc },
+      settings: {
+        ...metadataSettings,
+        compilationTarget: { [contractPath]: contractName },
+      },
+      sources: sourcesWithHashes,
+      version: 1,
+    };
+  }
+
+  /**
    * getFiles extracts the files from the database `compiled_contracts_sources`
    * and store them into FilesInfo.files, this object is then going to be formatted
    * by getTree, getContent and getFile.
@@ -325,6 +413,15 @@ export class SourcifyDatabaseService
 
     if (sourcifyMatch.metadata) {
       files["metadata.json"] = JSON.stringify(sourcifyMatch.metadata);
+    } else {
+      const generatedMetadata = await this.generateMetadataOnTheFly(
+        chainId,
+        address,
+        sourcifyMatch.version,
+      );
+      if (generatedMetadata) {
+        files["metadata.json"] = JSON.stringify(generatedMetadata);
+      }
     }
 
     if (sourcifyMatch?.creation_values?.constructorArguments) {
@@ -350,7 +447,7 @@ export class SourcifyDatabaseService
       )) {
         let formattedKey;
         // Solidity >= 0.5.0 is __$keccak256(file.sol:MyLib)$__ (total 40 characters)
-        if (semver.gte(sourcifyMatch.metadata.compiler.version, "0.5.0")) {
+        if (semver.gte(sourcifyMatch.version, "0.5.0")) {
           formattedKey =
             "__$" + keccak256Str(key).slice(2).slice(0, 34) + "$__";
         } else {

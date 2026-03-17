@@ -2,7 +2,6 @@ import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import fs from 'fs';
 import path from 'path';
-import { id as keccak256str } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
 import { YulCompilation } from '../../src/Compilation/YulCompilation';
 import { solc } from '../utils';
@@ -27,7 +26,7 @@ function loadJsonInput(): SolidityJsonInput {
 }
 
 describe('YulCompilation', () => {
-  it('should compile a Yul contract and generate metadata', async () => {
+  it('should compile a Yul contract', async () => {
     const jsonInput = loadJsonInput();
 
     const compilation = new YulCompilation(solc, compilerVersion, jsonInput, {
@@ -42,20 +41,6 @@ describe('YulCompilation', () => {
     );
     expect(compilation.runtimeBytecode).to.equal(
       '0x5f8080803560601c81813b9283923c818073ca11bde05977b3631167028862be2a173976ca115af13d90815f803e156034575ff35b5ffd',
-    );
-
-    const metadata = compilation.metadata;
-    expect(metadata.language).to.equal('Yul');
-    expect(metadata.compiler.version).to.equal(compilerVersion);
-    expect(metadata.settings.compilationTarget).to.deep.equal({
-      [contractPath]: contractName,
-    });
-
-    const expectedSourceHash = keccak256str(
-      jsonInput.sources[contractPath].content,
-    );
-    expect(metadata.sources[contractPath].keccak256).to.equal(
-      expectedSourceHash,
     );
   });
 

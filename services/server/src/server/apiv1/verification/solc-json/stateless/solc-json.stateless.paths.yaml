@@ -106,6 +106,9 @@ paths:
                           type: string
                         libraryMap:
                           type: object
+                        warning:
+                          type: string
+                          description: Deprecation warning. This endpoint will be removed. Use the v2 API instead.
               examples:
                 Perfect Match:
                   value:

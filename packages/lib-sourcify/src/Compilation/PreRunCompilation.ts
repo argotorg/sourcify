@@ -49,7 +49,9 @@ export class PreRunCompilation extends AbstractCompilation {
         const contractOutput = jsonOutput.contracts[
           this.compilationTarget.path
         ][this.compilationTarget.name] as SolidityOutputContract;
-        this._metadata = JSON.parse(contractOutput.metadata.trim());
+        if (contractOutput.metadata) {
+          this._metadata = JSON.parse(contractOutput.metadata.trim());
+        }
         break;
       }
       case 'Vyper': {

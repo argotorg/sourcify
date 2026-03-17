@@ -41,7 +41,8 @@
       },
       "devdoc": {},
       "userdoc": {},
-      "storageLayout": null
+      "storageLayout": null,
+      "transientStorageLayout": null
     },
     "creationCodeArtifacts": {
       "sourceMap": null,
@@ -64,43 +65,7 @@
         }
       }
     },
-    "metadata": {
-      "compiler": {
-        "version": "0.3.4+commit.f31f0ec4"
-      },
-      "language": "Vyper",
-      "output": {
-        "abi": [
-          {
-            "inputs": [],
-            "name": "helloWorld",
-            "outputs": [
-              {
-                "name": "",
-                "type": "string"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          }
-        ],
-        "devdoc": {},
-        "userdoc": {}
-      },
-      "settings": {
-        "evmVersion": "istanbul",
-        "libraries": {},
-        "compilationTarget": {
-          "test.vy": "test"
-        }
-      },
-      "sources": {
-        "test.vy": {
-          "keccak256": "0xa5f556e807a453ac8289c2a75a1d1b42f12d46cd21b58975b6f623cb940125c9"
-        }
-      },
-      "version": 1
-    }
+    "metadata": null
   },
   "verification": {
     "creationMatch": "match",

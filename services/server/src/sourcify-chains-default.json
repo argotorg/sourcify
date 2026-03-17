@@ -706,6 +706,15 @@
       }
     ]
   },
+  "4153": {
+    "sourcifyName": "RISE",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.risechain.com/"
+      }
+    }
+  },
   "28": {
     "sourcifyName": "Boba Network Rinkeby Testnet",
     "supported": false
@@ -2370,6 +2379,16 @@
       }
     }
   },
+  "5318007": {
+    "sourcifyName": "Reactive Network Lasna",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "etherscanApi": false,
+      "blockscoutApi": {
+        "url": "https://lasna-api.reactscan.net"
+      }
+    }
+  },
   "5042002": {
     "sourcifyName": "ARC-testnet",
     "supported": true,
@@ -2428,7 +2447,7 @@
       }
     }
   },
-  
+
   "1122": {
     "sourcifyName": "LuxePorts MainNet",
     "supported": true
@@ -2498,6 +2517,16 @@
       }
     }
   },
+  "26217": {
+    "sourcifyName": "Integralayer",
+    "supported": true,
+    "rpc": ["https://evm.integralayer.com"],
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://blockscout.integralayer.com"
+      }
+    }
+  },
   "202601": {
     "sourcifyName": "Ronin Saigon Testnet",
     "supported": true,
@@ -2506,5 +2535,29 @@
         "url": "https://saigon-explorer.roninchain.com"
       }
     }
+  },
+  "747": {
+    "sourcifyName": "Flow EVM Mainnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://evm.flow.com/"
+      }
+    },
+    "rpc": [
+      "https://mainnet.evm.nodes.onflow.org"
+    ]
+  },
+  "545": {
+    "sourcifyName": "Flow EVM Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet.evm.flow.com/"
+      }
+    },
+    "rpc": [
+      "https://testnet.evm.nodes.onflow.org"
+    ]
   }
 }

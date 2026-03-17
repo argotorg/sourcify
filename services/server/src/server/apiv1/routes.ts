@@ -27,6 +27,10 @@ router.use(
   ],
   (req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Deprecation", "true");
+    res.setHeader(
+      "Warning",
+      '299 - "Deprecated: use v2 API. See https://sourcify.dev/server/api-docs/swagger.json"',
+    );
     next();
   },
 );

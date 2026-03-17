@@ -424,6 +424,11 @@ export async function assertApiV2Lookup(
     .expect(res.body.storageLayout)
     .to.deep.equal(testCase.output.compilationArtifacts.storageLayout);
 
+  // transientStorageLayout
+  chai
+    .expect(res.body.transientStorageLayout)
+    .to.deep.equal(testCase.output.compilationArtifacts.transientStorageLayout);
+
   // userdoc
   chai
     .expect(res.body.userdoc)

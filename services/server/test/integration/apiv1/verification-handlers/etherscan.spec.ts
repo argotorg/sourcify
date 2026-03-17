@@ -230,6 +230,7 @@ describe("Import From Etherscan and Verify", function () {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
         },
+        false,
       );
     });
 
@@ -248,6 +249,7 @@ describe("Import From Etherscan and Verify", function () {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
         },
+        false,
       );
     });
 
@@ -266,7 +268,7 @@ describe("Import From Etherscan and Verify", function () {
         .field("chainId", testChainId)
         .end(async (err, res) => {
           await assertVerification(
-            null,
+            serverFixture,
             err,
             res,
             () => {

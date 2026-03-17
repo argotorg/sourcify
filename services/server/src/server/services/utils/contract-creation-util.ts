@@ -574,8 +574,9 @@ export async function findContractCreationTxByBinarySearchWithTimeout(
   contractAddress: string,
   binarySearchTimeoutMs = BINARY_SEARCH_TIMEOUT_MS,
 ): Promise<string | null> {
-  const timeoutPromise = new Promise<null>((resolve) =>
-    setTimeout(() => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => {
       logger.warn(
         `Binary search for contract creation tx timed out after ${binarySearchTimeoutMs} ms`,
         {
@@ -585,11 +586,17 @@ export async function findContractCreationTxByBinarySearchWithTimeout(
         },
       );
       resolve(null);
-    }, binarySearchTimeoutMs),
-  );
+    }, binarySearchTimeoutMs);
+  });
 
-  return Promise.race([
-    findContractCreationTxByBinarySearch(sourcifyChain, contractAddress),
-    timeoutPromise,
-  ]);
+  try {
+    return await Promise.race([
+      findContractCreationTxByBinarySearch(sourcifyChain, contractAddress),
+      timeoutPromise,
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }

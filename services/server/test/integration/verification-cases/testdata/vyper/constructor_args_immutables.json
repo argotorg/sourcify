@@ -68,7 +68,8 @@
       },
       "devdoc": {},
       "userdoc": {},
-      "storageLayout": null
+      "storageLayout": null,
+      "transientStorageLayout": null
     },
     "creationCodeArtifacts": {
       "sourceMap": null,
@@ -142,90 +143,7 @@
       "linkReferences": null,
       "cborAuxdata": {}
     },
-    "metadata": {
-      "compiler": {
-        "version": "0.4.0+commit.e9db8d9f"
-      },
-      "language": "Vyper",
-      "output": {
-        "abi": [
-          {
-            "inputs": [],
-            "name": "get_my_immutable",
-            "outputs": [
-              {
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "OWNER",
-            "outputs": [
-              {
-                "name": "",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "MY_IMMUTABLE",
-            "outputs": [
-              {
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "MY_IMMUTABLE_2",
-            "outputs": [
-              {
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [
-              {
-                "name": "val",
-                "type": "uint256"
-              }
-            ],
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-          }
-        ],
-        "devdoc": {},
-        "userdoc": {}
-      },
-      "settings": {
-        "evmVersion": "london",
-        "libraries": {},
-        "compilationTarget": {
-          "test.vy": "test"
-        }
-      },
-      "sources": {
-        "test.vy": {
-          "keccak256": "0xee847fef3619fd09eadb5c1b4399d23312d4e2f2e39e8c123c90530f15b14615"
-        }
-      },
-      "version": 1
-    }
+    "metadata": null
   },
   "verification": {
     "creationMatch": "match",

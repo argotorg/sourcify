@@ -36,6 +36,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
     "abi",
     "metadata",
     "storageLayout",
+    "transientStorageLayout",
     "userdoc",
     "devdoc",
     "sourceIds",
@@ -174,6 +175,15 @@ describe("GET /v2/contract/:chainId/:address", function () {
           }
           objectToExpect = chainFixture.defaultContractArtifact.storageLayout;
           break;
+        case "transientStorageLayout":
+          if (subField) {
+            throw new Error(
+              "Malformed test. TransientStorageLayout should not have subfields.",
+            );
+          }
+          // Default test contract uses an older Solidity version without transientStorageLayout
+          objectToExpect = null;
+          break;
         case "userdoc":
           if (subField) {
             throw new Error(
@@ -231,6 +241,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
                   devdoc: chainFixture.defaultContractArtifact.devdoc,
                   storageLayout:
                     chainFixture.defaultContractArtifact.storageLayout,
+                  transientStorageLayout: null,
                   evm: {
                     bytecode: {
                       object:

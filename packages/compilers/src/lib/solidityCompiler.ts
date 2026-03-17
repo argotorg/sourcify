@@ -58,6 +58,16 @@ export async function useSolidityCompiler(
   if (solcPlatform && !forceEmscripten) {
     // Catch, if this fails we'll fall back to solc-js e.g. very early solc 0.1.4
     try {
+      // Early catch for unsupported versions and platforms
+      if (
+        (solcPlatform === 'linux-amd64' && semver.lt(version, '0.4.10')) ||
+        (solcPlatform === 'macosx-amd64' && semver.lt(version, '0.3.6')) ||
+        (solcPlatform === 'windows-amd64' && semver.lt(version, '0.4.1'))
+      ) {
+        throw new Error(
+          `No solc binary available for version ${version} and platform ${solcPlatform}`,
+        );
+      }
       solcPath = await getSolcExecutable(solcRepoPath, solcPlatform, version);
     } catch (error) {
       logError('Error getting solc executable', {
@@ -86,32 +96,21 @@ export async function useSolidityCompiler(
       throw error;
     }
   } else {
-    logDebug('Compiling with solc-js', { version });
-    const solJson = await getSolcJs(solJsonRepoPath, version);
+    // Spawn a dedicated worker so the solcjs compilers is released when the worker exits.
+    // Solc versions < 0.4.0 require this isolation for a clean compiler context. See: https://github.com/argotorg/sourcify/issues/1099
+    logDebug('Compiling with solc-js in the worker', { version });
     startCompilation = Date.now();
-    if (solJson) {
-      const coercedVersion =
-        semver.coerce(new semver.SemVer(version))?.version ?? '';
-      // Run Worker for solc versions < 0.4.0 for clean compiler context. See https://github.com/argotorg/sourcify/issues/1099
-      if (semver.lt(coercedVersion, '0.4.0')) {
-        compiled = await new Promise((resolve, reject) => {
-          const worker = importWorker(
-            path.resolve(__dirname, './compilerWorker.ts'),
-            {
-              workerData: { solJsonRepoPath, version, inputStringified },
-            },
-          );
-          worker.once('message', (result) => {
-            resolve(result);
-          });
-          worker.once('error', (error) => {
-            reject(error);
-          });
-        });
-      } else {
-        compiled = solJson.compile(inputStringified);
-      }
-    }
+    compiled = await new Promise((resolve, reject) => {
+      const worker = importWorker(path.resolve(__dirname, './compilerWorker'), {
+        workerData: { solJsonRepoPath, version, inputStringified },
+      });
+      worker.once('message', (result) => {
+        resolve(result);
+      });
+      worker.once('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
   const endCompilation = Date.now();

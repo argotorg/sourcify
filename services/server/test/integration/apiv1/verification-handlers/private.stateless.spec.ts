@@ -140,6 +140,7 @@ describe("/private/replace-contract", function () {
       contractAddress,
       chainFixture.chainId,
       "partial",
+      false,
     );
 
     // Store the original creation_match value

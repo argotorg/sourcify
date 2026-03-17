@@ -91,6 +91,7 @@ describe("/verify/vyper", function () {
       address,
       chainFixture.chainId,
       "partial",
+      false,
     );
   });
 
@@ -172,6 +173,7 @@ describe("/verify/vyper", function () {
       address,
       chainFixture.chainId,
       "partial",
+      false,
     );
 
     await assertTransformations(
@@ -218,6 +220,7 @@ describe("/verify/vyper", function () {
       address,
       chainFixture.chainId,
       "partial",
+      false,
     );
 
     await assertTransformations(
@@ -268,6 +271,7 @@ describe("/verify/vyper", function () {
       address,
       chainFixture.chainId,
       "partial",
+      false,
     );
 
     await assertTransformations(

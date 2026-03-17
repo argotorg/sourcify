@@ -131,7 +131,8 @@ interface SolidityOutputEvmDeployedBytecode extends SolidityOutputEvmBytecode {
 }
 
 export interface SolidityOutputSource {
-  id: number;
+  // In older solidity versions, solcjs returns the id as a string
+  id: number | string;
   ast: any;
   legacyAST: any;
 }
@@ -159,9 +160,12 @@ export interface StorageLayout {
     };
   };
 }
+
+export type TransientStorageLayout = StorageLayout;
+
 export interface SolidityOutputContract {
   abi: JsonFragment[];
-  metadata: string;
+  metadata?: string;
   userdoc?: Userdoc;
   devdoc?: Devdoc;
   ir?: string;
@@ -169,6 +173,7 @@ export interface SolidityOutputContract {
   irOptimized?: string;
   irOptimizedAst?: any;
   storageLayout?: StorageLayout;
+  transientStorageLayout?: TransientStorageLayout;
   evm: {
     assembly?: string;
     legacyAssembly?: any;
