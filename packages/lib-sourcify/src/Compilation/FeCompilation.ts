@@ -67,12 +67,12 @@ export class FeCompilation extends AbstractCompilation {
     return {};
   }
 
-  // Override to NOT add 0x prefix — Fe outputs raw hex strings without prefix
+  // Fe outputs raw hex strings without 0x prefix — add it for consistency with the verification system
   get creationBytecode() {
-    return this.contractCompilerOutput.evm.bytecode.object;
+    return `0x${this.contractCompilerOutput.evm.bytecode.object}`;
   }
 
   get runtimeBytecode() {
-    return this.contractCompilerOutput.evm.deployedBytecode.object;
+    return `0x${this.contractCompilerOutput.evm.deployedBytecode.object}`;
   }
 }

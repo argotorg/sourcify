@@ -257,14 +257,15 @@ export function validateAndNormalizeFeInput(
   }
 
   // Normalize contractIdentifier for Fe:
-  // - No colon (e.g. "Counter"): default path to src/lib.fe → "src/lib.fe:Counter"
-  // - Has colon (e.g. "src/counter.fe:Counter"): path must start with "src/" and end with ".fe"
+  // - Must include a colon, e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter"
+  // - Path must start with "src/" and end with ".fe"
   const ci: string | undefined = req.body.contractIdentifier;
   if (ci) {
     const colonIdx = ci.lastIndexOf(':');
     if (colonIdx === -1) {
-      // Just a contract name — default path to src/lib.fe
-      req.body.contractIdentifier = `src/lib.fe:${ci}`;
+      throw new InvalidParametersError(
+        'For Fe contracts, contractIdentifier must include the source file path, e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter".',
+      );
     } else {
       const contractPath = ci.slice(0, colonIdx);
       if (!contractPath.startsWith('src/') || !contractPath.endsWith('.fe')) {

@@ -363,7 +363,7 @@ components:
                 $ref: "#/components/schemas/CompilerVersion"
               contractIdentifier:
                 type: string
-                description: The fully qualified file path and contract name to indicate which contract to verify.
+                description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
                 example: "contracts/Storage.sol:Storage"
               creationTransactionHash:
                 allOf:
@@ -477,7 +477,7 @@ components:
                 stdJsonInput:
                   language: Fe
                   sources:
-                    "lib.fe":
+                    "src/lib.fe":
                       content: |
                         pub contract Counter {
                             mut count: u256
@@ -491,7 +491,7 @@ components:
                             }
                         }
                 compilerVersion: "26.0.0-alpha.10"
-                contractIdentifier: "lib.fe:Counter"
+                contractIdentifier: "src/lib.fe:Counter"
     MetadataVerificationRequest:
       description: ""
       content:

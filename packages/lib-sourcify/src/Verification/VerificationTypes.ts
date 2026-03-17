@@ -16,7 +16,6 @@ import type {
   Userdoc,
   VyperSettings,
   VyperSourceMap,
-  FeSettings,
 } from '@ethereum-sourcify/compilers-types';
 import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
 import { SourcifyLibError } from '../SourcifyLibError';
@@ -131,7 +130,7 @@ export interface VerificationExport {
     immutableReferences?: ImmutableReferences;
     metadata?: Metadata;
     jsonInput: {
-      settings: SoliditySettings | VyperSettings | FeSettings | undefined;
+      settings: SoliditySettings | VyperSettings | Record<string, never> | undefined;
     };
     compilationTime?: number;
   };

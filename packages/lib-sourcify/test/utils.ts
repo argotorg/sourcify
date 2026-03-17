@@ -361,6 +361,26 @@ export async function deployCompiledContract(
   };
 }
 
+/**
+ * Deploys a Fe contract from its creation bytecode.
+ * Fe contracts have no ABI — we deploy using an empty-ABI ContractFactory.
+ * @param creationBytecode - raw hex string WITHOUT 0x prefix (from Fe artifact.json)
+ */
+export async function deployFeContract(
+  signer: JsonRpcSigner,
+  creationBytecode: string,
+): Promise<{ contractAddress: string; txHash: string }> {
+  const factory = new ContractFactory([], '0x' + creationBytecode, signer);
+  const deployment = await factory.deploy();
+  await deployment.waitForDeployment();
+  const contractAddress = await deployment.getAddress();
+  const creationTx = deployment.deploymentTransaction();
+  if (!creationTx) {
+    throw new Error(`No deployment transaction found for ${contractAddress}`);
+  }
+  return { contractAddress, txHash: creationTx.hash };
+}
+
 // Helper function to create Vyper compilation
 export async function createVyperCompilation(
   contractFolderPath: string,

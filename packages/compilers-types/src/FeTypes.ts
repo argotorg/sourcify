@@ -1,24 +1,28 @@
-export interface FeSettings {
-  /** EVM version to compile for */
-  evmVersion?: string;
-  /** Fe does not use outputSelection — defined as undefined for type compatibility */
-  outputSelection?: undefined;
-}
+/*
+ * Fe has no official standard JSON I/O (unlike Solidity/Vyper which define a
+ * well-specified JSON compiler interface). `FeJsonInput` is an **adapted
+ * interface** modeled after the std-JSON shape, allowing Fe to plug into
+ * Sourcify's existing compilation and verification framework without
+ * special-casing every caller. Internally, `feCompiler.ts` translates this
+ * into an ingot directory structure (`fe.toml` + `src/` files) before
+ * invoking the Fe CLI.
+ */
 
 export interface FeJsonInput {
-  language: 'Fe';
+  language: "Fe";
   /** Source files keyed by path relative to src/ */
   sources: {
     [sourcePath: string]: {
       content: string;
     };
   };
-  settings?: FeSettings;
+  /** Fe alpha has no configurable settings; pass an empty object or omit entirely */
+  settings?: Record<string, never>;
 }
 
 export interface FeOutputContract {
   /** ABI is not emitted by `fe build` — null when not available */
-  abi: null | any[];
+  abi: null;
   /** Fe does not emit userdoc */
   userdoc?: undefined;
   /** Fe does not emit devdoc */
@@ -38,7 +42,7 @@ export interface FeOutputContract {
 }
 
 export interface FeOutputError {
-  severity: 'error' | 'warning';
+  severity: "error" | "warning";
   message: string;
 }
 
