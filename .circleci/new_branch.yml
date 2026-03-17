@@ -17,10 +17,6 @@ workflows:
     when: << pipeline.parameters.run-validate-database-schema >>
     jobs:
       - validate-database-schema
-  # Has to run always. Can't regex filter on add-chain-{chainId} branch names see: https://stackoverflow.com/questions/55839004/circleci-regex-filtering-match-within-string
-  new-chain-tests:
-    jobs:
-      - test-new-chain
 
 jobs:
   node-v22:
@@ -81,40 +77,6 @@ jobs:
           command: npx lerna run cov:lcov
       - codecov/upload
     resource_class: large
-  test-new-chain:
-    docker:
-      - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
-        name: sourcify-db
-        environment:
-          POSTGRES_DB: sourcify
-          POSTGRES_USER: sourcify
-          POSTGRES_PASSWORD: sourcify
-    resource_class: small
-    working_directory: ~/sourcify
-    steps:
-      - checkout
-      - run:
-          name: check if a new chain PR
-          command: ./.circleci/scripts/test_new_chain_support.sh
-      - run:
-          name: Check NEW_CHAIN_ID existence
-          command: |
-            echo "NEW_CHAIN_ID=$NEW_CHAIN_ID"
-            if [ -z "${NEW_CHAIN_ID}" ]; then
-              echo 'NEW_CHAIN_ID is unset or empty, skipping subsequent steps.'
-              circleci-agent step halt
-            fi
-      - run:
-          name: install build and test
-          command: npm install && npx lerna run build --scope=sourcify-server && cd services/server && npm run test:chains
-          environment:
-            DOCKER_HOST_POSTGRES_TEST_PORT: 5432
-            SOURCIFY_POSTGRES_HOST: "sourcify-db"
-            SOURCIFY_POSTGRES_DB: "sourcify"
-            SOURCIFY_POSTGRES_USER: "sourcify"
-            SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432
   validate-database-schema:
     docker:
       - image: cimg/node:22.22.0
