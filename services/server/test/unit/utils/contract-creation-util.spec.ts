@@ -174,6 +174,13 @@ describe("contract creation util", function () {
       txHash:
         "0x0ace736bc4ad5a25e2493d71fbc3315e422068ecefb3715d86ea85ab0ba26716",
     },
+    {
+      type: "nodeRealApi",
+      chainId: 56,
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+      txHash:
+        "0xcc0ddf5f791617ba9befce57995dbcb3a202946a1eefa3469742b01a0decdaf2",
+    },
   ];
   for (const testCase of testCases) {
     it(`should run getCreatorTx with ${testCase.type}`, async function () {
@@ -192,6 +199,15 @@ describe("contract creation util", function () {
         process.env.CIRCLE_PR_REPONAME !== undefined
       ) {
         console.log(`Skipping ${testCase.type} test for external PR`);
+        return;
+      }
+
+      // Skip nodeRealApi test if NODEREAL_BSC_API_KEY is not set
+      if (
+        testCase.type === "nodeRealApi" &&
+        !process.env.NODEREAL_BSC_API_KEY
+      ) {
+        console.log(`Skipping nodeRealApi test: NODEREAL_BSC_API_KEY not set`);
         return;
       }
 
