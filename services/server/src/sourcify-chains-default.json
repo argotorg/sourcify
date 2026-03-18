@@ -274,6 +274,9 @@
       "apiKeyEnvName": "ETHERSCAN_API_KEY_BSC"
     },
     "fetchContractCreationTxUsing": {
+      "nodeRealApi": {
+        "url": "https://bsc-mainnet.nodereal.io/v1/${API_KEY}"
+      },
       "etherscanApi": true
     },
     "rpc": [
