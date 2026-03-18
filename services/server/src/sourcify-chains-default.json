@@ -715,6 +715,15 @@
       }
     }
   },
+  "11155931": {
+    "sourcifyName": "RISE Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.riselabs.xyz/"
+      }
+    }
+  },
   "28": {
     "sourcifyName": "Boba Network Rinkeby Testnet",
     "supported": false
