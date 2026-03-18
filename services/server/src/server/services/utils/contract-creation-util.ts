@@ -89,6 +89,8 @@ function getEtherscanApiContractCreatorFetcher(
   return getApiContractCreationFetcher(
     ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()) + apiKey,
     (response: any) => {
+      if (response?.message === "NOTOK")
+        throw new Error(`Etherscan API error: ${response?.result}`);
       if (response?.result?.[0]?.txHash)
         return response?.result?.[0]?.txHash as string;
     },
@@ -227,13 +229,13 @@ async function getCreatorTxUsingFetcher(
         if (fetcher?.responseParser) {
           const response = await fetchFromApi(contractFetchAddressFilled);
           const creatorTx = fetcher?.responseParser(response);
-          logger.debug("Fetched Creator Tx", {
-            fetcherUrl: fetcher?.maskedUrl,
-            contractFetchAddressFilled,
-            contractAddress,
-            creatorTx,
-          });
           if (creatorTx) {
+            logger.debug("Fetched Creator Tx", {
+              fetcherUrl: fetcher?.maskedUrl,
+              contractFetchAddressFilled,
+              contractAddress,
+              creatorTx,
+            });
             return creatorTx;
           }
         }
