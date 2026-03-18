@@ -203,10 +203,7 @@ describe("contract creation util", function () {
       }
 
       // Skip nodeRealApi test if NODEREAL_API_KEY is not set
-      if (
-        testCase.type === "nodeRealApi" &&
-        !process.env.NODEREAL_API_KEY
-      ) {
+      if (testCase.type === "nodeRealApi" && !process.env.NODEREAL_API_KEY) {
         console.log(`Skipping nodeRealApi test: NODEREAL_API_KEY not set`);
         return;
       }
