@@ -325,13 +325,13 @@ export const getCreatorTx = async (
   // Try NodeReal API if routescan fails
   if (
     sourcifyChain.fetchContractCreationTxUsing?.nodeRealApi &&
-    process.env.NODEREAL_BSC_API_KEY
+    process.env.NODEREAL_API_KEY
   ) {
     try {
       const result = await getCreatorTxUsingNodeReal(
         sourcifyChain.fetchContractCreationTxUsing.nodeRealApi.url,
         contractAddress,
-        process.env.NODEREAL_BSC_API_KEY,
+        process.env.NODEREAL_API_KEY,
       );
       if (result) {
         return result;

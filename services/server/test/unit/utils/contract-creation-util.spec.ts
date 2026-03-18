@@ -202,12 +202,12 @@ describe("contract creation util", function () {
         return;
       }
 
-      // Skip nodeRealApi test if NODEREAL_BSC_API_KEY is not set
+      // Skip nodeRealApi test if NODEREAL_API_KEY is not set
       if (
         testCase.type === "nodeRealApi" &&
-        !process.env.NODEREAL_BSC_API_KEY
+        !process.env.NODEREAL_API_KEY
       ) {
-        console.log(`Skipping nodeRealApi test: NODEREAL_BSC_API_KEY not set`);
+        console.log(`Skipping nodeRealApi test: NODEREAL_API_KEY not set`);
         return;
       }
 
