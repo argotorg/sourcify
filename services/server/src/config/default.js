@@ -28,6 +28,7 @@ module.exports = {
   solcRepo: "/tmp/solc-bin/linux-amd64",
   solJsonRepo: "/tmp/solc-bin/soljson",
   vyperRepo: "/tmp/vyper-bin",
+  feRepo: "/tmp/fe-bin",
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   corsAllowedOrigins: [

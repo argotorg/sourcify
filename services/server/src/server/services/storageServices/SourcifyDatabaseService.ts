@@ -4,6 +4,7 @@ import type {
   VerificationExport,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -1011,7 +1012,10 @@ export class SourcifyDatabaseService
 
       const abi = verification.compilation.contractCompilerOutput.abi;
       if (!abi) {
-        if (verification.compilation.language === "Yul") {
+        if (
+          verification.compilation.language === "Yul" ||
+          verification.compilation.language === "Fe" // TODO: remove once Fe supports outputting ABI in the compiler output
+        ) {
           return;
         }
         throw new Error("No ABI found in compilation output");
@@ -1238,7 +1242,11 @@ export class SourcifyDatabaseService
   async getPreRunCompilationFromDatabase(
     chainId: number,
     address: string,
-    compilers: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+    compilers: {
+      solc: ISolidityCompiler;
+      vyper: IVyperCompiler;
+      fe: IFeCompiler;
+    },
   ): Promise<PreRunCompilation> {
     await this.init();
 

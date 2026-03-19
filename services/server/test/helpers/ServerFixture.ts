@@ -10,6 +10,7 @@ import type { Pool } from "pg";
 import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
+import { FeLocal } from "../../src/server/services/compiler/local/FeLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
 import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
@@ -81,6 +82,11 @@ export class ServerFixture {
         chains: fixtureOptions_?.chains || sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
+        fe: new FeLocal(
+          config.has("feRepo")
+            ? config.get("feRepo")
+            : "/tmp/server-test-fe-repo",
+        ),
         verifyDeprecated: true,
         replaceContract: true,
         sourcifyPrivateToken: "sourcify-test-token",
@@ -94,6 +100,9 @@ export class ServerFixture {
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),
+          feRepoPath: config.has("feRepo")
+            ? config.get("feRepo")
+            : "/tmp/server-test-fe-repo",
         },
         {
           serverUrl: config.get("serverUrl"),

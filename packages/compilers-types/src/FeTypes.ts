@@ -1,0 +1,61 @@
+/*
+ * Fe has no official standard JSON I/O (unlike Solidity/Vyper which define a
+ * well-specified JSON compiler interface). `FeJsonInput` is an **adapted
+ * interface** modeled after the std-JSON shape, allowing Fe to plug into
+ * Sourcify's existing compilation and verification framework without
+ * special-casing every caller. Internally, `feCompiler.ts` translates this
+ * into an ingot directory structure (`fe.toml` + `src/` files) before
+ * invoking the Fe CLI.
+ */
+
+export interface FeJsonInput {
+  language: "Fe";
+  /** Source files keyed by path relative to src/ */
+  sources: {
+    [sourcePath: string]: {
+      content: string;
+    };
+  };
+  /** Fe alpha has no configurable settings; pass an empty object or omit entirely */
+  settings?: Record<string, never>;
+}
+
+export interface FeOutputContract {
+  /** ABI is not emitted by `fe build` — null when not available */
+  abi: null;
+  /** Fe does not emit userdoc */
+  userdoc?: undefined;
+  /** Fe does not emit devdoc */
+  devdoc?: undefined;
+  evm: {
+    bytecode: {
+      /** Hex string without 0x prefix */
+      object: string;
+    };
+    deployedBytecode: {
+      /** Hex string without 0x prefix */
+      object: string;
+      /** Fe does not emit source maps */
+      sourceMap?: undefined;
+    };
+  };
+}
+
+export interface FeOutputError {
+  severity: "error" | "warning";
+  message: string;
+}
+
+interface FeOutputContracts {
+  [sourcePath: string]: {
+    [contractName: string]: FeOutputContract;
+  };
+}
+
+export interface FeOutput {
+  compiler: string;
+  errors?: FeOutputError[];
+  contracts: FeOutputContracts;
+  /** Fe compiler does not emit source IDs — this field is always absent */
+  sources?: undefined;
+}

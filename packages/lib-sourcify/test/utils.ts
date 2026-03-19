@@ -6,6 +6,7 @@ import { ContractFactory, type JsonRpcSigner } from 'ethers';
 import {
   useSolidityCompiler,
   useVyperCompiler,
+  useFeCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
   Metadata,
@@ -14,12 +15,15 @@ import type {
   SolidityOutputContract,
   VyperJsonInput,
   VyperOutput,
+  FeJsonInput,
+  FeOutput,
 } from '@ethereum-sourcify/compilers-types';
 import type { Verification } from '../src/Verification/Verification';
 import type {
   CompiledContractCborAuxdata,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
@@ -95,6 +99,18 @@ class VyperCompiler implements IVyperCompiler {
 }
 
 export const vyperCompiler = new VyperCompiler();
+
+class FeCompiler implements IFeCompiler {
+  async compile(version: string, feJsonInput: FeJsonInput): Promise<FeOutput> {
+    return await useFeCompiler(
+      path.join('/tmp', 'lib-sourcify-fe-repo'),
+      version,
+      feJsonInput,
+    );
+  }
+}
+
+export const feCompiler = new FeCompiler();
 
 /**
  * Helper function to verify a Verification object using its getters
@@ -343,6 +359,26 @@ export async function deployCompiledContract(
     contractAddress,
     txHash: creationTx.hash,
   };
+}
+
+/**
+ * Deploys a Fe contract from its creation bytecode.
+ * Fe contracts have no ABI — we deploy using an empty-ABI ContractFactory.
+ * @param creationBytecode - raw hex string WITHOUT 0x prefix (from Fe artifact.json)
+ */
+export async function deployFeContract(
+  signer: JsonRpcSigner,
+  creationBytecode: string,
+): Promise<{ contractAddress: string; txHash: string }> {
+  const factory = new ContractFactory([], creationBytecode, signer);
+  const deployment = await factory.deploy();
+  await deployment.waitForDeployment();
+  const contractAddress = await deployment.getAddress();
+  const creationTx = deployment.deploymentTransaction();
+  if (!creationTx) {
+    throw new Error(`No deployment transaction found for ${contractAddress}`);
+  }
+  return { contractAddress, txHash: creationTx.hash };
 }
 
 // Helper function to create Vyper compilation

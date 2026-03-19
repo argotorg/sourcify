@@ -18,6 +18,7 @@ import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
+import { FeLocal } from "../compiler/local/FeLocal";
 import { v4 as uuidv4 } from "uuid";
 import { getCreatorTx } from "../utils/contract-creation-util";
 import type {
@@ -40,8 +41,9 @@ export const filename = resolve(__filename);
 let chainRepository: ChainRepository;
 let solc: SolcLocal;
 let vyper: VyperLocal;
+let fe: FeLocal;
 const initWorker = () => {
-  if (chainRepository && solc && vyper) {
+  if (chainRepository && solc && vyper && fe) {
     return;
   }
 
@@ -64,6 +66,7 @@ const initWorker = () => {
     Piscina.workerData.solJsonRepoPath,
   );
   vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
+  fe = new FeLocal(Piscina.workerData.feRepoPath);
 };
 
 async function runWorkerFunctionWithContext<T extends VerificationWorkerInput>(
@@ -111,7 +114,7 @@ async function _verifyFromJsonInput({
   let compilation: AnyCompilation;
   try {
     compilation = createCompilationFromJsonInput(
-      { solc, vyper },
+      { solc, vyper, fe },
       compilerVersion,
       jsonInput,
       compilationTarget,
@@ -331,7 +334,7 @@ async function _verifySimilarity({
     let compilation;
     try {
       compilation = createPreRunCompilationFromStoredCandidate(
-        { solc, vyper },
+        { solc, vyper, fe },
         candidate,
       );
     } catch (error: any) {

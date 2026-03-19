@@ -6,7 +6,7 @@ paths:
         - Verify Contracts
       summary: Verify Contract (Standard JSON)
       description: |-
-        Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) or [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description).
+        Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description), [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description), or Fe JSON input (a Sourcify-defined format — Fe has no official compiler JSON interface).
 
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
@@ -358,12 +358,12 @@ components:
                 description: |
                   Full [standard JSON object](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) to pass to the compiler. 
 
-                  Must include the `language` field inside the stdJsonInput object. Currently supports Solidity and Vyper.
+                  Must include the `language` field inside the stdJsonInput object. Currently supports Solidity, Vyper, and Fe.
               compilerVersion:
                 $ref: "#/components/schemas/CompilerVersion"
               contractIdentifier:
                 type: string
-                description: The fully qualified file path and contract name to indicate which contract to verify.
+                description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
                 example: "contracts/Storage.sol:Storage"
               creationTransactionHash:
                 allOf:
@@ -472,6 +472,26 @@ components:
                       enabled: true
                 compilerVersion: "0.8.26+commit.8a97fa7a"
                 contractIdentifier: "cas-forwarder.yul:cas-forwarder"
+            Fe Contract:
+              value:
+                stdJsonInput:
+                  language: Fe
+                  sources:
+                    "src/lib.fe":
+                      content: |
+                        pub contract Counter {
+                            mut count: u256
+
+                            pub fn increment(mut self) {
+                                self.count += 1
+                            }
+
+                            pub fn get(self) -> u256 {
+                                return self.count
+                            }
+                        }
+                compilerVersion: "26.0.0-alpha.10"
+                contractIdentifier: "src/lib.fe:Counter"
     MetadataVerificationRequest:
       description: ""
       content:
@@ -1651,6 +1671,7 @@ components:
       enum:
         - Solidity
         - Vyper
+        - Fe
       title: Language
       default: Solidity
     HexStringWithout0x:

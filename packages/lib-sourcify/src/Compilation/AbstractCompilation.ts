@@ -6,6 +6,7 @@ import type {
   StringMap,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
 } from './CompilationTypes';
 import { CompilationError } from './CompilationTypes';
 import type {
@@ -18,6 +19,9 @@ import type {
   VyperJsonInput,
   VyperOutput,
   VyperOutputContract,
+  FeJsonInput,
+  FeOutput,
+  FeOutputContract,
 } from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
@@ -30,13 +34,13 @@ export abstract class AbstractCompilation {
   /**
    * Constructor parameters
    */
-  abstract compiler: ISolidityCompiler | IVyperCompiler;
+  abstract compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler;
   compilerVersion: string;
   abstract compilationTarget: CompilationTarget;
-  jsonInput: SolidityJsonInput | VyperJsonInput;
+  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
 
   protected _metadata?: Metadata;
-  compilerOutput?: SolidityOutput | VyperOutput;
+  compilerOutput?: SolidityOutput | VyperOutput | FeOutput;
   compilationTime?: number;
 
   abstract auxdataStyle: AuxdataStyle;
@@ -57,7 +61,7 @@ export abstract class AbstractCompilation {
 
   constructor(
     compilerVersion: string,
-    jsonInput: SolidityJsonInput | VyperJsonInput,
+    jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
   ) {
     this.compilerVersion = cleanCompilerVersion(compilerVersion);
     this.jsonInput = structuredClone(jsonInput);
@@ -65,7 +69,7 @@ export abstract class AbstractCompilation {
 
   public async compileAndReturnCompilationTarget(
     forceEmscripten = false,
-  ): Promise<SolidityOutputContract | VyperOutputContract> {
+  ): Promise<SolidityOutputContract | VyperOutputContract | FeOutputContract> {
     const version = this.compilerVersion;
 
     const compilationStartTime = Date.now();
@@ -118,7 +122,10 @@ export abstract class AbstractCompilation {
     return compilationTargetContract;
   }
 
-  get contractCompilerOutput(): SolidityOutputContract | VyperOutputContract {
+  get contractCompilerOutput():
+    | SolidityOutputContract
+    | VyperOutputContract
+    | FeOutputContract {
     if (!this.compilerOutput) {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });

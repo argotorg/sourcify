@@ -107,6 +107,9 @@ describe("VerificationService", function () {
         solcRepoPath: config.get("solcRepo"),
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
+        feRepoPath: config.has("feRepo")
+          ? config.get("feRepo")
+          : "/tmp/server-test-fe-repo",
       },
       new StorageService({
         enabledServices: {
@@ -146,6 +149,9 @@ describe("VerificationService", function () {
         solcRepoPath: config.get("solcRepo"),
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
+        feRepoPath: config.has("feRepo")
+          ? config.get("feRepo")
+          : "/tmp/server-test-fe-repo",
       },
       mockStorageService,
     );
@@ -206,6 +212,9 @@ describe("VerificationService", function () {
         solcRepoPath: config.get("solcRepo"),
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
+        feRepoPath: config.has("feRepo")
+          ? config.get("feRepo")
+          : "/tmp/server-test-fe-repo",
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",
@@ -261,6 +270,9 @@ describe("VerificationService", function () {
         solcRepoPath: config.get("solcRepo"),
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
+        feRepoPath: config.has("feRepo")
+          ? config.get("feRepo")
+          : "/tmp/server-test-fe-repo",
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",
