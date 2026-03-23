@@ -45,6 +45,18 @@ describe('bytecode utils', function () {
     chai.expect(`${execution}`).to.equal(BYTECODE_WITHOUTAUXDATA);
   });
 
+  it('return the full bytecode with no auxdata for Fe contracts', () => {
+    // Use an existing bytecode (e.g. BYTECODE_IPFS) to verify Fe path
+    // always returns the full bytecode unchanged, regardless of content
+    const [execution, auxdata, length] = splitAuxdata(
+      BYTECODE_IPFS,
+      AuxdataStyle.FE,
+    );
+    chai.expect(auxdata).to.be.undefined;
+    chai.expect(length).to.be.undefined;
+    chai.expect(execution).to.equal(BYTECODE_IPFS);
+  });
+
   it('split succesfully bytecode into execution bytecode and auxadata', () => {
     const [execution, auxadata, length] = splitAuxdata(
       BYTECODE_IPFS,
