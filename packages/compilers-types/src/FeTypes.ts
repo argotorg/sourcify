@@ -8,6 +8,9 @@
  * invoking the Fe CLI.
  */
 
+/** Fe has no compiler settings */
+export type FeSettings = Record<string, never>;
+
 export interface FeJsonInput {
   language: "Fe";
   /** Source files keyed by path relative to src/ */
@@ -17,7 +20,7 @@ export interface FeJsonInput {
     };
   };
   /** Fe alpha has no configurable settings; pass an empty object or omit entirely */
-  settings?: Record<string, never>;
+  settings: FeSettings;
 }
 
 export interface FeOutputContract {

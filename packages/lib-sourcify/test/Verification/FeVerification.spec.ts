@@ -1,5 +1,5 @@
 import { describe, it, before, after } from 'mocha';
-import { use } from 'chai';
+import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
 import { type JsonRpcSigner } from 'ethers';
@@ -86,6 +86,7 @@ describe('FeVerification', () => {
         '26.0.0-alpha.10',
         {
           language: 'Fe',
+          settings: {},
           sources: {
             'src/lib.fe': { content: counterSource },
           },
@@ -156,6 +157,7 @@ pub contract Counter {
         '26.0.0-alpha.10',
         {
           language: 'Fe',
+          settings: {},
           sources: {
             'src/lib.fe': { content: wrongSource },
           },
@@ -170,24 +172,9 @@ pub contract Counter {
         txHash,
       );
 
-      let threw = false;
-      try {
-        await verification.verify();
-      } catch (e) {
-        threw = true;
-        if (e instanceof SourcifyLibError) {
-          if (e.code !== 'no_match') {
-            throw new Error(
-              `Expected SourcifyLibError with code 'no_match' but got '${e.code}'`,
-            );
-          }
-        } else {
-          throw e;
-        }
-      }
-      if (!threw) {
-        throw new Error('Expected verification to throw but it did not');
-      }
+      await expect(verification.verify())
+        .to.be.rejectedWith(SourcifyLibError)
+        .and.eventually.have.property('code', 'no_match');
     });
   });
 
@@ -218,6 +205,7 @@ pub contract Counter {
         '26.0.0-alpha.10',
         {
           language: 'Fe',
+          settings: {},
           sources: {
             'src/lib.fe': { content: libFeSource },
             'src/counter.fe': { content: counterFeSource },

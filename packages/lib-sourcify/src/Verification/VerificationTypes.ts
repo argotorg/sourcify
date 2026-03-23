@@ -6,6 +6,7 @@ import type {
   StringMap,
 } from '../Compilation/CompilationTypes';
 import type {
+  FeSettings,
   ImmutableReferences,
   SoliditySettings,
   StorageLayout,
@@ -130,11 +131,7 @@ export interface VerificationExport {
     immutableReferences?: ImmutableReferences;
     metadata?: Metadata;
     jsonInput: {
-      settings:
-        | SoliditySettings
-        | VyperSettings
-        | Record<string, never>
-        | undefined;
+      settings: SoliditySettings | VyperSettings | FeSettings;
     };
     compilationTime?: number;
   };
