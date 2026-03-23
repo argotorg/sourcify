@@ -241,6 +241,7 @@ export function validateAndNormalizeFeInput(
   const withSrc = keys.filter((k) => k.startsWith("src/"));
 
   // Reject mixed paths (some with src/, some without)
+  // Fe's file structure is based on this convention https://fe-lang.org/ingots/project-structure/
   if (withSrc.length > 0 && withSrc.length < keys.length) {
     throw new InvalidParametersError(
       'Fe sources must either all have a "src/" prefix or none. Mixed paths are not allowed.',
