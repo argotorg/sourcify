@@ -6,7 +6,7 @@ import { FeCompilation } from '../../src/Compilation/FeCompilation';
 import { feCompiler } from '../utils';
 
 describe('FeCompilation', () => {
-  describe('Basic Verification', () => {
+  describe('Basic Compilation', () => {
     const CONTRACT_NAME = 'Counter';
     const SOURCE_FILE = 'src/lib.fe';
     const COUNTER_DIR = path.join(__dirname, '..', 'sources', 'Fe', 'counter');
