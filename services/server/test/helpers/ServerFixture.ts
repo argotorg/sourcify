@@ -82,11 +82,7 @@ export class ServerFixture {
         chains: fixtureOptions_?.chains || sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
-        fe: new FeLocal(
-          config.has("feRepo")
-            ? config.get("feRepo")
-            : "/tmp/server-test-fe-repo",
-        ),
+        fe: new FeLocal(config.get("feRepo")),
         verifyDeprecated: true,
         replaceContract: true,
         sourcifyPrivateToken: "sourcify-test-token",
@@ -100,9 +96,7 @@ export class ServerFixture {
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),
-          feRepoPath: config.has("feRepo")
-            ? config.get("feRepo")
-            : "/tmp/server-test-fe-repo",
+          feRepoPath: config.get("feRepo"),
         },
         {
           serverUrl: config.get("serverUrl"),
