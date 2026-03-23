@@ -23,6 +23,7 @@ import type {
   Userdoc,
   Devdoc,
   VyperSourceMap,
+  FeSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   PreRunCompilation,
@@ -893,14 +894,11 @@ export async function getDatabaseColumnsFromVerification(
 
 export function prepareCompilerSettingsFromVerification(
   verification: VerificationExport,
-): Omit<SoliditySettings | VyperSettings, "outputSelection"> {
+): Omit<SoliditySettings | VyperSettings | FeSettings, "outputSelection"> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { outputSelection, ...restSettings } =
-    verification.compilation.jsonInput.settings ?? {};
-  return restSettings as Omit<
-    SoliditySettings | VyperSettings,
-    "outputSelection"
-  >;
+    verification.compilation.jsonInput.settings;
+  return restSettings;
 }
 
 export function createPreRunCompilationFromStoredCandidate(
