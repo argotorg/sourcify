@@ -24,9 +24,9 @@ export interface FeOutputContract {
   /** ABI is not emitted by `fe build` — null when not available */
   abi: null;
   /** Fe does not emit userdoc */
-  userdoc?: undefined;
+  userdoc?: never;
   /** Fe does not emit devdoc */
-  devdoc?: undefined;
+  devdoc?: never;
   evm: {
     bytecode: {
       /** Hex string without 0x prefix */
@@ -36,7 +36,7 @@ export interface FeOutputContract {
       /** Hex string without 0x prefix */
       object: string;
       /** Fe does not emit source maps */
-      sourceMap?: undefined;
+      sourceMap?: never;
     };
   };
 }
