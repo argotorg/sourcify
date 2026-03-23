@@ -268,13 +268,18 @@ export function validateAndNormalizeFeInput(
         'For Fe contracts, contractIdentifier must include the source file path, e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter".',
       );
     } else {
-      const contractPath = ci.slice(0, colonIdx);
-      if (!contractPath.startsWith("src/") || !contractPath.endsWith(".fe")) {
+      let contractPath = ci.slice(0, colonIdx);
+      const contractName = ci.slice(colonIdx + 1);
+      if (!contractPath.startsWith("src/")) {
+        contractPath = `src/${contractPath}`;
+      }
+      if (!contractPath.endsWith(".fe")) {
         throw new InvalidParametersError(
           'For Fe contracts, contractIdentifier path must be a "src/**/*.fe" path ' +
             '(e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter").',
         );
       }
+      req.body.contractIdentifier = `${contractPath}:${contractName}`;
     }
   }
 
