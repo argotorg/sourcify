@@ -24,6 +24,7 @@ describe('FeCompilation', () => {
           sources: {
             [SOURCE_FILE]: { content: source },
           },
+          settings: {},
         },
         {
           name: CONTRACT_NAME,
@@ -74,6 +75,7 @@ describe('FeCompilation', () => {
         {
           language: 'Fe',
           sources: { [SOURCE_FILE]: { content: '' } },
+          settings: {},
         },
         { name: CONTRACT_NAME, path: SOURCE_FILE },
       );
@@ -122,6 +124,7 @@ describe('FeCompilation', () => {
               ),
             },
           },
+          settings: {},
         },
         { name: 'Counter', path: 'src/counter.fe' },
       );
