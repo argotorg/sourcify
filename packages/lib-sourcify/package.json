@@ -54,7 +54,7 @@
     "@ethereum-sourcify/compilers-types": "^1.0.13",
     "@types/chai": "4.3.20",
     "@types/chai-as-promised": "7.1.8",
-    "@types/debug": "4.1.12",
+    "@types/debug": "4.1.13",
     "@types/mocha": "10.0.10",
     "@types/node": "22.19.15",
     "@types/sinon": "17.0.4",
