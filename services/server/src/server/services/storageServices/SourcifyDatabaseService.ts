@@ -1012,10 +1012,7 @@ export class SourcifyDatabaseService
 
       const abi = verification.compilation.contractCompilerOutput.abi;
       if (!abi) {
-        if (
-          verification.compilation.language === "Yul" ||
-          verification.compilation.language === "Fe" // TODO: remove once Fe supports outputting ABI in the compiler output
-        ) {
+        if (verification.compilation.language === "Yul") {
           return;
         }
         throw new Error("No ABI found in compilation output");

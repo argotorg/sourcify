@@ -2,11 +2,14 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { spawnSync } from 'child_process';
+import semver from 'semver';
 import { CompilerError, fetchWithBackoff } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
+import type { JsonFragment } from 'ethers';
 
 const HOST_FE_REPO = 'https://github.com/argotorg/fe/releases/download/';
+const MINIMUM_FE_VERSION = '26.0.0-alpha.12';
 
 /**
  * Returns the platform-specific asset name for the Fe binary.
@@ -116,6 +119,12 @@ export async function useFeCompiler(
   version: string,
   feJsonInput: FeJsonInput,
 ): Promise<FeOutput> {
+  if (!semver.valid(version) || semver.lt(version, MINIMUM_FE_VERSION)) {
+    throw new Error(
+      `Fe compiler version ${version} is not supported. Minimum supported version is ${MINIMUM_FE_VERSION}.`,
+    );
+  }
+
   const fePlatform = findFePlatform();
   if (!fePlatform) {
     throw new Error('Fe compiler is not supported on this machine.');
@@ -205,11 +214,16 @@ export async function useFeCompiler(
       const sourcePath =
         contractToSourcePath[contractName] ??
         Object.keys(feJsonInput.sources)[0];
+      // Read ABI (always present for supported Fe versions >= 26.0.0-alpha.12)
+      const abiPath = path.join(outDir, `${contractName}.abi.json`);
+      const abiContent = await fs.promises.readFile(abiPath, 'utf8');
+      const abi: JsonFragment[] = JSON.parse(abiContent.trim());
+
       if (!contracts[sourcePath]) {
         contracts[sourcePath] = {};
       }
       contracts[sourcePath][contractName] = {
-        abi: null,
+        abi,
         evm: {
           bytecode: { object: creationBytecode },
           deployedBytecode: { object: runtimeBytecode },

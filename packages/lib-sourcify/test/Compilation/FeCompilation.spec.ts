@@ -18,7 +18,7 @@ describe('FeCompilation', () => {
     function makeCompilation(source: string): FeCompilation {
       return new FeCompilation(
         feCompiler,
-        '26.0.0-alpha.10',
+        '26.0.0-alpha.12',
         {
           language: 'Fe',
           sources: {
@@ -71,7 +71,7 @@ describe('FeCompilation', () => {
     it('should strip leading v from compiler version', () => {
       const compilation = new FeCompilation(
         feCompiler,
-        'v26.0.0-alpha.10',
+        'v26.0.0-alpha.12',
         {
           language: 'Fe',
           sources: { [SOURCE_FILE]: { content: '' } },
@@ -80,7 +80,7 @@ describe('FeCompilation', () => {
         { name: CONTRACT_NAME, path: SOURCE_FILE },
       );
 
-      expect(compilation.compilerVersion).to.equal('26.0.0-alpha.10');
+      expect(compilation.compilerVersion).to.equal('26.0.0-alpha.12');
     });
 
     it('should throw a compilation error for invalid Fe code', async () => {
@@ -107,7 +107,7 @@ describe('FeCompilation', () => {
     it('should compile a contract defined in a non-lib.fe source file', async () => {
       const compilation = new FeCompilation(
         feCompiler,
-        '26.0.0-alpha.10',
+        '26.0.0-alpha.12',
         {
           language: 'Fe',
           sources: {

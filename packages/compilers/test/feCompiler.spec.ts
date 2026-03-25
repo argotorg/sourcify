@@ -9,7 +9,7 @@ import path from 'path';
 
 describe('Verify Fe Compiler', () => {
   const feRepoPath = path.join('/tmp', 'compilers-fe-repo');
-  const version = '26.0.0-alpha.10';
+  const version = '26.0.0-alpha.12';
 
   it('Should detect Fe platform', () => {
     const platform = findFePlatform();
@@ -37,6 +37,20 @@ describe('Verify Fe Compiler', () => {
       expect.fail('Expected error was not thrown');
     } catch (error) {
       expect(error).to.be.instanceOf(Error);
+    }
+  });
+
+  it('Should throw for Fe versions older than minimum supported', async () => {
+    try {
+      await useFeCompiler(feRepoPath, '26.0.0-alpha.10', {
+        language: 'Fe',
+        settings: {},
+        sources: { 'src/lib.fe': { content: '' } },
+      });
+      expect.fail('Expected error was not thrown');
+    } catch (error) {
+      expect(error).to.be.instanceOf(Error);
+      expect((error as Error).message).to.include('not supported');
     }
   });
 
@@ -85,7 +99,7 @@ pub contract Counter {
     expect(compiledJSON.compiler).to.equal(`fe-${version}`);
     const counter = compiledJSON?.contracts?.['src/lib.fe']?.Counter;
     expect(counter).to.not.be.undefined;
-    expect(counter.abi).to.be.null;
+    expect(counter.abi).to.be.an('array').that.is.not.empty;
     expect(counter.evm.bytecode.object).to.be.a('string').that.is.not.empty;
     expect(counter.evm.deployedBytecode.object).to.be.a('string').that.is.not
       .empty;

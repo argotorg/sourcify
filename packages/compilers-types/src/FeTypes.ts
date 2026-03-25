@@ -1,3 +1,5 @@
+import type { JsonFragment } from "ethers";
+
 /*
  * Fe has no official standard JSON I/O (unlike Solidity/Vyper which define a
  * well-specified JSON compiler interface). `FeJsonInput` is an **adapted
@@ -6,6 +8,9 @@
  * special-casing every caller. Internally, `feCompiler.ts` translates this
  * into an ingot directory structure (`fe.toml` + `src/` files) before
  * invoking the Fe CLI.
+ *
+ * ABI output is supported starting from v26.0.0-alpha.12 (`ContractName.abi.json`).
+ * Older versions are not supported.
  */
 
 /** Fe has no compiler settings */
@@ -24,8 +29,8 @@ export interface FeJsonInput {
 }
 
 export interface FeOutputContract {
-  /** ABI is not emitted by `fe build` — null when not available */
-  abi: null;
+  /** ABI JSON array (always present for supported Fe versions >= v26.0.0-alpha.12) */
+  abi: JsonFragment[];
   /** Fe does not emit userdoc */
   userdoc?: never;
   /** Fe does not emit devdoc */

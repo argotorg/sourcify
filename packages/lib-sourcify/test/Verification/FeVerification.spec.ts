@@ -83,7 +83,7 @@ describe('FeVerification', () => {
 
       const compilation = new FeCompilation(
         feCompiler,
-        '26.0.0-alpha.10',
+        '26.0.0-alpha.12',
         {
           language: 'Fe',
           settings: {},
@@ -154,7 +154,7 @@ pub contract Counter {
 
       const compilation = new FeCompilation(
         feCompiler,
-        '26.0.0-alpha.10',
+        '26.0.0-alpha.12',
         {
           language: 'Fe',
           settings: {},
@@ -202,7 +202,7 @@ pub contract Counter {
 
       const compilation = new FeCompilation(
         feCompiler,
-        '26.0.0-alpha.10',
+        '26.0.0-alpha.12',
         {
           language: 'Fe',
           settings: {},
