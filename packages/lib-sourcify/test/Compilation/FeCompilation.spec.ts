@@ -42,6 +42,9 @@ describe('FeCompilation', () => {
 
       expect(compilation.creationBytecode).to.equal(artifact.creationBytecode);
       expect(compilation.runtimeBytecode).to.equal(artifact.runtimeBytecode);
+      expect(compilation.contractCompilerOutput.abi).to.deep.equal(
+        artifact.abi,
+      );
     });
 
     it('should set empty CBOR auxdata positions (Fe has no metadata)', async () => {
@@ -137,6 +140,9 @@ describe('FeCompilation', () => {
       );
       expect(compilation.runtimeBytecode).to.equal(
         multiArtifact.runtimeBytecode,
+      );
+      expect(compilation.contractCompilerOutput.abi).to.deep.equal(
+        multiArtifact.abi,
       );
     });
   });
