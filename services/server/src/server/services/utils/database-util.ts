@@ -350,16 +350,19 @@ const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
 
 function generateSignaturesSelector(type: SignatureType) {
+  // Use jsonb_agg(DISTINCT ...) to avoid duplicate signatures caused by the
+  // Cartesian product when both compiled_contracts_sources and
+  // compiled_contracts_signatures are JOINed on the same compilation_id.
   return `
     COALESCE(
-      json_agg(
-        json_build_object(
+      jsonb_agg(DISTINCT
+        jsonb_build_object(
           'signature', signatures.signature,
           'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
           'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
-        ) ORDER BY signatures.signature
+        )
       ) FILTER (WHERE compiled_contracts_signatures.signature_type = '${type}'),
-      '[]'::json
+      '[]'::jsonb
     ) as ${type}_signatures
   `;
 }
