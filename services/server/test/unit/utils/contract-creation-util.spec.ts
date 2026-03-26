@@ -4,7 +4,10 @@ import {
   findContractCreationTxByBinarySearchWithTimeout,
   getCreatorTx,
 } from "../../../src/server/services/utils/contract-creation-util";
-import { sourcifyChainsMap } from "../../../src/sourcify-chains";
+import {
+  initializeSourcifyChains,
+  sourcifyChainsMap,
+} from "../../../src/sourcify-chains";
 import { ChainRepository } from "../../../src/sourcify-chain-repository";
 import type { FetchContractCreationTxMethod } from "@ethereum-sourcify/lib-sourcify";
 import sinon from "sinon";
@@ -12,6 +15,10 @@ import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
 
 describe("contract creation util", function () {
+  before(async () => {
+    await initializeSourcifyChains();
+  });
+
   it("should run getCreatorTx with chainId 40", async function () {
     const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
       .sourcifyChainsArray;

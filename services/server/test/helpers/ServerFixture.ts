@@ -3,7 +3,11 @@ import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
-import { LOCAL_CHAINS, sourcifyChainsMap } from "../../src/sourcify-chains";
+import {
+  LOCAL_CHAINS,
+  initializeSourcifyChains,
+  sourcifyChainsMap,
+} from "../../src/sourcify-chains";
 import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import type { Pool } from "pg";
@@ -62,6 +66,8 @@ export class ServerFixture {
     this.repositoryV1Path = config.get<string>("repositoryV1.path");
 
     before(async () => {
+      await initializeSourcifyChains();
+
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";
 
@@ -79,9 +85,7 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains:
-          fixtureOptions_?.chains ||
-          Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId, c])),
+        chains: fixtureOptions_?.chains || sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),

@@ -161,7 +161,7 @@ describe("Import From Etherscan and Verify", function () {
         });
     });
 
-    it(`Non-Session: Should import a single contract from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${singleContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a single contract from Etherscan for ${testChainId} and verify the contract, finding a ${singleContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
         sourcifyChainsMap[testChainId],
         singleContract.address,
@@ -179,7 +179,7 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a multiple contract from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${multipleContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a multiple contract from Etherscan for ${testChainId} and verify the contract, finding a ${multipleContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
         sourcifyChainsMap[testChainId],
         multipleContract.address,
@@ -197,7 +197,7 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a standard-json contract from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
         sourcifyChainsMap[testChainId],
         standardJsonContract.address,
@@ -215,7 +215,7 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a Vyper single contract from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a partial match`, (done) => {
+    it(`Non-Session: Should import a Vyper single contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
       const nockScope = mockEtherscanApi(
         sourcifyChainsMap[testChainId],
         "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
@@ -234,7 +234,7 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a Vyper standard-json contract from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a partial match`, (done) => {
+    it(`Non-Session: Should import a Vyper standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
       const nockScope = mockEtherscanApi(
         sourcifyChainsMap[testChainId],
         "0x2dFd89449faff8a532790667baB21cF733C064f2",
