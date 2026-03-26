@@ -18,7 +18,7 @@
     "lerna-lint": "lerna run check",
     "lerna-fix": "lerna run fix",
     "lerna-version": "lerna version --no-push",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "repository": {
     "type": "git",
