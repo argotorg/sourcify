@@ -102,7 +102,6 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),
-      sessionOptions: getSessionOptions(),
       sourcifyPrivateToken: process.env.SOURCIFY_PRIVATE_TOKEN,
       logLevel,
       libSourcifyConfig,
