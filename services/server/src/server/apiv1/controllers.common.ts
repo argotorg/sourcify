@@ -14,6 +14,16 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import type { Match } from "../types";
 
+export const CHECK_ENDPOINTS_DEPRECATION_WARNING =
+  "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. " +
+  "Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. " +
+  "Full API docs: https://sourcify.dev/server/api-docs/swagger.json";
+
+export const VERIFY_ENDPOINTS_DEPRECATION_WARNING =
+  "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. " +
+  "Use POST /v2/verify instead. " +
+  "Full API docs: https://sourcify.dev/server/api-docs/swagger.json";
+
 export function checksumAddresses(
   req: Request,
   res: Response,
@@ -22,12 +32,6 @@ export function checksumAddresses(
   // stateless
   if (req.body?.address) {
     req.body.address = getAddress(req.body.address);
-  }
-  // session
-  if (req.body?.contracts) {
-    req.body.contracts.forEach((contract: any) => {
-      contract.address = getAddress(contract.address);
-    });
   }
   if (req.query.addresses) {
     req.query.addresses = (req.query.addresses as string)
@@ -114,6 +118,7 @@ export interface ApiV1Response extends Omit<
   txIndex?: number;
   deployer?: string;
   status: VerificationStatus;
+  warning?: string;
 }
 
 export function getMatchStatus(
@@ -167,6 +172,7 @@ export function getApiV1ResponseFromVerification(
     deployer: verification.deploymentInfo.deployer,
     contractName: verification.compilation.compilationTarget.name,
     status,
+    warning: VERIFY_ENDPOINTS_DEPRECATION_WARNING,
   };
 }
 
@@ -179,5 +185,6 @@ export function getApiV1ResponseFromMatch(match: Match): ApiV1Response {
     contractName: match.contractName,
     storageTimestamp: match.storageTimestamp,
     status,
+    warning: VERIFY_ENDPOINTS_DEPRECATION_WARNING,
   };
 }

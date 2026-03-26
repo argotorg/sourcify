@@ -95,6 +95,9 @@ paths:
                           type: string
                         libraryMap:
                           type: object
+                        warning:
+                          type: string
+                          description: Deprecation warning. This endpoint will be removed. Use the v2 API instead.
               examples:
                 Perfect Match:
                   value:
@@ -105,6 +108,7 @@ paths:
                         libraryMap:
                           lib1: "0x3f681646d4a755815f9cb19e1acc8565a0c2ac"
                           lib2: "0x4f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        warning: "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. Use POST /v2/verify instead. Full API docs: https://sourcify.dev/server/api-docs/swagger.json"
                 Partial Match:
                   value:
                     result:

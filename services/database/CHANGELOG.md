@@ -1,5 +1,17 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.12.0 - 2026-03-17
+
+- Drop the metadata dependency and support old solc output (#2652)
+- Add `transientStorageLayout` to `compiled_ontracts.compilation_artifacts` (#1654)
+- Add `additonal_input` column to `compiled_contracts` (#2001)
+- Add index on `contract_deployments.chain_id` (#2694)
+
+## sourcify-database@2.11.0 - 2026-03-02
+
+- Add migration allow_delete_cbor_auxdata_transformations (#2619)
+- Add migration drop_session_table (#2671)
+
 ## sourcify-database@2.10.4 - 2026-01-20
 
 - Update dependencies

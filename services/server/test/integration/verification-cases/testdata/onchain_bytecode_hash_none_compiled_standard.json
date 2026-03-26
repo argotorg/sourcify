@@ -104,6 +104,10 @@
           }
         }
       },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
       "sources": {
         "./contracts/Storage.sol": {
           "id": 0

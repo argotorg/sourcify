@@ -38,8 +38,6 @@ tags:
     description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
   - name: (Deprecated) Repository
     description: API v1 - Access to already verified contracts and files. - Deprecated. Please use the API v2 Contract Lookup instead.
-  - name: (Deprecated) Session Verification
-    description: API v1 - Used by the Sourcify UI to verify contracts. Not intended for external usage. Will require CORS.
   - name: Other
     description: General server endpoints
 paths:
@@ -219,20 +217,6 @@ paths:
     $ref: "server/apiv1/repository/get-file-tree-all.stateless.paths.yaml#/paths/~1files~1tree~1any~1{chain}~1{address}"
   /files/tree/{chain}/{address}:
     $ref: "server/apiv1/repository/get-file-tree-full.stateless.paths.yaml#/paths/~1files~1tree~1{chain}~1{address}"
-  /session/data:
-    $ref: "server/apiv1/verification/session-state/data.session-state.paths.yaml#/paths/~1session~1data"
-  /session/clear:
-    $ref: "server/apiv1/verification/session-state/clear.session-state.paths.yaml#/paths/~1session~1clear"
-  /session/input-files:
-    $ref: "server/apiv1/verification/session-state/input-files.session-state.paths.yaml#/paths/~1session~1input-files"
-  /session/input-contract:
-    $ref: "server/apiv1/verification/session-state/input-contract.session-state.paths.yaml#/paths/~1session~1input-contract"
-  /session/verify-checked:
-    $ref: "server/apiv1/verification/verify/session/verify.session.paths.yaml#/paths/~1session~1verify-checked"
-  /session/input-solc-json:
-    $ref: "server/apiv1/verification/solc-json/session/solc-json.session.paths.yaml#/paths/~1session~1input-solc-json"
-  /session/verify/etherscan:
-    $ref: "server/apiv1/verification/etherscan/session/etherscan.session.paths.yaml#/paths/~1session~1verify~1etherscan"
   /private/change-log-level:
     post:
       summary: Change the logging level of the application

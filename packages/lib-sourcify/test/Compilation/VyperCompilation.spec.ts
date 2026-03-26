@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import { vyperCompiler } from '../utils';
-import { id } from 'ethers';
 
 describe('VyperCompilation', () => {
   it('should compile a simple Vyper contract', async () => {
@@ -254,7 +253,7 @@ describe('VyperCompilation', () => {
       'utf8',
     );
 
-    // Mock vyperCompiler to return output without metadata
+    // Mock vyperCompiler to return output without auxdata
     const mockCompiler = {
       compile: async () => ({
         contracts: {
@@ -569,85 +568,6 @@ describe('VyperCompilation', () => {
     });
     expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
       '1': { offset: 172, value: '0xa165767970657283000307000b' },
-    });
-  });
-
-  it('Should mock a metadata object for a Vyper contract', async () => {
-    const contractPath = path.join(
-      __dirname,
-      '..',
-      'sources',
-      'Vyper',
-      'testcontract',
-    );
-    const contractFileName = 'test.vy';
-    const contractName = contractFileName.split('.')[0];
-    const contractContent = fs.readFileSync(
-      path.join(contractPath, contractFileName),
-      'utf8',
-    );
-
-    const vyperVersion = '0.3.10+commit.91361694';
-
-    const compilation = new VyperCompilation(
-      vyperCompiler,
-      vyperVersion,
-      {
-        language: 'Vyper',
-        sources: {
-          [contractFileName]: {
-            content: contractContent,
-          },
-        },
-        settings: {
-          evmVersion: 'istanbul',
-          outputSelection: {
-            '*': ['evm.bytecode'],
-          },
-        },
-      },
-      {
-        name: contractName,
-        path: contractFileName,
-      },
-    );
-
-    await compilation.compile();
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { outputSelection, ...settings } = compilation.jsonInput.settings;
-
-    expect(compilation.metadata).to.deep.equal({
-      compiler: { version: vyperVersion },
-      language: 'Vyper',
-      output: {
-        abi: [
-          {
-            inputs: [],
-            name: 'helloWorld',
-            outputs: [
-              {
-                name: '',
-                type: 'string',
-              },
-            ],
-            stateMutability: 'view',
-            type: 'function',
-          },
-        ],
-        devdoc: {},
-        userdoc: {},
-      },
-      settings: {
-        ...settings,
-        compilationTarget: { [contractFileName]: contractName },
-      },
-      sources: {
-        [contractFileName]: {
-          keccak256: id(contractContent),
-        },
-      },
-      version: 1,
     });
   });
 

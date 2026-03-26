@@ -3,6 +3,7 @@ import type {
   Metadata,
   VerificationStatus,
   StorageLayout,
+  TransientStorageLayout,
   Transformation,
   TransformationValues,
   CompiledContractCborAuxdata,
@@ -78,6 +79,7 @@ export namespace Tables {
       userdoc: Nullable<Userdoc> | {};
       devdoc: Nullable<Devdoc> | {};
       storageLayout: Nullable<StorageLayout>;
+      transientStorageLayout: Nullable<TransientStorageLayout>;
       sources: Nullable<CompilationArtifactsSources>;
     };
     compiler_settings: Omit<
@@ -227,7 +229,7 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
     Tables.VerifiedContract,
     "creation_values" | "runtime_values" | "compilation_id"
   > &
-  Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name"> &
+  Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name" | "version"> &
   Pick<Tables.ContractDeployment, "transaction_hash"> & {
     onchain_runtime_code: string;
   };
@@ -298,6 +300,7 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       deployer: string;
       sources: { [path: string]: { content: string } };
       storage_layout: Tables.CompiledContract["compilation_artifacts"]["storageLayout"];
+      transient_storage_layout: Tables.CompiledContract["compilation_artifacts"]["transientStorageLayout"];
       source_ids: Tables.CompiledContract["compilation_artifacts"]["sources"];
       std_json_input: SolidityJsonInput | VyperJsonInput;
       std_json_output: SolidityOutput | VyperOutput;
@@ -411,6 +414,8 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   metadata: "sourcify_matches.metadata",
   storage_layout:
     "compiled_contracts.compilation_artifacts->'storageLayout' as storage_layout",
+  transient_storage_layout:
+    "compiled_contracts.compilation_artifacts->'transientStorageLayout' as transient_storage_layout",
   userdoc: "compiled_contracts.compilation_artifacts->'userdoc' as userdoc",
   devdoc: "compiled_contracts.compilation_artifacts->'devdoc' as devdoc",
   source_ids:
@@ -435,6 +440,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
           'userdoc', compiled_contracts.compilation_artifacts->'userdoc',
           'devdoc', compiled_contracts.compilation_artifacts->'devdoc',
           'storageLayout', compiled_contracts.compilation_artifacts->'storageLayout',
+          'transientStorageLayout', compiled_contracts.compilation_artifacts->'transientStorageLayout',
           'evm', json_build_object(
             'bytecode', json_build_object(
               'object', nullif(encode(recompiled_creation_code.code, 'hex'), ''),
@@ -542,6 +548,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
   abi: "abi",
   metadata: "metadata",
   storageLayout: "storage_layout",
+  transientStorageLayout: "transient_storage_layout",
   userdoc: "userdoc",
   devdoc: "devdoc",
   sourceIds: "source_ids",
@@ -755,6 +762,9 @@ export async function getDatabaseColumnsFromVerification(
     devdoc: compilerOutput?.devdoc || null,
     storageLayout:
       (compilerOutput as SolidityOutputContract)?.storageLayout || null,
+    transientStorageLayout:
+      (compilerOutput as SolidityOutputContract)?.transientStorageLayout ||
+      null,
     sources: verification.compilation.compilerOutput?.sources || null,
   };
   const creationCodeArtifacts = {

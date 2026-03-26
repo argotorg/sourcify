@@ -493,6 +493,19 @@ export class RepositoryV1Service implements RWStorageService {
   }
 
   public async storeVerification(verification: VerificationExport) {
+    if (verification.compilation.metadata === undefined) {
+      logger.warn(
+        `Cannot store contract without metadata in ${this.IDENTIFIER}`,
+        {
+          address: verification.address,
+          chainId: verification.chainId.toString(),
+          runtimeMatch: verification.status.runtimeMatch,
+          creationMatch: verification.status.creationMatch,
+          name: verification.compilation.compilationTarget.name,
+        },
+      );
+      return;
+    }
     if (
       verification.address &&
       (verification.status.runtimeMatch === "perfect" ||

@@ -29,7 +29,8 @@
       "devdoc": null,
       "sources": null,
       "userdoc": null,
-      "storageLayout": null
+      "storageLayout": null,
+      "transientStorageLayout": null
     },
     "creationCodeArtifacts": {
       "sourceMap": "111:19:0:-:0;88:21;;85:1;76:55;85:1;140:30",
@@ -42,31 +43,7 @@
       "linkReferences": {},
       "immutableReferences": null
     },
-    "metadata": {
-      "compiler": {
-        "version": "0.8.26+commit.8a97fa7a"
-      },
-      "language": "Yul",
-      "output": {},
-      "settings": {
-        "viaIR": true,
-        "optimizer": {
-          "details": {
-            "yul": true
-          },
-          "enabled": true
-        },
-        "compilationTarget": {
-          "cas-forwarder.yul": "cas-forwarder"
-        }
-      },
-      "sources": {
-        "cas-forwarder.yul": {
-          "keccak256": "0x8214bd661a3414709488e11f27734e9df895553a0958b84205cfde3e8073cba4"
-        }
-      },
-      "version": 1
-    }
+    "metadata": null
   },
   "verification": {
     "creationMatch": "match",

@@ -44,6 +44,8 @@ function getEtherscanApiContractCreatorFetcher(
   return getApiContractCreationFetcher(
     ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()) + apiKey,
     (response: any) => {
+      if (response?.message === "NOTOK")
+        throw new Error(`Etherscan API error: ${response?.result}`);
       if (response?.result?.[0]?.txHash)
         return response?.result?.[0]?.txHash as string;
     },
@@ -137,6 +139,41 @@ function getVeChainApiContractCreatorFetcher(
   );
 }
 
+async function getCreatorTxUsingNodeReal(
+  url: string,
+  contractAddress: string,
+  apiKey: string,
+): Promise<string | null> {
+  const endpoint = url.replace("${API_KEY}", apiKey);
+  const maskedEndpoint = url.replace("${API_KEY}", "****");
+  logger.debug("Fetching Creator Tx from NodeReal", {
+    maskedEndpoint,
+    contractAddress,
+  });
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "nr_getContractCreationTransaction",
+      params: [contractAddress],
+      id: 1,
+    }),
+  });
+  if (res.status !== StatusCodes.OK) {
+    throw new Error(`NodeReal API returned status ${res.status}`);
+  }
+  const response = await res.json();
+  if (response?.result?.hash) {
+    return response.result.hash as string;
+  }
+  logger.debug("NodeReal API returned no creation tx", {
+    contractAddress,
+    response,
+  });
+  return null;
+}
+
 async function getCreatorTxUsingFetcher(
   fetcher: ContractCreationFetcher,
   contractAddress: string,
@@ -217,7 +254,28 @@ export const getCreatorTx = async (
     }
   }
 
-  // Try etherscan if routescan fails
+  // Try NodeReal API if routescan fails
+  if (
+    sourcifyChain.fetchContractCreationTxUsing?.nodeRealApi &&
+    process.env.NODEREAL_API_KEY
+  ) {
+    try {
+      const result = await getCreatorTxUsingNodeReal(
+        sourcifyChain.fetchContractCreationTxUsing.nodeRealApi.url,
+        contractAddress,
+        process.env.NODEREAL_API_KEY,
+      );
+      if (result) {
+        return result;
+      }
+    } catch (e: any) {
+      logger.warn("Error fetching creation tx from NodeReal", {
+        error: e.message,
+      });
+    }
+  }
+
+  // Try etherscan if NodeReal fails
   if (
     sourcifyChain.fetchContractCreationTxUsing?.etherscanApi &&
     sourcifyChain?.etherscanApi?.supported
@@ -437,8 +495,9 @@ export async function findContractCreationTxByBinarySearchWithTimeout(
   contractAddress: string,
   binarySearchTimeoutMs = BINARY_SEARCH_TIMEOUT_MS,
 ): Promise<string | null> {
-  const timeoutPromise = new Promise<null>((resolve) =>
-    setTimeout(() => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutId = setTimeout(() => {
       logger.warn(
         `Binary search for contract creation tx timed out after ${binarySearchTimeoutMs} ms`,
         {
@@ -448,11 +507,17 @@ export async function findContractCreationTxByBinarySearchWithTimeout(
         },
       );
       resolve(null);
-    }, binarySearchTimeoutMs),
-  );
+    }, binarySearchTimeoutMs);
+  });
 
-  return Promise.race([
-    findContractCreationTxByBinarySearch(sourcifyChain, contractAddress),
-    timeoutPromise,
-  ]);
+  try {
+    return await Promise.race([
+      findContractCreationTxByBinarySearch(sourcifyChain, contractAddress),
+      timeoutPromise,
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 }

@@ -34,6 +34,9 @@ export interface FetchContractCreationTxMethods {
     runtime: string;
   };
   veChainApi?: boolean;
+  nodeRealApi?: {
+    url: string;
+  };
 }
 
 // types of the keys of FetchContractCreationTxMethods

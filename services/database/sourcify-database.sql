@@ -1,7 +1,7 @@
-\restrict A83zy5tw1A1hwszb9MuDfllmOnsJ9RjmflyL7FtxK1HcwQB5JaRhShE0bFShJal
+\restrict dbmate
 
--- Dumped from database version 16.0
--- Dumped by pg_dump version 16.11 (Homebrew)
+-- Dumped from database version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.11 (Ubuntu 16.11-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -221,6 +221,26 @@ $$;
 
 
 --
+-- Name: validate_additional_input(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_additional_input(obj jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN obj IS NULL OR (
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['storage_layout_overrides']
+        )
+    );
+END;
+$$;
+
+
+--
 -- Name: validate_code_artifacts_cbor_auxdata(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -406,8 +426,8 @@ BEGIN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj,
-            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
-            array []::text[]
+            array ['abi', 'sources'],
+            array ['userdoc', 'devdoc', 'storageLayout', 'transientStorageLayout']
         ) AND
         validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
@@ -958,6 +978,8 @@ CREATE TABLE public.compiled_contracts (
     creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
+    additional_input jsonb,
+    CONSTRAINT additional_input_json_schema CHECK (public.validate_additional_input(additional_input)),
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
     CONSTRAINT creation_code_artifacts_json_schema CHECK (public.validate_creation_code_artifacts(creation_code_artifacts)),
     CONSTRAINT runtime_code_artifacts_json_schema CHECK (public.validate_runtime_code_artifacts(runtime_code_artifacts))
@@ -1035,17 +1057,6 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: session; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.session (
-    sid character varying NOT NULL,
-    sess json NOT NULL,
-    expire timestamp(6) without time zone NOT NULL
-);
-
-
---
 -- Name: signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1110,7 +1121,7 @@ CREATE TABLE public.sourcify_matches (
     runtime_match character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json NOT NULL
+    metadata json
 );
 
 
@@ -1394,14 +1405,6 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: session session_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.session
-    ADD CONSTRAINT session_pkey PRIMARY KEY (sid);
-
-
---
 -- Name: signatures signatures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1479,13 +1482,6 @@ ALTER TABLE ONLY public.verified_contracts
 
 ALTER TABLE ONLY public.verified_contracts
     ADD CONSTRAINT verified_contracts_pseudo_pkey UNIQUE (compilation_id, deployment_id);
-
-
---
--- Name: IDX_session_expire; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_session_expire" ON public.session USING btree (expire);
 
 
 --
@@ -1570,6 +1566,13 @@ CREATE INDEX compiled_contracts_sources_source_hash ON public.compiled_contracts
 --
 
 CREATE INDEX contract_deployments_address ON public.contract_deployments USING btree (address);
+
+
+--
+-- Name: contract_deployments_chain_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contract_deployments_chain_id ON public.contract_deployments USING btree (chain_id);
 
 
 --
@@ -2171,7 +2174,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A83zy5tw1A1hwszb9MuDfllmOnsJ9RjmflyL7FtxK1HcwQB5JaRhShE0bFShJal
+\unrestrict dbmate
 
 
 --
@@ -2190,4 +2193,10 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251101120000'),
     ('20251106144315'),
     ('20251219160923'),
-    ('20260126113330');
+    ('20260126113330'),
+    ('20260216165100'),
+    ('20260224135405'),
+    ('20260224171441'),
+    ('20260225083159'),
+    ('20260302082853'),
+    ('20260309080000');

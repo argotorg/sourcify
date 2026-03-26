@@ -73,6 +73,7 @@ describe("verificationWorker", function () {
           "devdoc",
           "userdoc",
           "storageLayout",
+          "transientStorageLayout",
           "evm.legacyAssembly",
           "evm.bytecode.object",
           "evm.bytecode.sourceMap",
@@ -139,6 +140,7 @@ describe("verificationWorker", function () {
             userdoc: chainFixture.defaultContractMetadataObject.output.userdoc,
             devdoc: chainFixture.defaultContractMetadataObject.output.devdoc,
             storageLayout: chainFixture.defaultContractArtifact.storageLayout,
+            transientStorageLayout: undefined,
             evm: {
               bytecode: {
                 sourceMap: chainFixture.defaultContractArtifact.sourceMap,

@@ -23,7 +23,7 @@ aliases:
           command: cd ~/project/metacoin-source-verify && ./scripts/monitor_e2e.sh
           no_output_timeout: 30m
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
   - &verification-e2e-base
     steps:
       - run:
@@ -41,7 +41,7 @@ aliases:
       - store_artifacts:
           path: ~/project/metacoin-source-verify/verified-contracts
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
 
 workflows:
   e2e-tests:
@@ -91,7 +91,7 @@ jobs:
           name: backup test
           command: node --experimental-fetch ./scripts/check-s3-backup.mjs
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
   check-etherscan-instances:
     working_directory: ~/sourcify
     steps:
@@ -113,7 +113,7 @@ jobs:
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
             SOURCIFY_POSTGRES_PORT: 5432
     docker:
-      - image: cimg/node:22.5.1
+      - image: cimg/node:22.22.0
       - image: postgres:15-alpine
         environment:
           POSTGRES_DB: sourcify

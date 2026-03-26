@@ -3,15 +3,12 @@ import chai from "chai";
 import chaiHttp from "chai-http";
 import addContext from "mochawesome/addContext";
 import testEtherscanContracts from "../helpers/etherscanInstanceContracts.json";
-import config from "config";
 import sourcifyChainsDefault from "../../src/sourcify-chains-default.json";
 import _storageAddresses from "./sources/storage-contract-chain-addresses.json";
 const storageAddresses: Record<string, string> = _storageAddresses; // add types
 import createXInput from "./sources/createX.input.json";
 import multicallInput from "./sources/multicall.input.json";
 import storageInput from "./sources/storage.input.json";
-// @ts-ignore
-config["session"].storeType = "memory";
 
 const TEST_TIME = process.env.TEST_TIME || "60000"; // 1 minute
 const CUSTOM_PORT = 5556;

@@ -33,6 +33,7 @@ import type {
 import {
   Verification,
   SolidityCompilation,
+  DEFAULT_OUTPUT_SELECTION,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import { toMatchLevel } from "../../../src/server/services/utils/util";
@@ -173,6 +174,7 @@ class SolcCompilerWrapper implements ISolidityCompiler {
       solJsonRepoPath,
       version,
       solcJsonInput,
+      true,
     );
   }
 }
@@ -183,7 +185,10 @@ function extractContractOutput(
   contractIdentifier: string,
 ): SolidityOutputContract {
   const [sourcePath, contractName] = contractIdentifier.split(":");
-  const contract = output.contracts[sourcePath]?.[contractName];
+  const contract =
+    output.contracts[sourcePath]?.[contractName] ||
+    // In solidity versions < 0.4.9, the source path is empty string
+    output.contracts[""]?.[contractName];
   if (!contract) {
     throw new Error(
       `Contract ${contractIdentifier} not found in compilation output`,
@@ -198,7 +203,11 @@ function mapToTestCaseOutput(
   output: SolidityOutput,
 ) {
   // Extract metadata
-  const metadata: Metadata = JSON.parse(contractOutput.metadata);
+  let metadata: Metadata | undefined = undefined;
+
+  if (contractOutput.metadata) {
+    metadata = JSON.parse(contractOutput.metadata);
+  }
 
   // Build compilation artifacts sources
   const compilationArtifactsSources: any = {};
@@ -216,6 +225,7 @@ function mapToTestCaseOutput(
       devdoc: contractOutput.devdoc || null,
       userdoc: contractOutput.userdoc || null,
       storageLayout: contractOutput.storageLayout || null,
+      transientStorageLayout: contractOutput.transientStorageLayout || null,
       sources: compilationArtifactsSources,
     },
     creationCodeArtifacts: {
@@ -284,6 +294,7 @@ async function main() {
       solJsonRepoPath,
       deploymentCompilerVersion.trim(),
       deploymentStdJsonInput,
+      true,
     );
 
     if (deploymentOutput.errors?.some((e) => e.severity === "error")) {
@@ -386,6 +397,9 @@ async function main() {
     console.log("STEP 5: Verification Compilation");
     console.log("-".repeat(80));
     console.log("Compiling verification contract...");
+
+    verificationStdJsonInput.settings.outputSelection =
+      DEFAULT_OUTPUT_SELECTION;
 
     const verificationOutput = await useSolidityCompiler(
       solcRepoPath,

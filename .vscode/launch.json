@@ -8,6 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Server - without build",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceFolder}/services/server/dist/server/cli.js",
       "envFile": "${workspaceFolder}/services/server/.env",
       "outFiles": [
@@ -36,6 +37,7 @@
       "type": "node",
       "request": "launch",
       "name": "4Byte - without build",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceFolder}/services/4byte/dist/cli.js",
       "envFile": "${workspaceFolder}/services/4byte/.env",
       "outFiles": [
@@ -53,6 +55,7 @@
       "type": "node",
       "request": "launch",
       "name": "Monitor - without build",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "dist/index.js",
       "args": ["--chainsPath=chains-dev.json"],
@@ -69,6 +72,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - Server Unit",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "cwd": "${workspaceFolder}/services/server",
       "args": [
@@ -85,6 +89,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - Server Integration",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "cwd": "${workspaceFolder}/services/server",
       "env": {
@@ -109,6 +114,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - Etherscan Instances",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "cwd": "${workspaceFolder}/services/server",
       "env": {
@@ -131,6 +137,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - lib-sourcify",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/packages/lib-sourcify",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "args": [
@@ -151,6 +158,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - bytecode-utils",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/packages/bytecode-utils",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "args": [
@@ -171,6 +179,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - compilers",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/packages/compilers",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "args": [
@@ -191,12 +200,14 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - 4Byte",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/services/4byte",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "preLaunchTask": "4byte:database-test:up",
       "postDebugTask": "4byte:database-test:down",
       "args": [
-        "--require", "ts-node/register",
+        "--require",
+        "ts-node/register",
         "--exit",
         "--recursive",
         "test/**/*.spec.ts"
@@ -217,6 +228,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - Monitor",
+      "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/services/monitor",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "args": [
@@ -234,6 +246,7 @@
       "type": "node",
       "request": "launch",
       "name": "Mocha - Chains",
+      "runtimeVersion": "22.22.0",
       "program": "${workspaceRoot}/node_modules/.bin/mocha",
       "cwd": "${workspaceFolder}/services/server",
       "env": {

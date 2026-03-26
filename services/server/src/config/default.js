@@ -28,17 +28,6 @@ module.exports = {
   solcRepo: "/tmp/solc-bin/linux-amd64",
   solJsonRepo: "/tmp/solc-bin/soljson",
   vyperRepo: "/tmp/vyper-bin",
-  session: {
-    secret: process.env.SESSION_SECRET || "CHANGE_ME",
-    maxAge: 12 * 60 * 60 * 1000, // 12 hrs in millis
-    secure: false, // Set Secure in the Set-Cookie header i.e. require https
-    // Where to save session data. Options: "memory" | "database"
-    // - "memory": Sessions stored in server memory. Only use for testing/local development.
-    //   Sessions are lost when server restarts.
-    // - "database": Sessions stored in PostgreSQL. Recommended for production.
-    //   Requires database setup (see Database section) and uses the `session` table.
-    storeType: "memory",
-  },
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   corsAllowedOrigins: [

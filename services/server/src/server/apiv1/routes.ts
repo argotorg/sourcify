@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from "express";
 import { Router } from "express";
 import testArtifactsRoutes from "./testartifacts/testartifacts.routes";
 import repositoryRoutes from "./repository/repository.routes";
-import sessionStateRoutes from "./verification/session-state/session-state.routes";
 import verifyRoutes from "./verification/verify/verify.routes";
 import solcJsonRoutes from "./verification/solc-json/solc-json.routes";
 import etherscanRoutes from "./verification/etherscan/etherscan.routes";
@@ -25,16 +24,18 @@ router.use(
     "/check-all-by-addresses",
     "/check-by-addresses",
     "/files",
-    "/session",
   ],
   (req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Deprecation", "true");
+    res.setHeader(
+      "Warning",
+      '299 - "Deprecated: use v2 API. See https://sourcify.dev/server/api-docs/swagger.json"',
+    );
     next();
   },
 );
 
 router.use("/", repositoryRoutes);
-router.use("/", sessionStateRoutes);
 router.use("/", verifyRoutes);
 router.use("/", solcJsonRoutes);
 router.use("/", etherscanRoutes);
