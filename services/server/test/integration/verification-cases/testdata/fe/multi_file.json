@@ -1,0 +1,81 @@
+{
+  "_comment": "verify a multi-file Fe ingot (Counter in separate module)",
+
+  "onchain": {
+    "creationBytecode": "0x34156008575f5ffd5b6300000019630000006d80915f395ff360056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056",
+    "deployedBytecode": "0x60056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056"
+  },
+  "input": {
+    "compilerVersion": "26.0.0-alpha.12",
+    "contractIdentifier": "src/counter.fe:Counter",
+    "stdJsonInput": {
+      "language": "Fe",
+      "sources": {
+        "src/lib.fe": {
+          "content": "use ingot::counter::Counter\n"
+        },
+        "src/counter.fe": {
+          "content": "use std::abi::sol\nuse std::evm::{Evm, Call}\nuse std::evm::effects::assert\n\nmsg CounterMsg {\n    #[selector = sol(\"increment()\")]\n    Increment,\n    #[selector = sol(\"get()\")]\n    Get -> u256,\n}\n\nstruct CounterStore {\n    value: u256,\n}\n\npub contract Counter {\n    mut store: CounterStore\n\n    init() uses (mut store) {\n        store.value = 0\n    }\n\n    recv CounterMsg {\n        Increment uses (mut store) {\n            store.value = store.value + 1\n        }\n\n        Get -> u256 uses (store) {\n            store.value\n        }\n    }\n}\n"
+        }
+      },
+      "settings": {}
+    }
+  },
+  "output": {
+    "creationBytecode": "0x34156008575f5ffd5b6300000019630000006d80915f395ff360056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056",
+    "deployedBytecode": "0x60056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "increment",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "get",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        }
+      ],
+      "sources": null,
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": null,
+      "transientStorageLayout": null
+    },
+    "creationCodeArtifacts": {
+      "sourceMap": null,
+      "linkReferences": null,
+      "cborAuxdata": {}
+    },
+    "runtimeCodeArtifacts": {
+      "sourceMap": null,
+      "immutableReferences": null,
+      "linkReferences": null,
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}

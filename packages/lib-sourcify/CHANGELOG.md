@@ -7,7 +7,6 @@ All notable changes to this project will be documented in this file.
 - Support all Solidity versions >= 0.1.3 (#2652)
 - Add transientStorageLayout to compiler output (#2689)
 
-
 ## @ethereum-sourcify/lib-sourcify@3.2.0 - 2026-03-02
 
 - Support verification when cbor auxdata lengths differ between onchain and recompilation (#2619)
@@ -22,7 +21,6 @@ All notable changes to this project will be documented in this file.
 ## @ethereum-sourcify/lib-sourcify@3.1.0 - 2026-01-07
 
 - Add support for Yul compilation and verification (#2521)
-
 
 ## @ethereum-sourcify/lib-sourcify@3.0.5 - 2025-12-15
 
@@ -42,7 +40,6 @@ All notable changes to this project will be documented in this file.
 ## @ethereum-sourcify/lib-sourcify@3.0.2 - 2025-10-30
 
 - Only count timeouts and network errors as rpc failures (#2473)
-
 
 ## @ethereum-sourcify/lib-sourcify@3.0.1 - 2025-10-28
 

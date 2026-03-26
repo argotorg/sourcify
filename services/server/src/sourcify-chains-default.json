@@ -2556,9 +2556,7 @@
         "url": "https://evm.flow.com/"
       }
     },
-    "rpc": [
-      "https://mainnet.evm.nodes.onflow.org"
-    ]
+    "rpc": ["https://mainnet.evm.nodes.onflow.org"]
   },
   "545": {
     "sourcifyName": "Flow EVM Testnet",
@@ -2568,8 +2566,6 @@
         "url": "https://testnet.evm.flow.com/"
       }
     },
-    "rpc": [
-      "https://testnet.evm.nodes.onflow.org"
-    ]
+    "rpc": ["https://testnet.evm.nodes.onflow.org"]
   }
 }

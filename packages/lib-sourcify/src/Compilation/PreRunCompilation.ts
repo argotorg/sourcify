@@ -9,6 +9,8 @@ import type {
   SolidityOutputContract,
   VyperJsonInput,
   VyperOutput,
+  FeJsonInput,
+  FeOutput,
 } from '@ethereum-sourcify/compilers-types';
 import type {
   CompilationLanguage,
@@ -16,6 +18,7 @@ import type {
   CompiledContractCborAuxdata,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
 } from './CompilationTypes';
 import {
   returnAuxdataStyle,
@@ -32,10 +35,10 @@ export class PreRunCompilation extends AbstractCompilation {
   public language: CompilationLanguage;
 
   public constructor(
-    public compiler: ISolidityCompiler | IVyperCompiler,
+    public compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler,
     compilerVersion: string,
-    jsonInput: SolidityJsonInput | VyperJsonInput,
-    jsonOutput: SolidityOutput | VyperOutput,
+    jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
+    jsonOutput: SolidityOutput | VyperOutput | FeOutput,
     public compilationTarget: CompilationTarget,
     public _creationBytecodeCborAuxdata: CompiledContractCborAuxdata,
     public _runtimeBytecodeCborAuxdata: CompiledContractCborAuxdata,
@@ -64,6 +67,10 @@ export class PreRunCompilation extends AbstractCompilation {
         this.auxdataStyle = returnAuxdataStyle(
           this.compilerVersionCompatibleWithSemver,
         );
+        break;
+      }
+      case 'Fe': {
+        this.auxdataStyle = AuxdataStyle.FE;
         break;
       }
       default:
@@ -95,6 +102,8 @@ export class PreRunCompilation extends AbstractCompilation {
           this.auxdataStyle,
         );
       }
+      case 'Fe':
+        return {};
     }
   }
 
@@ -107,6 +116,7 @@ export class PreRunCompilation extends AbstractCompilation {
         return compilationTarget.evm.deployedBytecode.linkReferences || {};
       }
       case 'Vyper':
+      case 'Fe':
         return {};
     }
   }
@@ -120,6 +130,7 @@ export class PreRunCompilation extends AbstractCompilation {
         return compilationTarget.evm.bytecode.linkReferences || {};
       }
       case 'Vyper':
+      case 'Fe':
         return {};
     }
   }

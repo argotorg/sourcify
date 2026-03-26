@@ -1,0 +1,30 @@
+{
+  "creationBytecode": "0x34156008575f5ffd5b6300000019630000006d80915f395ff360056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056",
+  "runtimeBytecode": "0x60056052565b63d09de08a8114601d57636d4ce63c8114603f575f5ffd5b50345f146028575f5ffd5b5f5460018101908110156039575f5ffd5b5f555f5ff35b345f146049575f5ffd5b5f545f5260205ff35b366004901015605f575f5ffd5b5f3560e01c63ffffffff169056",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "increment",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "get",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    }
+  ]
+}

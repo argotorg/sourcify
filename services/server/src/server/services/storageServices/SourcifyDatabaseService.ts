@@ -4,6 +4,7 @@ import type {
   VerificationExport,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -1238,7 +1239,11 @@ export class SourcifyDatabaseService
   async getPreRunCompilationFromDatabase(
     chainId: number,
     address: string,
-    compilers: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+    compilers: {
+      solc: ISolidityCompiler;
+      vyper: IVyperCompiler;
+      fe: IFeCompiler;
+    },
   ): Promise<PreRunCompilation> {
     await this.init();
 

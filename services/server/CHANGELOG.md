@@ -14,7 +14,6 @@ All notable changes to this project will be documented in this file.
   - Reactive Network Lasna (5318007)
   - Integralayer (26217)
 
-
 ## sourcify-server@3.10.0 - 2026-03-02
 
 - Support verification when cbor auxdata lengths differ between onchain and recompilation (#2619)
@@ -40,7 +39,6 @@ All notable changes to this project will be documented in this file.
 - Improve log levels (#2601)
 - Update dependencies
 
-
 ## sourcify-server@3.9.0 - 2026-01-07
 
 - Add support for Yul compilation and verification (#2521)
@@ -52,7 +50,6 @@ All notable changes to this project will be documented in this file.
 - Add support for Sei Testnet (chain ID 1328), edit contract for Sei Mainnet (Chain Id 1329) (#2550)
 - Add Sei Network specific Etherscan API key variable (#2547)
 - Disable chains which fail CI tests (#2557)
-
 
 ## sourcify-server@3.8.1 - 2025-12-15
 
@@ -66,9 +63,8 @@ All notable changes to this project will be documented in this file.
 - Update dependencies
 - Fix prettier
 - Add chains:
-    - 1329 Sei network
-    - 42429 Tempo testnet
-
+  - 1329 Sei network
+  - 42429 Tempo testnet
 
 ## sourcify-server@3.8.0 - 2025-11-19
 
@@ -97,7 +93,7 @@ All notable changes to this project will be documented in this file.
   - sends verification requests to Etherscan, Blockscout and/or Routescan after verifying on Sourcify
 - Add SSL support for SOURCIFY_POSTGRES (#2458)
 - Add redirects from server to repo and verify UI (#2468)
-- Remove the signature database tag from server openapi.yaml (#2451) 
+- Remove the signature database tag from server openapi.yaml (#2451)
 - add chains:
   - 1868 Soneium
   - 480 WorldChain

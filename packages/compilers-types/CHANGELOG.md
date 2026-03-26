@@ -1,5 +1,3 @@
-
-
 ## @ethereum-sourcify/compilers-types@1.0.13 - 2026-03-17
 
 - Add TransientStorageLayout type (#2689)

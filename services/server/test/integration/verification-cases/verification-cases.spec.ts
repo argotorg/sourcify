@@ -311,4 +311,23 @@ describe("Specific Verification Cases", function () {
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(transientStorageLayout);
   });
+
+  it("should verify a multi-source Solidity contract without duplicating signatures", async () => {
+    const multiSourceSolidity = (
+      await import("./testdata/multi_source_solidity.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(multiSourceSolidity);
+  });
+
+  it("should verify a single-file Fe contract", async () => {
+    const feTestSingleFile = (await import("./testdata/fe/single_file.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(feTestSingleFile);
+  });
+
+  it("should verify a multi-file Fe ingot", async () => {
+    const feTestMultiFile = (await import("./testdata/fe/multi_file.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(feTestMultiFile);
+  });
 });

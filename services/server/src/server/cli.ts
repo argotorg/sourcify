@@ -18,6 +18,7 @@ import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
+import { FeLocal } from "./services/compiler/local/FeLocal";
 
 export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
   Object.entries(sourcifyChainsMap).reduce<Record<string, string>>(
@@ -75,6 +76,11 @@ const vyperRepoPath =
   (config.get("vyperRepo") as string) || path.join("/tmp", "vyper-repo");
 export const vyper = new VyperLocal(vyperRepoPath);
 
+logger.info("Using local Fe compiler");
+const feRepoPath =
+  (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
+export const fe = new FeLocal(feRepoPath);
+
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
   value: RegExp.prototype.toString,
@@ -90,6 +96,7 @@ const server = new Server(
     corsAllowedOrigins: config.get("corsAllowedOrigins"),
     solc,
     vyper,
+    fe,
     chains: sourcifyChainsMap,
     verifyDeprecated: config.get("verifyDeprecated"),
     replaceContract: config.get("replaceContract"),
@@ -105,6 +112,7 @@ const server = new Server(
     solcRepoPath,
     solJsonRepoPath,
     vyperRepoPath,
+    feRepoPath,
     workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
       ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
       : undefined,

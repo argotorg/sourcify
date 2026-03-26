@@ -1,6 +1,7 @@
 import type {
   VyperJsonInput,
   SolidityJsonInput,
+  FeJsonInput,
   CompilationTarget,
   Metadata,
 } from "@ethereum-sourcify/lib-sourcify";
@@ -19,7 +20,7 @@ interface VerifyFromJsonInputRequest extends Request {
     address: string;
   };
   body: {
-    stdJsonInput: SolidityJsonInput | VyperJsonInput;
+    stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
     compilerVersion: string;
     contractIdentifier: string;
     creationTransactionHash?: string;

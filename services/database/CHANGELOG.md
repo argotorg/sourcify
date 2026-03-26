@@ -36,7 +36,7 @@
 ## sourcify-database@2.9.0 - 2025-10-16
 
 - Add signature tables and queries for the new 4byte service. Create a materialized view for the `/stats` endpoint.
-- Change migrations scripts to accomodate multiple database instances during CI test runs: one for 4byte and one for sourcify-server. 
+- Change migrations scripts to accomodate multiple database instances during CI test runs: one for 4byte and one for sourcify-server.
 
 ## sourcify-database@2.8.0 - 2025-09-18
 
@@ -111,7 +111,6 @@
 
 - Add missing creation-tx backfill scripts
 
-
 ## sourcify-database@2.0.2 - 2024-12-11
 
 - Update dependencies
@@ -143,14 +142,13 @@
 - Update dependencies
 - Update the script's import-repo command to insert the contracts read from the FS to the Database in batches instead of one-by-one
 
-
 ## sourcify-database@1.1.1 - 2024-05-14
 
 - bump version
 
 ## sourcify-database@1.1.0 - 2024-04-23
 
-- Add session table to migrations 
+- Add session table to migrations
 
 ## sourcify-database@1.0.3 - 2024-04-04
 

@@ -32,5 +32,6 @@ module.exports = {
   solcRepo: "/home/app/data/compilers/solc",
   solJsonRepo: "/home/app/data/compilers/soljson",
   vyperRepo: "/home/app/data/compilers/vyper",
+  feRepo: "/home/app/data/compilers/fe",
   replaceContract: true,
 };

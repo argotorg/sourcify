@@ -22,6 +22,7 @@ import type { VerificationServiceOptions } from "./services/VerificationService"
 import type {
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -56,6 +57,7 @@ export interface ServerOptions {
   chains: SourcifyChainMap;
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
+  fe: IFeCompiler;
   verifyDeprecated: boolean;
   replaceContract: boolean;
   sourcifyPrivateToken?: string;
@@ -133,6 +135,7 @@ export class Server {
     this.app.set("chainRepository", this.chainRepository);
     this.app.set("solc", options.solc);
     this.app.set("vyper", options.vyper);
+    this.app.set("fe", options.fe);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
     this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);

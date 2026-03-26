@@ -1,5 +1,3 @@
-
-
 ## @ethereum-sourcify/compilers@1.0.19 - 2026-03-17
 
 - Always run solcjs in a worker (#2652)
