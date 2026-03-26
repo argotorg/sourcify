@@ -1,0 +1,76 @@
+name: Test New Chain
+
+# Runs on all PRs. The job skips itself if the branch is not named add-chain-{chainId}.
+# We can't filter by branch name pattern here because fork PRs use a synthetic
+# branch like "pull/123/merge" on the base repo side.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test-new-chain:
+    runs-on: ubuntu-latest
+    services:
+      sourcify-db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: sourcify
+          POSTGRES_USER: sourcify
+          POSTGRES_PASSWORD: sourcify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check if new chain PR
+        id: check-chain
+        run: |
+          # github.head_ref is the source branch name of the PR (works for forks too)
+          REAL_BRANCH_NAME="${{ github.head_ref }}"
+          echo "Real branch name: ${REAL_BRANCH_NAME}"
+
+          # Convert add-chain-111-222-333 -> NEW_CHAIN_ID=111,222,333 (also handles add-chains-...)
+          NEW_CHAIN_ID=$(echo "${REAL_BRANCH_NAME}" | awk -F'add-chains?-' '{print $2}' | awk 'BEGIN {FS="-"; OFS=","} {$1=$1; print $0}')
+
+          if [ -z "${NEW_CHAIN_ID}" ]; then
+            echo "Not a new chain PR, skipping."
+          else
+            echo "New chain PR detected. NEW_CHAIN_ID=${NEW_CHAIN_ID}"
+            echo "new_chain_id=${NEW_CHAIN_ID}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        if: steps.check-chain.outputs.new_chain_id != ''
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: steps.check-chain.outputs.new_chain_id != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        if: steps.check-chain.outputs.new_chain_id != ''
+        run: npm install
+
+      - name: Build sourcify-server
+        if: steps.check-chain.outputs.new_chain_id != ''
+        run: npx lerna run build --scope=sourcify-server
+
+      - name: Run chain tests
+        if: steps.check-chain.outputs.new_chain_id != ''
+        working-directory: services/server
+        env:
+          NEW_CHAIN_ID: ${{ steps.check-chain.outputs.new_chain_id }}
+          DOCKER_HOST_POSTGRES_TEST_PORT: 5432
+          SOURCIFY_POSTGRES_HOST: localhost
+          SOURCIFY_POSTGRES_DB: sourcify
+          SOURCIFY_POSTGRES_USER: sourcify
+          SOURCIFY_POSTGRES_PASSWORD: sourcify
+          SOURCIFY_POSTGRES_PORT: 5432
+        run: npm run test:chains

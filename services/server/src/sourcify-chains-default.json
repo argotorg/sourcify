@@ -274,6 +274,9 @@
       "apiKeyEnvName": "ETHERSCAN_API_KEY_BSC"
     },
     "fetchContractCreationTxUsing": {
+      "nodeRealApi": {
+        "url": "https://bsc-mainnet.nodereal.io/v1/${API_KEY}"
+      },
       "etherscanApi": true
     },
     "rpc": [
@@ -712,6 +715,15 @@
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
         "url": "https://explorer.risechain.com/"
+      }
+    }
+  },
+  "11155931": {
+    "sourcifyName": "RISE Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.riselabs.xyz/"
       }
     }
   },
@@ -2544,9 +2556,7 @@
         "url": "https://evm.flow.com/"
       }
     },
-    "rpc": [
-      "https://mainnet.evm.nodes.onflow.org"
-    ]
+    "rpc": ["https://mainnet.evm.nodes.onflow.org"]
   },
   "545": {
     "sourcifyName": "Flow EVM Testnet",
@@ -2556,8 +2566,6 @@
         "url": "https://testnet.evm.flow.com/"
       }
     },
-    "rpc": [
-      "https://testnet.evm.nodes.onflow.org"
-    ]
+    "rpc": ["https://testnet.evm.nodes.onflow.org"]
   }
 }
