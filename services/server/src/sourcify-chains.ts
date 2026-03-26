@@ -295,6 +295,7 @@ export async function initializeSourcifyChains(): Promise<void> {
       chainId,
       supported: extension.supported,
       rpcs,
+      etherscanApi: extension.etherscanApi,
       fetchContractCreationTxUsing: extension.fetchContractCreationTxUsing,
     });
   }
