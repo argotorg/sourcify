@@ -1,6 +1,5 @@
 import type {
   SourcifyChainMap,
-  Chain,
   APIKeyRPC,
   FetchRequestRPC,
   BaseRPC,
@@ -8,12 +7,10 @@ import type {
   SourcifyRpc,
 } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import chainsRaw from "./chains.json";
-import extraChainsRaw from "./extra-chains.json";
-import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";
 import fs from "fs";
 import path from "path";
+import config from "config";
 
 import dotenv from "dotenv";
 
@@ -37,40 +34,6 @@ interface SourcifyChainsExtensionsObjectWithHeaderEnvName {
     >;
   };
 }
-
-let sourcifyChainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName =
-  {};
-
-// If sourcify-chains.json exists, override sourcify-chains-default.json
-if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
-  logger.warn(
-    "Overriding default chains: using sourcify-chains.json instead of sourcify-chains-default.json",
-  );
-  const rawSourcifyChainExtentionsFromFile = fs.readFileSync(
-    path.resolve(__dirname, "./sourcify-chains.json"),
-    "utf8",
-  );
-  sourcifyChainsExtensions = JSON.parse(
-    rawSourcifyChainExtentionsFromFile,
-  ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-}
-// sourcify-chains-default.json
-else {
-  sourcifyChainsExtensions =
-    rawSourcifyChainExtentions as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-}
-
-const chainMapById = new Map<number, Chain>();
-// Add chains.json from ethereum-lists (chainId.network/chains.json)
-chainsRaw.forEach((chain) => chainMapById.set(chain.chainId, chain));
-// Chains that we decide to support but that are not in chains.json
-extraChainsRaw.forEach((chain) => {
-  // Skip if chainsRaw already defines this chainId so canonical entry wins
-  if (!chainMapById.has(chain.chainId)) {
-    chainMapById.set(chain.chainId, chain);
-  }
-});
-const allChains = Array.from(chainMapById.values());
 
 export const LOCAL_CHAINS: SourcifyChain[] = [
   new SourcifyChain({
@@ -239,95 +202,105 @@ function buildCustomRpcs(
   return rpcs;
 }
 
-const sourcifyChainsMap: SourcifyChainMap = {};
+export const sourcifyChainsMap: SourcifyChainMap = {};
 
-// Add test chains too if developing or testing
-if (process.env.NODE_ENV !== "production") {
-  for (const chain of LOCAL_CHAINS) {
-    sourcifyChainsMap[chain.chainId.toString()] = chain;
+/**
+ * Loads the chain configuration and populates sourcifyChainsMap.
+ *
+ * Priority:
+ *   1. Local sourcify-chains.json (self-hosted override)
+ *   2. Remote URL from config.chains.remoteUrl (e.g. sourcifyeth/sourcify-chains repo)
+ *
+ * Called by Server.init() so that both the CLI and test fixtures initialize chains
+ * through the same code path.
+ */
+export async function initializeSourcifyChains(): Promise<void> {
+  let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
+
+  // Priority 1: local sourcify-chains.json (self-hosted override)
+  if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
+    logger.warn("Overriding default chains: using sourcify-chains.json");
+    chainsExtensions = JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, "./sourcify-chains.json"),
+        "utf8",
+      ),
+    ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
   }
-}
-
-// iterate over chainid.network's chains.json file and get the chains included in sourcify-chains.json.
-// Merge the chains.json object with the values from sourcify-chains.json
-// Must iterate over all chains because it's not a mapping but an array.
-for (const chain of allChains) {
-  const chainId = chain.chainId;
-  if (chainId in sourcifyChainsMap) {
-    // Don't throw on test chains in development, override the chain.json item as test chains are found in chains.json.
-    if (
-      process.env.NODE_ENV !== "production" &&
-      LOCAL_CHAINS.map((c) => c.chainId).includes(chainId)
-    ) {
-      // do nothing.
-    } else {
-      const err = `Corrupt chains file (chains.json): multiple chains have the same chainId: ${chainId}`;
-      throw new Error(err);
-    }
-  }
-
-  if (chainId in sourcifyChainsExtensions) {
-    const sourcifyExtension = sourcifyChainsExtensions[chainId];
-
-    let rpcs: SourcifyRpc[] = [];
-    if (sourcifyExtension.rpc) {
-      rpcs = buildCustomRpcs(sourcifyExtension.rpc);
-    }
-    // Add rpcs of chains.json as a fallback
-    rpcs = [...rpcs, ...buildCustomRpcs(chain.rpc)];
-
-    // sourcifyExtension is spread later to overwrite chains.json values
-    // Exclude rpc from sourcifyExtension as we now use rpcs
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { rpc: _rpc, ...sourcifyExtensionWithoutRpc } = sourcifyExtension;
-    const sourcifyChain = new SourcifyChain({
-      ...chain,
-      ...sourcifyExtensionWithoutRpc,
-      rpcs,
-    });
-    sourcifyChainsMap[chainId] = sourcifyChain;
-  }
-}
-
-// Check if all chains in sourcify-chains.json are in chains.json
-const missingChains = [];
-for (const chainId in sourcifyChainsExtensions) {
-  if (!sourcifyChainsMap[chainId]) {
-    missingChains.push(chainId);
-  }
-}
-if (missingChains.length > 0) {
-  // Don't let CircleCI pass for the main repo if sourcify-chains.json has chains that are not in chains.json
-  if (process.env.CIRCLE_PROJECT_REPONAME === "sourcify") {
-    throw new Error(
-      `Some of the chains in sourcify-chains.json are not in chains.json: ${missingChains.join(
-        ",",
-      )}`,
-    );
-  }
-  // Don't throw for forks or others running Sourcify, instead add them to sourcifyChainsMap
+  // Priority 2: fetch from configured remote URL
   else {
-    logger.warn(
-      `Some of the chains in sourcify-chains.json are not in chains.json`,
-      missingChains,
-    );
-    missingChains.forEach((chainId) => {
-      const chain = sourcifyChainsExtensions[chainId];
-      if (!chain.rpc) {
-        throw new Error(
-          `Chain ${chainId} is missing rpc in sourcify-chains.json`,
+    const remoteUrl = config.get<string>("chains.remoteUrl");
+    if (!remoteUrl) {
+      throw new Error(
+        "chains.remoteUrl is not configured and no sourcify-chains.json override found. " +
+          "Set chains.remoteUrl in the server config to the URL of the chains config file.",
+      );
+    }
+    const maxAttempts = 3;
+    const retryDelayMs = 3000;
+    let lastError: Error | undefined;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        logger.info(
+          `Fetching chains config from ${remoteUrl} (attempt ${attempt}/${maxAttempts})`,
         );
+        const response = await fetch(remoteUrl);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch chains config: HTTP ${response.status} from ${remoteUrl}`,
+          );
+        }
+        chainsExtensions =
+          (await response.json()) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (attempt < maxAttempts) {
+          logger.warn(
+            `Failed to fetch chains config, retrying in ${retryDelayMs / 1000}s`,
+            { attempt, error: err.message },
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
       }
-      const rpcs = buildCustomRpcs(chain.rpc);
-      sourcifyChainsMap[chainId] = new SourcifyChain({
-        name: chain.sourcifyName,
-        chainId: parseInt(chainId),
-        supported: chain.supported,
-        rpcs,
-        fetchContractCreationTxUsing: chain.fetchContractCreationTxUsing,
-      });
+    }
+    if (!chainsExtensions!) {
+      throw new Error(
+        `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
+      );
+    }
+  }
+
+  // Clear the map before populating (allows re-initialization)
+  for (const key of Object.keys(sourcifyChainsMap)) {
+    delete sourcifyChainsMap[key];
+  }
+
+  // Add LOCAL_CHAINS in non-production
+  if (process.env.NODE_ENV !== "production") {
+    for (const chain of LOCAL_CHAINS) {
+      sourcifyChainsMap[chain.chainId.toString()] = chain;
+    }
+  }
+
+  // Build SourcifyChain objects directly from the loaded extensions
+  for (const [chainIdStr, extension] of Object.entries(chainsExtensions)) {
+    const chainId = parseInt(chainIdStr);
+    // Skip local test chains (already added above)
+    if (chainId in sourcifyChainsMap) continue;
+
+    const rpcs = buildCustomRpcs(extension.rpc || []);
+    sourcifyChainsMap[chainId] = new SourcifyChain({
+      name: extension.sourcifyName,
+      chainId,
+      supported: extension.supported,
+      rpcs,
+      etherscanApi: extension.etherscanApi,
+      fetchContractCreationTxUsing: extension.fetchContractCreationTxUsing,
     });
   }
-}
 
-export { sourcifyChainsMap };
+  logger.info("SourcifyChains loaded", {
+    totalChains: Object.keys(chainsExtensions).length,
+  });
+}

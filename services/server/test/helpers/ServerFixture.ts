@@ -3,7 +3,7 @@ import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
-import { sourcifyChainsMap } from "../../src/sourcify-chains";
+import { LOCAL_CHAINS, sourcifyChainsMap } from "../../src/sourcify-chains";
 import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import type { Pool } from "pg";
@@ -79,7 +79,9 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: fixtureOptions_?.chains || sourcifyChainsMap,
+        chains:
+          fixtureOptions_?.chains ||
+          Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId, c])),
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
