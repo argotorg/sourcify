@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.12.0 - 2026-03-30
+
+- feat: add Fe language support for smart contract verification (#2692)
+- feat: add NodeReal nr_getContractCreationTransaction for BSC mainnet (#2702)
+- fix: throw on Etherscan NOTOK response and fix misleading creator tx log (#2700)
+- Update dependencies
+- Add chains:
+  - RISE Testnet (11155931)
+
 ## sourcify-server@3.11.0 - 2026-03-17
 
 - Support all Solidity versions >= 0.1.3 and drop the metadata dependency (#2652)
