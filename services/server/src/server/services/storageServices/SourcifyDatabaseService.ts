@@ -412,16 +412,21 @@ export class SourcifyDatabaseService
     );
     const files: FilesRawValue = {};
 
-    if (sourcifyMatch.metadata) {
-      files["metadata.json"] = JSON.stringify(sourcifyMatch.metadata);
-    } else {
-      const generatedMetadata = await this.generateMetadataOnTheFly(
-        chainId,
-        address,
-        sourcifyMatch.version,
-      );
-      if (generatedMetadata) {
-        files["metadata.json"] = JSON.stringify(generatedMetadata);
+    // language is stored in lowercase in the DB (e.g. "vyper", "yul")
+    const isNonSolidityContract =
+      sourcifyMatch.language === "vyper" || sourcifyMatch.language === "yul";
+    if (!isNonSolidityContract) {
+      if (sourcifyMatch.metadata) {
+        files["metadata.json"] = JSON.stringify(sourcifyMatch.metadata);
+      } else {
+        const generatedMetadata = await this.generateMetadataOnTheFly(
+          chainId,
+          address,
+          sourcifyMatch.version,
+        );
+        if (generatedMetadata) {
+          files["metadata.json"] = JSON.stringify(generatedMetadata);
+        }
       }
     }
 
@@ -758,6 +763,13 @@ export class SourcifyDatabaseService
       [] as StoredProperties[],
     );
 
+    // Always fetch language when metadata is requested so we can filter out
+    // generated metadata for Vyper/Yul contracts
+    const metadataRequested = requestedFields.has("metadata");
+    if (metadataRequested && !requestedProperties.includes("language")) {
+      requestedProperties.push("language");
+    }
+
     // Retrieve database result
     const sourcifyMatchResult =
       await this.database.getSourcifyMatchByChainAddressWithProperties(
@@ -838,6 +850,15 @@ export class SourcifyDatabaseService
       result.deployment!.deployer = getAddress(
         retrievedContract.deployment.deployer,
       );
+    }
+
+    // Null out metadata for Vyper and Yul contracts — the metadata is generated
+    // for compatibility only and is not actual compiler output.
+    if (metadataRequested) {
+      const language = sourcifyMatchResult.rows[0].language;
+      if (language === "Vyper" || language === "Yul") {
+        result.metadata = null;
+      }
     }
 
     return result;
