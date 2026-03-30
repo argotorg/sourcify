@@ -1,3 +1,7 @@
+## @ethereum-sourcify/compilers-types@1.1.0 - 2026-03-30
+
+- feat: add Fe language support for smart contract verification (#2692)
+
 ## @ethereum-sourcify/compilers-types@1.0.13 - 2026-03-17
 
 - Add TransientStorageLayout type (#2689)

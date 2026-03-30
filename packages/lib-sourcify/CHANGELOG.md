@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.4.0 - 2026-03-30
+
+- feat: add Fe language support for smart contract verification (#2692)
+- feat: add NodeReal nr_getContractCreationTransaction for BSC mainnet (#2702)
+
 ## @ethereum-sourcify/lib-sourcify@3.3.0 - 2026-03-17
 
 - Support all Solidity versions >= 0.1.3 (#2652)
