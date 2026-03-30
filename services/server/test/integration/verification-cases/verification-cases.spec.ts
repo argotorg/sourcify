@@ -241,6 +241,13 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestAuxdata0_4_1);
   });
 
+  it("should store a partial match for a Vyper 0.4.1 contract where the integrity hash differs", async () => {
+    const vyperTestAuxdata0_4_1DifferentIntegrity = (
+      await import("./testdata/vyper/auxdata-0.4.1-different-integrity.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestAuxdata0_4_1DifferentIntegrity);
+  });
+
   it("should store transformations for a Vyper contract with constructor arguments and immutables", async () => {
     const vyperTestConstructorArgumentsAndImmutables = (
       await import("./testdata/vyper/constructor_args_immutables.json")

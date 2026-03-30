@@ -2,7 +2,10 @@ import type { AbstractCompilation } from '../Compilation/AbstractCompilation';
 import { logDebug, logInfo, logWarn } from '../logger';
 import type { SourcifyChain } from '../SourcifyChain/SourcifyChain';
 import { lt } from 'semver';
-import type { SolidityDecodedObject } from '@ethereum-sourcify/bytecode-utils';
+import type {
+  SolidityDecodedObject,
+  VyperDecodedObject,
+} from '@ethereum-sourcify/bytecode-utils';
 import {
   splitAuxdata,
   AuxdataStyle,
@@ -38,6 +41,41 @@ import type {
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
+import type { VyperCompilation } from '../Compilation/VyperCompilation';
+
+function auxdataLacksMetadataOrIntegrityHash(
+  auxdata: CompiledContractCborAuxdata[string],
+  compilation: AbstractCompilation,
+): boolean {
+  try {
+    if (
+      compilation.auxdataStyle === AuxdataStyle.SOLIDITY &&
+      semver.gte(compilation.compilerVersion, '0.4.7')
+    ) {
+      const { ipfs, bzzr0, bzzr1 } = decodeBytecode(
+        auxdata.value,
+        compilation.auxdataStyle,
+      ) as SolidityDecodedObject;
+      return ipfs === undefined && bzzr0 === undefined && bzzr1 === undefined;
+    } else if (
+      compilation.auxdataStyle === AuxdataStyle.VYPER &&
+      semver.gte(
+        (compilation as VyperCompilation).compilerVersionCompatibleWithSemver,
+        '0.4.1',
+      )
+    ) {
+      const { integrity } = decodeBytecode(
+        auxdata.value,
+        compilation.auxdataStyle,
+      ) as VyperDecodedObject;
+      return integrity === undefined;
+    } else {
+      return true;
+    }
+  } catch {
+    return true;
+  }
+}
 
 export class Verification {
   // Bytecodes
@@ -401,23 +439,13 @@ export class Verification {
       : populatedRecompiledBytecode === onchainBytecode;
 
     if (doBytecodesMatch) {
-      // If there is perfect match but auxdata doesn't contain any metadata hash, return partial match
+      // If there is perfect match but auxdata doesn't contain any metadata / integrity hash, return partial match
       if (
         !cborAuxdata ||
         Object.keys(cborAuxdata).length === 0 ||
-        Object.values(cborAuxdata).some((cborAuxdata) => {
-          try {
-            const { ipfs, bzzr0, bzzr1 } = decodeBytecode(
-              cborAuxdata.value,
-              this.compilation.auxdataStyle,
-            ) as SolidityDecodedObject;
-            return (
-              ipfs === undefined && bzzr0 === undefined && bzzr1 === undefined
-            );
-          } catch {
-            return true;
-          }
-        })
+        Object.values(cborAuxdata).some((auxdata) =>
+          auxdataLacksMetadataOrIntegrityHash(auxdata, this.compilation),
+        )
       ) {
         result.match = 'partial';
       } else {
