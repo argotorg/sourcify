@@ -89,6 +89,8 @@ function getEtherscanApiContractCreatorFetcher(
   return getApiContractCreationFetcher(
     ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()) + apiKey,
     (response: any) => {
+      if (response?.message === "NOTOK")
+        throw new Error(`Etherscan API error: ${response?.result}`);
       if (response?.result?.[0]?.txHash)
         return response?.result?.[0]?.txHash as string;
     },
@@ -182,6 +184,41 @@ function getVeChainApiContractCreatorFetcher(
   );
 }
 
+async function getCreatorTxUsingNodeReal(
+  url: string,
+  contractAddress: string,
+  apiKey: string,
+): Promise<string | null> {
+  const endpoint = url.replace("${API_KEY}", apiKey);
+  const maskedEndpoint = url.replace("${API_KEY}", "****");
+  logger.debug("Fetching Creator Tx from NodeReal", {
+    maskedEndpoint,
+    contractAddress,
+  });
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "nr_getContractCreationTransaction",
+      params: [contractAddress],
+      id: 1,
+    }),
+  });
+  if (res.status !== StatusCodes.OK) {
+    throw new Error(`NodeReal API returned status ${res.status}`);
+  }
+  const response = await res.json();
+  if (response?.result?.hash) {
+    return response.result.hash as string;
+  }
+  logger.debug("NodeReal API returned no creation tx", {
+    contractAddress,
+    response,
+  });
+  return null;
+}
+
 async function getCreatorTxUsingFetcher(
   fetcher: ContractCreationFetcher,
   contractAddress: string,
@@ -227,13 +264,13 @@ async function getCreatorTxUsingFetcher(
         if (fetcher?.responseParser) {
           const response = await fetchFromApi(contractFetchAddressFilled);
           const creatorTx = fetcher?.responseParser(response);
-          logger.debug("Fetched Creator Tx", {
-            fetcherUrl: fetcher?.maskedUrl,
-            contractFetchAddressFilled,
-            contractAddress,
-            creatorTx,
-          });
           if (creatorTx) {
+            logger.debug("Fetched Creator Tx", {
+              fetcherUrl: fetcher?.maskedUrl,
+              contractFetchAddressFilled,
+              contractAddress,
+              creatorTx,
+            });
             return creatorTx;
           }
         }
@@ -285,7 +322,28 @@ export const getCreatorTx = async (
     }
   }
 
-  // Try etherscan if routescan fails
+  // Try NodeReal API if routescan fails
+  if (
+    sourcifyChain.fetchContractCreationTxUsing?.nodeRealApi &&
+    process.env.NODEREAL_API_KEY
+  ) {
+    try {
+      const result = await getCreatorTxUsingNodeReal(
+        sourcifyChain.fetchContractCreationTxUsing.nodeRealApi.url,
+        contractAddress,
+        process.env.NODEREAL_API_KEY,
+      );
+      if (result) {
+        return result;
+      }
+    } catch (e: any) {
+      logger.warn("Error fetching creation tx from NodeReal", {
+        error: e.message,
+      });
+    }
+  }
+
+  // Try etherscan if NodeReal fails
   if (
     sourcifyChain.fetchContractCreationTxUsing?.etherscanApi &&
     sourcifyChain?.etherscanApi?.supported

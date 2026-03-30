@@ -3,23 +3,27 @@ import type {
   CompilationTarget,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   CompilationError,
   SolidityCompilation,
   VyperCompilation,
   YulCompilation,
+  FeCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   AnyJsonInput,
   SolidityJsonInput,
   VyperJsonInput,
+  FeJsonInput,
 } from "@ethereum-sourcify/compilers-types";
 
 export function createCompilationFromJsonInput(
   compilers: {
     solc: ISolidityCompiler;
     vyper: IVyperCompiler;
+    fe: IFeCompiler;
   },
   compilerVersion: string,
   jsonInput: AnyJsonInput,
@@ -47,6 +51,14 @@ export function createCompilationFromJsonInput(
         compilers.vyper,
         compilerVersion,
         jsonInput as VyperJsonInput,
+        compilationTarget,
+      );
+    }
+    case "Fe": {
+      return new FeCompilation(
+        compilers.fe,
+        compilerVersion,
+        jsonInput as FeJsonInput,
         compilationTarget,
       );
     }

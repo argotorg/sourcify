@@ -817,7 +817,7 @@ export class EtherscanVerifyApiService implements WStorageService {
     formData.append("license_type", "");
     formData.append(
       "evm_version",
-      verification.compilation.jsonInput.settings.evmVersion || "default",
+      verification.compilation.jsonInput.settings?.evmVersion || "default",
     );
 
     const standardJsonInput = this.buildStandardJsonInput(verification);

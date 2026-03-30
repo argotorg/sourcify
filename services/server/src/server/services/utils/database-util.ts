@@ -19,9 +19,11 @@ import type {
   SourcifyLibErrorData,
   ISolidityCompiler,
   IVyperCompiler,
+  IFeCompiler,
   Userdoc,
   Devdoc,
   VyperSourceMap,
+  FeSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   PreRunCompilation,
@@ -348,16 +350,19 @@ const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
 
 function generateSignaturesSelector(type: SignatureType) {
+  // Use jsonb_agg(DISTINCT ...) to avoid duplicate signatures caused by the
+  // Cartesian product when both compiled_contracts_sources and
+  // compiled_contracts_signatures are JOINed on the same compilation_id.
   return `
     COALESCE(
-      json_agg(
-        json_build_object(
+      jsonb_agg(DISTINCT
+        jsonb_build_object(
           'signature', signatures.signature,
           'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
           'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
-        ) ORDER BY signatures.signature
+        )
       ) FILTER (WHERE compiled_contracts_signatures.signature_type = '${type}'),
-      '[]'::json
+      '[]'::jsonb
     ) as ${type}_signatures
   `;
 }
@@ -683,6 +688,8 @@ export function getCompilerNameFromLanguage(language: string): string {
       return "solc";
     case "vyper":
       return "vyper";
+    case "fe":
+      return "fe";
     default:
       throw new Error("Language not supported");
   }
@@ -890,7 +897,7 @@ export async function getDatabaseColumnsFromVerification(
 
 export function prepareCompilerSettingsFromVerification(
   verification: VerificationExport,
-): Omit<SoliditySettings | VyperSettings, "outputSelection"> {
+): Omit<SoliditySettings | VyperSettings | FeSettings, "outputSelection"> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { outputSelection, ...restSettings } =
     verification.compilation.jsonInput.settings;
@@ -898,7 +905,11 @@ export function prepareCompilerSettingsFromVerification(
 }
 
 export function createPreRunCompilationFromStoredCandidate(
-  { solc, vyper }: { solc: ISolidityCompiler; vyper: IVyperCompiler },
+  {
+    solc,
+    vyper,
+    fe,
+  }: { solc: ISolidityCompiler; vyper: IVyperCompiler; fe: IFeCompiler },
   candidate: SimilarityCandidate,
 ): PreRunCompilation {
   const {
@@ -918,8 +929,14 @@ export function createPreRunCompilationFromStoredCandidate(
     path: contractPath,
   };
 
+  const compiler =
+    jsonInput.language === "Fe"
+      ? fe
+      : jsonInput.language === "Vyper"
+        ? vyper
+        : solc;
   const compilation = new PreRunCompilation(
-    jsonInput.language === "Solidity" ? solc : vyper,
+    compiler,
     version,
     jsonInput,
     jsonOutput,

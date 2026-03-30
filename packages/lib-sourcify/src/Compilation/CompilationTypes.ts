@@ -3,11 +3,14 @@ import type {
   SolidityOutput,
   VyperJsonInput,
   VyperOutput,
+  FeJsonInput,
+  FeOutput,
 } from '@ethereum-sourcify/compilers-types';
 import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
 import { SourcifyLibError } from '../SourcifyLibError';
 import type { SolidityCompilation } from './SolidityCompilation';
 import type { VyperCompilation } from './VyperCompilation';
+import type { FeCompilation } from './FeCompilation';
 
 export interface CompiledContractCborAuxdata {
   [key: string]: {
@@ -30,7 +33,7 @@ export interface CompilationTarget {
   path: string;
 }
 
-export type CompilationLanguage = 'Solidity' | 'Vyper' | 'Yul';
+export type CompilationLanguage = 'Solidity' | 'Vyper' | 'Yul' | 'Fe';
 
 export type CompilationErrorCode =
   | 'invalid_language'
@@ -70,4 +73,11 @@ export interface IVyperCompiler {
   ): Promise<VyperOutput>;
 }
 
-export type AnyCompilation = SolidityCompilation | VyperCompilation;
+export interface IFeCompiler {
+  compile(version: string, feJsonInput: FeJsonInput): Promise<FeOutput>;
+}
+
+export type AnyCompilation =
+  | SolidityCompilation
+  | VyperCompilation
+  | FeCompilation;

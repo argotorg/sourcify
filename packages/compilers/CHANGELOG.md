@@ -1,4 +1,6 @@
+## @ethereum-sourcify/compilers@1.1.0 - 2026-03-30
 
+- feat: add Fe language support for smart contract verification (#2692)
 
 ## @ethereum-sourcify/compilers@1.0.19 - 2026-03-17
 

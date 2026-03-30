@@ -1,0 +1,32 @@
+use std::abi::sol
+use std::evm::{Evm, Call}
+use std::evm::effects::assert
+
+msg CounterMsg {
+    #[selector = sol("increment()")]
+    Increment,
+    #[selector = sol("get()")]
+    Get -> u256,
+}
+
+struct CounterStore {
+    value: u256,
+}
+
+pub contract Counter {
+    mut store: CounterStore
+
+    init() uses (mut store) {
+        store.value = 0
+    }
+
+    recv CounterMsg {
+        Increment uses (mut store) {
+            store.value = store.value + 1
+        }
+
+        Get -> u256 uses (store) {
+            store.value
+        }
+    }
+}

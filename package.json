@@ -17,7 +17,8 @@
     "lerna-test": "lerna run test --stream",
     "lerna-lint": "lerna run check",
     "lerna-fix": "lerna run fix",
-    "lerna-version": "lerna version --no-push"
+    "lerna-version": "lerna version --no-push",
+    "prepare": "husky || true"
   },
   "repository": {
     "type": "git",
@@ -43,10 +44,16 @@
     "eslint": "8.57.1",
     "eslint-config-prettier": "9.1.2",
     "eslint-plugin-no-only-tests": "3.3.0",
+    "husky": "^9.1.7",
     "lerna": "8.2.4",
+    "lint-staged": "^16.4.0",
     "prettier": "3.8.1",
     "ts-node": "10.9.2",
     "typescript": "5.9.3"
+  },
+  "lint-staged": {
+    "*.ts": "eslint --fix",
+    "*.{ts,js,json,md,yml,yaml}": "prettier --write"
   },
   "optionalDependencies": {
     "fsevents": "2.3.3"

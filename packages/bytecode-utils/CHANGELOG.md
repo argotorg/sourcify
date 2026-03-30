@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.4.0 - 2026-03-30
+
+- feat: add Fe language support for smart contract verification (#2692)
+
 ## @ethereum-sourcify/bytecode-utils@1.3.22 - 2026-03-17
 
 - update dependencies

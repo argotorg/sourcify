@@ -185,3 +185,24 @@ The server supports multiple storage backends:
 2. **Service Layer**: Business logic and orchestration
 3. **Worker Layer**: Isolated verification processing
 4. **Storage Layer**: Persistence to configured backends
+
+## Automated Review Guidelines
+
+When reviewing PRs as an automated agent:
+- Check database migration safety (services/database/) — flag destructive operations
+- Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
+- Check that changes to packages/ don't break dependent services (server, monitor)
+- Verify the OpenAPI/Swagger spec is updated if API endpoints change
+- Flag any hardcoded secrets, credentials, or API keys
+- For verification flow changes, ensure both full and partial match paths are covered
+
+## Git Workflow Rules
+
+### After a PR is merged, always create a fresh branch
+
+Never push additional commits to a branch whose PR was already merged. Always create a fresh branch from the base branch for follow-up work:
+
+```bash
+git fetch origin
+git checkout -b <new-descriptive-branch> origin/staging
+```
