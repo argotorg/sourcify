@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.12.1 - 2026-03-30
+
+- Fix Fe support via updating the docker image build (#2718 + #2719)
+
 ## sourcify-server@3.12.0 - 2026-03-30
 
 - feat: add Fe language support for smart contract verification (#2692)
