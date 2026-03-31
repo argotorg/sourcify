@@ -266,10 +266,17 @@ export const processSolidityResultFromEtherscan = (
   const sourceCodeObject = contractResultJson.SourceCode;
   const contractName = contractResultJson.ContractName;
 
-  const compilerVersion =
+  // Strip leading 'v' if present
+  const rawVersion =
     contractResultJson.CompilerVersion.charAt(0) === 'v'
       ? contractResultJson.CompilerVersion.slice(1)
       : contractResultJson.CompilerVersion;
+
+  // Old date-based format: "0.3.2-2016-04-18-81ae2a7" — normalize to "0.3.2+commit.81ae2a7"
+  const compilerVersion = rawVersion.replace(
+    /^(\d+\.\d+\.\d+)-\d{4}-\d{2}-\d{2}-([0-9a-f]+)$/,
+    '$1+commit.$2',
+  );
 
   let solcJsonInput: SolidityJsonInput;
   let contractPath: string | undefined;
