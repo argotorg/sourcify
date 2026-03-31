@@ -1,6 +1,6 @@
 {
   "name": "sourcify-server",
-  "version": "3.12.0",
+  "version": "3.12.1",
   "description": "Solidity metadata-based re-compilation and source verification tool",
   "main": "dist/server/server.js",
   "types": "dist/server/server.d.ts",
