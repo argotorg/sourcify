@@ -54,7 +54,7 @@
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
     "csv-parse": "6.2.1",
-    "dbmate": "2.31.0",
+    "dbmate": "2.32.0",
     "mocha": "10.8.2"
   }
 }
