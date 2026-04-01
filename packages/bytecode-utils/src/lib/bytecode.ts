@@ -171,7 +171,9 @@ export const splitAuxdata = (
     bytesLength,
   );
 
-  if (isCborLengthInvalid(bytecode, cborBytesLength, bytesLength)) {
+  if (
+    isCborLengthInvalid(auxdataStyle, bytecode, cborBytesLength, bytesLength)
+  ) {
     return [bytecode];
   }
 
@@ -230,7 +232,7 @@ const getCborBytesLength = (
   bytesLength: number,
 ): number => {
   if (auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5) {
-    return 22;
+    return 22; // For Vyper versions < 0.3.5, the CBOR length is fixed because it contains only the version
   }
   const cborLengthHex = bytecode.slice(-bytesLength);
   return parseInt(cborLengthHex, 16) * 2;
@@ -245,10 +247,14 @@ const getCborBytesLength = (
  * @returns True if the CBOR length is invalid, otherwise false
  */
 const isCborLengthInvalid = (
+  auxdataStyle: AuxdataStyle,
   bytecode: string,
   cborBytesLength: number,
   bytesLength: number,
 ): boolean => {
+  if (auxdataStyle === AuxdataStyle.VYPER) {
+    return bytecode.length - cborBytesLength <= 0; // Vyper includes the two "length" bytes in the CBOR length
+  }
   return bytecode.length - bytesLength - cborBytesLength <= 0;
 };
 
