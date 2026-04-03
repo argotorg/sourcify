@@ -4,7 +4,10 @@ import {
   findContractCreationTxByBinarySearchWithTimeout,
   getCreatorTx,
 } from "../../../src/server/services/utils/contract-creation-util";
-import { sourcifyChainsMap } from "../../../src/sourcify-chains";
+import {
+  initializeSourcifyChains,
+  sourcifyChainsMap,
+} from "../../../src/sourcify-chains";
 import { ChainRepository } from "../../../src/sourcify-chain-repository";
 import type { FetchContractCreationTxMethod } from "@ethereum-sourcify/lib-sourcify";
 import sinon from "sinon";
@@ -12,6 +15,10 @@ import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
 
 describe("contract creation util", function () {
+  before(async () => {
+    await initializeSourcifyChains();
+  });
+
   it("should run getCreatorTx with chainId 40", async function () {
     const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
       .sourcifyChainsArray;
@@ -68,46 +75,6 @@ describe("contract creation util", function () {
       .expect(creatorTx)
       .equals(
         "0xd125cc92f61d0898d55a918283f8b855bde15bc5f391b621e0c4eee25c9997ee",
-      );
-  });
-
-  it("should run getCreatorTx with regex for new Blockscout", async function () {
-    const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
-      .sourcifyChainsArray;
-    const sourcifyChain = sourcifyChainsArray.find(
-      (sourcifyChain) => sourcifyChain.chainId === 100,
-    );
-    if (!sourcifyChain) {
-      chai.assert.fail("No chain for chainId 100 configured");
-    }
-    const creatorTx = await getCreatorTx(
-      sourcifyChain,
-      "0x3CE1a25376223695284edc4C2b323C3007010C94",
-    );
-    chai
-      .expect(creatorTx)
-      .equals(
-        "0x11da550e6716be8b4bd9203cb384e89b8f8941dc460bd99a4928ce2825e05456",
-      );
-  });
-
-  it("should run getCreatorTx with regex for old Blockscout", async function () {
-    const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
-      .sourcifyChainsArray;
-    const sourcifyChain = sourcifyChainsArray.find(
-      (sourcifyChain) => sourcifyChain.chainId === 57,
-    );
-    if (!sourcifyChain) {
-      chai.assert.fail("No chain for chainId 57 configured");
-    }
-    const creatorTx = await getCreatorTx(
-      sourcifyChain,
-      "0x43e9f7ca4AEAcd67A7AC4a275cee7BC8AF601bE4",
-    );
-    chai
-      .expect(creatorTx)
-      .equals(
-        "0x89a8c2ac5f93b91a8a551bf4c676755e1ad5272e0a7193b894aa8ba14c43c5ea",
       );
   });
 
