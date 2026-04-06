@@ -290,6 +290,12 @@ export async function initializeSourcifyChains(): Promise<void> {
     if (chainId in sourcifyChainsMap) continue;
 
     const rpcs = buildCustomRpcs(extension.rpc || []);
+    if (rpcs.length === 0 && extension.supported) {
+      logger.warn(
+        `Skipping supported chain ${chainId} (${extension.sourcifyName}): no usable RPCs configured`,
+      );
+      continue;
+    }
     sourcifyChainsMap[chainId] = new SourcifyChain({
       name: extension.sourcifyName,
       chainId,
