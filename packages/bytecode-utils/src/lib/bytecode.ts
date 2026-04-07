@@ -185,6 +185,7 @@ export const splitAuxdata = (
   );
   const executionBytecode = extractExecutionBytecode(
     bytecode,
+    auxdataStyle,
     cborBytesLength,
     bytesLength,
   );
@@ -253,7 +254,9 @@ const isCborLengthInvalid = (
   bytesLength: number,
 ): boolean => {
   if (auxdataStyle === AuxdataStyle.VYPER) {
-    return bytecode.length - cborBytesLength <= 0; // Vyper includes the two "length" bytes in the CBOR length
+    // Vyper includes the trailing length bytes in cborBytesLength,
+    // so we only subtract cborBytesLength (no separate bytesLength).
+    return bytecode.length - cborBytesLength <= 0;
   }
   return bytecode.length - bytesLength - cborBytesLength <= 0;
 };
@@ -302,9 +305,15 @@ const extractAuxdata = (
  */
 const extractExecutionBytecode = (
   bytecode: string,
+  auxdataStyle: AuxdataStyle,
   cborBytesLength: number,
   bytesLength: number,
 ): string => {
+  if (auxdataStyle === AuxdataStyle.VYPER) {
+    // Vyper includes the trailing length bytes in cborBytesLength,
+    // so we only subtract cborBytesLength to avoid double-counting.
+    return bytecode.substring(0, bytecode.length - cborBytesLength);
+  }
   return bytecode.substring(0, bytecode.length - bytesLength - cborBytesLength);
 };
 
