@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.12.1 - 2026-03-30
+
+- Format changelog
+
 ## sourcify-database@2.12.0 - 2026-03-17
 
 - Drop the metadata dependency and support old solc output (#2652)
