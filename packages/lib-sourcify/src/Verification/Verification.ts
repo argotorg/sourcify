@@ -324,7 +324,13 @@ export class Verification {
       AuxdataStyle.SOLIDITY,
     );
     // Metadata hashes match but bytecodes don't match.
+    // Guard: both auxdata must be defined (i.e. CBOR metadata actually exists in both bytecodes).
+    // Pre-0.4.7 contracts have no CBOR metadata, so splitAuxdata returns undefined for index [1].
+    // Without this guard, undefined === undefined would incorrectly trigger the bug diagnosis.
+    // See: https://github.com/argotorg/sourcify/issues/2729
     if (
+      deployedAuxdata !== undefined &&
+      recompiledAuxdata !== undefined &&
       deployedAuxdata === recompiledAuxdata &&
       (this.compilation.jsonInput.settings as SoliditySettings).optimizer
         ?.enabled
