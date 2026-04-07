@@ -34,7 +34,7 @@ jobs:
   build-and-lint:
     docker:
       - image: cimg/node:22.22.0
-    resource_class: xlarge
+    resource_class: medium
     working_directory: ~/sourcify
     steps:
       - run:
@@ -71,7 +71,7 @@ jobs:
   test-bytecode-utils:
     docker:
       - image: cimg/node:22.22.0
-    resource_class: medium
+    resource_class: small
     working_directory: ~/sourcify
     steps:
       - checkout
