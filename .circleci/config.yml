@@ -127,7 +127,7 @@ workflows:
           mapping: |
             services/database/.* run-validate-database-schema true
           base-revision: staging
-          config-path: .circleci/new_branch.yml
+          config-path: .circleci/continue_config.yml
 
   nightly:
     when: << pipeline.parameters.run-nightly >>
