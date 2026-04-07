@@ -154,7 +154,19 @@ workflows:
         #       << pipeline.parameters.run-build-ui >>,
         #     ]
     jobs:
-      - tests-node-v22
+      - build-and-lint
+      - test-bytecode-utils:
+          requires: [build-and-lint]
+      - test-compilers:
+          requires: [build-and-lint]
+      - test-lib-sourcify:
+          requires: [build-and-lint]
+      - test-monitor:
+          requires: [build-and-lint]
+      - test-server:
+          requires: [build-and-lint]
+      - test-4byte:
+          requires: [build-and-lint]
       # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
@@ -205,7 +217,19 @@ workflows:
         - not:
             equal: [staging, << pipeline.git.branch >>]
     jobs:
-      - tests-node-v22
+      - build-and-lint
+      - test-bytecode-utils:
+          requires: [build-and-lint]
+      - test-compilers:
+          requires: [build-and-lint]
+      - test-lib-sourcify:
+          requires: [build-and-lint]
+      - test-monitor:
+          requires: [build-and-lint]
+      - test-server:
+          requires: [build-and-lint]
+      - test-4byte:
+          requires: [build-and-lint]
 
 #######################
 ### JOB DEFINITIONS ###
@@ -277,27 +301,11 @@ jobs:
           no_output_timeout: 10m
           command: |
             ./.circleci/scripts/deploy_to_gcp.sh
-  tests-node-v22:
+  build-and-lint:
     docker:
       - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
-        name: sourcify-db
-        environment:
-          POSTGRES_DB: sourcify
-          POSTGRES_USER: sourcify
-          POSTGRES_PASSWORD: sourcify
-      - image: postgres:15-alpine
-        name: fourbytes-db
-        environment:
-          POSTGRES_DB: fourbytes_test_db
-          POSTGRES_USER: fourbytes
-          POSTGRES_PASSWORD: fourbytes
-    resource_class: large
+    resource_class: xlarge
     working_directory: ~/sourcify
-    parameters:
-      run_coveralls:
-        type: boolean
-        default: false
     steps:
       - run:
           name: Versions
@@ -315,24 +323,140 @@ jobs:
       - run:
           name: init the database submodule
           command: cd services/database && git submodule update --init
+      - persist_to_workspace:
+          root: ~/sourcify
+          paths:
+            - node_modules
+            - packages/*/node_modules
+            - packages/bytecode-utils/build
+            - packages/compilers/build
+            - packages/compilers-types/build
+            - packages/lib-sourcify/build
+            - services/*/node_modules
+            - services/server/dist
+            - services/monitor/dist
+            - services/4byte/dist
+            - services/database
+  test-bytecode-utils:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
       - run:
           name: test
-          command: npx lerna run test --stream
+          command: npx lerna run test --scope=@ethereum-sourcify/bytecode-utils --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/bytecode-utils
+      - codecov/upload
+  test-compilers:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=@ethereum-sourcify/compilers --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/compilers
+      - codecov/upload
+  test-lib-sourcify:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=@ethereum-sourcify/lib-sourcify --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/lib-sourcify
+      - codecov/upload
+  test-monitor:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-monitor --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-monitor
+      - codecov/upload
+  test-server:
+    docker:
+      - image: cimg/node:22.22.0
+      - image: postgres:15-alpine
+        name: sourcify-db
+        environment:
+          POSTGRES_DB: sourcify
+          POSTGRES_USER: sourcify
+          POSTGRES_PASSWORD: sourcify
+    resource_class: large
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-server --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "sourcify-db"
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432 # On it's own db container
+            SOURCIFY_POSTGRES_PORT: 5432
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-server
+      - codecov/upload
+  test-4byte:
+    docker:
+      - image: cimg/node:22.22.0
+      - image: postgres:15-alpine
+        name: fourbytes-db
+        environment:
+          POSTGRES_DB: fourbytes_test_db
+          POSTGRES_USER: fourbytes
+          POSTGRES_PASSWORD: fourbytes
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-4byte --stream
+          environment:
             FOURBYTES_POSTGRES_HOST: "fourbytes-db"
             FOURBYTES_POSTGRES_DB: "fourbytes_test_db"
             FOURBYTES_POSTGRES_USER: "fourbytes"
             FOURBYTES_POSTGRES_PASSWORD: "fourbytes"
-            FOURBYTES_POSTGRES_PORT: 5432 # On it's own db container
+            FOURBYTES_POSTGRES_PORT: 5432
       - run:
-          name: create lcov reports
-          command: npx lerna run cov:lcov
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-4byte
       - codecov/upload
   monitor-e2e-sepolia:
     <<: *monitor-e2e-base
