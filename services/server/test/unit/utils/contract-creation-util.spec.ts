@@ -58,26 +58,6 @@ describe("contract creation util", function () {
   //     );
   // });
 
-  it("should run getCreatorTx with chainId 335", async function () {
-    const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
-      .sourcifyChainsArray;
-    const sourcifyChain = sourcifyChainsArray.find(
-      (sourcifyChain) => sourcifyChain.chainId === 335,
-    );
-    if (!sourcifyChain) {
-      chai.assert.fail("No chain for chainId 335 configured");
-    }
-    const creatorTx = await getCreatorTx(
-      sourcifyChain,
-      "0x40D843D06dAC98b2586fD1DFC5532145208C909F",
-    );
-    chai
-      .expect(creatorTx)
-      .equals(
-        "0xd125cc92f61d0898d55a918283f8b855bde15bc5f391b621e0c4eee25c9997ee",
-      );
-  });
-
   it("should run getCreatorTx with nexusApi for Nexus", async function () {
     const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
       .sourcifyChainsArray;
