@@ -147,6 +147,9 @@ jobs:
       - attach_workspace:
           at: ~/sourcify
       - run:
+          name: init the database submodule
+          command: cd services/database && git submodule update --init
+      - run:
           name: test
           command: npx lerna run test --scope=sourcify-server --stream
           environment:
@@ -175,6 +178,9 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/sourcify
+      - run:
+          name: init the database submodule
+          command: cd services/database && git submodule update --init
       - run:
           name: test
           command: npx lerna run test --scope=sourcify-4byte --stream
