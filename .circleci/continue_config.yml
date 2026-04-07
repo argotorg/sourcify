@@ -322,7 +322,7 @@ jobs:
           command: npx lerna run check
       - run:
           name: init the database submodule
-          command: cd services/database && git submodule update --init
+          command: git submodule update --init
       - persist_to_workspace:
           root: ~/sourcify
           paths:
@@ -337,6 +337,7 @@ jobs:
             - services/monitor/dist
             - services/4byte/dist
             - services/database
+            - .git/modules
   test-bytecode-utils:
     docker:
       - image: cimg/node:22.22.0
@@ -418,7 +419,7 @@ jobs:
           at: ~/sourcify
       - run:
           name: init the database submodule
-          command: cd services/database && git submodule update --init
+          command: git submodule update --init
       - run:
           name: test
           command: npx lerna run test --scope=sourcify-server --stream
@@ -450,7 +451,7 @@ jobs:
           at: ~/sourcify
       - run:
           name: init the database submodule
-          command: cd services/database && git submodule update --init
+          command: git submodule update --init
       - run:
           name: test
           command: npx lerna run test --scope=sourcify-4byte --stream
