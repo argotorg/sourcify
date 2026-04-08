@@ -119,7 +119,10 @@ describe("initializeSourcifyChains", function () {
     });
 
     it("fetches and populates chains from remote URL on first attempt", async function () {
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns(REMOTE_URL);
+      sandbox
+        .stub(config, "get")
+        .withArgs("chains.remoteUrl")
+        .returns(REMOTE_URL);
       sandbox
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(mockChainsConfig));
@@ -140,12 +143,17 @@ describe("initializeSourcifyChains", function () {
 
     it("throws on HTTP error response", async function () {
       const clock = sandbox.useFakeTimers();
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns(REMOTE_URL);
+      sandbox
+        .stub(config, "get")
+        .withArgs("chains.remoteUrl")
+        .returns(REMOTE_URL);
       sandbox.stub(globalThis, "fetch").resolves(makeErrorResponse(404));
 
       // Attach the rejection assertion before ticking so chai-as-promised
       // handles the rejection before mocha sees it as unhandled
-      const assertion = expect(initializeSourcifyChains()).to.be.rejectedWith("HTTP 404");
+      const assertion = expect(initializeSourcifyChains()).to.be.rejectedWith(
+        "HTTP 404",
+      );
       await clock.tickAsync(7000);
       await assertion;
     });
@@ -153,7 +161,10 @@ describe("initializeSourcifyChains", function () {
     it("retries on fetch failure and succeeds on second attempt", async function () {
       const clock = sandbox.useFakeTimers();
 
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns(REMOTE_URL);
+      sandbox
+        .stub(config, "get")
+        .withArgs("chains.remoteUrl")
+        .returns(REMOTE_URL);
       const fetchStub = sandbox.stub(globalThis, "fetch");
       fetchStub.onFirstCall().rejects(new Error("Network error"));
       fetchStub.onSecondCall().resolves(makeOkResponse(mockChainsConfig));
@@ -170,7 +181,10 @@ describe("initializeSourcifyChains", function () {
     it("throws after all retry attempts are exhausted", async function () {
       const clock = sandbox.useFakeTimers();
 
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns(REMOTE_URL);
+      sandbox
+        .stub(config, "get")
+        .withArgs("chains.remoteUrl")
+        .returns(REMOTE_URL);
       sandbox.stub(globalThis, "fetch").rejects(new Error("Network error"));
 
       // Attach the rejection assertion before ticking so chai-as-promised
@@ -190,12 +204,17 @@ describe("initializeSourcifyChains", function () {
   describe("chain building", function () {
     beforeEach(function () {
       sandbox.stub(fs, "existsSync").returns(false);
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns(REMOTE_URL);
+      sandbox
+        .stub(config, "get")
+        .withArgs("chains.remoteUrl")
+        .returns(REMOTE_URL);
     });
 
     it("clears existing map entries before populating", async function () {
       // Pre-populate with a stale entry that won't be in the new config
-      (sourcifyChainsMap as Record<string, unknown>)["999999"] = { chainId: 999999 };
+      (sourcifyChainsMap as Record<string, unknown>)["999999"] = {
+        chainId: 999999,
+      };
 
       sandbox
         .stub(globalThis, "fetch")
@@ -243,10 +262,18 @@ describe("initializeSourcifyChains", function () {
 
     it("allows re-initialization — populates fresh chains on second call", async function () {
       const firstConfig = {
-        "1": { sourcifyName: "First", supported: true, rpc: ["https://rpc1.example.com"] },
+        "1": {
+          sourcifyName: "First",
+          supported: true,
+          rpc: ["https://rpc1.example.com"],
+        },
       };
       const secondConfig = {
-        "137": { sourcifyName: "Polygon", supported: true, rpc: ["https://rpc2.example.com"] },
+        "137": {
+          sourcifyName: "Polygon",
+          supported: true,
+          rpc: ["https://rpc2.example.com"],
+        },
       };
 
       const fetchStub = sandbox.stub(globalThis, "fetch");
