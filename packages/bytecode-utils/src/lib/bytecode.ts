@@ -242,6 +242,7 @@ const getCborBytesLength = (
 /**
  * Checks if the CBOR length is invalid based on the bytecode length.
  *
+ * @param auxdataStyle - The auxdata style (Solidity or Vyper)
  * @param bytecode - The complete bytecode string
  * @param cborBytesLength - The length of CBOR auxdata in bytes
  * @param bytesLength - The length of bytes used to encode the CBOR length
