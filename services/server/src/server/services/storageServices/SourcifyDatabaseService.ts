@@ -326,7 +326,10 @@ export class SourcifyDatabaseService
     const files: FilesRawValue = {};
 
     // Only Solidity contracts have metadata.
-    if (sourcifyMatch.language === "Solidity" && sourcifyMatch.metadata) {
+    if (
+      sourcifyMatch.language?.toLowerCase() === "solidity" &&
+      sourcifyMatch.metadata
+    ) {
       files["metadata.json"] = JSON.stringify(sourcifyMatch.metadata);
     }
 
@@ -754,7 +757,7 @@ export class SourcifyDatabaseService
     // Only Solidity contracts have metadata.
     if (metadataRequested) {
       const language = sourcifyMatchResult.rows[0].language;
-      if (language !== "Solidity") {
+      if (language?.toLowerCase() !== "solidity") {
         result.metadata = null;
       }
     }
