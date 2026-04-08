@@ -7,10 +7,7 @@ import type {
   IFeCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
-import {
-  splitFullyQualifiedName,
-  convertLibrariesToMetadataFormat,
-} from "@ethereum-sourcify/lib-sourcify";
+import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import type { Libraries } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import AbstractDatabaseService from "./AbstractDatabaseService";
@@ -288,90 +285,6 @@ export class SourcifyDatabaseService
   };
 
   /**
-   * Generates a metadata.json on the fly for contracts that don't have one stored
-   * (e.g. Vyper and Yul contracts verified after metadata generation was removed).
-   * Replicates the format previously produced by VyperCompilation.generateMetadata()
-   * and YulCompilation.generateMetadata().
-   */
-  private async generateMetadataOnTheFly(
-    chainId: string,
-    address: string,
-    compilerVersion: string,
-  ): Promise<object | null> {
-    const result =
-      await this.database.getSourcifyMatchByChainAddressWithProperties(
-        parseInt(chainId),
-        bytesFromString(address)!,
-        [
-          "language",
-          "fully_qualified_name",
-          "compiler_settings",
-          "abi",
-          "userdoc",
-          "devdoc",
-          "sources",
-        ],
-      );
-
-    if (!result.rows[0]) return null;
-
-    const {
-      language,
-      fully_qualified_name,
-      compiler_settings,
-      abi,
-      userdoc,
-      devdoc,
-      sources,
-    } = result.rows[0];
-
-    if (!language || !fully_qualified_name || !compiler_settings || !sources) {
-      return null;
-    }
-
-    const { contractPath, contractName } =
-      splitFullyQualifiedName(fully_qualified_name);
-
-    const sourcesWithHashes = Object.entries(
-      sources as Record<string, { content: string }>,
-    ).reduce(
-      (acc, [path, source]) => ({
-        ...acc,
-        [path]: { keccak256: keccak256Str(source.content) },
-      }),
-      {} as Record<string, { keccak256: string }>,
-    );
-
-    // compiler_settings is stored without outputSelection already
-    const { libraries, ...settingsWithoutLibraries } = compiler_settings as {
-      libraries?: Libraries;
-      [key: string]: unknown;
-    };
-
-    // Yul uses Solidity settings which may have libraries in jsonInput format;
-    // convert them to metadata format as the old generateMetadata() did
-    const metadataSettings =
-      language === "Yul"
-        ? {
-            ...settingsWithoutLibraries,
-            libraries: convertLibrariesToMetadataFormat(libraries),
-          }
-        : compiler_settings;
-
-    return {
-      compiler: { version: compilerVersion },
-      language,
-      output: { abi, devdoc, userdoc },
-      settings: {
-        ...metadataSettings,
-        compilationTarget: { [contractPath]: contractName },
-      },
-      sources: sourcesWithHashes,
-      version: 1,
-    };
-  }
-
-  /**
    * getFiles extracts the files from the database `compiled_contracts_sources`
    * and store them into FilesInfo.files, this object is then going to be formatted
    * by getTree, getContent and getFile.
@@ -412,17 +325,9 @@ export class SourcifyDatabaseService
     );
     const files: FilesRawValue = {};
 
-    if (sourcifyMatch.metadata) {
+    // Only Solidity contracts have metadata.
+    if (sourcifyMatch.language === "Solidity" && sourcifyMatch.metadata) {
       files["metadata.json"] = JSON.stringify(sourcifyMatch.metadata);
-    } else {
-      const generatedMetadata = await this.generateMetadataOnTheFly(
-        chainId,
-        address,
-        sourcifyMatch.version,
-      );
-      if (generatedMetadata) {
-        files["metadata.json"] = JSON.stringify(generatedMetadata);
-      }
     }
 
     if (sourcifyMatch?.creation_values?.constructorArguments) {
@@ -758,6 +663,12 @@ export class SourcifyDatabaseService
       [] as StoredProperties[],
     );
 
+    // Fetch language when metadata is requested — only Solidity has metadata
+    const metadataRequested = requestedFields.has("metadata");
+    if (metadataRequested && !requestedProperties.includes("language")) {
+      requestedProperties.push("language");
+    }
+
     // Retrieve database result
     const sourcifyMatchResult =
       await this.database.getSourcifyMatchByChainAddressWithProperties(
@@ -838,6 +749,14 @@ export class SourcifyDatabaseService
       result.deployment!.deployer = getAddress(
         retrievedContract.deployment.deployer,
       );
+    }
+
+    // Only Solidity contracts have metadata.
+    if (metadataRequested) {
+      const language = sourcifyMatchResult.rows[0].language;
+      if (language !== "Solidity") {
+        result.metadata = null;
+      }
     }
 
     return result;
