@@ -276,6 +276,13 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
   });
 
+  it("should verify a Vyper contract with storage_layout_overrides", async () => {
+    const vyperTestStorageLayoutOverrides = (
+      await import("./testdata/vyper/storage_layout_overrides.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestStorageLayoutOverrides);
+  });
+
   it("should partially match a contract compiled with Solidity 0.1.3", async () => {
     const matchSol0_1_3 = (await import("./testdata/match_sol_0_1_3.json"))
       .default as unknown as VerificationTestCase;

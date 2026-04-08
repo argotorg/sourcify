@@ -37,6 +37,11 @@ export interface VyperJsonInput {
       abi?: any[];
     };
   };
+  storage_layout_overrides?: {
+    [sourcePath: string]: {
+      [variableName: string]: { type: string; n_slots: number; slot: number };
+    };
+  };
   settings: VyperSettings;
 }
 

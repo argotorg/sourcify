@@ -15,6 +15,7 @@ import type {
   LinkReferences,
   Metadata,
   Userdoc,
+  VyperJsonInput,
   VyperSettings,
   VyperSourceMap,
 } from '@ethereum-sourcify/compilers-types';
@@ -132,6 +133,7 @@ export interface VerificationExport {
     metadata?: Metadata;
     jsonInput: {
       settings: SoliditySettings | VyperSettings | FeSettings;
+      storageLayoutOverrides?: VyperJsonInput['storage_layout_overrides'];
     };
     compilationTime?: number;
   };

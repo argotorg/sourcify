@@ -1,0 +1,59 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "get_a",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "get_b",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "a",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "b",
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    }
+  ],
+  "bytecode": "0x3461001d57600160015560025f556100946100216000396100946000f35b5f80fd5f3560e01c60026003820660011b61008e01601e395f51565b63481591818118610034573461008a5760015460405260206040f35b630dbe671f8118610086573461008a5760015460405260206040f35b63f3d33cf48118610086573461008a575f5460405260206040f35b634df7e3d08118610086573461008a575f5460405260206040f35b5f5ffd5b5f80fd006b00180050855820076f15aaa9d9b072741a9bc73b73d1b92f05e808d5e86a417b3bff30d5e6b0d11894810600a1657679706572830004010035"
+}

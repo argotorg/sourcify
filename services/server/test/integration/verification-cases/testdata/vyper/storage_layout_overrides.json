@@ -1,0 +1,171 @@
+{
+  "_comment": "verify a Vyper 0.4.1 contract compiled with storage_layout_overrides",
+
+  "onchain": {
+    "creationBytecode": "0x3461001d57600160015560025f556100946100216000396100946000f35b5f80fd5f3560e01c60026003820660011b61008e01601e395f51565b63481591818118610034573461008a5760015460405260206040f35b630dbe671f8118610086573461008a5760015460405260206040f35b63f3d33cf48118610086573461008a575f5460405260206040f35b634df7e3d08118610086573461008a575f5460405260206040f35b5f5ffd5b5f80fd006b00180050855820076f15aaa9d9b072741a9bc73b73d1b92f05e808d5e86a417b3bff30d5e6b0d11894810600a1657679706572830004010035",
+    "deployedBytecode": "0x5f3560e01c60026003820660011b61008e01601e395f51565b63481591818118610034573461008a5760015460405260206040f35b630dbe671f8118610086573461008a5760015460405260206040f35b63f3d33cf48118610086573461008a575f5460405260206040f35b634df7e3d08118610086573461008a575f5460405260206040f35b5f5ffd5b5f80fd006b00180050"
+  },
+  "input": {
+    "compilerVersion": "0.4.1+commit.8a93dd27",
+    "contractIdentifier": "test.vy:test",
+    "stdJsonInput": {
+      "language": "Vyper",
+      "sources": {
+        "test.vy": {
+          "content": "# pragma version ~=0.4.0\n\na: public(uint256)\nb: public(uint256)\n\n@deploy\ndef __init__():\n    self.a = 1\n    self.b = 2\n\n@external\n@view\ndef get_a() -> uint256:\n    return self.a\n\n@external\n@view\ndef get_b() -> uint256:\n    return self.b\n"
+        }
+      },
+      "settings": {
+        "evmVersion": "cancun"
+      },
+      "storage_layout_overrides": {
+        "test.vy": {
+          "a": { "type": "uint256", "slot": 1, "n_slots": 1 },
+          "b": { "type": "uint256", "slot": 0, "n_slots": 1 }
+        }
+      }
+    }
+  },
+  "output": {
+    "creationBytecode": "0x3461001d57600160015560025f556100946100216000396100946000f35b5f80fd5f3560e01c60026003820660011b61008e01601e395f51565b63481591818118610034573461008a5760015460405260206040f35b630dbe671f8118610086573461008a5760015460405260206040f35b63f3d33cf48118610086573461008a575f5460405260206040f35b634df7e3d08118610086573461008a575f5460405260206040f35b5f5ffd5b5f80fd006b00180050855820076f15aaa9d9b072741a9bc73b73d1b92f05e808d5e86a417b3bff30d5e6b0d11894810600a1657679706572830004010035",
+    "deployedBytecode": "0x5f3560e01c60026003820660011b61008e01601e395f51565b63481591818118610034573461008a5760015460405260206040f35b630dbe671f8118610086573461008a5760015460405260206040f35b63f3d33cf48118610086573461008a575f5460405260206040f35b634df7e3d08118610086573461008a575f5460405260206040f35b5f5ffd5b5f80fd006b00180050",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [],
+          "name": "get_a",
+          "outputs": [{ "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "get_b",
+          "outputs": [{ "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "a",
+          "outputs": [{ "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "b",
+          "outputs": [{ "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        }
+      ],
+      "sources": {
+        "test.vy": {
+          "id": 0
+        }
+      },
+      "devdoc": {},
+      "userdoc": {},
+      "storageLayout": null,
+      "transientStorageLayout": null
+    },
+    "creationCodeArtifacts": {
+      "sourceMap": null,
+      "linkReferences": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 181,
+          "value": "0x855820076f15aaa9d9b072741a9bc73b73d1b92f05e808d5e86a417b3bff30d5e6b0d11894810600a1657679706572830004010035"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "sourceMap": {
+        "breakpoints": [],
+        "error_map": {
+          "36": "bad calldatasize or callvalue",
+          "37": "bad calldatasize or callvalue",
+          "40": "bad calldatasize or callvalue",
+          "64": "bad calldatasize or callvalue",
+          "65": "bad calldatasize or callvalue",
+          "68": "bad calldatasize or callvalue",
+          "92": "bad calldatasize or callvalue",
+          "93": "bad calldatasize or callvalue",
+          "96": "bad calldatasize or callvalue",
+          "119": "bad calldatasize or callvalue",
+          "120": "bad calldatasize or callvalue",
+          "123": "bad calldatasize or callvalue",
+          "135": "fallback function",
+          "136": "fallback function",
+          "137": "fallback function"
+        },
+        "pc_ast_map": {
+          "0": [0, 0],
+          "41": [0, 36],
+          "49": [0, 33],
+          "51": [0, 33],
+          "77": [0, 1],
+          "79": [0, 1],
+          "97": [0, 49],
+          "104": [0, 46],
+          "106": [0, 46],
+          "131": [0, 9],
+          "133": [0, 9]
+        },
+        "pc_ast_map_item_keys": ["source_id", "node_id"],
+        "pc_breakpoints": [],
+        "pc_jump_map": {
+          "0": "-",
+          "23": "-",
+          "24": "-",
+          "35": "-",
+          "40": "-",
+          "52": "-",
+          "63": "-",
+          "68": "-",
+          "80": "-",
+          "91": "-",
+          "96": "-",
+          "107": "-",
+          "118": "-",
+          "123": "-",
+          "134": "-",
+          "138": "-"
+        },
+        "pc_pos_map": {
+          "0": [1, 0, 19, 18],
+          "41": [14, 11, 14, 17],
+          "49": [13, 0, 14, 17],
+          "51": [13, 0, 14, 17],
+          "77": [3, 0, 3, 18],
+          "79": [3, 0, 3, 18],
+          "97": [19, 11, 19, 17],
+          "104": [18, 0, 19, 17],
+          "106": [18, 0, 19, 17],
+          "131": [4, 0, 4, 18],
+          "133": [4, 0, 4, 18]
+        },
+        "pc_pos_map_compressed": "0:237:0:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;171:6:0;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;136:41:0;-1:-1:-1;136:41:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;26:18:0;-1:-1:-1;26:18:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;230:6:0;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;195:41:0;-1:-1:-1;195:41:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;45:18:0;-1:-1:-1;45:18:0;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1:-;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1;-1:-1:-1"
+      },
+      "immutableReferences": null,
+      "linkReferences": null,
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "exact_match",
+    "runtimeMatch": "match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}

@@ -101,6 +101,9 @@ export namespace Tables {
       immutableReferences: Nullable<ImmutableReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
+    additional_input: Nullable<{
+      storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
+    }>;
   }
 
   export interface VerifiedContract {
@@ -304,6 +307,7 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       storage_layout: Tables.CompiledContract["compilation_artifacts"]["storageLayout"];
       transient_storage_layout: Tables.CompiledContract["compilation_artifacts"]["transientStorageLayout"];
       source_ids: Tables.CompiledContract["compilation_artifacts"]["sources"];
+      additional_input: Tables.CompiledContract["additional_input"];
       std_json_input: SolidityJsonInput | VyperJsonInput;
       std_json_output: SolidityOutput | VyperOutput;
       function_signatures: SignatureRepresentations[];
@@ -425,11 +429,20 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   devdoc: "compiled_contracts.compilation_artifacts->'devdoc' as devdoc",
   source_ids:
     "compiled_contracts.compilation_artifacts->'sources' as source_ids",
-  std_json_input: `json_build_object(
-    'language', INITCAP(compiled_contracts.language), 
-    'sources', ${sourcesAggregation},
-    'settings', compiled_contracts.compiler_settings
-  ) as std_json_input`,
+  additional_input: "compiled_contracts.additional_input",
+  std_json_input: `CASE
+    WHEN compiled_contracts.additional_input IS NOT NULL
+    THEN json_build_object(
+      'language', INITCAP(compiled_contracts.language),
+      'sources', ${sourcesAggregation},
+      'settings', compiled_contracts.compiler_settings
+    )::jsonb || compiled_contracts.additional_input
+    ELSE json_build_object(
+      'language', INITCAP(compiled_contracts.language),
+      'sources', ${sourcesAggregation},
+      'settings', compiled_contracts.compiler_settings
+    )::jsonb
+  END as std_json_input`,
   std_json_output: `json_build_object(
     'sources', compiled_contracts.compilation_artifacts->'sources',
     'contracts', json_build_object(
@@ -557,6 +570,7 @@ export const FIELDS_TO_STORED_PROPERTIES: Record<
   userdoc: "userdoc",
   devdoc: "devdoc",
   sourceIds: "source_ids",
+  additionalInput: "additional_input",
   stdJsonInput: "std_json_input",
   stdJsonOutput: "std_json_output",
   signatures: {
@@ -879,6 +893,13 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
+      additional_input: verification.compilation.jsonInput
+        .storageLayoutOverrides
+        ? {
+            storage_layout_overrides:
+              verification.compilation.jsonInput.storageLayoutOverrides,
+          }
+        : null,
     },
     sourcesInformation,
     verifiedContract: {

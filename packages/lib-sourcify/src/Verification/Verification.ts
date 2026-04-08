@@ -33,6 +33,7 @@ import type {
 } from './VerificationTypes';
 import { SolidityBugType, VerificationError } from './VerificationTypes';
 import type {
+  VyperJsonInput,
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
@@ -763,6 +764,14 @@ export class Verification {
         metadata,
         jsonInput: {
           settings: this.compilation.jsonInput.settings,
+          ...((this.compilation.jsonInput as VyperJsonInput)
+            .storage_layout_overrides
+            ? {
+                storageLayoutOverrides: (
+                  this.compilation.jsonInput as VyperJsonInput
+                ).storage_layout_overrides,
+              }
+            : {}),
         },
         compilationTime: this.compilation.compilationTime,
       },
