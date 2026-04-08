@@ -12,6 +12,7 @@ import { ServerFixture } from "../../../helpers/ServerFixture";
 import path from "path";
 import fs from "fs";
 import { RWStorageIdentifiers } from "../../../../src/server/services/storageServices/identifiers";
+import { id as keccak256 } from "ethers";
 import contractVyperArtifact from "../../../sources/vyper/testcontract/artifact.json";
 
 chai.use(chaiHttp);
@@ -670,9 +671,9 @@ describe("Verify repository endpoints", function () {
     }
   });
 
-  it("should not return metadata.json for Vyper contracts", async function () {
-    // Only Solidity contracts have real metadata. Vyper metadata was generated
-    // for legacy compatibility and should not be exposed.
+  it("should generate metadata.json on the fly for Vyper contracts stored without metadata", async function () {
+    // Vyper contracts no longer have metadata stored in the DB (generateMetadata() was removed).
+    // SourcifyDatabaseService.getFiles() must regenerate it via generateMetadataOnTheFly().
     const contractFileName = "test.vy";
     const contractName = contractFileName.split(".")[0];
     const compilerVersion = "0.3.10+commit.91361694";
@@ -719,7 +720,35 @@ describe("Verify repository endpoints", function () {
     const metadataFile = res.body.files.find(
       (f: { name: string }) => f.name === "metadata.json",
     );
-    chai.expect(metadataFile, "metadata.json should not be present for Vyper")
-      .to.be.undefined;
+    chai.expect(metadataFile, "metadata.json should be present").to.exist;
+
+    const metadata = JSON.parse(metadataFile.content);
+    chai.expect(metadata).to.deep.equal({
+      compiler: { version: compilerVersion },
+      language: "Vyper",
+      output: {
+        abi: [
+          {
+            inputs: [],
+            name: "helloWorld",
+            outputs: [{ name: "", type: "string" }],
+            stateMutability: "view",
+            type: "function",
+          },
+        ],
+        devdoc: {},
+        userdoc: {},
+      },
+      settings: {
+        evmVersion,
+        compilationTarget: { [contractFileName]: contractName },
+      },
+      sources: {
+        [contractFileName]: {
+          keccak256: keccak256(contractFileContent),
+        },
+      },
+      version: 1,
+    });
   });
 });

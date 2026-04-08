@@ -165,7 +165,6 @@ export class Database {
           compiled_contracts.runtime_code_artifacts,
           compiled_contracts.name,
           compiled_contracts.version,
-          compiled_contracts.language,
           contract_deployments.transaction_hash,
           encode(onchain_runtime_code.code, 'hex') as onchain_runtime_code
         FROM ${this.schema}.sourcify_matches
