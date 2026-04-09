@@ -853,7 +853,10 @@ components:
                                     description: In Sourcify we refer to this field more explicitly as "creation bytecode"
                                     properties:
                                       sourceMap:
-                                        type: string
+                                        description: "Solidity source maps are strings, Vyper source maps (>= 0.4.0) are objects."
+                                        oneOf:
+                                          - type: string
+                                          - type: object
                                       linkReferences:
                                         $ref: "#/components/schemas/LinkReferences"
                                       object:
@@ -865,7 +868,10 @@ components:
                                     description: In Sourcify we refer to this field more explicitly as "runtime bytecode"
                                     properties:
                                       sourceMap:
-                                        type: string
+                                        description: "Solidity source maps are strings, Vyper source maps (>= 0.3.8) are objects."
+                                        oneOf:
+                                          - type: string
+                                          - type: object
                                       linkReferences:
                                         $ref: "#/components/schemas/LinkReferences"
                                       object:
@@ -1467,7 +1473,10 @@ components:
         recompiledBytecode:
           $ref: "#/components/schemas/BytecodeString"
         sourceMap:
-          type: string
+          description: "Solidity source maps are strings, Vyper source maps are objects."
+          oneOf:
+            - type: string
+            - type: object
         linkReferences:
           $ref: "#/components/schemas/LinkReferences"
         cborAuxdata:
@@ -1614,7 +1623,10 @@ components:
         recompiledBytecode:
           $ref: "#/components/schemas/BytecodeString"
         sourceMap:
-          type: string
+          description: "Solidity source maps are strings, Vyper source maps are objects."
+          oneOf:
+            - type: string
+            - type: object
         linkReferences:
           $ref: "#/components/schemas/LinkReferences"
         cborAuxdata:
