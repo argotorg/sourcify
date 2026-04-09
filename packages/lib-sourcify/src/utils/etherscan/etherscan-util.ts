@@ -161,8 +161,11 @@ export const fetchFromEtherscan = async (
   chainId: number | string,
   address: string,
   apiKey: string,
+  customBaseUrl?: string,
 ): Promise<EtherscanResult> => {
-  const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
+  const url = customBaseUrl
+    ? `${customBaseUrl}/api?module=contract&action=getsourcecode&address=${address}&apikey=`
+    : `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const secretUrl = url + apiKey;
   const maskedUrl = url + (apiKey ? apiKey.slice(0, 6) + '...' : '');
 

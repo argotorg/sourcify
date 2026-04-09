@@ -86,6 +86,7 @@ export const fetchFromEtherscanOrThrowError = async (
       sourcifyChain.chainId,
       address,
       apiKey,
+      sourcifyChain.etherscanApi?.url,
     );
   } catch (err) {
     return mapLibError(err, throwV2Errors);
