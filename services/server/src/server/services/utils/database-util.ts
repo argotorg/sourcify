@@ -14,6 +14,8 @@ import type {
   VyperOutput,
   VerificationExport,
   SolidityOutputContract,
+  VyperOutputContract,
+  VyperStorageLayout,
   SoliditySettings,
   VyperSettings,
   SourcifyLibErrorData,
@@ -80,7 +82,7 @@ export namespace Tables {
       abi: Nullable<JsonFragment[]>;
       userdoc: Nullable<Userdoc> | {};
       devdoc: Nullable<Devdoc> | {};
-      storageLayout: Nullable<StorageLayout>;
+      storageLayout: Nullable<StorageLayout | VyperStorageLayout>;
       transientStorageLayout: Nullable<TransientStorageLayout>;
       sources: Nullable<CompilationArtifactsSources>;
     };
@@ -782,16 +784,16 @@ export async function getDatabaseColumnsFromVerification(
     userdoc: compilerOutput?.userdoc || null,
     devdoc: compilerOutput?.devdoc || null,
     storageLayout:
-      (compilerOutput as SolidityOutputContract)?.storageLayout || null,
+      (compilerOutput as SolidityOutputContract)?.storageLayout ||
+      (compilerOutput as VyperOutputContract)?.layout?.storage_layout ||
+      null,
     transientStorageLayout:
       (compilerOutput as SolidityOutputContract)?.transientStorageLayout ||
       null,
     sources: verification.compilation.compilerOutput?.sources || null,
   };
   const creationCodeArtifacts = {
-    sourceMap:
-      (compilerOutput as SolidityOutputContract)?.evm?.bytecode?.sourceMap ||
-      null,
+    sourceMap: compilerOutput?.evm?.bytecode?.sourceMap || null,
     linkReferences:
       (compilerOutput as SolidityOutputContract)?.evm?.bytecode
         ?.linkReferences || null,

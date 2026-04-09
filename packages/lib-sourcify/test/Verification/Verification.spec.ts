@@ -1590,6 +1590,78 @@ describe('Verification Class Tests', () => {
       ).to.deep.equal(storageLayoutOverrides);
     });
 
+    it('should export Vyper storage layout and sourceMaps', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Vyper',
+        'withStorageLayout',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const contractFileName = 'test.vy';
+      const contractContent = fs.readFileSync(
+        path.join(contractFolderPath, contractFileName),
+        'utf8',
+      );
+
+      const compilation = new VyperCompilation(
+        vyperCompiler,
+        '0.4.1+commit.8a93dd27',
+        {
+          language: 'Vyper',
+          sources: {
+            [contractFileName]: { content: contractContent },
+          },
+          settings: {
+            evmVersion: 'cancun',
+            outputSelection: { '*': ['evm.bytecode'] },
+          },
+          storage_layout_overrides: {
+            [contractFileName]: {
+              a: { type: 'uint256', slot: 1, n_slots: 1 },
+              b: { type: 'uint256', slot: 0, n_slots: 1 },
+            },
+          },
+        },
+        {
+          name: contractFileName.split('.')[0],
+          path: contractFileName,
+        },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      const exported = verification.export();
+
+      expect(
+        exported.compilation.contractCompilerOutput.storageLayout,
+      ).to.deep.equal({
+        a: { type: 'uint256', slot: 1, n_slots: 1 },
+        b: { type: 'uint256', slot: 0, n_slots: 1 },
+      });
+
+      expect(exported.compilation.contractCompilerOutput.evm.bytecode.sourceMap)
+        .to.be.an('object')
+        .and.to.have.property('pc_pos_map');
+      expect(
+        exported.compilation.contractCompilerOutput.evm.deployedBytecode
+          .sourceMap,
+      )
+        .to.be.an('object')
+        .and.to.have.property('pc_pos_map');
+    });
+
     it('should handle Vyper contracts with different auxdata versions', async () => {
       const contractFolderPath = path.join(
         __dirname,
