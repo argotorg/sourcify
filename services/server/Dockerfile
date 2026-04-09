@@ -20,6 +20,9 @@ FROM node:22.22.0-trixie-slim as production
 # Fe compiler (v26.0.0-alpha.12+) requires libssl3 and glibc >= 2.39
 RUN apt-get update && apt-get install -y --no-install-recommends libssl3 && rm -rf /var/lib/apt/lists/*
 
+# Fe compiler (v26.0.0-alpha.12+) is dynamically linked against libssl3
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p /home/app/services/server
 
 WORKDIR /home/app/
