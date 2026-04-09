@@ -15,7 +15,7 @@ RUN npx lerna run build --scope sourcify-4byte
 ######################
 ## Production image ##
 ######################
-FROM node:22.22.0-bookworm-slim as production
+FROM node:22.22.0-trixie-slim as production
 
 RUN mkdir -p /home/app/services/4byte
 
