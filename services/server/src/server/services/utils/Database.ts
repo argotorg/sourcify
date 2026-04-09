@@ -646,6 +646,7 @@ ${
       runtime_code_hash,
       creation_code_artifacts,
       runtime_code_artifacts,
+      additional_input,
     }: Omit<Tables.CompiledContract, "id">,
   ): Promise<QueryResult<Pick<Tables.CompiledContract, "id">>> {
     let compiledContractsInsertResult = await poolClient.query(
@@ -661,9 +662,10 @@ ${
         creation_code_hash,
         runtime_code_hash,
         creation_code_artifacts,
-        runtime_code_artifacts
+        runtime_code_artifacts,
+        additional_input
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT ON CONSTRAINT compiled_contracts_pseudo_pkey
       DO NOTHING RETURNING *
     `,
@@ -679,6 +681,7 @@ ${
         runtime_code_hash,
         creation_code_artifacts,
         runtime_code_artifacts,
+        additional_input,
       ],
     );
 

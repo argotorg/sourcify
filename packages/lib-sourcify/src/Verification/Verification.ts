@@ -33,6 +33,7 @@ import type {
 } from './VerificationTypes';
 import { SolidityBugType, VerificationError } from './VerificationTypes';
 import type {
+  VyperJsonInput,
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
@@ -735,15 +736,20 @@ export class Verification {
           abi: contractCompilerOutput?.abi ?? undefined,
           userdoc: contractCompilerOutput?.userdoc,
           devdoc: contractCompilerOutput?.devdoc,
-          storageLayout: (contractCompilerOutput as SolidityOutputContract)
-            ?.storageLayout,
+          storageLayout:
+            (contractCompilerOutput as SolidityOutputContract)?.storageLayout ||
+            (contractCompilerOutput as VyperOutputContract)?.layout
+              ?.storage_layout,
           transientStorageLayout: (
             contractCompilerOutput as SolidityOutputContract
           )?.transientStorageLayout,
           evm: {
             bytecode: {
-              sourceMap: (contractCompilerOutput as SolidityOutputContract)?.evm
-                ?.bytecode?.sourceMap,
+              sourceMap: (
+                contractCompilerOutput as
+                  | SolidityOutputContract
+                  | VyperOutputContract
+              )?.evm?.bytecode?.sourceMap,
               linkReferences: (contractCompilerOutput as SolidityOutputContract)
                 ?.evm?.bytecode?.linkReferences,
             },
@@ -763,6 +769,14 @@ export class Verification {
         metadata,
         jsonInput: {
           settings: this.compilation.jsonInput.settings,
+          ...((this.compilation.jsonInput as VyperJsonInput)
+            .storage_layout_overrides
+            ? {
+                storageLayoutOverrides: (
+                  this.compilation.jsonInput as VyperJsonInput
+                ).storage_layout_overrides,
+              }
+            : {}),
         },
         compilationTime: this.compilation.compilationTime,
       },

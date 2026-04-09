@@ -14,6 +14,8 @@ import type {
   Userdoc,
   VyperJsonInput,
   VyperOutput,
+  VyperSourceMap,
+  VyperStorageLayout,
   VerificationStatus,
   VyperOutputSource,
   SolidityOutputSource,
@@ -60,7 +62,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   creationBytecode?: {
     onchainBytecode: Nullable<string>;
     recompiledBytecode: string;
-    sourceMap: Nullable<string>;
+    sourceMap: Nullable<string | VyperSourceMap>;
     linkReferences: Nullable<LinkReferences>;
     cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     transformations: Nullable<Transformation[]>;
@@ -69,7 +71,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   runtimeBytecode?: {
     onchainBytecode: string;
     recompiledBytecode: string;
-    sourceMap: Nullable<string>;
+    sourceMap: Nullable<string | VyperSourceMap>;
     linkReferences: Nullable<LinkReferences>;
     cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     immutableReferences: Nullable<ImmutableReferences>;
@@ -95,7 +97,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   };
   abi?: Nullable<JsonFragment[]>;
   metadata?: Nullable<Metadata>;
-  storageLayout?: Nullable<StorageLayout>;
+  storageLayout?: Nullable<StorageLayout | VyperStorageLayout>;
   transientStorageLayout?: Nullable<TransientStorageLayout>;
   userdoc?: Nullable<Userdoc>;
   devdoc?: Nullable<Devdoc>;
@@ -105,6 +107,9 @@ export interface VerifiedContract extends VerifiedContractMinimal {
       Pick<SolidityOutputSource, "id"> | Pick<VyperOutputSource, "id">
     >
   >;
+  additionalInput?: Nullable<{
+    storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
+  }>;
   stdJsonInput?: SolidityJsonInput | VyperJsonInput;
   stdJsonOutput?: SolidityOutput | VyperOutput;
   signatures?: {

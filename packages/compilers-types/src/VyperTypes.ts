@@ -37,6 +37,9 @@ export interface VyperJsonInput {
       abi?: any[];
     };
   };
+  storage_layout_overrides?: {
+    [sourcePath: string]: VyperStorageLayout;
+  };
   settings: VyperSettings;
 }
 
@@ -73,15 +76,23 @@ export interface VyperSourceMap {
   pc_pos_map_compressed: string;
 }
 
+export interface VyperStorageLayout {
+  [variableName: string]: { type: string; slot: number; n_slots: number };
+}
+
 export interface VyperOutputContract {
   abi: JsonFragment[];
   userdoc: Userdoc;
   devdoc: Devdoc;
   ir: string;
+  layout?: {
+    storage_layout: VyperStorageLayout;
+  };
   evm: {
     bytecode: {
       object: string;
       opcodes: string;
+      sourceMap?: VyperSourceMap;
     };
     deployedBytecode: {
       object: string;
