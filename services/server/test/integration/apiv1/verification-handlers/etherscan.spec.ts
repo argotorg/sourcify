@@ -26,6 +26,7 @@ import {
   UNVERIFIED_CONTRACT_RESPONSE,
   VYPER_SINGLE_CONTRACT_RESPONSE,
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
+  MALFORMED_VERSION_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
 import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 
@@ -244,6 +245,25 @@ describe("Import From Etherscan and Verify", function () {
         serverFixture,
         testChainId,
         "0x2dFd89449faff8a532790667baB21cF733C064f2",
+        "partial",
+        () => {
+          chai.expect(nockScope.isDone()).to.equal(true);
+          done();
+        },
+        false,
+      );
+    });
+
+    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+      const nockScope = mockEtherscanApi(
+        sourcifyChainsMap[testChainId],
+        "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
+        MALFORMED_VERSION_RESPONSE,
+      );
+      verifyAndAssertEtherscanViaApiV1(
+        serverFixture,
+        testChainId,
+        "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
         "partial",
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
