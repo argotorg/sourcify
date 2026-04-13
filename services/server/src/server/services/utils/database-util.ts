@@ -432,19 +432,11 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   source_ids:
     "compiled_contracts.compilation_artifacts->'sources' as source_ids",
   additional_input: "compiled_contracts.additional_input",
-  std_json_input: `CASE
-    WHEN compiled_contracts.additional_input IS NOT NULL
-    THEN json_build_object(
+  std_json_input: `json_build_object(
       'language', INITCAP(compiled_contracts.language),
       'sources', ${sourcesAggregation},
       'settings', compiled_contracts.compiler_settings
-    )::jsonb || compiled_contracts.additional_input
-    ELSE json_build_object(
-      'language', INITCAP(compiled_contracts.language),
-      'sources', ${sourcesAggregation},
-      'settings', compiled_contracts.compiler_settings
-    )::jsonb
-  END as std_json_input`,
+    )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`,
   std_json_output: `json_build_object(
     'sources', compiled_contracts.compilation_artifacts->'sources',
     'contracts', json_build_object(
