@@ -2567,5 +2567,9 @@
       }
     },
     "rpc": ["https://testnet.evm.nodes.onflow.org"]
+  },
+  "627": {
+    "sourcifyName": "BattleChain Testnet",
+    "supported": true
   }
 }
