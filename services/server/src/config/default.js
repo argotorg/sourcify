@@ -45,4 +45,8 @@ module.exports = {
   // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
   replaceContract: false,
+  brownoutV1: {
+    enabled: false,
+    windows: [],
+  },
 };
