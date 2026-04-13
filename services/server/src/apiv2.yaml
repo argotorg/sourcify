@@ -756,6 +756,7 @@ components:
                     type: object
                   storageLayout:
                     type: object
+                    description: "Storage layout of the contract. Format differs by language: Solidity uses `{storage: [...], types: {...}}`, Vyper uses `{variableName: {type, slot, n_slots}}`."
                   transientStorageLayout:
                     type: object
                   userdoc:
@@ -840,6 +841,7 @@ components:
                                 type: object
                               storageLayout:
                                 type: object
+                                description: "Storage layout of the contract. Format differs by language: Solidity uses `{storage: [...], types: {...}}`, Vyper uses `{variableName: {type, slot, n_slots}}`."
                               transientStorageLayout:
                                 type: object
                               metadata:
