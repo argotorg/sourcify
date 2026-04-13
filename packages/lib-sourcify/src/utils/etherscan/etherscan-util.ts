@@ -101,7 +101,7 @@ export const getVyperCompilerVersion = async (
 export function resolveSolidityVersion(version: string): string {
   // Only resolve if the version doesn't match the standard format
   if (/^\d+\.\d+\.\d+\+commit\.[0-9a-f]{7,8}$/.test(version)) {
-    // Check if it's an exact match in the list (handles truncated hashes)
+    // Check if it's already a known version in the list (early return)
     if (SOLIDITY_BIN_LIST.includes(version)) {
       return version;
     }
