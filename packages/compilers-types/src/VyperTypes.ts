@@ -66,11 +66,11 @@ export interface VyperOutputSources {
 }
 
 export interface VyperSourceMap {
-  breakpoints: [];
+  breakpoints: number[];
   error_map: Record<string, string>;
   pc_ast_map: Record<string, number[]>;
   pc_ast_map_item_keys: string[];
-  pc_breakpoints: [];
+  pc_breakpoints: number[];
   pc_jump_map: Record<string, string>;
   pc_pos_map: Record<string, number[]>;
   pc_pos_map_compressed: string;
