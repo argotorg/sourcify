@@ -1,6 +1,16 @@
-// This file is auto-generated from https://binaries.soliditylang.org/bin/list.txt
-// Each entry is the version string extracted from the soljson filename
-// To regenerate: curl -s https://binaries.soliditylang.org/bin/list.txt | sed "s/^soljson-v//;s/\.js$//"
+// DO NOT USE THIS FILE FOR GENERAL SOLIDITY BINARY FETCHING OR VERSION LOOKUPS.
+//
+// This list exists ONLY to resolve malformed Solidity version strings returned
+// by Etherscan (see resolveSolidityVersion in etherscan-util.ts). Etherscan
+// sometimes reports compiler versions in non-standard / truncated / pre-release
+// shapes that can't be matched directly against a real soljson release, so we
+// fuzzy-match against this snapshot of known-good version strings to recover
+// the canonical version.
+//
+// The malformed-version problem only affects OLDER Solidity releases, so this
+// file is intentionally a frozen snapshot and does NOT need to be kept in sync
+// with new Solidity releases. Do not auto-update it on every new compiler.
+
 export const SOLIDITY_BIN_LIST: string[] = [
   '0.8.35-pre.1+commit.a99b6d8c',
   '0.8.35-nightly.2026.4.2+commit.449363e7',
