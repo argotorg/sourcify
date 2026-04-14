@@ -79,6 +79,7 @@ export async function assertDatabase(
           cc.compilation_artifacts,
           cc.creation_code_artifacts,
           cc.runtime_code_artifacts,
+          cc.additional_input,
           cd.chain_id,
           cd.address,
           cd.transaction_hash,
@@ -156,6 +157,16 @@ export async function assertDatabase(
   chai
     .expect(row.runtime_code_artifacts)
     .to.deep.equal(testCase.output.runtimeCodeArtifacts);
+
+  // additional_input column (e.g. Vyper storage_layout_overrides)
+  const expectedAdditionalInput =
+    "storage_layout_overrides" in testCase.input.stdJsonInput
+      ? {
+          storage_layout_overrides:
+            testCase.input.stdJsonInput.storage_layout_overrides,
+        }
+      : null;
+  chai.expect(row.additional_input).to.deep.equal(expectedAdditionalInput);
 
   // compiled_contracts -> code columns
   chai
@@ -443,6 +454,18 @@ export async function assertApiV2Lookup(
   chai
     .expect(res.body.sourceIds)
     .to.deep.equal(testCase.output.compilationArtifacts.sources);
+
+  // additionalInput
+  const expectedApiAdditionalInput =
+    "storage_layout_overrides" in testCase.input.stdJsonInput
+      ? {
+          storage_layout_overrides:
+            testCase.input.stdJsonInput.storage_layout_overrides,
+        }
+      : null;
+  chai
+    .expect(res.body.additionalInput)
+    .to.deep.equal(expectedApiAdditionalInput);
 
   // stdJsonInput
   chai.expect(res.body.stdJsonInput).to.deep.equal(testCase.input.stdJsonInput);

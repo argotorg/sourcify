@@ -61,6 +61,9 @@ parameters:
   run-build-packages:
     type: boolean
     default: false
+  run-validate-database-schema:
+    type: boolean
+    default: false
 
 ################
 ### ALIASES ####
@@ -69,7 +72,7 @@ aliases:
   - &build-base
     docker:
       - image: cimg/base:2024.07
-    resource_class: large
+    resource_class: xlarge
     parameters:
       run-build:
         type: boolean
@@ -99,7 +102,7 @@ aliases:
       - run: echo 0
   - &build-base-arm64
     <<: *build-base
-    resource_class: arm.large # override resource class
+    resource_class: arm.xlarge # override resource class
   - &monitor-e2e-base
     steps:
       - run:
@@ -154,7 +157,19 @@ workflows:
         #       << pipeline.parameters.run-build-ui >>,
         #     ]
     jobs:
-      - tests-node-v22
+      - build-and-lint
+      - test-bytecode-utils:
+          requires: [build-and-lint]
+      - test-compilers:
+          requires: [build-and-lint]
+      - test-lib-sourcify:
+          requires: [build-and-lint]
+      - test-monitor:
+          requires: [build-and-lint]
+      - test-server:
+          requires: [build-and-lint]
+      - test-4byte:
+          requires: [build-and-lint]
       # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
@@ -205,7 +220,23 @@ workflows:
         - not:
             equal: [staging, << pipeline.git.branch >>]
     jobs:
-      - tests-node-v22
+      - build-and-lint
+      - test-bytecode-utils:
+          requires: [build-and-lint]
+      - test-compilers:
+          requires: [build-and-lint]
+      - test-lib-sourcify:
+          requires: [build-and-lint]
+      - test-monitor:
+          requires: [build-and-lint]
+      - test-server:
+          requires: [build-and-lint]
+      - test-4byte:
+          requires: [build-and-lint]
+  database-schema-validation:
+    when: << pipeline.parameters.run-validate-database-schema >>
+    jobs:
+      - validate-database-schema
 
 #######################
 ### JOB DEFINITIONS ###
@@ -277,27 +308,11 @@ jobs:
           no_output_timeout: 10m
           command: |
             ./.circleci/scripts/deploy_to_gcp.sh
-  tests-node-v22:
+  build-and-lint:
     docker:
       - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
-        name: sourcify-db
-        environment:
-          POSTGRES_DB: sourcify
-          POSTGRES_USER: sourcify
-          POSTGRES_PASSWORD: sourcify
-      - image: postgres:15-alpine
-        name: fourbytes-db
-        environment:
-          POSTGRES_DB: fourbytes_test_db
-          POSTGRES_USER: fourbytes
-          POSTGRES_PASSWORD: fourbytes
-    resource_class: large
+    resource_class: medium
     working_directory: ~/sourcify
-    parameters:
-      run_coveralls:
-        type: boolean
-        default: false
     steps:
       - run:
           name: Versions
@@ -314,25 +329,148 @@ jobs:
           command: npx lerna run check
       - run:
           name: init the database submodule
-          command: cd services/database && git submodule update --init
+          command: git submodule update --init
+      - persist_to_workspace:
+          root: ~/sourcify
+          paths:
+            - node_modules
+            - packages/*/node_modules
+            - packages/bytecode-utils/build
+            - packages/compilers/build
+            - packages/compilers-types/build
+            - packages/lib-sourcify/build
+            - services/*/node_modules
+            - services/server/dist
+            - services/monitor/dist
+            - services/4byte/dist
+            - services/database
+            - .git/modules
+  test-bytecode-utils:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: small
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
       - run:
           name: test
-          command: npx lerna run test --stream
+          command: npx lerna run test --scope=@ethereum-sourcify/bytecode-utils --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/bytecode-utils
+      - codecov/upload
+  test-compilers:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=@ethereum-sourcify/compilers --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/compilers
+      - codecov/upload
+  test-lib-sourcify:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=@ethereum-sourcify/lib-sourcify --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=@ethereum-sourcify/lib-sourcify
+      - codecov/upload
+  test-monitor:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-monitor --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-monitor
+      - codecov/upload
+  test-server:
+    docker:
+      - image: cimg/node:22.22.0
+      - image: postgres:15-alpine
+        name: sourcify-db
+        environment:
+          POSTGRES_DB: sourcify
+          POSTGRES_USER: sourcify
+          POSTGRES_PASSWORD: sourcify
+    resource_class: large
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: init the database submodule
+          command: git submodule update --init
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-server --stream
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "sourcify-db"
             SOURCIFY_POSTGRES_DB: "sourcify"
             SOURCIFY_POSTGRES_USER: "sourcify"
             SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432 # On it's own db container
+            SOURCIFY_POSTGRES_PORT: 5432
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-server
+      - codecov/upload
+  test-4byte:
+    docker:
+      - image: cimg/node:22.22.0
+      - image: postgres:15-alpine
+        name: fourbytes-db
+        environment:
+          POSTGRES_DB: fourbytes_test_db
+          POSTGRES_USER: fourbytes
+          POSTGRES_PASSWORD: fourbytes
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: init the database submodule
+          command: git submodule update --init
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-4byte --stream
+          environment:
             FOURBYTES_POSTGRES_HOST: "fourbytes-db"
             FOURBYTES_POSTGRES_DB: "fourbytes_test_db"
             FOURBYTES_POSTGRES_USER: "fourbytes"
             FOURBYTES_POSTGRES_PASSWORD: "fourbytes"
-            FOURBYTES_POSTGRES_PORT: 5432 # On it's own db container
+            FOURBYTES_POSTGRES_PORT: 5432
       - run:
-          name: create lcov reports
-          command: npx lerna run cov:lcov
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-4byte
       - codecov/upload
   monitor-e2e-sepolia:
     <<: *monitor-e2e-base
@@ -354,3 +492,94 @@ jobs:
     environment:
       CHAIN_ID: "560048"
       CHAIN_NAME: hoodi
+  validate-database-schema:
+    docker:
+      - image: cimg/node:22.22.0
+      - image: postgres:15-alpine
+        environment:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+    environment:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/test_db?sslmode=disable
+      DBMATE_SCHEMA_FILE: ./sourcify-database.sql
+    steps:
+      - checkout
+      - run:
+          # Needed to make pg_dump available for dbmate
+          name: Install PostgreSQL client tools
+          command: |
+            sudo apt-get update
+            # Add PostgreSQL official APT repository for version 15
+            sudo apt-get install -y wget ca-certificates
+            wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+            sudo apt-get update
+            # Install PostgreSQL 15 client tools to match the postgres:15-alpine server image
+            sudo apt-get install -y postgresql-client-15
+      - run:
+          name: Install Node.js dependencies
+          command: |
+            cd services/database
+            npm install
+      - run:
+          name: Validate schema is in sync with migrations
+          command: |
+            cd services/database
+            # Initialize git submodules
+            git submodule update --init
+            # Apply migrations using npm script
+            DBMATE_SCHEMA_FILE=ci-dump.sql npm run migrate:up
+            # Force dump in case problems were ignored
+            DBMATE_SCHEMA_FILE=ci-dump.sql npx dbmate dump
+
+            # Check if the schema file has changed
+            # Define cleanup function to remove:
+            # - SQL comments (lines starting with --)
+            # - psql meta-commands (\restrict, \unrestrict)
+            # - blank lines (pg_dump formatting varies across OS/distributions)
+            clean_sql() {
+              sed -e '/^--/d' \
+                  -e '/^\\restrict/d' \
+                  -e '/^\\unrestrict/d' \
+                  -e '/^$/d' \
+                  "$1"
+            }
+
+            if diff -u <(clean_sql sourcify-database.sql) <(clean_sql ci-dump.sql); then
+              echo "✅ Schema validation passed - sourcify-database.sql is in sync with migrations"
+            else
+              echo "❌ Schema file is out of sync with migrations!"
+              echo ""
+              echo "The sourcify-database.sql file does not match what the migrations produce."
+              echo ""
+              echo "To fix this, run a postgres instance locally."
+              echo "Then apply the migrations to a clean database:"
+              echo "  cd services/database && npm run migrate:up"
+              echo ""
+              echo "Then include the updated schema in your commit:"
+              echo "  git add sourcify-database.sql && git commit -m 'Update schema'"
+              exit 1
+            fi
+      - run:
+          name: Test that down migrations work
+          command: |
+            cd services/database
+            # Initialize git submodules
+            git submodule update --init
+            # Drop db from previous test
+            npm run migrate:drop-db
+            # Apply migrations
+            npm run migrate:up
+
+            for i in ./migrations-temp/*
+            do
+              if test -f "$i"
+              then
+                # The command will fail if something is wrong
+                npm run migrate:rollback
+              fi
+            done;
+
+            # Check if migrations can be run again
+            npm run migrate:up

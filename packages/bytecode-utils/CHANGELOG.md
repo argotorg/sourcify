@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.5.0 - 2026-04-14
+
+- Fix Vyper execution bytecode extraction and add splitAuxdata tests (#2715)
+
 ## @ethereum-sourcify/bytecode-utils@1.4.0 - 2026-03-30
 
 - feat: add Fe language support for smart contract verification (#2692)
