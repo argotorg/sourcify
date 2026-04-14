@@ -4,7 +4,6 @@ import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
 import {
-  LOCAL_CHAINS,
   initializeSourcifyChains,
   sourcifyChainsMap,
 } from "../../src/sourcify-chains";
