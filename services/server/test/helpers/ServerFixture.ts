@@ -3,10 +3,7 @@ import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../../src/sourcify-chains";
+import { initializeSourcifyChains } from "../../src/sourcify-chains";
 import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import type { Pool } from "pg";
@@ -33,6 +30,7 @@ export class ServerFixture {
   readonly repositoryV1Path: string;
   readonly testS3Path: string = testS3Path;
   readonly testS3Bucket: string = testS3Bucket;
+  sourcifyChainsMap!: SourcifyChainMap;
 
   private _server?: Server;
 
@@ -65,7 +63,7 @@ export class ServerFixture {
     this.repositoryV1Path = config.get<string>("repositoryV1.path");
 
     before(async () => {
-      await initializeSourcifyChains();
+      this.sourcifyChainsMap = await initializeSourcifyChains();
 
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";
@@ -84,7 +82,7 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: fixtureOptions_?.chains || sourcifyChainsMap,
+        chains: fixtureOptions_?.chains || this.sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
@@ -97,7 +95,7 @@ export class ServerFixture {
       this._server = new Server(
         serverOptions,
         {
-          sourcifyChainMap: sourcifyChainsMap,
+          sourcifyChainMap: this.sourcifyChainsMap,
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),

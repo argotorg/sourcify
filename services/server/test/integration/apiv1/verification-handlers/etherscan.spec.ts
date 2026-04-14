@@ -5,7 +5,6 @@ import {
   assertVerification,
   assertValidationError,
 } from "../../../helpers/assertions";
-import { sourcifyChainsMap } from "../../../../src/sourcify-chains";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import {
   unusedAddress,
@@ -141,7 +140,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it("should fail fetching a non verified contract from etherscan", (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         unusedAddress,
         UNVERIFIED_CONTRACT_RESPONSE,
       );
@@ -163,7 +162,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it(`Non-Session: Should import a single contract from Etherscan for ${testChainId} and verify the contract, finding a ${singleContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         singleContract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
@@ -181,7 +180,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it(`Non-Session: Should import a multiple contract from Etherscan for ${testChainId} and verify the contract, finding a ${multipleContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         multipleContract.address,
         MULTIPLE_CONTRACT_RESPONSE,
       );
@@ -199,7 +198,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it(`Non-Session: Should import a standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         standardJsonContract.address,
         STANDARD_JSON_CONTRACT_RESPONSE,
       );
@@ -217,7 +216,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it(`Non-Session: Should import a Vyper single contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
         VYPER_SINGLE_CONTRACT_RESPONSE,
       );
@@ -236,7 +235,7 @@ describe("Import From Etherscan and Verify", function () {
 
     it(`Non-Session: Should import a Vyper standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         "0x2dFd89449faff8a532790667baB21cF733C064f2",
         VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
       );
@@ -257,7 +256,7 @@ describe("Import From Etherscan and Verify", function () {
     it("should also work with `chainId` instead of `chain`", (done) => {
       const contract = singleContract;
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         contract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
@@ -286,7 +285,7 @@ describe("Import From Etherscan and Verify", function () {
       const contract = singleContract;
       const apiKey = "TEST";
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         contract.address,
         INVALID_API_KEY_RESPONSE,
         apiKey,
@@ -311,7 +310,7 @@ describe("Import From Etherscan and Verify", function () {
     it("should fail by exceeding rate limit on etherscan APIs", async () => {
       const address = "0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2";
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         address,
         RATE_LIMIT_REACHED_RESPONSE,
       );

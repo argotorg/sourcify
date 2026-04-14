@@ -21,7 +21,6 @@ import {
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
   SOLC_1_1_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
-import { sourcifyChainsMap } from "../../../../src/sourcify-chains";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 import { toMatchLevel } from "../../../../src/server/services/utils/util";
@@ -65,7 +64,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       SINGLE_CONTRACT_RESPONSE,
     );
@@ -92,7 +91,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       MULTIPLE_CONTRACT_RESPONSE,
     );
@@ -119,7 +118,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       STANDARD_JSON_CONTRACT_RESPONSE,
     );
@@ -144,7 +143,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       VYPER_SINGLE_CONTRACT_RESPONSE,
     );
@@ -170,7 +169,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
     );
@@ -199,7 +198,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       SINGLE_CONTRACT_RESPONSE,
       apiKey,
@@ -223,7 +222,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     const testAddress = unusedAddress;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       UNVERIFIED_CONTRACT_RESPONSE,
     );
@@ -243,7 +242,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     const testAddress = singleContract.address;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       INVALID_API_KEY_RESPONSE,
       apiKey,
@@ -263,7 +262,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     const testAddress = singleContract.address;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       RATE_LIMIT_REACHED_RESPONSE,
     );
@@ -281,7 +280,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   it("should return a 429 if the contract is being verified at the moment already", async () => {
     const testAddress = singleContract.address;
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       SINGLE_CONTRACT_RESPONSE,
     );
@@ -298,7 +297,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     // Must be an exact match for this test
     const testAddress = "0xbD65e16894EF6Dd9C58e4bbeC55D7E33769f43D9";
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
     );

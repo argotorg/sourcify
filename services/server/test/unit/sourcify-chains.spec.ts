@@ -3,10 +3,7 @@ import chaiAsPromised from "chai-as-promised";
 import sinon from "sinon";
 import fs from "fs";
 import config from "config";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../../src/sourcify-chains";
+import { initializeSourcifyChains } from "../../src/sourcify-chains";
 
 use(chaiAsPromised);
 
@@ -57,10 +54,6 @@ describe("initializeSourcifyChains", function () {
 
   beforeEach(function () {
     sandbox = sinon.createSandbox();
-    // Clear the shared mutable map before each test so tests don't interfere
-    for (const key of Object.keys(sourcifyChainsMap)) {
-      delete (sourcifyChainsMap as Record<string, unknown>)[key];
-    }
   });
 
   afterEach(function () {
@@ -77,11 +70,11 @@ describe("initializeSourcifyChains", function () {
         .stub(fs, "readFileSync")
         .returns(JSON.stringify(mockChainsConfig) as any);
 
-      await initializeSourcifyChains();
+      const result = await initializeSourcifyChains();
 
-      expect(sourcifyChainsMap).to.have.property("1");
-      expect(sourcifyChainsMap["1"].chainId).to.equal(1);
-      expect(sourcifyChainsMap["1"].supported).to.be.true;
+      expect(result).to.have.property("1");
+      expect(result["1"].chainId).to.equal(1);
+      expect(result["1"].supported).to.be.true;
     });
 
     it("includes unsupported chains loaded from local file", async function () {
@@ -90,10 +83,10 @@ describe("initializeSourcifyChains", function () {
         .stub(fs, "readFileSync")
         .returns(JSON.stringify(mockChainsConfig) as any);
 
-      await initializeSourcifyChains();
+      const result = await initializeSourcifyChains();
 
-      expect(sourcifyChainsMap).to.have.property("5");
-      expect(sourcifyChainsMap["5"].supported).to.be.false;
+      expect(result).to.have.property("5");
+      expect(result["5"].supported).to.be.false;
     });
 
     it("skips remote fetch when local file exists", async function () {
@@ -127,10 +120,10 @@ describe("initializeSourcifyChains", function () {
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(mockChainsConfig));
 
-      await initializeSourcifyChains();
+      const result = await initializeSourcifyChains();
 
-      expect(sourcifyChainsMap).to.have.property("1");
-      expect(sourcifyChainsMap["1"].chainId).to.equal(1);
+      expect(result).to.have.property("1");
+      expect(result["1"].chainId).to.equal(1);
     });
 
     it("throws when remoteUrl is not configured", async function () {
@@ -172,10 +165,10 @@ describe("initializeSourcifyChains", function () {
       const promise = initializeSourcifyChains();
       // Advance past the 3 s retry delay so the second attempt can run
       await clock.tickAsync(3001);
-      await promise;
+      const result = await promise;
 
       expect(fetchStub.callCount).to.equal(2);
-      expect(sourcifyChainsMap).to.have.property("1");
+      expect(result).to.have.property("1");
     });
 
     it("throws after all retry attempts are exhausted", async function () {
@@ -210,57 +203,7 @@ describe("initializeSourcifyChains", function () {
         .returns(REMOTE_URL);
     });
 
-    it("clears existing map entries before populating", async function () {
-      // Pre-populate with a stale entry that won't be in the new config
-      (sourcifyChainsMap as Record<string, unknown>)["999999"] = {
-        chainId: 999999,
-      };
-
-      sandbox
-        .stub(globalThis, "fetch")
-        .resolves(makeOkResponse(mockChainsConfig));
-
-      await initializeSourcifyChains();
-
-      expect(sourcifyChainsMap).to.not.have.property("999999");
-    });
-
-    it("skips supported chains that have no usable RPCs", async function () {
-      const chainsWithNoRpc = {
-        "99998": {
-          sourcifyName: "No RPC Chain",
-          supported: true,
-          rpc: [], // empty — will produce zero SourcifyRpc entries
-        },
-      };
-      sandbox
-        .stub(globalThis, "fetch")
-        .resolves(makeOkResponse(chainsWithNoRpc));
-
-      await initializeSourcifyChains();
-
-      expect(sourcifyChainsMap).to.not.have.property("99998");
-    });
-
-    it("includes deprecated chains that have no RPCs (supported: false)", async function () {
-      const deprecatedChains = {
-        "5": {
-          sourcifyName: "Goerli",
-          supported: false,
-          // no rpc field — deprecated, no RPC check applied
-        },
-      };
-      sandbox
-        .stub(globalThis, "fetch")
-        .resolves(makeOkResponse(deprecatedChains));
-
-      await initializeSourcifyChains();
-
-      expect(sourcifyChainsMap).to.have.property("5");
-      expect(sourcifyChainsMap["5"].supported).to.be.false;
-    });
-
-    it("allows re-initialization — populates fresh chains on second call", async function () {
+    it("returns a fresh map on each call (independent results)", async function () {
       const firstConfig = {
         "1": {
           sourcifyName: "First",
@@ -280,13 +223,60 @@ describe("initializeSourcifyChains", function () {
       fetchStub.onFirstCall().resolves(makeOkResponse(firstConfig));
       fetchStub.onSecondCall().resolves(makeOkResponse(secondConfig));
 
-      await initializeSourcifyChains();
-      expect(sourcifyChainsMap).to.have.property("1");
+      const first = await initializeSourcifyChains();
+      const second = await initializeSourcifyChains();
 
-      // Second initialization should replace the map
-      await initializeSourcifyChains();
-      expect(sourcifyChainsMap).to.not.have.property("1");
-      expect(sourcifyChainsMap).to.have.property("137");
+      expect(first).to.have.property("1");
+      expect(first).to.not.have.property("137");
+      expect(second).to.have.property("137");
+      expect(second).to.not.have.property("1");
+    });
+
+    it("skips supported chains that have no usable RPCs", async function () {
+      const chainsWithNoRpc = {
+        "99998": {
+          sourcifyName: "No RPC Chain",
+          supported: true,
+          rpc: [], // empty — will produce zero SourcifyRpc entries
+        },
+      };
+      sandbox
+        .stub(globalThis, "fetch")
+        .resolves(makeOkResponse(chainsWithNoRpc));
+
+      const result = await initializeSourcifyChains();
+
+      expect(result).to.not.have.property("99998");
+    });
+
+    it("includes deprecated chains that have no RPCs (supported: false)", async function () {
+      const deprecatedChains = {
+        "5": {
+          sourcifyName: "Goerli",
+          supported: false,
+          // no rpc field — deprecated, no RPC check applied
+        },
+      };
+      sandbox
+        .stub(globalThis, "fetch")
+        .resolves(makeOkResponse(deprecatedChains));
+
+      const result = await initializeSourcifyChains();
+
+      expect(result).to.have.property("5");
+      expect(result["5"].supported).to.be.false;
+    });
+
+    it("uses string keys for all chain entries", async function () {
+      sandbox
+        .stub(globalThis, "fetch")
+        .resolves(makeOkResponse(mockChainsConfig));
+
+      const result = await initializeSourcifyChains();
+
+      for (const key of Object.keys(result)) {
+        expect(key).to.be.a("string");
+      }
     });
   });
 });

@@ -13,18 +13,18 @@ import yamljs from "yamljs";
 
 // local imports
 import logger from "../common/logger";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../sourcify-chains";
+import { initializeSourcifyChains } from "../sourcify-chains";
+import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
 
-export const getEtherscanApiKeyForEachChain = (): Record<string, string> =>
-  Object.entries(sourcifyChainsMap).reduce<Record<string, string>>(
+export const getEtherscanApiKeyForEachChain = (
+  chainsMap: SourcifyChainMap,
+): Record<string, string> =>
+  Object.entries(chainsMap).reduce<Record<string, string>>(
     (acc, [chainId, { supported, etherscanApi }]) => {
       const envName = supported ? etherscanApi?.apiKeyEnvName : undefined;
       const value = envName ? process.env[envName] : undefined;
@@ -96,7 +96,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
   });
 
   // Load chain config first so getEtherscanApiKeyForEachChain() sees the populated map
-  await initializeSourcifyChains();
+  const sourcifyChainsMap = await initializeSourcifyChains();
 
   const server = new Server(
     {
@@ -207,7 +207,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
         EtherscanVerify: {
           defaultApiKey: process.env.ETHERSCAN_API_KEY as string,
           // Extract the etherscanApiKey env vars from the supported chains
-          apiKeys: getEtherscanApiKeyForEachChain(),
+          apiKeys: getEtherscanApiKeyForEachChain(sourcifyChainsMap),
         },
         BlockscoutVerify: {
           defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,

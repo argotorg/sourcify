@@ -9,10 +9,7 @@ import {
 } from "../../src/server/services/workers/verificationWorker";
 import Sinon from "sinon";
 import Piscina from "piscina";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../../src/sourcify-chains";
+import { initializeSourcifyChains } from "../../src/sourcify-chains";
 import {
   SolidityCompilation,
   type SourcifyChainInstance,
@@ -39,7 +36,7 @@ describe("verificationWorker", function () {
   const piscinaSandbox = Sinon.createSandbox();
 
   before(async () => {
-    await initializeSourcifyChains();
+    const sourcifyChainsMap = await initializeSourcifyChains();
 
     const sourcifyChainInstanceMap = Object.entries(sourcifyChainsMap).reduce(
       (acc, [chainId, chain]) => {
