@@ -88,6 +88,30 @@ describe("POST /v2/verify/metadata/:chainId/:address", function () {
     );
   });
 
+  it("should fetch a missing source file via IPFS", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/metadata/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        sources: {},
+        metadata: chainFixture.defaultContractMetadataObject,
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      chainFixture.defaultContractAddress,
+      "exact_match",
+    );
+  });
+
   it("should store a job error if the metadata validation fails", async () => {
     const { resolveWorkers } = makeWorkersWait();
 

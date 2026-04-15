@@ -151,27 +151,6 @@ describe("/", function () {
       });
   });
 
-  it("should fetch a missing file that is accessible via ipfs", (done) => {
-    chai
-      .request(serverFixture.server.app)
-      .post("/")
-      .field("address", chainFixture.defaultContractAddress)
-      .field("chain", chainFixture.chainId)
-      .attach("files", chainFixture.defaultContractMetadata, "metadata.json")
-      .end(
-        async (err, res) =>
-          await assertVerification(
-            serverFixture,
-            err,
-            res,
-            done,
-            chainFixture.defaultContractAddress,
-            chainFixture.chainId,
-            "perfect",
-          ),
-      );
-  });
-
   // We cannot split this into multiple tests because there is a global beforeEach that resets the database
   it("Should skip verification for /verify, /verify/etherscan and /verify/solc-json if contract is already verified", async () => {
     // Spy on the verifyFromCompilation method
