@@ -226,6 +226,7 @@ describe("initializeSourcifyChains", function () {
       const first = await initializeSourcifyChains();
       const second = await initializeSourcifyChains();
 
+      expect(first).to.not.equal(second); // distinct object references
       expect(first).to.have.property("1");
       expect(first).to.not.have.property("137");
       expect(second).to.have.property("137");

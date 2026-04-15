@@ -30,6 +30,7 @@ export class ServerFixture {
   readonly repositoryV1Path: string;
   readonly testS3Path: string = testS3Path;
   readonly testS3Bucket: string = testS3Bucket;
+  // Assigned in the before() hook below; safe to read inside it/beforeEach.
   sourcifyChainsMap!: SourcifyChainMap;
 
   private _server?: Server;
