@@ -35,16 +35,22 @@ describe("Test each Etherscan instance", function () {
     // is not yet available here. We start with just the chainId and inject the
     // human-readable chain name at run time (see before/beforeEach below).
     describe(`#${chainId}`, function () {
+      // `chainId` is a shared loop variable (`let` declared outside the loop),
+      // so closures that run asynchronously (before/beforeEach/it callbacks)
+      // would all see the last iteration's value. Capture the current value in
+      // a `const` so every describe scope gets its own immutable copy.
+      const id = chainId;
+
       // chainName is set in before() and read in beforeEach() — both close
       // over this variable so it stays in sync.
       let chainName: string;
 
       before(function () {
-        const chain = serverFixture.sourcifyChainsMap[chainId];
+        const chain = serverFixture.sourcifyChainsMap[id];
 
         if (!chain?.supported) {
           throw new Error(
-            `Unsupported chain (${chainId}) found in test configuration`,
+            `Unsupported chain (${id}) found in test configuration`,
           );
         }
 
@@ -54,7 +60,7 @@ describe("Test each Etherscan instance", function () {
         // Most Mocha reporters (spec, mochawesome, …) read suite.title after
         // all before() hooks have completed, so the renamed title appears in
         // the output correctly.
-        this.test!.parent!.title = `#${chainId} ${chainName}`;
+        this.test!.parent!.title = `#${id} ${chainName}`;
       });
 
       // it() titles are also fixed at registration time, so we patch
@@ -62,34 +68,33 @@ describe("Test each Etherscan instance", function () {
       beforeEach(function () {
         if (this.currentTest) {
           this.currentTest.title = this.currentTest.title.replace(
-            `for chain ${chainId}`,
-            `for chain ${chainName} (${chainId})`,
+            `for chain ${id}`,
+            `for chain ${chainName} (${id})`,
           );
         }
       });
 
-      testContracts[chainId].forEach((contract) => {
+      testContracts[id].forEach((contract) => {
         const address = contract.address;
         const expectedMatch = toMatchLevel(
           contract.expectedStatus as VerificationStatus,
         );
         const type = contract.type;
-        const chain = chainId;
 
-        // "for chain ${chainId}" is a placeholder that beforeEach() replaces
-        // with the full "for chain ${chainName} (${chainId})" at run time.
-        it(`Should import a ${type} contract from Etherscan for chain ${chainId} and verify the contract, finding a ${expectedMatch}`, async () => {
+        // "for chain ${id}" is a placeholder that beforeEach() replaces
+        // with the full "for chain ${chainName} (${id})" at run time.
+        it(`Should import a ${type} contract from Etherscan for chain ${id} and verify the contract, finding a ${expectedMatch}`, async () => {
           const { resolveWorkers } = makeWorkersWait();
 
           const verifyRes = await request(serverFixture.server.app)
-            .post(`/v2/verify/etherscan/${chain}/${address}`)
+            .post(`/v2/verify/etherscan/${id}/${address}`)
             .send({});
 
           await assertJobVerification(
             serverFixture,
             verifyRes,
             resolveWorkers,
-            chain,
+            id,
             getAddress(address),
             expectedMatch,
           );
