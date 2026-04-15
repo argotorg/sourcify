@@ -82,7 +82,6 @@ describe("Factory-deployed contracts", function () {
       chainFixture.chainId,
       childAddress,
       "exact_match",
-      false,
     );
   });
 
@@ -143,7 +142,6 @@ describe("Factory-deployed contracts", function () {
       chainFixture.chainId,
       childAddress,
       "exact_match",
-      false,
     );
   });
 });
