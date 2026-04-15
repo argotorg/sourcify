@@ -33,6 +33,7 @@ import type {
 } from './VerificationTypes';
 import { SolidityBugType, VerificationError } from './VerificationTypes';
 import type {
+  VyperJsonInput,
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
@@ -362,7 +363,13 @@ export class Verification {
       AuxdataStyle.SOLIDITY,
     );
     // Metadata hashes match but bytecodes don't match.
+    // Guard: both auxdata must be defined (i.e. CBOR metadata actually exists in both bytecodes).
+    // Pre-0.4.7 contracts have no CBOR metadata, so splitAuxdata returns undefined for index [1].
+    // Without this guard, undefined === undefined would incorrectly trigger the bug diagnosis.
+    // See: https://github.com/argotorg/sourcify/issues/2729
     if (
+      deployedAuxdata !== undefined &&
+      recompiledAuxdata !== undefined &&
       deployedAuxdata === recompiledAuxdata &&
       (this.compilation.jsonInput.settings as SoliditySettings).optimizer
         ?.enabled
@@ -735,15 +742,20 @@ export class Verification {
           abi: contractCompilerOutput?.abi ?? undefined,
           userdoc: contractCompilerOutput?.userdoc,
           devdoc: contractCompilerOutput?.devdoc,
-          storageLayout: (contractCompilerOutput as SolidityOutputContract)
-            ?.storageLayout,
+          storageLayout:
+            (contractCompilerOutput as SolidityOutputContract)?.storageLayout ||
+            (contractCompilerOutput as VyperOutputContract)?.layout
+              ?.storage_layout,
           transientStorageLayout: (
             contractCompilerOutput as SolidityOutputContract
           )?.transientStorageLayout,
           evm: {
             bytecode: {
-              sourceMap: (contractCompilerOutput as SolidityOutputContract)?.evm
-                ?.bytecode?.sourceMap,
+              sourceMap: (
+                contractCompilerOutput as
+                  | SolidityOutputContract
+                  | VyperOutputContract
+              )?.evm?.bytecode?.sourceMap,
               linkReferences: (contractCompilerOutput as SolidityOutputContract)
                 ?.evm?.bytecode?.linkReferences,
             },
@@ -763,6 +775,14 @@ export class Verification {
         metadata,
         jsonInput: {
           settings: this.compilation.jsonInput.settings,
+          ...((this.compilation.jsonInput as VyperJsonInput)
+            .storage_layout_overrides
+            ? {
+                storageLayoutOverrides: (
+                  this.compilation.jsonInput as VyperJsonInput
+                ).storage_layout_overrides,
+              }
+            : {}),
         },
         compilationTime: this.compilation.compilationTime,
       },

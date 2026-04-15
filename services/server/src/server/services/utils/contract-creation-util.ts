@@ -85,16 +85,20 @@ function getBlockscoutScrapeContractCreatorFetcher(
 function getEtherscanApiContractCreatorFetcher(
   apiKey: string,
   chainId: number,
+  customBaseUrl?: string,
 ): ContractCreationFetcher {
+  const baseUrl = customBaseUrl
+    ? `${customBaseUrl}/api?module=contract&action=getcontractcreation&contractaddresses=\${ADDRESS}&apikey=`
+    : ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString());
   return getApiContractCreationFetcher(
-    ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()) + apiKey,
+    baseUrl + apiKey,
     (response: any) => {
       if (response?.message === "NOTOK")
         throw new Error(`Etherscan API error: ${response?.result}`);
       if (response?.result?.[0]?.txHash)
         return response?.result?.[0]?.txHash as string;
     },
-    ETHERSCAN_API.replace("${CHAIN_ID}", chainId.toString()),
+    baseUrl,
   );
 }
 
@@ -355,6 +359,7 @@ export const getCreatorTx = async (
     const fetcher = getEtherscanApiContractCreatorFetcher(
       apiKey,
       sourcifyChain.chainId,
+      sourcifyChain.etherscanApi?.url,
     );
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {

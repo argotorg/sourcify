@@ -15,8 +15,10 @@ import type {
   LinkReferences,
   Metadata,
   Userdoc,
+  VyperJsonInput,
   VyperSettings,
   VyperSourceMap,
+  VyperStorageLayout,
 } from '@ethereum-sourcify/compilers-types';
 import type { SourcifyLibErrorParameters } from '../SourcifyLibError';
 import { SourcifyLibError } from '../SourcifyLibError';
@@ -111,7 +113,7 @@ export interface VerificationExport {
       abi?: JsonFragment[];
       userdoc?: Userdoc;
       devdoc?: Devdoc;
-      storageLayout?: StorageLayout;
+      storageLayout?: StorageLayout | VyperStorageLayout;
       transientStorageLayout?: TransientStorageLayout;
       evm: {
         bytecode: {
@@ -132,6 +134,7 @@ export interface VerificationExport {
     metadata?: Metadata;
     jsonInput: {
       settings: SoliditySettings | VyperSettings | FeSettings;
+      storageLayoutOverrides?: VyperJsonInput['storage_layout_overrides'];
     };
     compilationTime?: number;
   };
