@@ -282,10 +282,10 @@ export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
 
   // Build SourcifyChain objects directly from the loaded extensions
   for (const [chainIdStr, extension] of Object.entries(chainsExtensions)) {
-    const chainId = parseInt(chainIdStr);
     // Skip local test chains (already added above)
-    if (chainId.toString() in sourcifyChainsMap) continue;
+    if (chainIdStr in sourcifyChainsMap) continue;
 
+    const chainId = parseInt(chainIdStr);
     const rpcs = buildCustomRpcs(extension.rpc || []);
     if (rpcs.length === 0 && extension.supported) {
       logger.warn(
@@ -293,7 +293,7 @@ export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
       );
       continue;
     }
-    sourcifyChainsMap[chainId.toString()] = new SourcifyChain({
+    sourcifyChainsMap[chainIdStr] = new SourcifyChain({
       name: extension.sourcifyName,
       chainId,
       supported: extension.supported,
