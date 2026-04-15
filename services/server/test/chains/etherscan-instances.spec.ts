@@ -30,12 +30,15 @@ describe("Test each Etherscan instance", function () {
     if (process.env.TEST_CHAIN && process.env.TEST_CHAIN !== chainId) continue;
     testedChains.push(parseInt(chainId));
 
-    // Describe titles are registered synchronously, before the server fixture's
-    // before() hook has run, so serverFixture.sourcifyChainsMap is not yet
-    // available here. We start with just the chainId and rename the suite
-    // inside before() once the fixture has initialized and the chain name
-    // is available.
+    // describe() and it() titles are registered synchronously, before the
+    // server fixture's before() hook has run, so serverFixture.sourcifyChainsMap
+    // is not yet available here. We start with just the chainId and inject the
+    // human-readable chain name at run time (see before/beforeEach below).
     describe(`#${chainId}`, function () {
+      // chainName is set in before() and read in beforeEach() — both close
+      // over this variable so it stays in sync.
+      let chainName: string;
+
       before(function () {
         const chain = serverFixture.sourcifyChainsMap[chainId];
 
@@ -45,11 +48,24 @@ describe("Test each Etherscan instance", function () {
           );
         }
 
+        chainName = chain.name;
+
         // Rename the suite so reporters show the human-readable chain name.
         // Most Mocha reporters (spec, mochawesome, …) read suite.title after
         // all before() hooks have completed, so the renamed title appears in
         // the output correctly.
-        this.test!.parent!.title = `#${chainId} ${chain.name}`;
+        this.test!.parent!.title = `#${chainId} ${chainName}`;
+      });
+
+      // it() titles are also fixed at registration time, so we patch
+      // this.currentTest.title here — same reasoning as the suite rename above.
+      beforeEach(function () {
+        if (this.currentTest) {
+          this.currentTest.title = this.currentTest.title.replace(
+            `for chain ${chainId}`,
+            `for chain ${chainName} (${chainId})`,
+          );
+        }
       });
 
       testContracts[chainId].forEach((contract) => {
@@ -60,7 +76,9 @@ describe("Test each Etherscan instance", function () {
         const type = contract.type;
         const chain = chainId;
 
-        it(`Should import a ${type} contract from Etherscan and verify the contract, finding a ${expectedMatch}`, async () => {
+        // "for chain ${chainId}" is a placeholder that beforeEach() replaces
+        // with the full "for chain ${chainName} (${chainId})" at run time.
+        it(`Should import a ${type} contract from Etherscan for chain ${chainId} and verify the contract, finding a ${expectedMatch}`, async () => {
           const { resolveWorkers } = makeWorkersWait();
 
           const verifyRes = await request(serverFixture.server.app)
