@@ -6,13 +6,16 @@ import {
 } from "../../../src/server/services/utils/contract-creation-util";
 import { initializeSourcifyChains } from "../../../src/sourcify-chains";
 import { ChainRepository } from "../../../src/sourcify-chain-repository";
-import type { FetchContractCreationTxMethod } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  FetchContractCreationTxMethod,
+  SourcifyChainMap,
+} from "@ethereum-sourcify/lib-sourcify";
 import sinon from "sinon";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
 
 describe("contract creation util", function () {
-  let sourcifyChainsMap: Awaited<ReturnType<typeof initializeSourcifyChains>>;
+  let sourcifyChainsMap: SourcifyChainMap;
 
   before(async () => {
     sourcifyChainsMap = await initializeSourcifyChains();
