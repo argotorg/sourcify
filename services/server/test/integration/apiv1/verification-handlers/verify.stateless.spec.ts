@@ -325,12 +325,8 @@ describe("/", function () {
   it("Should upgrade creation match from 'null' to 'perfect', update verified_contracts and contract_deployments creation information in database", async () => {
     // Block the getTransactionReceipt call and the binary search for the creation tx hash and creationMatch will be set to null
     const restoreGetTx =
-      serverFixture.server.chainRepository.sourcifyChainMap[
-        chainFixture.chainId
-      ].getTx;
-    serverFixture.server.chainRepository.sourcifyChainMap[
-      chainFixture.chainId
-    ].getTx = async () => {
+      serverFixture.sourcifyChainsMap[chainFixture.chainId].getTx;
+    serverFixture.sourcifyChainsMap[chainFixture.chainId].getTx = async () => {
       throw new Error("Blocked getTransactionReceipt");
     };
 
@@ -343,9 +339,7 @@ describe("/", function () {
       .attach("files", chainFixture.defaultContractSource);
 
     // Restore the getTransactionReceipt call
-    serverFixture.server.chainRepository.sourcifyChainMap[
-      chainFixture.chainId
-    ].getTx = restoreGetTx;
+    serverFixture.sourcifyChainsMap[chainFixture.chainId].getTx = restoreGetTx;
 
     await assertVerification(
       serverFixture,

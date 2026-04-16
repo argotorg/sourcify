@@ -30,13 +30,14 @@ export class ServerFixture {
   readonly repositoryV1Path: string;
   readonly testS3Path: string = testS3Path;
   readonly testS3Bucket: string = testS3Bucket;
-  // Assigned in the before() hook below; safe to read inside it/beforeEach.
-  sourcifyChainsMap!: SourcifyChainMap;
 
   private _server?: Server;
 
   // Getters for type safety
   // Can be safely accessed in "it" blocks
+  get sourcifyChainsMap(): SourcifyChainMap {
+    return this.server.chainRepository.sourcifyChainMap;
+  }
   get sourcifyDatabase(): Pool {
     // sourcifyDatabase is just a shorter way to get databasePool inside SourcifyDatabaseService
     const _sourcifyDatabase = (
@@ -64,7 +65,11 @@ export class ServerFixture {
     this.repositoryV1Path = config.get<string>("repositoryV1.path");
 
     before(async () => {
-      this.sourcifyChainsMap = await initializeSourcifyChains();
+      // fixtureOptions_?.chains takes priority; fall back to fetching from the
+      // remote/local config. The same map is passed to both serverOptions.chains
+      // and sourcifyChainMap so both are always consistent.
+      const sourcifyChainsMap =
+        fixtureOptions_?.chains || (await initializeSourcifyChains());
 
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";
@@ -83,7 +88,7 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: fixtureOptions_?.chains || this.sourcifyChainsMap,
+        chains: sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
@@ -96,7 +101,7 @@ export class ServerFixture {
       this._server = new Server(
         serverOptions,
         {
-          sourcifyChainMap: this.sourcifyChainsMap,
+          sourcifyChainMap: sourcifyChainsMap,
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),
@@ -186,7 +191,7 @@ export class ServerFixture {
   }
 
   resetChainHealthStates(): void {
-    const chains = this.server.chainRepository.sourcifyChainMap;
+    const chains = this.sourcifyChainsMap;
     for (const chain of Object.values(chains)) {
       for (const rpc of chain.rpcs) {
         if (rpc.health) {

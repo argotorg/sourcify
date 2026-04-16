@@ -327,7 +327,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should return a 400 when the chain is not found", async function () {
-    const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
+    const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, testChainId).value(undefined);
 
     const verifyRes = await request(serverFixture.server.app)
