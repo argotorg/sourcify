@@ -3,10 +3,7 @@ import chai from "chai";
 import chaiHttp from "chai-http";
 import addContext from "mochawesome/addContext";
 import testEtherscanContracts from "../helpers/etherscanInstanceContracts.json";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../../src/sourcify-chains";
+import { initializeSourcifyChains } from "../../src/sourcify-chains";
 import _storageAddresses from "./sources/storage-contract-chain-addresses.json";
 const storageAddresses: Record<string, string> = _storageAddresses; // add types
 import createXInput from "./sources/createX.input.json";
@@ -62,7 +59,7 @@ chai.use(chaiHttp);
 
 // Chains config is loaded async; use Mocha's --delay + run() to defer test registration
 (async () => {
-  await initializeSourcifyChains();
+  const sourcifyChainsMap = await initializeSourcifyChains();
 
   const chainsToTest = Object.entries(sourcifyChainsMap)
     .filter(([id, chain]) => {
@@ -274,4 +271,7 @@ chai.use(chaiHttp);
   });
 
   run();
-})();
+})().catch((err) => {
+  console.error("Failed to initialize chains for chain tests:", err);
+  process.exit(1);
+});

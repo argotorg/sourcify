@@ -253,7 +253,7 @@ describe("POST /v2/verify/metadata/:chainId/:address", function () {
 
   it("should return a 400 when the chain is not found", async function () {
     const unknownChainId = "5";
-    const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
+    const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
 
     const verifyRes = await chai

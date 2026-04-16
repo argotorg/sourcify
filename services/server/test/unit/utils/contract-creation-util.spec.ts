@@ -4,19 +4,21 @@ import {
   findContractCreationTxByBinarySearchWithTimeout,
   getCreatorTx,
 } from "../../../src/server/services/utils/contract-creation-util";
-import {
-  initializeSourcifyChains,
-  sourcifyChainsMap,
-} from "../../../src/sourcify-chains";
+import { initializeSourcifyChains } from "../../../src/sourcify-chains";
 import { ChainRepository } from "../../../src/sourcify-chain-repository";
-import type { FetchContractCreationTxMethod } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  FetchContractCreationTxMethod,
+  SourcifyChainMap,
+} from "@ethereum-sourcify/lib-sourcify";
 import sinon from "sinon";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
 
 describe("contract creation util", function () {
+  let sourcifyChainsMap: SourcifyChainMap;
+
   before(async () => {
-    await initializeSourcifyChains();
+    sourcifyChainsMap = await initializeSourcifyChains();
   });
 
   it("should run getCreatorTx with chainId 40", async function () {
@@ -207,8 +209,8 @@ describe("contract creation util", function () {
 
       // Create a copy of the mainnet chain
       const mainnetChain = Object.create(
-        Object.getPrototypeOf(sourcifyChainsMap[1]),
-        Object.getOwnPropertyDescriptors(sourcifyChainsMap[1]),
+        Object.getPrototypeOf(sourcifyChainsMap["1"]),
+        Object.getOwnPropertyDescriptors(sourcifyChainsMap["1"]),
       );
       // remove all creation tx fetching methods
       mainnetChain.fetchContractCreationTxUsing = undefined;

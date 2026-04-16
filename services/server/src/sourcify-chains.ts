@@ -202,10 +202,8 @@ function buildCustomRpcs(
   return rpcs;
 }
 
-export const sourcifyChainsMap: SourcifyChainMap = {};
-
 /**
- * Loads the chain configuration and populates sourcifyChainsMap.
+ * Loads the chain configuration and returns a populated SourcifyChainMap.
  *
  * Priority:
  *   1. Local sourcify-chains.json (self-hosted override)
@@ -214,8 +212,10 @@ export const sourcifyChainsMap: SourcifyChainMap = {};
  * Called by Server.init() so that both the CLI and test fixtures initialize chains
  * through the same code path.
  */
-export async function initializeSourcifyChains(): Promise<void> {
-  let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
+export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
+  let chainsExtensions:
+    | SourcifyChainsExtensionsObjectWithHeaderEnvName
+    | undefined;
 
   // Priority 1: local sourcify-chains.json (self-hosted override)
   if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
@@ -264,17 +264,14 @@ export async function initializeSourcifyChains(): Promise<void> {
         }
       }
     }
-    if (!chainsExtensions!) {
+    if (!chainsExtensions) {
       throw new Error(
         `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
       );
     }
   }
 
-  // Clear the map before populating (allows re-initialization)
-  for (const key of Object.keys(sourcifyChainsMap)) {
-    delete sourcifyChainsMap[key];
-  }
+  const sourcifyChainsMap: SourcifyChainMap = {};
 
   // Add LOCAL_CHAINS in non-production
   if (process.env.NODE_ENV !== "production") {
@@ -285,10 +282,10 @@ export async function initializeSourcifyChains(): Promise<void> {
 
   // Build SourcifyChain objects directly from the loaded extensions
   for (const [chainIdStr, extension] of Object.entries(chainsExtensions)) {
-    const chainId = parseInt(chainIdStr);
     // Skip local test chains (already added above)
-    if (chainId in sourcifyChainsMap) continue;
+    if (chainIdStr in sourcifyChainsMap) continue;
 
+    const chainId = parseInt(chainIdStr);
     const rpcs = buildCustomRpcs(extension.rpc || []);
     if (rpcs.length === 0 && extension.supported) {
       logger.warn(
@@ -296,7 +293,7 @@ export async function initializeSourcifyChains(): Promise<void> {
       );
       continue;
     }
-    sourcifyChainsMap[chainId] = new SourcifyChain({
+    sourcifyChainsMap[chainIdStr] = new SourcifyChain({
       name: extension.sourcifyName,
       chainId,
       supported: extension.supported,
@@ -309,4 +306,6 @@ export async function initializeSourcifyChains(): Promise<void> {
   logger.info("SourcifyChains loaded", {
     totalChains: Object.keys(chainsExtensions).length,
   });
+
+  return sourcifyChainsMap;
 }
