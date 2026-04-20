@@ -202,6 +202,40 @@ function buildCustomRpcs(
   return rpcs;
 }
 
+async function fetchChainsConfigWithRetry(
+  remoteUrl: string,
+  maxAttempts = 3,
+  retryDelayMs = 3000,
+): Promise<SourcifyChainsExtensionsObjectWithHeaderEnvName> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      logger.info(
+        `Fetching chains config from ${remoteUrl} (attempt ${attempt}/${maxAttempts})`,
+      );
+      const response = await fetch(remoteUrl);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch chains config: HTTP ${response.status} from ${remoteUrl}`,
+        );
+      }
+      return (await response.json()) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        logger.warn(
+          `Failed to fetch chains config, retrying in ${retryDelayMs / 1000}s`,
+          { attempt, error: err.message },
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      }
+    }
+  }
+  throw new Error(
+    `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
+  );
+}
+
 /**
  * Loads the chain configuration and returns a populated SourcifyChainMap.
  *
@@ -213,9 +247,7 @@ function buildCustomRpcs(
  * through the same code path.
  */
 export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
-  let chainsExtensions:
-    | SourcifyChainsExtensionsObjectWithHeaderEnvName
-    | undefined;
+  let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
 
   // Priority 1: local sourcify-chains.json (self-hosted override)
   if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
@@ -236,39 +268,7 @@ export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
           "Set chains.remoteUrl in the server config to the URL of the chains config file.",
       );
     }
-    const maxAttempts = 3;
-    const retryDelayMs = 3000;
-    let lastError: Error | undefined;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        logger.info(
-          `Fetching chains config from ${remoteUrl} (attempt ${attempt}/${maxAttempts})`,
-        );
-        const response = await fetch(remoteUrl);
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch chains config: HTTP ${response.status} from ${remoteUrl}`,
-          );
-        }
-        chainsExtensions =
-          (await response.json()) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-        break;
-      } catch (err: any) {
-        lastError = err;
-        if (attempt < maxAttempts) {
-          logger.warn(
-            `Failed to fetch chains config, retrying in ${retryDelayMs / 1000}s`,
-            { attempt, error: err.message },
-          );
-          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-        }
-      }
-    }
-    if (!chainsExtensions) {
-      throw new Error(
-        `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
-      );
-    }
+    chainsExtensions = await fetchChainsConfigWithRetry(remoteUrl);
   }
 
   const sourcifyChainsMap: SourcifyChainMap = {};
