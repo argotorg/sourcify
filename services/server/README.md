@@ -118,21 +118,21 @@ cp .env.dev .env
 
 The `.env.dev` contains the default database credentials for the Sourcify database. You should change the values to match your Postgres instance.
 
-You can run without filling the optional values in `.env` but to connect to some RPCs you need to add API keys as env vars. Check the `sourcify-chains-default.json` file if the chain you are interested in has an authenticated RPC or create your own `sourcify-chains.json` file. See [Chains Config](#chains-config) for more details.
+You can run without filling the optional values in `.env` but to connect to some RPCs you need to add API keys as env vars. Check the remote chains configuration (fetched from the URL in `chains.remoteUrl` in `src/config/default.js`) to see if the chain you're interested in requires API keys. For custom configurations, create your own `src/sourcify-chains.json` file. See [Chains Config](#chains-config) for more details.
 
 ### 7. Set supported chains
 
-Copy the example chains config file as the main chains config file. You can change the chains you want to support here.
-
-If there is a `src/sourcify-chains.json` file already, the server will use it. Otherwise, it will use the `src/sourcify-chains-default.json` file.
+To customize which chains to support, copy the example chains config file and modify it:
 
 ```bash
 cp src/sourcify-chains-example.json src/sourcify-chains.json
 ```
 
+If `src/sourcify-chains.json` exists, the server uses it as a complete override. Otherwise, chains are fetched at startup from the configured remote URL (see `chains.remoteUrl` in `src/config/default.js`; defaults to the [sourcify-chains](https://github.com/sourcifyeth/sourcify-chains) repository).
+
 ### 8. Build the server
 
-Build the server to generate the chains config file in `dist/sourcify-chains.json`
+Build the server (also copies `src/sourcify-chains.json` to `dist/` if it exists)
 
 ```bash
 npm run build
@@ -224,63 +224,18 @@ module.exports = {
 
 ### Chains Config
 
-The chains supported by the Sourcify server are defined in `src/sourcify-chains-default.json`.
+At startup, the server loads chain configuration using this priority order:
 
-To support a different set of chains, you can create a `src/sourcify-chains.json` file and completely override the default chains.
+1. **Local file** (highest priority): `src/sourcify-chains.json` — if this file exists, it is used and the remote URL is skipped entirely.
+2. **Remote URL**: Fetched from `chains.remoteUrl` in `src/config/default.js` (defaults to the [sourcify-chains](https://github.com/sourcifyeth/sourcify-chains) repository). The server retries up to 3 times on failure.
 
-A full example of a chain entry is as follows:
+To use a custom set of chains, copy the example and edit it:
 
-```json
-{
-  // the chain id
-  "1": {
-    "sourcifyName": "Ethereum Mainnet", // required
-    "supported": true, // required
-    // optional
-    "etherscanApi": {
-      "supported": true, // required
-      "apiKeyEnvName": "ETHERSCAN_API_KEY" // the name of the environment variable holding the api key
-    },
-    // optional
-    "fetchContractCreationTxUsing": {
-      // How to find the transaction hash that created the contract
-      "etherscanApi": true, // if supported by the new etherscan api. Need to provide the etherscanApi config
-      "blockscoutApi": {
-        // blockscout v2 instances have an api endpoint for this
-        "url": "https://gnosis.blockscout.com/"
-      },
-      "blockscoutScrape": {
-        // scraping from old (server-side rendered) blockscout ui
-        "url": "https://scan.pulsechain.com/"
-      },
-      "avalancheApi": true // avalanche subnets at glacier-api.avax.network have an api endpoint for this
-    },
-    // optional. If not provided, the default rpc will be the ones from src/chains.json. This file is manually synced from chainid.network/chains.json.
-    "rpc": [
-      "https://rpc.sepolia.io", // can be a simple url string
-      {
-        "type": "FetchRequest", // ethers.js FetchRequest for header authenticated RPCs
-        "url": "https://rpc.mainnet.ethpandaops.io",
-        "headers": [
-          {
-            "headerName": "CF-Access-Client-Id",
-            "headerEnvName": "CF_ACCESS_CLIENT_ID"
-          },
-          {
-            "headerName": "CF-Access-Client-Secret",
-            "headerEnvName": "CF_ACCESS_CLIENT_SECRET"
-          }
-        ]
-      },
-      {
-        "type": "APIKeyRPC", // Alchemy RPCs, or any other RPC that requires an API key. ${API_KEY} will be replaced with the value of the env var.
-        "url": "https://eth-mainnet.alchemyapi.io/v2/{API_KEY}",
-        "apiKeyEnvName": "ALCHEMY_API_KEY"
-      }
-    ]
-  }
-}
+```bash
+cp src/sourcify-chains-example.json src/sourcify-chains.json
 ```
+
+See the [sourcify-chains](https://github.com/sourcifyeth/sourcify-chains) repo for more details.
 
 ### Choosing the storage backend
 

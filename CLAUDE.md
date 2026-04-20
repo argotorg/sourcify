@@ -121,7 +121,8 @@ The server supports multiple storage backends:
 
 ### Chain Configuration
 
-- Chain support defined in `services/server/src/sourcify-chains-default.json`
+- Chain config is fetched at startup from a remote URL (`chains.remoteUrl` in `services/server/src/config/default.js`; defaults to the [sourcify-chains](https://github.com/sourcifyeth/sourcify-chains) repo)
+- Local override: create `services/server/src/sourcify-chains.json` to bypass the remote URL entirely
 - Supports authenticated RPCs, Etherscan APIs, and trace/debug APIs for factory contracts
 
 ### API Structure
@@ -161,9 +162,11 @@ The server supports multiple storage backends:
 
 ## Key Configuration Files
 
-- `services/server/src/config/local.js`: Local server configuration
-- `services/server/src/sourcify-chains-default.json`: Supported blockchain networks
-- `services/server/.env`: Environment variables
+- `services/server/src/config/default.js`: Default server configuration (includes `chains.remoteUrl`)
+- `services/server/src/config/local.js`: Local server configuration overrides
+- `services/server/src/sourcify-chains.json`: Local chain config override (optional, takes priority over remote)
+- `services/server/src/sourcify-chains-example.json`: Example chain config template
+- `services/server/.env`: Environment variables for API keys and credentials
 
 ## Server-Specific Architecture
 
@@ -189,6 +192,7 @@ The server supports multiple storage backends:
 ## Automated Review Guidelines
 
 When reviewing PRs as an automated agent:
+
 - Check database migration safety (services/database/) — flag destructive operations
 - Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
