@@ -3,7 +3,7 @@ import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
-import { initializeSourcifyChains } from "../../src/sourcify-chains";
+import { LOCAL_CHAINS } from "../../src/sourcify-chains";
 import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import type { Pool } from "pg";
@@ -69,10 +69,8 @@ export class ServerFixture {
       // remote/local config. The same map is passed to both serverOptions.chains
       // and sourcifyChainMap so both are always consistent.
       const sourcifyChainsMap =
-        fixtureOptions_?.chains ||
-        (await initializeSourcifyChains({
-          remoteUrl: config.get("chains.remoteUrl"),
-        }));
+        fixtureOptions_?.chains ??
+        Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c]));
 
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";

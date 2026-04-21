@@ -26,7 +26,10 @@ import {
   VYPER_SINGLE_CONTRACT_RESPONSE,
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
-import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+import {
+  SourcifyChain,
+  type VerificationStatus,
+} from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 
@@ -38,7 +41,17 @@ describe("Import From Etherscan and Verify", function () {
     return;
   }
 
-  const serverFixture = new ServerFixture({ port: CUSTOM_PORT });
+  const mainnetStub = new SourcifyChain({
+    name: "Ethereum Mainnet (test stub)",
+    chainId: 1,
+    supported: true,
+    rpcs: [],
+    etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
+  });
+  const serverFixture = new ServerFixture({
+    port: CUSTOM_PORT,
+    chains: { "1": mainnetStub },
+  });
 
   const testChainId = "1";
   const singleContract = testContracts[testChainId].find(

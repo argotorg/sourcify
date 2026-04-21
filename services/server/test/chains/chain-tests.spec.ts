@@ -87,6 +87,7 @@ chai.use(chaiHttp);
     const serverFixture = new ServerFixture({
       port: CUSTOM_PORT,
       skipDatabaseReset: true,
+      chains: sourcifyChainsMap,
     });
 
     const testedChains = new Set<string>();

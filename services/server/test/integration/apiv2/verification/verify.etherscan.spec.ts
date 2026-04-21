@@ -22,8 +22,12 @@ import {
   SOLC_1_1_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
 import testContracts from "../../../helpers/etherscanInstanceContracts.json";
-import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+import {
+  SourcifyChain,
+  type VerificationStatus,
+} from "@ethereum-sourcify/lib-sourcify";
 import { toMatchLevel } from "../../../../src/server/services/utils/util";
+import { LOCAL_CHAINS } from "../../../../src/sourcify-chains";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
@@ -38,7 +42,19 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   }
 
   const chainFixture = new LocalChainFixture();
-  const serverFixture = new ServerFixture();
+  const mainnetStub = new SourcifyChain({
+    name: "Ethereum Mainnet (test stub)",
+    chainId: 1,
+    supported: true,
+    rpcs: [],
+    etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
+  });
+  const serverFixture = new ServerFixture({
+    chains: {
+      ...Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c])),
+      "1": mainnetStub,
+    },
+  });
   const sandbox = sinon.createSandbox();
   const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
   const testChainId = "1";
