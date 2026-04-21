@@ -45,7 +45,13 @@ describe("Import From Etherscan and Verify", function () {
     name: "Ethereum Mainnet (test stub)",
     chainId: 1,
     supported: true,
-    rpcs: [],
+    rpcs: [
+      {
+        rpc: "http://127.0.0.1:1",
+        urlWithoutApiKey: "http://127.0.0.1:1",
+        maskedUrl: "http://127.0.0.1:1",
+      },
+    ],
     etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
   });
   const serverFixture = new ServerFixture({
