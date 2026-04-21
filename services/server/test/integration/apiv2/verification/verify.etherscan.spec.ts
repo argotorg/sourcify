@@ -19,9 +19,7 @@ import {
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
-  SOLC_1_1_CONTRACT_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
-import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import {
   SourcifyChain,
   type VerificationStatus,
@@ -34,6 +32,29 @@ import {
 } from "../../../helpers/common-tests";
 
 use(chaiHttp);
+
+const testContracts: Record<
+  string,
+  { address: string; type: string; expectedStatus: string }[]
+> = {
+  "1": [
+    {
+      address: "0x1F3c21c9D16C5Bfc8956a433eC34bfcDEAa9D740",
+      type: "single",
+      expectedStatus: "partial",
+    },
+    {
+      address: "0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2",
+      type: "multiple",
+      expectedStatus: "partial",
+    },
+    {
+      address: "0x5Aa653A076c1dbB47cec8C1B4d152444CAD91941",
+      type: "standard-json",
+      expectedStatus: "partial",
+    },
+  ],
+};
 
 describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   // Don't run if it's an external PR. Etherscan tests need API keys that can't be exposed to external PRs.

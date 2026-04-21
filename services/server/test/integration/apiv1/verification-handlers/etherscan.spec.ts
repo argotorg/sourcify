@@ -5,7 +5,6 @@ import {
   assertVerification,
   assertValidationError,
 } from "../../../helpers/assertions";
-import testContracts from "../../../helpers/etherscanInstanceContracts.json";
 import {
   unusedAddress,
   invalidAddress,
@@ -32,6 +31,29 @@ import {
 } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
+
+const testContracts: Record<
+  string,
+  { address: string; type: string; expectedStatus: string }[]
+> = {
+  "1": [
+    {
+      address: "0x1F3c21c9D16C5Bfc8956a433eC34bfcDEAa9D740",
+      type: "single",
+      expectedStatus: "partial",
+    },
+    {
+      address: "0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2",
+      type: "multiple",
+      expectedStatus: "partial",
+    },
+    {
+      address: "0x5Aa653A076c1dbB47cec8C1B4d152444CAD91941",
+      type: "standard-json",
+      expectedStatus: "partial",
+    },
+  ],
+};
 
 const CUSTOM_PORT = 5678;
 
