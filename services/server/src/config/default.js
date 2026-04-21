@@ -49,6 +49,6 @@ module.exports = {
     // URL to fetch the chains config (sourcify-chains.json format) from at server startup.
     // To use a different set of chains, create a sourcify-chains.json override file — it takes priority.
     remoteUrl:
-      "https://raw.githubusercontent.com/sourcifyeth/sourcify-chains/main/sourcify-chains-default.json",
+      "https://storage.googleapis.com/sourcifyeth-chains/sourcify-chains-default.json",
   },
 };
