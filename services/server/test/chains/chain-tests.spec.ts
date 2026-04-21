@@ -1,6 +1,7 @@
 import { ServerFixture } from "../helpers/ServerFixture";
 import chai from "chai";
 import chaiHttp from "chai-http";
+import config from "config";
 import addContext from "mochawesome/addContext";
 import testEtherscanContracts from "../helpers/etherscanInstanceContracts.json";
 import { initializeSourcifyChains } from "../../src/sourcify-chains";
@@ -59,7 +60,9 @@ chai.use(chaiHttp);
 
 // Chains config is loaded async; use Mocha's --delay + run() to defer test registration
 (async () => {
-  const sourcifyChainsMap = await initializeSourcifyChains();
+  const sourcifyChainsMap = await initializeSourcifyChains({
+    remoteUrl: config.get("chains.remoteUrl"),
+  });
 
   const chainsToTest = Object.entries(sourcifyChainsMap)
     .filter(([id, chain]) => {

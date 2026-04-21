@@ -1,6 +1,7 @@
 import { deployFromPrivateKey } from "../helpers/helpers";
 import StorageArtifact from "./sources/storage.artifact.json";
 import { initializeSourcifyChains } from "../../src/sourcify-chains";
+import config from "config";
 import { program } from "commander";
 import { JsonRpcProvider } from "ethers";
 import { ChainRepository } from "../../src/sourcify-chain-repository";
@@ -36,7 +37,9 @@ if (require.main === module) {
 }
 
 async function main(chainId: number, privateKey: string) {
-  const sourcifyChainsMap = await initializeSourcifyChains();
+  const sourcifyChainsMap = await initializeSourcifyChains({
+    remoteUrl: config.get("chains.remoteUrl"),
+  });
   const chainRepository = new ChainRepository(sourcifyChainsMap);
   const chains = chainRepository.supportedChainsArray;
 

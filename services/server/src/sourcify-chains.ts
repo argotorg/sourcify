@@ -10,11 +10,6 @@ import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import logger from "./common/logger";
 import fs from "fs";
 import path from "path";
-import config from "config";
-
-import dotenv from "dotenv";
-
-dotenv.config();
 
 // Extended type for FetchRequestRPC with headerEnvName
 type FetchRequestRPCWithHeaderEnvName = Omit<FetchRequestRPC, "headers"> & {
@@ -202,6 +197,40 @@ function buildCustomRpcs(
   return rpcs;
 }
 
+async function fetchChainsConfigWithRetry(
+  remoteUrl: string,
+  maxAttempts = 3,
+  retryDelayMs = 3000,
+): Promise<SourcifyChainsExtensionsObjectWithHeaderEnvName> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      logger.info(
+        `Fetching chains config from ${remoteUrl} (attempt ${attempt}/${maxAttempts})`,
+      );
+      const response = await fetch(remoteUrl);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch chains config: HTTP ${response.status} from ${remoteUrl}`,
+        );
+      }
+      return (await response.json()) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        logger.warn(
+          `Failed to fetch chains config, retrying in ${retryDelayMs / 1000}s`,
+          { attempt, error: err.message },
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      }
+    }
+  }
+  throw new Error(
+    `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
+  );
+}
+
 /**
  * Loads the chain configuration and returns a populated SourcifyChainMap.
  *
@@ -212,10 +241,12 @@ function buildCustomRpcs(
  * Called by Server.init() so that both the CLI and test fixtures initialize chains
  * through the same code path.
  */
-export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
-  let chainsExtensions:
-    | SourcifyChainsExtensionsObjectWithHeaderEnvName
-    | undefined;
+export async function initializeSourcifyChains(opts: {
+  remoteUrl: string;
+  retryAttempts?: number;
+  retryDelayMs?: number;
+}): Promise<SourcifyChainMap> {
+  let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
 
   // Priority 1: local sourcify-chains.json (self-hosted override)
   if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
@@ -229,46 +260,17 @@ export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
   }
   // Priority 2: fetch from configured remote URL
   else {
-    const remoteUrl = config.get<string>("chains.remoteUrl");
-    if (!remoteUrl) {
+    if (!opts.remoteUrl) {
       throw new Error(
         "chains.remoteUrl is not configured and no sourcify-chains.json override found. " +
           "Set chains.remoteUrl in the server config to the URL of the chains config file.",
       );
     }
-    const maxAttempts = 3;
-    const retryDelayMs = 3000;
-    let lastError: Error | undefined;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        logger.info(
-          `Fetching chains config from ${remoteUrl} (attempt ${attempt}/${maxAttempts})`,
-        );
-        const response = await fetch(remoteUrl);
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch chains config: HTTP ${response.status} from ${remoteUrl}`,
-          );
-        }
-        chainsExtensions =
-          (await response.json()) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-        break;
-      } catch (err: any) {
-        lastError = err;
-        if (attempt < maxAttempts) {
-          logger.warn(
-            `Failed to fetch chains config, retrying in ${retryDelayMs / 1000}s`,
-            { attempt, error: err.message },
-          );
-          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-        }
-      }
-    }
-    if (!chainsExtensions) {
-      throw new Error(
-        `Failed to fetch chains config after ${maxAttempts} attempts: ${lastError?.message}`,
-      );
-    }
+    chainsExtensions = await fetchChainsConfigWithRetry(
+      opts.remoteUrl,
+      opts.retryAttempts,
+      opts.retryDelayMs,
+    );
   }
 
   const sourcifyChainsMap: SourcifyChainMap = {};
