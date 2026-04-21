@@ -36,7 +36,9 @@ describe("verificationWorker", function () {
   const piscinaSandbox = Sinon.createSandbox();
 
   before(async () => {
-    const sourcifyChainsMap = await initializeSourcifyChains();
+    const sourcifyChainsMap = await initializeSourcifyChains({
+      remoteUrl: config.get("chains.remoteUrl"),
+    });
 
     const sourcifyChainInstanceMap = Object.entries(sourcifyChainsMap).reduce(
       (acc, [chainId, chain]) => {

@@ -2,7 +2,6 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import sinon from "sinon";
 import fs from "fs";
-import config from "config";
 import { initializeSourcifyChains } from "../../src/sourcify-chains";
 
 use(chaiAsPromised);
@@ -70,7 +69,7 @@ describe("initializeSourcifyChains", function () {
         .stub(fs, "readFileSync")
         .returns(JSON.stringify(mockChainsConfig) as any);
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(result).to.have.property("1");
       expect(result["1"].chainId).to.equal(1);
@@ -83,7 +82,7 @@ describe("initializeSourcifyChains", function () {
         .stub(fs, "readFileSync")
         .returns(JSON.stringify(mockChainsConfig) as any);
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(result).to.have.property("5");
       expect(result["5"].supported).to.be.false;
@@ -96,7 +95,7 @@ describe("initializeSourcifyChains", function () {
         .returns(JSON.stringify(mockChainsConfig) as any);
       const fetchStub = sandbox.stub(globalThis, "fetch");
 
-      await initializeSourcifyChains();
+      await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(fetchStub.called).to.be.false;
     });
@@ -113,40 +112,30 @@ describe("initializeSourcifyChains", function () {
 
     it("fetches and populates chains from remote URL on first attempt", async function () {
       sandbox
-        .stub(config, "get")
-        .withArgs("chains.remoteUrl")
-        .returns(REMOTE_URL);
-      sandbox
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(mockChainsConfig));
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(result).to.have.property("1");
       expect(result["1"].chainId).to.equal(1);
     });
 
     it("throws when remoteUrl is not configured", async function () {
-      sandbox.stub(config, "get").withArgs("chains.remoteUrl").returns("");
-
-      await expect(initializeSourcifyChains()).to.be.rejectedWith(
-        "chains.remoteUrl is not configured",
-      );
+      await expect(
+        initializeSourcifyChains({ remoteUrl: "" }),
+      ).to.be.rejectedWith("chains.remoteUrl is not configured");
     });
 
     it("throws on HTTP error response", async function () {
       const clock = sandbox.useFakeTimers();
-      sandbox
-        .stub(config, "get")
-        .withArgs("chains.remoteUrl")
-        .returns(REMOTE_URL);
       sandbox.stub(globalThis, "fetch").resolves(makeErrorResponse(404));
 
       // Attach the rejection assertion before ticking so chai-as-promised
       // handles the rejection before mocha sees it as unhandled
-      const assertion = expect(initializeSourcifyChains()).to.be.rejectedWith(
-        "HTTP 404",
-      );
+      const assertion = expect(
+        initializeSourcifyChains({ remoteUrl: REMOTE_URL }),
+      ).to.be.rejectedWith("HTTP 404");
       await clock.tickAsync(7000);
       await assertion;
     });
@@ -154,15 +143,11 @@ describe("initializeSourcifyChains", function () {
     it("retries on fetch failure and succeeds on second attempt", async function () {
       const clock = sandbox.useFakeTimers();
 
-      sandbox
-        .stub(config, "get")
-        .withArgs("chains.remoteUrl")
-        .returns(REMOTE_URL);
       const fetchStub = sandbox.stub(globalThis, "fetch");
       fetchStub.onFirstCall().rejects(new Error("Network error"));
       fetchStub.onSecondCall().resolves(makeOkResponse(mockChainsConfig));
 
-      const promise = initializeSourcifyChains();
+      const promise = initializeSourcifyChains({ remoteUrl: REMOTE_URL });
       // Advance past the 3 s retry delay so the second attempt can run
       await clock.tickAsync(3001);
       const result = await promise;
@@ -174,17 +159,13 @@ describe("initializeSourcifyChains", function () {
     it("throws after all retry attempts are exhausted", async function () {
       const clock = sandbox.useFakeTimers();
 
-      sandbox
-        .stub(config, "get")
-        .withArgs("chains.remoteUrl")
-        .returns(REMOTE_URL);
       sandbox.stub(globalThis, "fetch").rejects(new Error("Network error"));
 
       // Attach the rejection assertion before ticking so chai-as-promised
       // handles the rejection before mocha sees it as unhandled
-      const assertion = expect(initializeSourcifyChains()).to.be.rejectedWith(
-        "Failed to fetch chains config after 3 attempts",
-      );
+      const assertion = expect(
+        initializeSourcifyChains({ remoteUrl: REMOTE_URL }),
+      ).to.be.rejectedWith("Failed to fetch chains config after 3 attempts");
       // 3 attempts with a 3 s delay between each → advance 7 s to cover all
       await clock.tickAsync(7000);
       await assertion;
@@ -197,10 +178,6 @@ describe("initializeSourcifyChains", function () {
   describe("chain building", function () {
     beforeEach(function () {
       sandbox.stub(fs, "existsSync").returns(false);
-      sandbox
-        .stub(config, "get")
-        .withArgs("chains.remoteUrl")
-        .returns(REMOTE_URL);
     });
 
     it("returns a fresh map on each call (independent results)", async function () {
@@ -223,8 +200,8 @@ describe("initializeSourcifyChains", function () {
       fetchStub.onFirstCall().resolves(makeOkResponse(firstConfig));
       fetchStub.onSecondCall().resolves(makeOkResponse(secondConfig));
 
-      const first = await initializeSourcifyChains();
-      const second = await initializeSourcifyChains();
+      const first = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
+      const second = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(first).to.not.equal(second); // distinct object references
       expect(first).to.have.property("1");
@@ -245,7 +222,7 @@ describe("initializeSourcifyChains", function () {
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(chainsWithNoRpc));
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(result).to.not.have.property("99998");
     });
@@ -262,7 +239,7 @@ describe("initializeSourcifyChains", function () {
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(deprecatedChains));
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       expect(result).to.have.property("5");
       expect(result["5"].supported).to.be.false;
@@ -273,7 +250,7 @@ describe("initializeSourcifyChains", function () {
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(mockChainsConfig));
 
-      const result = await initializeSourcifyChains();
+      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
 
       for (const key of Object.keys(result)) {
         expect(key).to.be.a("string");

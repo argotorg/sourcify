@@ -96,7 +96,9 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
   });
 
   // Load chain config first so getEtherscanApiKeyForEachChain() sees the populated map
-  const sourcifyChainsMap = await initializeSourcifyChains();
+  const sourcifyChainsMap = await initializeSourcifyChains({
+    remoteUrl: config.get<string>("chains.remoteUrl"),
+  });
 
   const server = new Server(
     {

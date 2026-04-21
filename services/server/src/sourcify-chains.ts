@@ -10,11 +10,6 @@ import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import logger from "./common/logger";
 import fs from "fs";
 import path from "path";
-import config from "config";
-
-import dotenv from "dotenv";
-
-dotenv.config();
 
 // Extended type for FetchRequestRPC with headerEnvName
 type FetchRequestRPCWithHeaderEnvName = Omit<FetchRequestRPC, "headers"> & {
@@ -246,7 +241,11 @@ async function fetchChainsConfigWithRetry(
  * Called by Server.init() so that both the CLI and test fixtures initialize chains
  * through the same code path.
  */
-export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
+export async function initializeSourcifyChains(opts: {
+  remoteUrl: string;
+  retryAttempts?: number;
+  retryDelayMs?: number;
+}): Promise<SourcifyChainMap> {
   let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
 
   // Priority 1: local sourcify-chains.json (self-hosted override)
@@ -261,14 +260,17 @@ export async function initializeSourcifyChains(): Promise<SourcifyChainMap> {
   }
   // Priority 2: fetch from configured remote URL
   else {
-    const remoteUrl = config.get<string>("chains.remoteUrl");
-    if (!remoteUrl) {
+    if (!opts.remoteUrl) {
       throw new Error(
         "chains.remoteUrl is not configured and no sourcify-chains.json override found. " +
           "Set chains.remoteUrl in the server config to the URL of the chains config file.",
       );
     }
-    chainsExtensions = await fetchChainsConfigWithRetry(remoteUrl);
+    chainsExtensions = await fetchChainsConfigWithRetry(
+      opts.remoteUrl,
+      opts.retryAttempts,
+      opts.retryDelayMs,
+    );
   }
 
   const sourcifyChainsMap: SourcifyChainMap = {};

@@ -1,4 +1,5 @@
 import chai from "chai";
+import config from "config";
 import {
   BINARY_SEARCH_TIMEOUT_MS,
   findContractCreationTxByBinarySearchWithTimeout,
@@ -18,7 +19,9 @@ describe("contract creation util", function () {
   let sourcifyChainsMap: SourcifyChainMap;
 
   before(async () => {
-    sourcifyChainsMap = await initializeSourcifyChains();
+    sourcifyChainsMap = await initializeSourcifyChains({
+      remoteUrl: config.get("chains.remoteUrl"),
+    });
   });
 
   it("should run getCreatorTx with chainId 40", async function () {

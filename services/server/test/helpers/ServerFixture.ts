@@ -69,7 +69,10 @@ export class ServerFixture {
       // remote/local config. The same map is passed to both serverOptions.chains
       // and sourcifyChainMap so both are always consistent.
       const sourcifyChainsMap =
-        fixtureOptions_?.chains || (await initializeSourcifyChains());
+        fixtureOptions_?.chains ||
+        (await initializeSourcifyChains({
+          remoteUrl: config.get("chains.remoteUrl"),
+        }));
 
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";
