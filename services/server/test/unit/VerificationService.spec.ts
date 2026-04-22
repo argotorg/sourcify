@@ -15,6 +15,7 @@ import { MockVerificationExport } from "../helpers/mocks";
 
 describe("VerificationService", function () {
   const sandbox = sinon.createSandbox();
+  let verificationService: VerificationService;
 
   beforeEach(function () {
     // Clear any previously nocked interceptors
@@ -22,10 +23,14 @@ describe("VerificationService", function () {
     rimraf.sync(path.join(testS3Path, testS3Bucket));
   });
 
-  afterEach(function () {
+  afterEach(async function () {
     // Ensure that all nock interceptors have been used
     nock.isDone();
     sandbox.restore();
+    // Destroy the Piscina worker pool to free memory
+    if (verificationService) {
+      await verificationService.close();
+    }
   });
 
   after(() => {
@@ -100,7 +105,7 @@ describe("VerificationService", function () {
         });
     }
 
-    const verificationService = new VerificationService(
+    verificationService = new VerificationService(
       {
         initCompilers: true,
         sourcifyChainMap: {},
@@ -140,7 +145,7 @@ describe("VerificationService", function () {
     const verificationId = "test-verification-id";
     const mockStorageService = createMockStorageService(verificationId);
 
-    const verificationService = new VerificationService(
+    verificationService = new VerificationService(
       {
         initCompilers: false,
         sourcifyChainMap: {},
@@ -201,7 +206,7 @@ describe("VerificationService", function () {
     const verificationId = "test-verification-id-s3";
     const mockStorageService = createMockStorageService(verificationId);
 
-    const verificationService = new VerificationService(
+    verificationService = new VerificationService(
       {
         initCompilers: false,
         sourcifyChainMap: {},
@@ -257,7 +262,7 @@ describe("VerificationService", function () {
     const verificationId = "test-verification-id-s3-fail";
     const mockStorageService = createMockStorageService(verificationId);
 
-    const verificationService = new VerificationService(
+    verificationService = new VerificationService(
       {
         initCompilers: false,
         sourcifyChainMap: {},
