@@ -2,9 +2,9 @@ import chai from "chai";
 import config from "config";
 import chaiHttp from "chai-http";
 import {
-  deployAndVerifyContract,
   deployFromAbiAndBytecode,
   deployFromAbiAndBytecodeForCreatorTxHash,
+  insertMockVerification,
   waitSecs,
 } from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
@@ -14,6 +14,7 @@ import fs from "fs";
 import { RWStorageIdentifiers } from "../../../../src/server/services/storageServices/identifiers";
 import { id as keccak256 } from "ethers";
 import contractVyperArtifact from "../../../sources/vyper/testcontract/artifact.json";
+import type { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
 
 chai.use(chaiHttp);
 
@@ -591,23 +592,30 @@ describe("Verify repository endpoints", function () {
     },
   );
 
-  describe(`Pagination in /files/contracts/{full|any|partial}/${chainFixture.chainId}`, async function () {
+  describe(`Pagination in /files/contracts/{full|any|partial}/${chainFixture.chainId}`, function () {
     const endpointMatchTypes = ["full", "any", "partial"];
     for (const endpointMatchType of endpointMatchTypes) {
       it(`should handle pagination in /files/contracts/${endpointMatchType}/${chainFixture.chainId}`, async function () {
+        const databaseService = serverFixtureWithDatabase.server.services
+          .storage.rwServices[
+          RWStorageIdentifiers.SourcifyDatabase
+        ] as SourcifyDatabaseService;
+
         const contractAddresses: string[] = [];
 
-        // Deploy 5 contracts
+        // Insert 5 mock contracts directly into the database
         for (let i = 0; i < 5; i++) {
-          // Deploy partial matching contract if endpoint is partial or choose randomly if endpointMachtype is any. 'any' endpoint results should be consistent regardless.
-          const shouldDeployPartial =
+          // Use unique index per endpointMatchType to avoid conflicts across iterations
+          const globalIndex =
+            endpointMatchTypes.indexOf(endpointMatchType) * 10 + i;
+          const shouldBePartial =
             endpointMatchType === "partial" ||
-            (endpointMatchType === "any" && Math.random() > 0.5);
+            (endpointMatchType === "any" && i % 2 === 0);
 
-          const address = await deployAndVerifyContract(
-            chainFixture,
-            serverFixtureWithDatabase,
-            shouldDeployPartial,
+          const address = await insertMockVerification(
+            databaseService,
+            globalIndex,
+            shouldBePartial,
           );
           contractAddresses.push(address);
         }
