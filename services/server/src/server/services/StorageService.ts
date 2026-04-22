@@ -352,13 +352,26 @@ export class StorageService {
 
   public async close() {
     logger.info("Gracefully closing storage services");
+
+    // Close all services except SourcifyDatabase first because
+    // it is used by other services and should be closed last
+    // to avoid errors during the closing process
+    const sourcifyDatabase =
+      this.rwServices[RWStorageIdentifiers.SourcifyDatabase];
     const closingPromises: Promise<void>[] = [];
-    for (const service of Object.values(this.wServices)) {
+    for (const service of [
+      ...Object.values(this.rwServices).filter((s) => s !== sourcifyDatabase),
+      ...Object.values(this.wServices),
+    ]) {
       if (service.close) {
         closingPromises.push(service.close());
       }
     }
     await Promise.all(closingPromises);
+
+    if (sourcifyDatabase?.close) {
+      await sourcifyDatabase.close();
+    }
   }
 
   async storeVerification(
