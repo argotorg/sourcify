@@ -445,6 +445,14 @@
     "sourcifyName": "Celo Alfajores Testnet",
     "supported": false
   },
+  "61803": {
+    "sourcifyName": "Etica Mainnet",
+    "supported": true,
+    "rpc": [
+      "https://eticamainnet.eticascan.org",
+      "https://eticamainnet.eticaprotocol.org"
+    ]
+  },
   "62320": {
     "sourcifyName": "Celo Baklava Testnet",
     "supported": false
