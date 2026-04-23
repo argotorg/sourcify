@@ -220,11 +220,25 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestAuxdata0_3_4);
   });
 
+  it("should store a partial match for a Vyper 0.3.4 contract where the onchain cbor auxdata has a different version", async () => {
+    const vyperTestAuxdata0_3_4DifferentVersion = (
+      await import("./testdata/vyper/auxdata-0.3.4-different-version.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestAuxdata0_3_4DifferentVersion);
+  });
+
   it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
     const vyperTestAuxdata0_3_8 = (
       await import("./testdata/vyper/auxdata-0.3.8.json")
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_3_8);
+  });
+
+  it("should store a partial match for a Vyper 0.3.8 contract where the onchain cbor auxdata has a different version", async () => {
+    const vyperTestAuxdata0_3_8DifferentVersion = (
+      await import("./testdata/vyper/auxdata-0.3.8-different-version.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestAuxdata0_3_8DifferentVersion);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {
@@ -274,6 +288,13 @@ describe("Specific Verification Cases", function () {
       await import("./testdata/onchain_append_cbor_false_compiled_bytecode_hash_none.json")
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestConstructorArgumentsAndImmutables);
+  });
+
+  it("should verify a Vyper contract with storage_layout_overrides", async () => {
+    const vyperTestStorageLayoutOverrides = (
+      await import("./testdata/vyper/storage_layout_overrides.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestStorageLayoutOverrides);
   });
 
   it("should partially match a contract compiled with Solidity 0.1.3", async () => {

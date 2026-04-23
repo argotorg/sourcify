@@ -207,3 +207,85 @@ describe("/private/replace-contract", function () {
       .to.deep.equal(originalMatchResult.rows[0].creation_values);
   });
 });
+
+describe("/private/verify-deprecated", function () {
+  const chainFixture = new LocalChainFixture();
+  const serverFixture = new ServerFixture();
+
+  it("should verify a contract on deprecated chain (Goerli) and store it correctly in the database", async () => {
+    const address = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f";
+    const goerliChainId = "5";
+    const matchStatus = "perfect";
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/private/verify-deprecated")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: address,
+        chain: goerliChainId,
+        match: matchStatus,
+        files: {
+          "metadata.json": chainFixture.defaultContractMetadata.toString(),
+          "Storage.sol": chainFixture.defaultContractSource.toString(),
+        },
+      });
+
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      address,
+      goerliChainId,
+      matchStatus,
+    );
+
+    chai
+      .expect(res.body.result[0].address.toLowerCase())
+      .to.equal(address.toLowerCase());
+    chai.expect(res.body.result[0].chainId).to.equal(goerliChainId);
+    chai.expect(res.body.result[0].status).to.equal(matchStatus);
+
+    const verificationDetails = await serverFixture.sourcifyDatabase.query(
+      `SELECT
+          runtime_match,
+          creation_match,
+          onchain_runtime_code.code as onchain_runtime_code,
+          onchain_creation_code.code as onchain_creation_code,
+          cd.chain_id,
+          cd.block_number,
+          cd.transaction_index,
+          cd.transaction_hash,
+          cd.deployer
+        FROM verified_contracts vc
+        LEFT JOIN contract_deployments cd ON cd.id = vc.deployment_id
+        LEFT JOIN contracts c ON c.id = cd.contract_id
+        LEFT JOIN code onchain_runtime_code ON onchain_runtime_code.code_hash = c.runtime_code_hash
+        LEFT JOIN code onchain_creation_code ON onchain_creation_code.code_hash = c.creation_code_hash
+        WHERE cd.address = $1`,
+      [Buffer.from(address.substring(2), "hex")],
+    );
+
+    chai.expect(verificationDetails.rows.length).to.equal(1);
+    const details = verificationDetails.rows[0];
+
+    chai.expect(details.chain_id).to.equal(goerliChainId);
+    chai.expect(details.block_number).to.equal("-1");
+    chai.expect(details.transaction_index).to.equal("-1");
+    chai.expect(details.transaction_hash).to.be.null;
+    chai.expect(details.deployer).to.be.null;
+    chai.expect(details.runtime_match).to.equal(true);
+    chai.expect(details.creation_match).to.equal(true);
+
+    const deprecatedMessage =
+      "0x2121212121212121212121202d20636861696e207761732064657072656361746564206174207468652074696d65206f6620766572696669636174696f6e";
+    const onchainRuntimeHex =
+      "0x" + Buffer.from(details.onchain_runtime_code).toString("hex");
+    const onchainCreationHex =
+      "0x" + Buffer.from(details.onchain_creation_code).toString("hex");
+
+    chai.expect(onchainRuntimeHex).to.equal(deprecatedMessage);
+    chai.expect(onchainCreationHex).to.equal(deprecatedMessage);
+  });
+});

@@ -15,6 +15,7 @@ import { solc, vyperCompiler } from '../utils';
 // and ensure consistency across lib-sourcify and server tests.
 import {
   INVALID_API_KEY_RESPONSE,
+  MALFORMED_VYPER_VERSION_RESPONSE,
   MULTIPLE_CONTRACT_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   SINGLE_CONTRACT_RESPONSE,
@@ -25,6 +26,10 @@ import {
   mockEtherscanApi,
 } from '../../../../services/server/test/helpers/etherscanResponseMocks';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
+import {
+  MALFORMED_VERSION_RESPONSE,
+  MALFORMED_NIGHLTY_VERSION_RESPONSE,
+} from '../../../../services/server/test/helpers/etherscanResponseMocks';
 
 use(chaiHttp);
 use(chaiAsPromised);
@@ -227,6 +232,67 @@ describe('etherscan util (lib)', function () {
     });
   });
 
+  describe('resolveSolidityVersion', () => {
+    it('should resolve a truncated commit hash', () => {
+      const result = EtherscanUtils.resolveSolidityVersion(
+        '0.3.2+commit.81ae2a7',
+      );
+      expect(result).to.equal('0.3.2+commit.81ae2a78');
+    });
+
+    it('should return a well-formed version unchanged', () => {
+      const result = EtherscanUtils.resolveSolidityVersion(
+        '0.8.17+commit.8df45f5f',
+      );
+      expect(result).to.equal('0.8.17+commit.8df45f5f');
+    });
+
+    it('should resolve a version without commit hash to the full version', () => {
+      const result = EtherscanUtils.resolveSolidityVersion('0.8.17');
+      expect(result).to.equal('0.8.17+commit.8df45f5f');
+    });
+
+    it('should return an unmatched version unchanged', () => {
+      const result = EtherscanUtils.resolveSolidityVersion(
+        '0.99.99+commit.deadbeef',
+      );
+      expect(result).to.equal('0.99.99+commit.deadbeef');
+    });
+
+    it('should resolve an old date-based format version', () => {
+      const result = EtherscanUtils.resolveSolidityVersion(
+        '0.3.2-2016-04-18-81ae2a7',
+      );
+      expect(result).to.equal('0.3.2+commit.81ae2a78');
+    });
+
+    it('should resolve a nightly version with wrong date by commit hash', () => {
+      // Find a real nightly entry to test with
+      const result = EtherscanUtils.resolveSolidityVersion(
+        '0.1.7-nightly.9999.1.1+commit.f86451cd',
+      );
+      expect(result).to.equal('0.1.7-nightly.2015.11.26+commit.f86451cd');
+    });
+  });
+
+  describe('processSolidityResultFromEtherscan with malformed versions', () => {
+    it('should resolve a malformed date-based version with truncated hash', () => {
+      const result = EtherscanUtils.processSolidityResultFromEtherscan(
+        MALFORMED_VERSION_RESPONSE.result[0] as any,
+      );
+      // v0.3.2-2016-04-18-81ae2a7 → 0.3.2+commit.81ae2a7 → resolved to 0.3.2+commit.81ae2a78
+      expect(result.compilerVersion).to.equal('0.3.2+commit.81ae2a78');
+    });
+
+    it('should fall back to stable release for a nightly version with unknown commit hash', () => {
+      const result = EtherscanUtils.processSolidityResultFromEtherscan(
+        MALFORMED_NIGHLTY_VERSION_RESPONSE.result[0] as any,
+      );
+      // v0.6.0-nightly.2019.3.11+commit.4704ef84 — commit doesn't exist, falls back to stable 0.6.0
+      expect(result.compilerVersion).to.equal('0.6.0+commit.26b70077');
+    });
+  });
+
   describe('processVyperResultFromEtherscan', () => {
     it('should process a vyper single contract response from etherscan', async () => {
       // Mock vyper releases list
@@ -386,6 +452,97 @@ describe('etherscan util (lib)', function () {
       expect(compilation.compilationTarget).to.deep.equal(
         expectedCompilation.compilationTarget,
       );
+    });
+  });
+
+  describe('getVyperCompilerVersion', () => {
+    it('should resolve "vyper:0.1.0b17" to the GitHub tag format', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b17',
+        0,
+      );
+      expect(result).to.equal('0.1.0-beta.17+commit.0671b7b');
+    });
+
+    it('should resolve "vyper:0.1.0b16" to the GitHub tag format', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.16',
+            assets: [{ name: 'vyper.0.1.0-beta.16+commit.5e4a94a.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b16',
+        0,
+      );
+      expect(result).to.equal('0.1.0-beta.16+commit.5e4a94a');
+    });
+
+    it('should still resolve a well-formed "vyper:0.3.10"', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.3.10',
+            assets: [{ name: 'vyper.0.3.10+commit.91361694.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.3.10',
+        0,
+      );
+      expect(result).to.equal('0.3.10+commit.91361694');
+    });
+
+    it('should return undefined for a version not in the mirror', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b4',
+        0,
+      );
+      expect(result).to.be.undefined;
+    });
+
+    it('should resolve a malformed Vyper version via processVyperResultFromEtherscan', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.processVyperResultFromEtherscan(
+        MALFORMED_VYPER_VERSION_RESPONSE.result[0] as any,
+      );
+      expect(result.compilerVersion).to.equal('0.1.0-beta.17+commit.0671b7b');
     });
   });
 });

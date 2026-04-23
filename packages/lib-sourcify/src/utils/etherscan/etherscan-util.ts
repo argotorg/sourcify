@@ -12,6 +12,7 @@ import type {
   ProcessedEtherscanResult,
 } from './EtherscanTypes';
 import { EtherscanImportError } from './EtherscanTypes';
+import { SOLIDITY_BIN_LIST } from './solidity-bin-list';
 
 interface VyperVersion {
   compiler_version: string;
@@ -25,6 +26,11 @@ interface VyperVersionCache {
 
 let vyperVersionCache: VyperVersionCache | null = null;
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour default
+
+// Etherscan encodes early Vyper betas as e.g. "0.1.0b17" while the GitHub release
+// tag (and the Hardhat mirror) uses "0.1.0-beta.17". Normalize before lookup.
+const normalizeVyperVersion = (v: string): string =>
+  v.replace(/^(\d+\.\d+\.\d+)b(\d+)$/, '$1-beta.$2');
 
 export const getVyperCompilerVersion = async (
   compilerString: string,
@@ -63,8 +69,9 @@ export const getVyperCompilerVersion = async (
 
   if (!vyperVersionCache) return undefined;
   const versionNumber = compilerString.split(':')[1];
+  const normalizedVersion = normalizeVyperVersion(versionNumber);
   let found = vyperVersionCache.versions.find(
-    (v) => v.tag === versionNumber,
+    (v) => v.tag === versionNumber || v.tag === normalizedVersion,
   )?.compiler_version;
   if (!found) {
     // If not found, try a one-time refresh to capture newly added versions
@@ -85,7 +92,7 @@ export const getVyperCompilerVersion = async (
         lastFetch: Date.now(),
       };
       found = vyperVersionCache.versions.find(
-        (v) => v.tag === versionNumber,
+        (v) => v.tag === versionNumber || v.tag === normalizedVersion,
       )?.compiler_version;
     } catch (error) {
       logWarn('Failed to refresh Vyper versions for missing tag', {
@@ -96,6 +103,88 @@ export const getVyperCompilerVersion = async (
   }
   return found;
 };
+
+export function resolveSolidityVersion(version: string): string {
+  // Only resolve if the version doesn't match the standard format
+  if (/^\d+\.\d+\.\d+\+commit\.[0-9a-f]{7,8}$/.test(version)) {
+    // Check if it's already a known version in the list (early return)
+    if (SOLIDITY_BIN_LIST.includes(version)) {
+      return version;
+    }
+  }
+
+  let commitPrefix: string | undefined;
+  let leftPart: string;
+
+  // Handle old date-based format: "0.3.2-2016-04-18-81ae2a7"
+  const oldFormatMatch = version.match(
+    /^(\d+\.\d+\.\d+)-\d{4}-\d{2}-\d{2}-([0-9a-f]+)$/,
+  );
+  if (oldFormatMatch) {
+    leftPart = oldFormatMatch[1];
+    commitPrefix = oldFormatMatch[2];
+  } else {
+    // Split on "+commit." to extract the commit hash prefix
+    const commitSplit = version.split('+commit.');
+    commitPrefix = commitSplit.length > 1 ? commitSplit[1] : undefined;
+    leftPart = commitSplit[0];
+  }
+
+  // Extract base version and pre-release type
+  const baseMatch = leftPart.match(/^(\d+\.\d+\.\d+)(?:-(nightly|pre))?/);
+  if (!baseMatch) return version;
+
+  const baseVersion = baseMatch[1];
+  const preReleaseType = baseMatch[2]; // "nightly", "pre", or undefined
+
+  for (const entry of SOLIDITY_BIN_LIST) {
+    const entryCommitSplit = entry.split('+commit.');
+    if (entryCommitSplit.length < 2) continue;
+
+    const entryCommit = entryCommitSplit[1];
+    const entryLeft = entryCommitSplit[0];
+
+    // Check base version match
+    if (!entryLeft.startsWith(baseVersion)) continue;
+
+    // Check pre-release type match
+    if (preReleaseType) {
+      if (!entryLeft.includes(`-${preReleaseType}`)) continue;
+    } else {
+      if (entryLeft.includes('-nightly') || entryLeft.includes('-pre'))
+        continue;
+    }
+
+    // If no commit hash provided, match the first stable/nightly/pre entry for this version
+    if (!commitPrefix) {
+      return entry;
+    }
+
+    // Check commit hash prefix match (either direction for truncation)
+    if (
+      entryCommit.startsWith(commitPrefix) ||
+      commitPrefix.startsWith(entryCommit)
+    ) {
+      return entry;
+    }
+  }
+
+  // Fallback: if no match found for a nightly/pre version, try the stable release
+  if (preReleaseType) {
+    for (const entry of SOLIDITY_BIN_LIST) {
+      const entryLeft = entry.split('+commit.')[0];
+      if (
+        entryLeft === baseVersion &&
+        !entryLeft.includes('-nightly') &&
+        !entryLeft.includes('-pre')
+      ) {
+        return entry;
+      }
+    }
+  }
+
+  return version; // No match found, return as-is
+}
 
 export const parseEtherscanJsonInput = (sourceCodeObject: string) => {
   // Etherscan wraps the json object: {{ ... }}
@@ -161,8 +250,11 @@ export const fetchFromEtherscan = async (
   chainId: number | string,
   address: string,
   apiKey: string,
+  customBaseUrl?: string,
 ): Promise<EtherscanResult> => {
-  const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
+  const url = customBaseUrl
+    ? `${customBaseUrl}/api?module=contract&action=getsourcecode&address=${address}&apikey=`
+    : `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=`;
   const secretUrl = url + apiKey;
   const maskedUrl = url + (apiKey ? apiKey.slice(0, 6) + '...' : '');
 
@@ -266,10 +358,15 @@ export const processSolidityResultFromEtherscan = (
   const sourceCodeObject = contractResultJson.SourceCode;
   const contractName = contractResultJson.ContractName;
 
-  const compilerVersion =
+  // Strip leading 'v' if present
+  const rawVersion =
     contractResultJson.CompilerVersion.charAt(0) === 'v'
       ? contractResultJson.CompilerVersion.slice(1)
       : contractResultJson.CompilerVersion;
+
+  // Resolve malformed versions (truncated hashes, wrong dates, old date-based format)
+  // using the official Solidity binary list
+  const compilerVersion = resolveSolidityVersion(rawVersion);
 
   let solcJsonInput: SolidityJsonInput;
   let contractPath: string | undefined;

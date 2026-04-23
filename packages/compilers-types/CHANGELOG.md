@@ -1,3 +1,9 @@
+
+
+## @ethereum-sourcify/compilers-types@1.2.0 - 2026-04-14
+
+- Add VyperStorageLayout type and capture missing Vyper compiler output fields (#2739)
+
 ## @ethereum-sourcify/compilers-types@1.1.0 - 2026-03-30
 
 - feat: add Fe language support for smart contract verification (#2692)

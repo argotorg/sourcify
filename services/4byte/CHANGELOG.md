@@ -1,3 +1,9 @@
+
+
+## sourcify-4byte@1.1.11 - 2026-04-14
+
+- update dependencies and docker base image
+
 ## sourcify-4byte@1.1.10 - 2026-03-30
 
 - Update dependencies
