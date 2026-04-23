@@ -288,3 +288,28 @@ export const VYPER_STANDARD_JSON_CONTRACT_RESPONSE = {
     },
   ],
 };
+
+// Same shape as VYPER_SINGLE_CONTRACT_RESPONSE but with the old Etherscan beta format
+// "vyper:0.1.0b17" instead of the normalized GitHub tag "0.1.0-beta.17".
+export const MALFORMED_VYPER_VERSION_RESPONSE = {
+  status: "1",
+  message: "OK",
+  result: [
+    {
+      SourceCode:
+        "# @version 0.1.0b17\r\n# A minimal Vyper contract for testing version normalization\r\n\r\nowner: address\r\n\r\n@deploy\r\ndef __init__():\r\n    self.owner = msg.sender",
+      ABI: "[]",
+      ContractName: "SimpleOwner",
+      CompilerVersion: "vyper:0.1.0b17",
+      OptimizationUsed: "0",
+      Runs: "0",
+      ConstructorArguments: "",
+      EVMVersion: "Default",
+      Library: "",
+      LicenseType: "MIT",
+      Proxy: "0",
+      Implementation: "",
+      SwarmSource: "",
+    },
+  ],
+};

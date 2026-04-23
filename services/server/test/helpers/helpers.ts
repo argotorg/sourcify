@@ -4,7 +4,9 @@ import type {
   JsonRpcProvider,
   BytesLike,
 } from "ethers";
-import { ContractFactory, Wallet, Contract } from "ethers";
+import { ContractFactory, Wallet, Contract, getAddress } from "ethers";
+import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
+import { MockVerificationExport } from "./mocks";
 import { assertVerification } from "./assertions";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
@@ -360,4 +362,34 @@ export function hookIntoVerificationWorkerRun(
   };
 
   return makeWorkersWait;
+}
+
+/**
+ * Insert a mock verified contract directly into the database.
+ * Each contract gets unique bytecodes and address derived from the index
+ * to satisfy the DB unique constraints, avoiding expensive on-chain
+ * deployments and full verification round-trips.
+ */
+export async function insertMockVerification(
+  databaseService: SourcifyDatabaseService,
+  index: number,
+  partial: boolean,
+  chainId: number = 31337,
+): Promise<string> {
+  const hexIndex = index.toString(16).padStart(4, "0");
+  const mock = structuredClone(MockVerificationExport);
+  mock.address = getAddress(`0x${hexIndex}${"0".repeat(40 - hexIndex.length)}`);
+  mock.chainId = chainId;
+  mock.onchainRuntimeBytecode = `0x${"aa".repeat(32)}${hexIndex}`;
+  mock.onchainCreationBytecode = `0x${"bb".repeat(32)}${hexIndex}`;
+  mock.compilation.runtimeBytecode = `0x${"cc".repeat(32)}${hexIndex}`;
+  mock.compilation.creationBytecode = `0x${"dd".repeat(32)}${hexIndex}`;
+  mock.compilation.runtimeBytecodeCborAuxdata = {};
+  mock.compilation.creationBytecodeCborAuxdata = {};
+  mock.deploymentInfo.txHash = `0x${"ee".repeat(31)}${hexIndex}`;
+  mock.status = partial
+    ? { runtimeMatch: "partial", creationMatch: "partial" }
+    : { runtimeMatch: "perfect", creationMatch: "perfect" };
+  await databaseService.storeVerification(mock);
+  return mock.address;
 }

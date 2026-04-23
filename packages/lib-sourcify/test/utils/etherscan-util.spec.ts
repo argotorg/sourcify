@@ -15,6 +15,7 @@ import { solc, vyperCompiler } from '../utils';
 // and ensure consistency across lib-sourcify and server tests.
 import {
   INVALID_API_KEY_RESPONSE,
+  MALFORMED_VYPER_VERSION_RESPONSE,
   MULTIPLE_CONTRACT_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   SINGLE_CONTRACT_RESPONSE,
@@ -451,6 +452,97 @@ describe('etherscan util (lib)', function () {
       expect(compilation.compilationTarget).to.deep.equal(
         expectedCompilation.compilationTarget,
       );
+    });
+  });
+
+  describe('getVyperCompilerVersion', () => {
+    it('should resolve "vyper:0.1.0b17" to the GitHub tag format', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b17',
+        0,
+      );
+      expect(result).to.equal('0.1.0-beta.17+commit.0671b7b');
+    });
+
+    it('should resolve "vyper:0.1.0b16" to the GitHub tag format', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.16',
+            assets: [{ name: 'vyper.0.1.0-beta.16+commit.5e4a94a.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b16',
+        0,
+      );
+      expect(result).to.equal('0.1.0-beta.16+commit.5e4a94a');
+    });
+
+    it('should still resolve a well-formed "vyper:0.3.10"', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.3.10',
+            assets: [{ name: 'vyper.0.3.10+commit.91361694.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.3.10',
+        0,
+      );
+      expect(result).to.equal('0.3.10+commit.91361694');
+    });
+
+    it('should return undefined for a version not in the mirror', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.1.0b4',
+        0,
+      );
+      expect(result).to.be.undefined;
+    });
+
+    it('should resolve a malformed Vyper version via processVyperResultFromEtherscan', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [
+          {
+            tag_name: 'v0.1.0-beta.17',
+            assets: [{ name: 'vyper.0.1.0-beta.17+commit.0671b7b.darwin' }],
+          },
+        ]);
+
+      const result = await EtherscanUtils.processVyperResultFromEtherscan(
+        MALFORMED_VYPER_VERSION_RESPONSE.result[0] as any,
+      );
+      expect(result.compilerVersion).to.equal('0.1.0-beta.17+commit.0671b7b');
     });
   });
 });
