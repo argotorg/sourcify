@@ -2567,5 +2567,13 @@
       }
     },
     "rpc": ["https://testnet.evm.nodes.onflow.org"]
+  },
+  "61803": {
+    "sourcifyName": "Etica Mainnet",
+    "supported": true,
+    "rpc": [
+      "https://eticamainnet.eticascan.org",
+      "https://eticamainnet.eticaprotocol.org"
+    ]
   }
 }
