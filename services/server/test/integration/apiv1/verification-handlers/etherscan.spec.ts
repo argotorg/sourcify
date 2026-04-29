@@ -313,7 +313,7 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${serverFixture.sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${testChainId} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
         "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
