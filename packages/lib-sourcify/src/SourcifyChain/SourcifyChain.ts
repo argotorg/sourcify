@@ -51,6 +51,7 @@ export class SourcifyChain {
   readonly etherscanApi?: {
     supported: boolean;
     apiKeyEnvName?: string;
+    url?: string;
   };
 
   private static rpcTimeout: number = 10 * 1000;

@@ -37,6 +37,9 @@ export interface VyperJsonInput {
       abi?: any[];
     };
   };
+  storage_layout_overrides?: {
+    [sourcePath: string]: VyperStorageLayout;
+  };
   settings: VyperSettings;
 }
 
@@ -63,14 +66,18 @@ export interface VyperOutputSources {
 }
 
 export interface VyperSourceMap {
-  breakpoints: [];
+  breakpoints: number[];
   error_map: Record<string, string>;
   pc_ast_map: Record<string, number[]>;
   pc_ast_map_item_keys: string[];
-  pc_breakpoints: [];
+  pc_breakpoints: number[];
   pc_jump_map: Record<string, string>;
   pc_pos_map: Record<string, number[]>;
   pc_pos_map_compressed: string;
+}
+
+export interface VyperStorageLayout {
+  [variableName: string]: { type: string; slot: number; n_slots: number };
 }
 
 export interface VyperOutputContract {
@@ -78,10 +85,14 @@ export interface VyperOutputContract {
   userdoc: Userdoc;
   devdoc: Devdoc;
   ir: string;
+  layout?: {
+    storage_layout: VyperStorageLayout;
+  };
   evm: {
     bytecode: {
       object: string;
       opcodes: string;
+      sourceMap?: VyperSourceMap;
     };
     deployedBytecode: {
       object: string;

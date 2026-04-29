@@ -95,6 +95,84 @@ describe('VyperCompilation', () => {
     });
   });
 
+  it('should produce different bytecode with storage_layout_overrides', async () => {
+    const contractPath = path.join(
+      __dirname,
+      '..',
+      'sources',
+      'Vyper',
+      'withStorageLayout',
+    );
+    const contractFileName = 'test.vy';
+    const contractContent = fs.readFileSync(
+      path.join(contractPath, contractFileName),
+      'utf8',
+    );
+
+    // Compile without storage_layout_overrides
+    const compilationWithout = new VyperCompilation(
+      vyperCompiler,
+      '0.4.1+commit.8a93dd27',
+      {
+        language: 'Vyper',
+        sources: {
+          [contractFileName]: {
+            content: contractContent,
+          },
+        },
+        settings: {
+          evmVersion: 'cancun',
+          outputSelection: {
+            '*': ['evm.bytecode'],
+          },
+        },
+      },
+      {
+        name: contractFileName.split('.')[0],
+        path: contractFileName,
+      },
+    );
+    await compilationWithout.compile();
+
+    // Compile with storage_layout_overrides (swap slots of a and b)
+    const compilationWith = new VyperCompilation(
+      vyperCompiler,
+      '0.4.1+commit.8a93dd27',
+      {
+        language: 'Vyper',
+        sources: {
+          [contractFileName]: {
+            content: contractContent,
+          },
+        },
+        settings: {
+          evmVersion: 'cancun',
+          outputSelection: {
+            '*': ['evm.bytecode'],
+          },
+        },
+        storage_layout_overrides: {
+          [contractFileName]: {
+            a: { type: 'uint256', slot: 1, n_slots: 1 },
+            b: { type: 'uint256', slot: 0, n_slots: 1 },
+          },
+        },
+      },
+      {
+        name: contractFileName.split('.')[0],
+        path: contractFileName,
+      },
+    );
+    await compilationWith.compile();
+
+    expect(compilationWith.creationBytecode).to.not.equal(
+      compilationWithout.creationBytecode,
+    );
+    expect(compilationWith.runtimeBytecode).to.not.equal(
+      compilationWithout.runtimeBytecode,
+    );
+  });
+
   it('should generate correct CBOR auxdata positions', async () => {
     const contractPath = path.join(
       __dirname,

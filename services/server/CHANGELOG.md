@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.13.0 - 2026-04-14
+
+- Add support for Vyper integrity hash (#2715)
+- Handle etherscan Solidity malformed version (#2732)
+- Support Vyper storage_layout_overrides, storage layout, and creation sourceMap (#2739)
+- Support custom Etherscan-compatible API URLs (#2738)
+- Hide metadata for non-Solidity contracts in v2 API (#2737)
+
 ## sourcify-server@3.12.1 - 2026-03-31
 
 - Fix Fe support via updating the docker image build (#2718 + #2719)

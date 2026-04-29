@@ -25,6 +25,7 @@ import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import chaiAsPromised from 'chai-as-promised';
 import { findSolcPlatform } from '@ethereum-sourcify/compilers';
 import { SolidityCompilation, SourcifyChain } from '../../src';
+import { SolidityBugType } from '../../src/Verification/VerificationTypes';
 import Sinon from 'sinon';
 import { YulCompilation } from '../../src/Compilation/YulCompilation';
 import type { SolidityJsonInput } from '@ethereum-sourcify/compilers-types';
@@ -603,6 +604,46 @@ describe('Verification Class Tests', () => {
           creationMatch: null,
         },
       });
+    });
+
+    it('should NOT diagnose extra_file_input_bug when bytecodes have no CBOR metadata (pre-0.4.7)', async () => {
+      // Pre-0.4.7 contracts have no CBOR metadata. splitAuxdata returns a single-element array
+      // for such bytecodes, so the auxdata at index [1] is undefined.
+      // undefined === undefined must NOT trigger the extra_file_input_bug diagnosis.
+      // See: https://github.com/argotorg/sourcify/issues/2729
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Storage',
+      );
+      const compilation = await getCompilationFromMetadata(contractFolderPath);
+
+      // Enable optimizer to match the condition that previously caused the misdiagnosis
+      (compilation.jsonInput.settings as any).optimizer = {
+        enabled: true,
+        runs: 200,
+      };
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        '0x0000000000000000000000000000000000000001', // dummy address, not deployed
+      );
+
+      // Stub onchainRuntimeBytecode and compilation.runtimeBytecode with bytecodes
+      // that have no CBOR metadata (short synthetic bytecodes that differ from each other)
+      Sinon.stub(verification, 'onchainRuntimeBytecode' as any).get(
+        () => '0x6060604052',
+      );
+      Sinon.stub(verification.compilation, 'runtimeBytecode' as any).get(
+        () => '0x6060604060',
+      );
+
+      const result = verification.handleSolidityExtraFileInputBug();
+      expect(result).to.equal(SolidityBugType.NONE);
+
+      Sinon.restore();
     });
 
     it('should fail when bytecode could not be fetched', async () => {
@@ -1521,6 +1562,145 @@ describe('Verification Class Tests', () => {
       await expect(verification.verify())
         .to.eventually.be.rejectedWith()
         .and.have.property('code', 'no_match');
+    });
+
+    it('should verify a Vyper contract with storage_layout_overrides and include it in the export', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Vyper',
+        'withStorageLayout',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const contractFileName = 'test.vy';
+      const contractContent = fs.readFileSync(
+        path.join(contractFolderPath, contractFileName),
+        'utf8',
+      );
+
+      const storageLayoutOverrides = {
+        [contractFileName]: {
+          a: { type: 'uint256', slot: 1, n_slots: 1 },
+          b: { type: 'uint256', slot: 0, n_slots: 1 },
+        },
+      };
+
+      const compilation = new VyperCompilation(
+        vyperCompiler,
+        '0.4.1+commit.8a93dd27',
+        {
+          language: 'Vyper',
+          sources: {
+            [contractFileName]: { content: contractContent },
+          },
+          settings: {
+            evmVersion: 'cancun',
+            outputSelection: { '*': ['evm.bytecode'] },
+          },
+          storage_layout_overrides: storageLayoutOverrides,
+        },
+        {
+          name: contractFileName.split('.')[0],
+          path: contractFileName,
+        },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
+          creationMatch: 'perfect',
+        },
+      });
+
+      const exported = verification.export();
+      expect(
+        exported.compilation.jsonInput.storageLayoutOverrides,
+      ).to.deep.equal(storageLayoutOverrides);
+    });
+
+    it('should export Vyper storage layout and sourceMaps', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Vyper',
+        'withStorageLayout',
+      );
+      const { contractAddress, txHash } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const contractFileName = 'test.vy';
+      const contractContent = fs.readFileSync(
+        path.join(contractFolderPath, contractFileName),
+        'utf8',
+      );
+
+      const compilation = new VyperCompilation(
+        vyperCompiler,
+        '0.4.1+commit.8a93dd27',
+        {
+          language: 'Vyper',
+          sources: {
+            [contractFileName]: { content: contractContent },
+          },
+          settings: {
+            evmVersion: 'cancun',
+            outputSelection: { '*': ['evm.bytecode'] },
+          },
+          storage_layout_overrides: {
+            [contractFileName]: {
+              a: { type: 'uint256', slot: 1, n_slots: 1 },
+              b: { type: 'uint256', slot: 0, n_slots: 1 },
+            },
+          },
+        },
+        {
+          name: contractFileName.split('.')[0],
+          path: contractFileName,
+        },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      const exported = verification.export();
+
+      expect(
+        exported.compilation.contractCompilerOutput.storageLayout,
+      ).to.deep.equal({
+        a: { type: 'uint256', slot: 1, n_slots: 1 },
+        b: { type: 'uint256', slot: 0, n_slots: 1 },
+      });
+
+      expect(exported.compilation.contractCompilerOutput.evm.bytecode.sourceMap)
+        .to.be.an('object')
+        .and.to.have.property('pc_pos_map');
+      expect(
+        exported.compilation.contractCompilerOutput.evm.deployedBytecode
+          .sourceMap,
+      )
+        .to.be.an('object')
+        .and.to.have.property('pc_pos_map');
     });
 
     it('should handle Vyper contracts with different auxdata versions', async () => {

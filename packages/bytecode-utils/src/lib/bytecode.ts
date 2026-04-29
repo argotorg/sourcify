@@ -171,7 +171,9 @@ export const splitAuxdata = (
     bytesLength,
   );
 
-  if (isCborLengthInvalid(bytecode, cborBytesLength, bytesLength)) {
+  if (
+    isCborLengthInvalid(auxdataStyle, bytecode, cborBytesLength, bytesLength)
+  ) {
     return [bytecode];
   }
 
@@ -183,6 +185,7 @@ export const splitAuxdata = (
   );
   const executionBytecode = extractExecutionBytecode(
     bytecode,
+    auxdataStyle,
     cborBytesLength,
     bytesLength,
   );
@@ -230,7 +233,7 @@ const getCborBytesLength = (
   bytesLength: number,
 ): number => {
   if (auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5) {
-    return 22;
+    return 22; // For Vyper versions < 0.3.5, the CBOR length is fixed because it contains only the version
   }
   const cborLengthHex = bytecode.slice(-bytesLength);
   return parseInt(cborLengthHex, 16) * 2;
@@ -239,16 +242,23 @@ const getCborBytesLength = (
 /**
  * Checks if the CBOR length is invalid based on the bytecode length.
  *
+ * @param auxdataStyle - The auxdata style (Solidity or Vyper)
  * @param bytecode - The complete bytecode string
  * @param cborBytesLength - The length of CBOR auxdata in bytes
  * @param bytesLength - The length of bytes used to encode the CBOR length
  * @returns True if the CBOR length is invalid, otherwise false
  */
 const isCborLengthInvalid = (
+  auxdataStyle: AuxdataStyle,
   bytecode: string,
   cborBytesLength: number,
   bytesLength: number,
 ): boolean => {
+  if (auxdataStyle === AuxdataStyle.VYPER) {
+    // Vyper includes the trailing length bytes in cborBytesLength,
+    // so we only subtract cborBytesLength (no separate bytesLength).
+    return bytecode.length - cborBytesLength <= 0;
+  }
   return bytecode.length - bytesLength - cborBytesLength <= 0;
 };
 
@@ -296,9 +306,15 @@ const extractAuxdata = (
  */
 const extractExecutionBytecode = (
   bytecode: string,
+  auxdataStyle: AuxdataStyle,
   cborBytesLength: number,
   bytesLength: number,
 ): string => {
+  if (auxdataStyle === AuxdataStyle.VYPER) {
+    // Vyper includes the trailing length bytes in cborBytesLength,
+    // so we only subtract cborBytesLength to avoid double-counting.
+    return bytecode.substring(0, bytecode.length - cborBytesLength);
+  }
   return bytecode.substring(0, bytecode.length - bytesLength - cborBytesLength);
 };
 

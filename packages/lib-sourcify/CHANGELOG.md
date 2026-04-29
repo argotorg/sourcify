@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.5.0 - 2026-04-14
+
+- Add support for Vyper integrity hash (#2715)
+- Handle etherscan Solidity malformed version (#2732)
+- Support Vyper storage_layout_overrides, storage layout, and creation sourceMap (#2739)
+- support custom Etherscan-compatible API URLs (#2738)
+- Don't misdiagnose extra_file_input_bug for pre-0.4.7 contracts (#2735)
+
 ## @ethereum-sourcify/lib-sourcify@3.4.0 - 2026-03-30
 
 - feat: add Fe language support for smart contract verification (#2692)

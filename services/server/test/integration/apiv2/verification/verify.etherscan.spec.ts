@@ -21,6 +21,7 @@ import {
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
+  MALFORMED_VERSION_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
 import {
   SourcifyChain,
@@ -224,6 +225,34 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
     );
     mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
+    const verifyRes = await request(serverFixture.server.app)
+      .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
+      .send({});
+
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      testChainId,
+      testAddress,
+      expectedStatus,
+      false,
+    );
+  });
+
+  it("should import a contract with malformed version field from Etherscan via single contract response", async () => {
+    const testAddress = "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB";
+    const expectedStatus = toMatchLevel(
+      singleContract.expectedStatus as VerificationStatus,
+    );
+
+    const { resolveWorkers } = makeWorkersWait();
+    mockEtherscanApi(
+      sourcifyChainsMap[testChainId],
+      testAddress,
+      MALFORMED_VERSION_RESPONSE,
+    );
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
