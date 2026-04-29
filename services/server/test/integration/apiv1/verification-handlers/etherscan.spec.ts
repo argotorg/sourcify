@@ -16,6 +16,7 @@ import { ServerFixture } from "../../../helpers/ServerFixture";
 import nock from "nock";
 import {
   INVALID_API_KEY_RESPONSE,
+  mockChainRpc,
   mockEtherscanApi,
   MULTIPLE_CONTRACT_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
@@ -207,6 +208,7 @@ describe("Import From Etherscan and Verify", function () {
         singleContract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -225,6 +227,7 @@ describe("Import From Etherscan and Verify", function () {
         multipleContract.address,
         MULTIPLE_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -243,6 +246,7 @@ describe("Import From Etherscan and Verify", function () {
         standardJsonContract.address,
         STANDARD_JSON_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -261,6 +265,7 @@ describe("Import From Etherscan and Verify", function () {
         "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
         VYPER_SINGLE_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -280,6 +285,7 @@ describe("Import From Etherscan and Verify", function () {
         "0x2dFd89449faff8a532790667baB21cF733C064f2",
         VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -301,6 +307,7 @@ describe("Import From Etherscan and Verify", function () {
         contract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
+      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
       chai
         .request(serverFixture.server.app)
         .post("/verify/etherscan")
