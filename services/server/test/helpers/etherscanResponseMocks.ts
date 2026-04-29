@@ -1,38 +1,5 @@
 import nock from "nock";
 import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import etherscanBytecodes from "./etherscanBytecodes.json";
-
-/**
- * Intercepts all JSON-RPC calls to the first RPC URL of the given chain.
- * Responds to eth_getCode with pre-stored bytecodes from etherscanBytecodes.json.
- * Required because the mainnet stub uses a dead RPC URL (http://127.0.0.1:1)
- * but verification still calls eth_getCode to fetch on-chain bytecode.
- */
-export const mockChainRpc = (sourcifyChain: SourcifyChain): nock.Scope => {
-  const rpc = sourcifyChain.rpcs[0]?.rpc;
-  if (typeof rpc !== "string") {
-    throw new Error(`No string RPC URL for chain ${sourcifyChain.chainId}`);
-  }
-  const chainBytecodes =
-    (etherscanBytecodes as Record<string, Record<string, string>>)[
-      sourcifyChain.chainId.toString()
-    ] ?? {};
-
-  return nock(rpc)
-    .persist()
-    .post("/")
-    .reply(200, (_uri: string, body: any) => {
-      if (body.method === "eth_getCode") {
-        const reqAddress = (body.params[0] as string).toLowerCase();
-        const bytecode =
-          Object.entries(chainBytecodes).find(
-            ([k]) => k.toLowerCase() === reqAddress,
-          )?.[1] ?? "0x";
-        return { jsonrpc: "2.0", id: body.id, result: bytecode };
-      }
-      return { jsonrpc: "2.0", id: body.id, result: null };
-    });
-};
 
 export const mockEtherscanApi = (
   sourcifyChain: SourcifyChain,

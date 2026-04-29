@@ -10,7 +10,6 @@ import { ServerFixture } from "../../../helpers/ServerFixture";
 import { assertJobVerification } from "../../../helpers/assertions";
 import sinon from "sinon";
 import {
-  mockChainRpc,
   mockEtherscanApi,
   MULTIPLE_CONTRACT_RESPONSE,
   SINGLE_CONTRACT_RESPONSE,
@@ -23,6 +22,11 @@ import {
   STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
   MALFORMED_VERSION_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
+import {
+  startMockRpcServer,
+  stopMockRpcServer,
+} from "../../../helpers/mockRpcServer";
+import type http from "http";
 import {
   SourcifyChain,
   type VerificationStatus,
@@ -65,6 +69,15 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     return;
   }
 
+  const MOCK_RPC_PORT = 18546;
+  let mockRpcServer: http.Server;
+  before(async () => {
+    mockRpcServer = await startMockRpcServer("1", MOCK_RPC_PORT);
+  });
+  after(async () => {
+    await stopMockRpcServer(mockRpcServer);
+  });
+
   const chainFixture = new LocalChainFixture();
   const mainnetStub = new SourcifyChain({
     name: "Ethereum Mainnet (test stub)",
@@ -72,9 +85,9 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     supported: true,
     rpcs: [
       {
-        rpc: "http://127.0.0.1:1",
-        urlWithoutApiKey: "http://127.0.0.1:1",
-        maskedUrl: "http://127.0.0.1:1",
+        rpc: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+        urlWithoutApiKey: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+        maskedUrl: `http://127.0.0.1:${MOCK_RPC_PORT}`,
       },
     ],
     etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
@@ -115,7 +128,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       SINGLE_CONTRACT_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -143,7 +155,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       MULTIPLE_CONTRACT_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -171,7 +182,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       STANDARD_JSON_CONTRACT_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -197,7 +207,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       VYPER_SINGLE_CONTRACT_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -224,7 +233,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -249,7 +257,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       MALFORMED_VERSION_RESPONSE,
     );
@@ -283,7 +291,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       SINGLE_CONTRACT_RESPONSE,
       apiKey,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     const verifyRes = await request(serverFixture.server.app)
       .post(`/v2/verify/etherscan/${testChainId}/${testAddress}`)
@@ -382,7 +389,6 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
       testAddress,
       STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
     );
-    mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
 
     await testAlreadyVerified(
       serverFixture,

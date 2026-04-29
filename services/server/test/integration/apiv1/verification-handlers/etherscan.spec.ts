@@ -16,7 +16,6 @@ import { ServerFixture } from "../../../helpers/ServerFixture";
 import nock from "nock";
 import {
   INVALID_API_KEY_RESPONSE,
-  mockChainRpc,
   mockEtherscanApi,
   MULTIPLE_CONTRACT_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
@@ -27,6 +26,11 @@ import {
   VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
   MALFORMED_VERSION_RESPONSE,
 } from "../../../helpers/etherscanResponseMocks";
+import {
+  startMockRpcServer,
+  stopMockRpcServer,
+} from "../../../helpers/mockRpcServer";
+import type http from "http";
 import {
   SourcifyChain,
   type VerificationStatus,
@@ -58,6 +62,7 @@ const testContracts: Record<
 };
 
 const CUSTOM_PORT = 5678;
+const MOCK_RPC_PORT = 18545;
 
 describe("Import From Etherscan and Verify", function () {
   // Don't run if it's an external PR. Etherscan tests need API keys that can't be exposed to external PRs.
@@ -65,15 +70,23 @@ describe("Import From Etherscan and Verify", function () {
     return;
   }
 
+  let mockRpcServer: http.Server;
+  before(async () => {
+    mockRpcServer = await startMockRpcServer("1", MOCK_RPC_PORT);
+  });
+  after(async () => {
+    await stopMockRpcServer(mockRpcServer);
+  });
+
   const mainnetStub = new SourcifyChain({
     name: "Ethereum Mainnet (test stub)",
     chainId: 1,
     supported: true,
     rpcs: [
       {
-        rpc: "http://127.0.0.1:1",
-        urlWithoutApiKey: "http://127.0.0.1:1",
-        maskedUrl: "http://127.0.0.1:1",
+        rpc: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+        urlWithoutApiKey: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+        maskedUrl: `http://127.0.0.1:${MOCK_RPC_PORT}`,
       },
     ],
     etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
@@ -209,7 +222,7 @@ describe("Import From Etherscan and Verify", function () {
         singleContract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -228,7 +241,7 @@ describe("Import From Etherscan and Verify", function () {
         multipleContract.address,
         MULTIPLE_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -247,7 +260,7 @@ describe("Import From Etherscan and Verify", function () {
         standardJsonContract.address,
         STANDARD_JSON_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -266,7 +279,7 @@ describe("Import From Etherscan and Verify", function () {
         "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
         VYPER_SINGLE_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -286,7 +299,7 @@ describe("Import From Etherscan and Verify", function () {
         "0x2dFd89449faff8a532790667baB21cF733C064f2",
         VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -300,12 +313,13 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${serverFixture.sourcifyChainsMap[testChainId].name} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
       const nockScope = mockEtherscanApi(
-        sourcifyChainsMap[testChainId],
+        serverFixture.sourcifyChainsMap[testChainId],
         "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
         MALFORMED_VERSION_RESPONSE,
       );
+
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
@@ -327,7 +341,7 @@ describe("Import From Etherscan and Verify", function () {
         contract.address,
         SINGLE_CONTRACT_RESPONSE,
       );
-      mockChainRpc(serverFixture.sourcifyChainsMap[testChainId]);
+
       chai
         .request(serverFixture.server.app)
         .post("/verify/etherscan")
