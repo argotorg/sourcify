@@ -23,14 +23,26 @@ import hardhatOutputJSON from "../../../sources/hardhat-output/output.json";
 import {
   CallProtectionTransformation,
   LibraryTransformation,
+  SourcifyChain,
 } from "@ethereum-sourcify/lib-sourcify";
+import { LOCAL_CHAINS } from "../../../../src/sourcify-chains";
 import sinon from "sinon";
 
 chai.use(chaiHttp);
 
 describe("/", function () {
   const chainFixture = new LocalChainFixture();
-  const serverFixture = new ServerFixture();
+  const serverFixture = new ServerFixture({
+    chains: {
+      ...Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c])),
+      "5": new SourcifyChain({
+        name: "Goerli (deprecated stub)",
+        chainId: 5,
+        supported: false,
+        rpcs: [],
+      }),
+    },
+  });
 
   const checkNonVerified = (path: string, done: Done) => {
     chai
