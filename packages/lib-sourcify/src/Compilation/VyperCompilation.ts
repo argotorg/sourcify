@@ -40,7 +40,7 @@ export function returnFixedVyperVersion(compilerVersion: string): string {
 // compilerVersionCompatibleWithSemver strips the rc/b suffix, so all 0.4.0
 // variants look the same to semver — we must inspect the raw version for that
 // specific boundary.
-function supportsCreationBytecodeSourceMap(
+export function supportsCreationBytecodeSourceMap(
   compilerVersion: string,
   compatibleVersion: string,
 ): boolean {
