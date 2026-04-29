@@ -14,7 +14,8 @@
         "bump"
       ],
       "groupName": "all patch and minor dependencies",
-      "groupSlug": "all-patch-and-minor"
+      "groupSlug": "all-patch-and-minor",
+      "minimumReleaseAge": "14 days"
     }
   ],
   "ignoreDeps": ["node", "cimg/node"],

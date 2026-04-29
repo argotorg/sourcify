@@ -19,6 +19,10 @@ export default abstract class AbstractDatabaseService {
     return await this.database.initDatabasePool(this.IDENTIFIER);
   }
 
+  async close() {
+    await this.database.close();
+  }
+
   validateVerificationBeforeStoring(verification: VerificationExport): boolean {
     if (
       verification.status.runtimeMatch === null ||
