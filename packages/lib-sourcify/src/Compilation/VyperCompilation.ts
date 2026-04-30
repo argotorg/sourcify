@@ -220,8 +220,10 @@ export class VyperCompilation extends AbstractCompilation {
 
       // Vyper 0.3.10 and higher does not have CBOR auxdata in the runtime bytecode
       if (
-        this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
-        this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5
+        runtimeAuxdataCbor &&
+        runtimeCborLengthHex !== undefined &&
+        (this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
+          this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5)
       ) {
         this._runtimeBytecodeCborAuxdata = this.tryGenerateCborAuxdataPosition(
           this.runtimeBytecode,
@@ -237,7 +239,7 @@ export class VyperCompilation extends AbstractCompilation {
         this.auxdataStyle,
       );
 
-      if (!creationAuxdataCbor) {
+      if (!creationAuxdataCbor || creationCborLengthHex === undefined) {
         this._creationBytecodeCborAuxdata = {};
         return;
       }

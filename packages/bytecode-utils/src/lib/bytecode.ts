@@ -156,7 +156,7 @@ export const decode = <T extends AuxdataStyle>(
 export const splitAuxdata = (
   bytecode: string,
   auxdataStyle: AuxdataStyle,
-): string[] => {
+): [string, string?, string?] => {
   validateBytecode(bytecode);
   bytecode = ensureHexPrefix(bytecode);
 
