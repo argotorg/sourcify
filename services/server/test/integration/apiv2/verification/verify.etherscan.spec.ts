@@ -90,7 +90,12 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
         maskedUrl: `http://127.0.0.1:${MOCK_RPC_PORT}`,
       },
     ],
-    etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
+    etherscanApi: {
+      supported: true,
+      apiKeyEnvName: "ETHERSCAN_API_KEY",
+      url: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+    },
+    fetchContractCreationTxUsing: { etherscanApi: true },
   });
   const serverFixture = new ServerFixture({
     chains: {

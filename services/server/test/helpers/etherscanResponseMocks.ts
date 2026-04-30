@@ -18,6 +18,16 @@ export const mockEtherscanApi = (
       : process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""] ||
         process.env.ETHERSCAN_API_KEY ||
         "";
+  const customUrl = sourcifyChain.etherscanApi?.url;
+  if (customUrl) {
+    return nock(customUrl)
+      .get(
+        `/api?module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`,
+      )
+      .reply(function () {
+        return [200, response];
+      });
+  }
   return nock("https://api.etherscan.io/v2")
     .get(
       `/api?chainid=${sourcifyChain.chainId}&module=contract&action=getsourcecode&address=${contractAddress}&apikey=${apiKey}`,
