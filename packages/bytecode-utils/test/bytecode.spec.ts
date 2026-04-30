@@ -57,6 +57,17 @@ describe('bytecode utils', function () {
     chai.expect(execution).to.equal(BYTECODE_IPFS);
   });
 
+  it('return the full bytecode with no auxdata for Vyper < 0.3.4 contracts', () => {
+    // Vyper versions prior to 0.3.4 emit no CBOR auxdata at all
+    const [execution, auxdata, length] = splitAuxdata(
+      BYTECODE_IPFS,
+      AuxdataStyle.VYPER_LT_0_3_4,
+    );
+    chai.expect(auxdata).to.be.undefined;
+    chai.expect(length).to.be.undefined;
+    chai.expect(execution).to.equal(BYTECODE_IPFS);
+  });
+
   it('split succesfully bytecode into execution bytecode and auxadata', () => {
     const [execution, auxadata, length] = splitAuxdata(
       BYTECODE_IPFS,

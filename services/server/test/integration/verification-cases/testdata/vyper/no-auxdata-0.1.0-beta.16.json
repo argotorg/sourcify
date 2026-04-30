@@ -1,0 +1,74 @@
+{
+  "_comment": "Vyper 0.1.0-beta.16 — no CBOR auxdata in runtime bytecode (pre-0.3.4)",
+  "onchain": {
+    "creationBytecode": "0x6100d256600436101561000d576100c8565b600035601c52740100000000000000000000000000000000000000006020526f7fffffffffffffffffffffffffffffff6040527fffffffffffffffffffffffffffffffff8000000000000000000000000000000060605274012a05f1fffffffffffffffffffffffffdabf41c006080527ffffffffffffffffffffffffed5fa0e000000000000000000000000000000000060a052633fa4f24560005114156100c75734156100ba57600080fd5b602a60005260206000f350005b5b60006000fd5b6100046100d2036100046000396100046100d2036000f3",
+    "deployedBytecode": "0x600436101561000d576100c8565b600035601c52740100000000000000000000000000000000000000006020526f7fffffffffffffffffffffffffffffff6040527fffffffffffffffffffffffffffffffff8000000000000000000000000000000060605274012a05f1fffffffffffffffffffffffffdabf41c006080527ffffffffffffffffffffffffed5fa0e000000000000000000000000000000000060a052633fa4f24560005114156100c75734156100ba57600080fd5b602a60005260206000f350005b5b60006000fd"
+  },
+  "input": {
+    "compilerVersion": "0.1.0-beta.16+commit.5e4a94a",
+    "contractIdentifier": "test.vy:test",
+    "stdJsonInput": {
+      "language": "Vyper",
+      "sources": {
+        "test.vy": {
+          "content": "@public\n@constant\ndef value() -> uint256:\n    return 42"
+        }
+      },
+      "settings": {
+        "evmVersion": "istanbul",
+        "libraries": {}
+      }
+    }
+  },
+  "output": {
+    "creationBytecode": "0x6100d256600436101561000d576100c8565b600035601c52740100000000000000000000000000000000000000006020526f7fffffffffffffffffffffffffffffff6040527fffffffffffffffffffffffffffffffff8000000000000000000000000000000060605274012a05f1fffffffffffffffffffffffffdabf41c006080527ffffffffffffffffffffffffed5fa0e000000000000000000000000000000000060a052633fa4f24560005114156100c75734156100ba57600080fd5b602a60005260206000f350005b5b60006000fd5b6100046100d2036100046000396100046100d2036000f3",
+    "deployedBytecode": "0x600436101561000d576100c8565b600035601c52740100000000000000000000000000000000000000006020526f7fffffffffffffffffffffffffffffff6040527fffffffffffffffffffffffffffffffff8000000000000000000000000000000060605274012a05f1fffffffffffffffffffffffffdabf41c006080527ffffffffffffffffffffffffed5fa0e000000000000000000000000000000000060a052633fa4f24560005114156100c75734156100ba57600080fd5b602a60005260206000f350005b5b60006000fd",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "constant": true,
+          "gas": 351,
+          "inputs": [],
+          "name": "value",
+          "outputs": [
+            {
+              "name": "out",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "type": "function"
+        }
+      ],
+      "userdoc": null,
+      "devdoc": null,
+      "storageLayout": null,
+      "transientStorageLayout": null,
+      "sources": {
+        "test.vy": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "sourceMap": null,
+      "linkReferences": null,
+      "cborAuxdata": {}
+    },
+    "runtimeCodeArtifacts": {
+      "sourceMap": "-1:-1:0:-;;;;;:::-;;:::-;:::-;;;;;;;;;;;;;;;;;;;;0:55;;;;;;:::-;;;;:::-;;;;:::-;53:2;46:9;;;;;0:55;;:::-;-1:-1::-;;;;",
+      "linkReferences": null,
+      "immutableReferences": null,
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}
