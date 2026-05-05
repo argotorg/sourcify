@@ -1,0 +1,120 @@
+name: _fire-routine (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      trigger_prefix:
+        description: "The /-prefix in the comment body that activates this routine (e.g. '/marcocastignoli-bot')"
+        required: true
+        type: string
+      routine_url:
+        description: "Anthropic routine fire URL (https://api.anthropic.com/v1/claude_code/routines/<id>/fire)"
+        required: true
+        type: string
+    secrets:
+      anthropic_token:
+        required: true
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: React to acknowledge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
+      - name: Fire the routine
+        env:
+          TOKEN: ${{ secrets.anthropic_token }}
+          TRIGGER_PREFIX: ${{ inputs.trigger_prefix }}
+          ROUTINE_URL: ${{ inputs.routine_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_LABELS: ${{ toJson(github.event.issue.labels.*.name) }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
+          REPO_FULL_NAME: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          # Strip the configured trigger prefix and pass the rest as the extra turn
+          EXTRA_TEXT="${COMMENT_BODY#*${TRIGGER_PREFIX}}"
+          EXTRA_TEXT="${EXTRA_TEXT# }"
+
+          # Build the payload with jq so user-supplied content is safely escaped.
+          # `text` is a rich prompt that embeds every piece of context so the
+          # routine has everything it needs without another round trip, and
+          # `context` mirrors the same data as structured JSON for programmatic
+          # use.
+          PAYLOAD=$(jq -nc \
+            --arg extra "$EXTRA_TEXT" \
+            --arg trigger_prefix "$TRIGGER_PREFIX" \
+            --arg comment_body "$COMMENT_BODY" \
+            --arg comment_url "$COMMENT_URL" \
+            --arg comment_author "$COMMENT_AUTHOR" \
+            --argjson issue_number "$ISSUE_NUMBER" \
+            --arg issue_title "$ISSUE_TITLE" \
+            --arg issue_body "$ISSUE_BODY" \
+            --arg issue_url "$ISSUE_URL" \
+            --arg issue_author "$ISSUE_AUTHOR" \
+            --argjson issue_labels "$ISSUE_LABELS" \
+            --argjson is_pull_request "$IS_PULL_REQUEST" \
+            --arg repo_full_name "$REPO_FULL_NAME" \
+            --arg repo_owner "$REPO_OWNER" \
+            --arg repo_default_branch "$REPO_DEFAULT_BRANCH" \
+            '{
+              text: (
+                "A new \($trigger_prefix) request was made on GitHub.\n\n" +
+                "Repository: \($repo_full_name) (default branch: \($repo_default_branch))\n" +
+                (if $is_pull_request then "Pull request" else "Issue" end) +
+                " #\($issue_number): \($issue_title)\n" +
+                "URL: \($issue_url)\n" +
+                "Author: @\($issue_author)\n" +
+                "Labels: \($issue_labels | tostring)\n\n" +
+                "Body:\n\($issue_body)\n\n" +
+                "Triggering comment by @\($comment_author) (\($comment_url)), with the \($trigger_prefix) prefix stripped:\n\($extra)"
+              ),
+              context: {
+                is_pull_request: $is_pull_request,
+                comment: {
+                  body: $comment_body,
+                  url: $comment_url,
+                  author: $comment_author
+                },
+                issue: {
+                  number: $issue_number,
+                  title: $issue_title,
+                  body: $issue_body,
+                  url: $issue_url,
+                  author: $issue_author,
+                  labels: $issue_labels
+                },
+                repository: {
+                  full_name: $repo_full_name,
+                  owner: $repo_owner,
+                  default_branch: $repo_default_branch
+                }
+              }
+            }')
+
+          curl -sS -X POST "$ROUTINE_URL" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
