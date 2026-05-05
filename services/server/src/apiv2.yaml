@@ -1,4 +1,3 @@
-openapi: 3.1.0
 paths:
   "/v2/verify/{chainId}/{address}":
     post:
@@ -164,14 +163,41 @@ paths:
         - Contract Lookup
       summary: Get verified contract
       description: |-
-        By default returns minimal information about the contract: `match`, `creation_match`, `runtime_match`, `chainId`, `address`, and `verifiedAt`
+        By default returns minimal information about the contract: `match`, `creationMatch`, `runtimeMatch`, `chainId`, `address`, and `verifiedAt`.
 
         To get other details one can either list the fields requested in the `fields` query param or ask all fields but omit several with `omit`. To get everything just pass `fields=all`.
+
+        **Available fields:**
+
+        - `matchId` – unique match ID
+        - `creationMatch` – creation bytecode match status (`match`, `exact_match`, or `null`)
+        - `runtimeMatch` – runtime bytecode match status (`match`, `exact_match`, or `null`)
+        - `verifiedAt` – ISO 8601 timestamp of when the contract was verified
+        - `abi` – contract ABI
+        - `metadata` – Solidity compiler metadata object
+        - `sources` – map of source file paths to their content
+        - `sourceIds` – AST source IDs from the standard JSON compiler output
+        - `userdoc` – user-facing NatSpec documentation
+        - `devdoc` – developer NatSpec documentation
+        - `storageLayout` – contract storage layout
+        - `transientStorageLayout` – transient storage layout (Solidity >= 0.8.24)
+        - `additionalInput` – extra top-level compiler input fields (e.g. Vyper `storage_layout_overrides`)
+        - `stdJsonInput` – full standard JSON compiler input
+        - `stdJsonOutput` – full standard JSON compiler output
+
+        Nested objects support dot-notation sub-selection (e.g. `creationBytecode.onchainBytecode`):
+
+        - `creationBytecode` — sub-fields: `onchainBytecode`, `recompiledBytecode`, `sourceMap`, `linkReferences`, `cborAuxdata`, `transformations`, `transformationValues`
+        - `runtimeBytecode` — sub-fields: `onchainBytecode`, `recompiledBytecode`, `sourceMap`, `linkReferences`, `cborAuxdata`, `immutableReferences`, `transformations`, `transformationValues`
+        - `deployment` — sub-fields: `transactionHash`, `blockNumber`, `transactionIndex`, `deployer`
+        - `compilation` — sub-fields: `language`, `compiler`, `compilerVersion`, `compilerSettings`, `name`, `fullyQualifiedName`
+        - `signatures` — sub-fields: `function`, `event`, `error`
+        - `proxyResolution` – proxy detection result (no sub-fields)
       operationId: get-contract
       parameters:
         - name: fields
           in: query
-          description: Comma seperated fields to include in the response. Can also take `all`
+          description: Comma-separated list of fields to include in the response. Can also be `all` to return every available field. See the endpoint description for the full list of available fields.
           allowReserved: true
           schema:
             type: string
@@ -917,7 +943,7 @@ components:
                 matchId: "3266227"
                 creationBytecode:
                   onchainBytecode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
-                  recompiledBytecode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+                  recompiledBytecode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
                   sourceMap: "73951:11562:0:-:0;;;;;;;;;;;;-1:-1:-1;63357:7:0;:15;;-1:-1:-1;;63357:15:0;;;73951:11562;;;;;;"
                   linkReferences:
                     contracts/AmplificationUtils.sol:
@@ -954,8 +980,8 @@ components:
                     cborAuxdata:
                       "0": "0xa26469706673582212201c37bb166aa1bc4777a7471cda1bbba7ef75600cd859180fa30d503673b99f0264736f6c63430008190033"
                 runtimeBytecode:
-                  onchainBytecode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
-                  recompiledBytecode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+                  onchainBytecode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+                  recompiledBytecode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
                   sourceMap: "73951:11562:0:-:0;;;;;;;;;;;;-1:-1:-1;63357:7:0;:15;;-1:-1:-1;;63357:15:0;;;73951:11562;;;;;;"
                   linkReferences:
                     contracts/AmplificationUtils.sol:
@@ -1133,7 +1159,7 @@ components:
                 address: "0xDFEBAd708F803af22e81044aD228Ff77C83C935c"
                 verifiedAt: "2024-07-24T12:00:00Z"
                 creationBytecode:
-                  onchainBytecode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+                  onchainBytecode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
                 deployment:
                   transactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
                   blockNumber: "21721660"
@@ -1361,10 +1387,10 @@ components:
         - customCode: no_match
           message: The onchain and recompiled bytecodes don't match.
           errorId: 1ac6b91a-0605-4459-93dc-18f210a70192
-          recompiledCreationCode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
-          recompiledRuntimeCode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
-          onchainCreationCode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070034"
-          onchainRuntimeCode: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070034"
+          recompiledCreationCode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+          recompiledRuntimeCode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+          onchainCreationCode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070034"
+          onchainRuntimeCode: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070034"
           creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
       allOf:
         - $ref: "#/components/schemas/GenericErrorResponse"
@@ -1418,7 +1444,7 @@ components:
       type: string
       title: BytecodeString
       pattern: "^0x([0-9|a-f][0-9|a-f])*$"
-      example: "0x608060405234801561001057600080fd5b5060043610610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
+      example: "0x608060405234801561001057600080fd5b5060043410610036570565b6000819050919050565b600080fd5b61010c816100f4565b811461011757600080fd5b5056fea264697066735821220404e37f487a89a932dca5e77faaf6ca2de3b991f93d230604b1b8daaef64766264736f6c63430008070033"
     VerifiedContractMinimal:
       type: object
       title: VerifiedContractMinimal
