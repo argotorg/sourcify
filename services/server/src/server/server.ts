@@ -16,6 +16,7 @@ import logger, { setLogLevel } from "../common/logger";
 import routes from "./routes";
 import genericErrorHandler from "../common/errors/GenericErrorHandler";
 import { initDeprecatedRoutes } from "./apiv1/deprecated.routes";
+import type { BrownoutV1Config } from "./middleware/brownoutV1";
 import { Services } from "./services/services";
 import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
@@ -65,6 +66,7 @@ export interface ServerOptions {
   logLevel?: string;
   sourcifyVerifyUi?: string;
   sourcifyRepoUi?: string;
+  brownoutV1?: BrownoutV1Config;
 }
 
 export class Server {
@@ -141,6 +143,7 @@ export class Server {
     this.app.set("services", this.services);
     this.app.set("sourcifyVerifyUi", options.sourcifyVerifyUi);
     this.app.set("sourcifyRepoUi", options.sourcifyRepoUi);
+    this.app.set("brownoutV1", options.brownoutV1);
 
     this.app.use((req, res, next) => {
       // * for all non-session paths

@@ -105,6 +105,10 @@ const server = new Server(
     libSourcifyConfig,
     sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
     sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
+    brownoutV1: {
+      enabled: config.get("brownoutV1.enabled"),
+      windows: config.get("brownoutV1.windows"),
+    },
   },
   {
     initCompilers: config.get("initCompilers") || false,

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.5.1 - 2026-05-06
+
+- fix(lib-sourcify): normalize old Vyper beta versions from Etherscan (#2748)
+- fix: gate Vyper outputSelection fields by compiler version (#2765)
+
 ## @ethereum-sourcify/lib-sourcify@3.5.0 - 2026-04-14
 
 - Add support for Vyper integrity hash (#2715)

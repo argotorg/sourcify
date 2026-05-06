@@ -1,9 +1,12 @@
 import { describe, it } from 'mocha';
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import { vyperCompiler } from '../utils';
+
+chai.use(chaiAsPromised);
 
 describe('VyperCompilation', () => {
   it('should compile a simple Vyper contract', async () => {
@@ -687,5 +690,79 @@ describe('VyperCompilation', () => {
     );
 
     expect(compilation.compilerVersion).to.equal('0.3.10+commit.91361694');
+  });
+});
+
+// Helper to build a VyperCompilation with a mock compiler (no actual compilation needed)
+function makeCompilation(version: string) {
+  const mockCompiler = {
+    compile: async () => ({ contracts: {} as any }),
+  };
+  return new VyperCompilation(
+    mockCompiler as any,
+    version,
+    {
+      language: 'Vyper',
+      sources: { 'test.vy': { content: '' } },
+      settings: { outputSelection: { '*': [] } },
+    },
+    { name: 'test', path: 'test.vy' },
+  );
+}
+
+function outputsFor(version: string): string[] {
+  const compilation = makeCompilation(version);
+  return compilation.jsonInput.settings!.outputSelection![
+    'test.vy'
+  ] as string[];
+}
+
+describe('VyperCompilation outputSelection version gating', () => {
+  it('0.1.x: excludes userdoc, devdoc, layout, evm.bytecode.sourceMap', () => {
+    const outputs = outputsFor('0.1.0b16+commit.5e4a94a');
+    expect(outputs).to.not.include('userdoc');
+    expect(outputs).to.not.include('devdoc');
+    expect(outputs).to.not.include('layout');
+    expect(outputs).to.not.include('evm.bytecode.sourceMap');
+  });
+
+  it('0.2.x: includes userdoc and devdoc, excludes layout, evm.bytecode.sourceMap', () => {
+    const outputs = outputsFor('0.2.0+commit.a7f14fe');
+    expect(outputs).to.include('userdoc');
+    expect(outputs).to.include('devdoc');
+    expect(outputs).to.not.include('layout');
+    expect(outputs).to.not.include('evm.bytecode.sourceMap');
+  });
+
+  it('0.4.0rc3: excludes layout and evm.bytecode.sourceMap', () => {
+    const outputs = outputsFor('0.4.0rc3+commit.f2136550');
+    expect(outputs).to.include('userdoc');
+    expect(outputs).to.include('devdoc');
+    expect(outputs).to.not.include('layout');
+    expect(outputs).to.not.include('evm.bytecode.sourceMap');
+  });
+
+  it('0.4.0rc4: includes evm.bytecode.sourceMap, excludes layout', () => {
+    const outputs = outputsFor('0.4.0rc4+commit.d0d581d');
+    expect(outputs).to.include('userdoc');
+    expect(outputs).to.include('devdoc');
+    expect(outputs).to.not.include('layout');
+    expect(outputs).to.include('evm.bytecode.sourceMap');
+  });
+
+  it('0.4.0 stable: includes evm.bytecode.sourceMap, excludes layout', () => {
+    const outputs = outputsFor('0.4.0+commit.e9db8d9f');
+    expect(outputs).to.include('userdoc');
+    expect(outputs).to.include('devdoc');
+    expect(outputs).to.not.include('layout');
+    expect(outputs).to.include('evm.bytecode.sourceMap');
+  });
+
+  it('0.4.1+: includes userdoc, devdoc, layout, evm.bytecode.sourceMap', () => {
+    const outputs = outputsFor('0.4.1+commit.8a93dd27');
+    expect(outputs).to.include('userdoc');
+    expect(outputs).to.include('devdoc');
+    expect(outputs).to.include('layout');
+    expect(outputs).to.include('evm.bytecode.sourceMap');
   });
 });

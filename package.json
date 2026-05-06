@@ -38,7 +38,7 @@
   },
   "homepage": "https://sourcify.dev",
   "devDependencies": {
-    "@google-cloud/bigquery": "8.1.1",
+    "@google-cloud/bigquery": "8.2.0",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.57.1",
@@ -47,7 +47,7 @@
     "husky": "9.1.7",
     "lerna": "8.2.4",
     "lint-staged": "16.4.0",
-    "prettier": "3.8.2",
+    "prettier": "3.8.3",
     "ts-node": "10.9.2",
     "typescript": "5.9.3"
   },

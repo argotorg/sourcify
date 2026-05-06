@@ -445,6 +445,10 @@
     "sourcifyName": "Celo Alfajores Testnet",
     "supported": false
   },
+  "61803": {
+    "sourcifyName": "Etica Mainnet",
+    "supported": true
+  },
   "62320": {
     "sourcifyName": "Celo Baklava Testnet",
     "supported": false

@@ -37,6 +37,11 @@ export class S3RepositoryService
     });
   }
 
+  async close() {
+    this.s3.destroy();
+    logger.info(`${this.IDENTIFIER} closed`);
+  }
+
   async deletePartialIfExists(chainId: string, address: string) {
     const prefix = Path.join("contracts", "partial_match", chainId, address);
 

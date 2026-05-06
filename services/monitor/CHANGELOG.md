@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.5.5 - 2026-05-06
+
+- update dependencies
+
 ## sourcify-monitor@1.5.4 - 2026-04-14
 
 - update dependencies and docker base image

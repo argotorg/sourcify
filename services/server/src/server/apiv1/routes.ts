@@ -8,6 +8,7 @@ import etherscanRoutes from "./verification/etherscan/etherscan.routes";
 import vyperRoutes from "./verification/vyper/vyper.routes";
 import { checksumAddresses } from "./controllers.common";
 import privateRoutes from "./verification/private/private.routes";
+import { createBrownoutV1Middleware } from "../middleware/brownoutV1";
 
 const router: Router = Router();
 
@@ -16,15 +17,20 @@ router.use(checksumAddresses);
 
 router.use("/chain-tests", testArtifactsRoutes);
 
+const deprecatedV1Paths = [
+  "/verify",
+  "/repository",
+  "/check-all-by-addresses",
+  "/check-by-addresses",
+  "/files",
+];
+
+// Brownout middleware: return 503 during configured brownout windows
+router.use(deprecatedV1Paths, createBrownoutV1Middleware());
+
 // Add deprecation header to all API v1 responses
 router.use(
-  [
-    "/verify",
-    "/repository",
-    "/check-all-by-addresses",
-    "/check-by-addresses",
-    "/files",
-  ],
+  deprecatedV1Paths,
   (req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Deprecation", "true");
     res.setHeader(

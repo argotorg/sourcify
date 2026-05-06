@@ -88,6 +88,13 @@ export class Database {
     return this._pool != undefined;
   }
 
+  async close(): Promise<void> {
+    if (this._pool) {
+      await this._pool.end();
+      this._pool = undefined;
+    }
+  }
+
   async initDatabasePool(identifier: string): Promise<boolean> {
     // if the database is already initialized
     if (this._pool != undefined) {

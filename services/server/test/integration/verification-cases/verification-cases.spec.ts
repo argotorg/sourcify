@@ -213,6 +213,27 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(verifierAllianceTestPartialMatch2);
   });
 
+  it("should verify a Vyper 0.1.0-beta.16 contract (no CBOR auxdata)", async () => {
+    const vyperTestNoAuxdata0_1_0_beta_16 = (
+      await import("./testdata/vyper/no-auxdata-0.1.0-beta.16.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestNoAuxdata0_1_0_beta_16);
+  });
+
+  it("should verify a Vyper 0.2.0 contract (no CBOR auxdata)", async () => {
+    const vyperTestNoAuxdata0_2_0 = (
+      await import("./testdata/vyper/no-auxdata-0.2.0.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestNoAuxdata0_2_0);
+  });
+
+  it("should verify a Vyper 0.3.3 contract (no CBOR auxdata)", async () => {
+    const vyperTestNoAuxdata0_3_3 = (
+      await import("./testdata/vyper/no-auxdata-0.3.3.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestNoAuxdata0_3_3);
+  });
+
   it("should store auxdata for a Vyper contract compiled with 0.3.4", async () => {
     const vyperTestAuxdata0_3_4 = (
       await import("./testdata/vyper/auxdata-0.3.4.json")
@@ -220,11 +241,25 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(vyperTestAuxdata0_3_4);
   });
 
+  it("should store a partial match for a Vyper 0.3.4 contract where the onchain cbor auxdata has a different version", async () => {
+    const vyperTestAuxdata0_3_4DifferentVersion = (
+      await import("./testdata/vyper/auxdata-0.3.4-different-version.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestAuxdata0_3_4DifferentVersion);
+  });
+
   it("should store auxdata for a Vyper contract compiled with 0.3.8", async () => {
     const vyperTestAuxdata0_3_8 = (
       await import("./testdata/vyper/auxdata-0.3.8.json")
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(vyperTestAuxdata0_3_8);
+  });
+
+  it("should store a partial match for a Vyper 0.3.8 contract where the onchain cbor auxdata has a different version", async () => {
+    const vyperTestAuxdata0_3_8DifferentVersion = (
+      await import("./testdata/vyper/auxdata-0.3.8-different-version.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(vyperTestAuxdata0_3_8DifferentVersion);
   });
 
   it("should store auxdata for a Vyper contract compiled with 0.4.0", async () => {

@@ -27,6 +27,11 @@ interface VyperVersionCache {
 let vyperVersionCache: VyperVersionCache | null = null;
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour default
 
+// Etherscan encodes early Vyper betas as e.g. "0.1.0b17" while the GitHub release
+// tag (and the Hardhat mirror) uses "0.1.0-beta.17". Normalize before lookup.
+const normalizeVyperVersion = (v: string): string =>
+  v.replace(/^(\d+\.\d+\.\d+)b(\d+)$/, '$1-beta.$2');
+
 export const getVyperCompilerVersion = async (
   compilerString: string,
   cacheDurationMs: number = CACHE_DURATION_MS,
@@ -64,8 +69,9 @@ export const getVyperCompilerVersion = async (
 
   if (!vyperVersionCache) return undefined;
   const versionNumber = compilerString.split(':')[1];
+  const normalizedVersion = normalizeVyperVersion(versionNumber);
   let found = vyperVersionCache.versions.find(
-    (v) => v.tag === versionNumber,
+    (v) => v.tag === versionNumber || v.tag === normalizedVersion,
   )?.compiler_version;
   if (!found) {
     // If not found, try a one-time refresh to capture newly added versions
@@ -86,7 +92,7 @@ export const getVyperCompilerVersion = async (
         lastFetch: Date.now(),
       };
       found = vyperVersionCache.versions.find(
-        (v) => v.tag === versionNumber,
+        (v) => v.tag === versionNumber || v.tag === normalizedVersion,
       )?.compiler_version;
     } catch (error) {
       logWarn('Failed to refresh Vyper versions for missing tag', {

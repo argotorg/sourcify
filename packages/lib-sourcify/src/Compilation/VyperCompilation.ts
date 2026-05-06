@@ -5,7 +5,7 @@ import {
   decode,
   splitAuxdata,
 } from '@ethereum-sourcify/bytecode-utils';
-import semver, { gte } from 'semver';
+import semver, { gte, gt, lt } from 'semver';
 import type {
   VyperJsonInput,
   VyperOutput,
@@ -36,20 +36,42 @@ export function returnFixedVyperVersion(compilerVersion: string): string {
   }
 }
 
+// evm.bytecode.sourceMap is supported from 0.4.0rc4 onwards.
+// compilerVersionCompatibleWithSemver strips the rc/b suffix, so all 0.4.0
+// variants look the same to semver — we must inspect the raw version for that
+// specific boundary.
+export function supportsCreationBytecodeSourceMap(
+  compilerVersion: string,
+  compatibleVersion: string,
+): boolean {
+  if (gt(compatibleVersion, '0.4.0')) return true;
+  if (lt(compatibleVersion, '0.4.0')) return false;
+  // Exactly 0.4.0 — inspect the original version string
+  if (/0\.4\.0b\d+/.test(compilerVersion)) return false;
+  const rcMatch = compilerVersion.match(/0\.4\.0rc(\d+)/);
+  if (rcMatch) return parseInt(rcMatch[1]) >= 4;
+  return true; // stable 0.4.0
+}
+
 export function returnAuxdataStyle(
   compilerVersion: string,
 ):
+  | AuxdataStyle.VYPER_LT_0_3_4
   | AuxdataStyle.VYPER_LT_0_3_5
   | AuxdataStyle.VYPER_LT_0_3_10
   | AuxdataStyle.VYPER {
-  // Vyper version support for auxdata is different for each version
+  // Vyper versions < 0.3.4 emit no CBOR auxdata at all
+  if (semver.lt(compilerVersion, '0.3.4')) {
+    return AuxdataStyle.VYPER_LT_0_3_4;
+  }
+  // Only 0.3.4 uses the fixed-length 22-byte CBOR format
   if (semver.lt(compilerVersion, '0.3.5')) {
     return AuxdataStyle.VYPER_LT_0_3_5;
-  } else if (semver.lt(compilerVersion, '0.3.10')) {
-    return AuxdataStyle.VYPER_LT_0_3_10;
-  } else {
-    return AuxdataStyle.VYPER;
   }
+  if (semver.lt(compilerVersion, '0.3.10')) {
+    return AuxdataStyle.VYPER_LT_0_3_10;
+  }
+  return AuxdataStyle.VYPER;
 }
 
 export function returnImmutableReferences(
@@ -97,7 +119,8 @@ export class VyperCompilation extends AbstractCompilation {
   public auxdataStyle:
     | AuxdataStyle.VYPER
     | AuxdataStyle.VYPER_LT_0_3_10
-    | AuxdataStyle.VYPER_LT_0_3_5;
+    | AuxdataStyle.VYPER_LT_0_3_5
+    | AuxdataStyle.VYPER_LT_0_3_4;
 
   // Vyper version is not semver compliant, so we need to handle it differently
   public compilerVersionCompatibleWithSemver: string;
@@ -108,9 +131,6 @@ export class VyperCompilation extends AbstractCompilation {
       'ast',
       'interface',
       'ir',
-      'layout',
-      'userdoc',
-      'devdoc',
       'evm.bytecode.object',
       'evm.bytecode.opcodes',
       'evm.deployedBytecode.object',
@@ -119,8 +139,24 @@ export class VyperCompilation extends AbstractCompilation {
       'evm.methodIdentifiers',
     ];
 
-    // evm.bytecode.sourceMap output selection is only supported since Vyper 0.4.0
-    if (gte(this.compilerVersionCompatibleWithSemver, '0.4.0')) {
+    // userdoc and devdoc are only supported from 0.2.0 onwards
+    if (gte(this.compilerVersionCompatibleWithSemver, '0.2.0')) {
+      outputs.push('userdoc');
+      outputs.push('devdoc');
+    }
+
+    // layout is only supported from 0.4.1 onwards (including betas and rcs)
+    if (gte(this.compilerVersionCompatibleWithSemver, '0.4.1')) {
+      outputs.push('layout');
+    }
+
+    // evm.bytecode.sourceMap is only supported from 0.4.0rc4 onwards
+    if (
+      supportsCreationBytecodeSourceMap(
+        this.compilerVersion,
+        this.compilerVersionCompatibleWithSemver,
+      )
+    ) {
       outputs.push('evm.bytecode.sourceMap');
     }
 
@@ -182,10 +218,12 @@ export class VyperCompilation extends AbstractCompilation {
         this.auxdataStyle,
       );
 
-      // Vyper 0.3.10 and higher does not have the auxdata in the runtime bytecode
+      // Vyper 0.3.10 and higher does not have CBOR auxdata in the runtime bytecode
       if (
-        this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
-        this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5
+        runtimeAuxdataCbor &&
+        runtimeCborLengthHex !== undefined &&
+        (this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
+          this.auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5)
       ) {
         this._runtimeBytecodeCborAuxdata = this.tryGenerateCborAuxdataPosition(
           this.runtimeBytecode,
@@ -201,7 +239,7 @@ export class VyperCompilation extends AbstractCompilation {
         this.auxdataStyle,
       );
 
-      if (!creationAuxdataCbor) {
+      if (!creationAuxdataCbor || creationCborLengthHex === undefined) {
         this._creationBytecodeCborAuxdata = {};
         return;
       }
