@@ -1,3 +1,5 @@
+
+
 ## @ethereum-sourcify/compilers-types@1.2.0 - 2026-04-14
 
 - Add VyperStorageLayout type and capture missing Vyper compiler output fields (#2739)
