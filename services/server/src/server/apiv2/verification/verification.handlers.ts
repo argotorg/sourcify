@@ -27,6 +27,20 @@ interface VerifyFromJsonInputRequest extends Request {
   };
 }
 
+interface VerifyFromZkSolcJsonInputRequest extends Request {
+  params: {
+    chainId: string;
+    address: string;
+  };
+  body: {
+    stdJsonInput: SolidityJsonInput;
+    zksolcVersion: string;
+    compilerVersion: string;
+    contractIdentifier: string;
+    creationTransactionHash?: string;
+  };
+}
+
 type VerifyResponse = TypedResponse<{
   verificationId: string;
 }>;
@@ -60,6 +74,43 @@ export async function verifyFromJsonInputEndpoint(
       req.params.chainId,
       req.params.address,
       req.body.stdJsonInput,
+      req.body.compilerVersion,
+      compilationTarget,
+      req.body.creationTransactionHash,
+    );
+
+  res.status(StatusCodes.ACCEPTED).json({ verificationId });
+}
+
+export async function verifyFromZkSolcJsonInputEndpoint(
+  req: VerifyFromZkSolcJsonInputRequest,
+  res: VerifyResponse,
+) {
+  logger.debug("verifyFromZkSolcJsonInputEndpoint", {
+    chainId: req.params.chainId,
+    address: req.params.address,
+    zksolcVersion: req.body.zksolcVersion,
+    compilerVersion: req.body.compilerVersion,
+    contractIdentifier: req.body.contractIdentifier,
+    creationTransactionHash: req.body.creationTransactionHash,
+  });
+
+  const { contractName, contractPath } = splitFullyQualifiedName(
+    req.body.contractIdentifier,
+  );
+  const compilationTarget: CompilationTarget = {
+    name: contractName,
+    path: contractPath,
+  };
+
+  const services = req.app.get("services") as Services;
+  const verificationId =
+    await services.verification.verifyFromZkSolcJsonInputViaWorker(
+      req.baseUrl + req.path,
+      req.params.chainId,
+      req.params.address,
+      req.body.stdJsonInput,
+      req.body.zksolcVersion,
       req.body.compilerVersion,
       compilationTarget,
       req.body.creationTransactionHash,

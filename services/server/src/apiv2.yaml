@@ -40,6 +40,44 @@ paths:
           $ref: "#/components/responses/TooManyRequestsResponse"
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
+  "/v2/verify/zksolc/{chainId}/{address}":
+    post:
+      tags:
+        - Verify Contracts
+      summary: Verify ZKsync EraVM Contract (zksolc Standard JSON)
+      description: |-
+        Submit a Solidity contract for ZKsync EraVM verification via standard JSON input compiled with zksolc.
+
+        This endpoint requires both the zksolc version and the underlying era-solc/solc version. The `compilerVersion` field is the Solidity compiler version, for example `v0.8.26+commit.8a97fa7a`.
+
+        You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetch the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
+      operationId: verify-zksolc
+      parameters:
+        - $ref: "#/components/parameters/chainId"
+        - $ref: "#/components/parameters/address"
+      requestBody:
+        $ref: "#/components/requestBodies/ZkSolcStdJSONVerificationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/ReturnVerificationJob"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "409":
+          description: The contract is already verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+              examples:
+                Example 1:
+                  value:
+                    customCode: already_verified
+                    message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 324 is already verified with runtimeMatch and creationMatch both being exact matches.
+                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
+        "429":
+          $ref: "#/components/responses/TooManyRequestsResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
   "/v2/verify/metadata/{chainId}/{address}":
     post:
       tags:
@@ -550,6 +588,67 @@ components:
                         }
                 compilerVersion: "26.0.0-alpha.10"
                 contractIdentifier: "src/lib.fe:Counter"
+    ZkSolcStdJSONVerificationRequest:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              stdJsonInput:
+                type: object
+                description: |
+                  Full Solidity standard JSON object to pass to zksolc.
+
+                  Must include `language: Solidity`.
+              zksolcVersion:
+                $ref: "#/components/schemas/ZkSolcVersion"
+              compilerVersion:
+                allOf:
+                  - $ref: "#/components/schemas/CompilerVersion"
+                  - description: The underlying era-solc/solc version used by zksolc.
+              contractIdentifier:
+                type: string
+                description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
+                example: "contracts/Storage.sol:Storage"
+              creationTransactionHash:
+                allOf:
+                  - $ref: "#/components/schemas/Keccak256"
+                  - description: The hash of the transaction that created this contract. Optional.
+            required:
+              - stdJsonInput
+              - zksolcVersion
+              - compilerVersion
+              - contractIdentifier
+          examples:
+            ZKsync EraVM Solidity Contract:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+
+                            function getNumber() public view returns (uint256) {
+                                return number;
+                            }
+                        }
+                  settings:
+                    optimizer:
+                      enabled: true
+                      runs: 200
+                zksolcVersion: "1.5.10"
+                compilerVersion: "v0.8.26+commit.8a97fa7a"
+                contractIdentifier: "contracts/Storage.sol:Storage"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
     MetadataVerificationRequest:
       description: ""
       content:
@@ -1378,6 +1477,11 @@ components:
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
       pattern: '^v?\d+\.\d+\.\d+.*$'
       example: "0.8.7+commit.e28d00a7"
+    ZkSolcVersion:
+      type: string
+      title: ZkSolcVersion
+      pattern: '^(v?\d+\.\d+\.\d+.*|vm-.+)$'
+      example: "1.5.10"
     Keccak256:
       type: string
       title: Keccak256

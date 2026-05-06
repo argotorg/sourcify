@@ -70,6 +70,88 @@ describe("POST /v2/verify/:chainId/:address", function () {
     );
   });
 
+  it("should enqueue a zksolc Solidity standard input JSON verification", async () => {
+    const verificationId = "550e8400-e29b-41d4-a716-446655440000";
+    const verifyFromZkSolcJsonInputViaWorkerStub = sandbox
+      .stub(
+        serverFixture.server.services.verification,
+        "verifyFromZkSolcJsonInputViaWorker",
+      )
+      .resolves(verificationId);
+    const contractIdentifier = Object.entries(
+      chainFixture.defaultContractMetadataObject.settings.compilationTarget,
+    )[0].join(":");
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/zksolc/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: chainFixture.defaultContractJsonInput,
+        zksolcVersion: "1.5.10",
+        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        contractIdentifier,
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    chai.expect(verifyRes.status).to.equal(202);
+    chai.expect(verifyRes.body).to.deep.equal({ verificationId });
+    chai
+      .expect(verifyFromZkSolcJsonInputViaWorkerStub.calledOnce)
+      .to.equal(true);
+    chai
+      .expect(verifyFromZkSolcJsonInputViaWorkerStub.firstCall.args)
+      .to.deep.equal([
+        `/v2/verify/zksolc/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        chainFixture.chainId,
+        chainFixture.defaultContractAddress,
+        chainFixture.defaultContractJsonInput,
+        "1.5.10",
+        "v0.8.26+commit.8a97fa7a",
+        {
+          path: contractIdentifier.split(":")[0],
+          name: contractIdentifier.split(":")[1],
+        },
+        chainFixture.defaultContractCreatorTx,
+      ]);
+  });
+
+  it("should reject non-Solidity standard input JSON for zksolc verification", async () => {
+    const verifyFromZkSolcJsonInputViaWorkerStub = sandbox.stub(
+      serverFixture.server.services.verification,
+      "verifyFromZkSolcJsonInputViaWorker",
+    );
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/zksolc/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: {
+          language: "Vyper",
+          sources: {
+            "test.vy": {
+              content: "# @version ^0.3.10\nnumber: public(uint256)\n",
+            },
+          },
+        },
+        zksolcVersion: "1.5.10",
+        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        contractIdentifier: "test.vy:test",
+      });
+
+    chai.expect(verifyRes.status).to.equal(400);
+    chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    chai
+      .expect(verifyRes.body.message)
+      .to.equal(
+        "ZkSolc verification only supports Solidity standard JSON input.",
+      );
+    chai.expect(verifyFromZkSolcJsonInputViaWorkerStub.called).to.equal(false);
+  });
+
   it("should verify a Vyper contract", async () => {
     const { resolveWorkers } = makeWorkersWait();
 
