@@ -13,6 +13,8 @@ import type {
 
 const HOST_ZKSOLC_REPO =
   'https://github.com/matter-labs/era-compiler-solidity/releases/download/';
+const HOST_LEGACY_ZKSOLC_REPO =
+  'https://github.com/matter-labs/zksolc-bin/releases/download/';
 const HOST_ERA_SOLC_REPO =
   'https://github.com/matter-labs/era-solidity/releases/download/';
 
@@ -198,13 +200,39 @@ export async function getZkSolcExecutable(
         zksolcPath,
         fileName,
       );
+    } catch (primaryError) {
+      logDebug('Failed to resolve zksolc from era-compiler-solidity', {
+        fileName,
+        version: normalizedVersion,
+        error: primaryError,
+      });
 
-      if (!validateCompilerPath(zksolcPath, 'zksolc')) {
-        throw new Error(
-          `Downloaded zksolc is not executable. ${zksolcPath} - ${normalizedVersion} - ${platform}`,
+      try {
+        await fetchAndSaveCompiler(
+          HOST_LEGACY_ZKSOLC_REPO,
+          normalizedVersion,
+          zksolcPath,
+          fileName,
+          false,
         );
+      } catch (legacyError) {
+        lastError = legacyError;
+        logDebug('Failed to resolve zksolc from legacy zksolc-bin', {
+          fileName,
+          version: normalizedVersion,
+          error: legacyError,
+        });
+        continue;
       }
-      return zksolcPath;
+    }
+
+    try {
+      if (validateCompilerPath(zksolcPath, 'zksolc')) {
+        return zksolcPath;
+      }
+      throw new Error(
+        `Downloaded zksolc is not executable. ${zksolcPath} - ${normalizedVersion} - ${platform}`,
+      );
     } catch (error) {
       lastError = error;
       logDebug('Failed to resolve zksolc candidate', {
@@ -308,10 +336,11 @@ async function fetchAndSaveCompiler(
   version: string,
   compilerPath: string,
   fileName: string,
+  stripTagVersionV = true,
 ): Promise<void> {
-  const versionWithoutV = stripLeadingV(version);
+  const releaseTag = stripTagVersionV ? stripLeadingV(version) : version;
   const encodedURIFilename = encodeURIComponent(fileName);
-  const githubCompilerURI = `${host}${versionWithoutV}/${encodedURIFilename}`;
+  const githubCompilerURI = `${host}${releaseTag}/${encodedURIFilename}`;
   logInfo('Fetching compiler', {
     version,
     githubCompilerURI,
