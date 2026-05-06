@@ -232,11 +232,41 @@ async function fetchChainsConfigWithRetry(
 }
 
 /**
- * Loads the chain configuration and returns a populated SourcifyChainMap.
+ * Resolves the chain extensions config.
  *
  * Priority:
  *   1. Local sourcify-chains.json (self-hosted override)
  *   2. Remote URL from config.chains.remoteUrl (e.g. sourcifyeth/sourcify-chains repo)
+ */
+async function loadChainsExtensions(opts: {
+  remoteUrl: string;
+  retryAttempts?: number;
+  retryDelayMs?: number;
+}): Promise<SourcifyChainsExtensionsObjectWithHeaderEnvName> {
+  const localPath = path.resolve(__dirname, "./sourcify-chains.json");
+
+  if (fs.existsSync(localPath)) {
+    logger.warn("Overriding default chains: using sourcify-chains.json");
+    return JSON.parse(
+      fs.readFileSync(localPath, "utf8"),
+    ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+  }
+
+  if (!opts.remoteUrl) {
+    throw new Error(
+      "chains.remoteUrl is not configured and no sourcify-chains.json override found. " +
+        "Set chains.remoteUrl in the server config to the URL of the chains config file.",
+    );
+  }
+  return fetchChainsConfigWithRetry(
+    opts.remoteUrl,
+    opts.retryAttempts,
+    opts.retryDelayMs,
+  );
+}
+
+/**
+ * Loads the chain configuration and returns a populated SourcifyChainMap.
  *
  * Called by Server.init() so that both the CLI and test fixtures initialize chains
  * through the same code path.
@@ -246,32 +276,7 @@ export async function initializeSourcifyChains(opts: {
   retryAttempts?: number;
   retryDelayMs?: number;
 }): Promise<SourcifyChainMap> {
-  let chainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName;
-
-  // Priority 1: local sourcify-chains.json (self-hosted override)
-  if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
-    logger.warn("Overriding default chains: using sourcify-chains.json");
-    chainsExtensions = JSON.parse(
-      fs.readFileSync(
-        path.resolve(__dirname, "./sourcify-chains.json"),
-        "utf8",
-      ),
-    ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-  }
-  // Priority 2: fetch from configured remote URL
-  else {
-    if (!opts.remoteUrl) {
-      throw new Error(
-        "chains.remoteUrl is not configured and no sourcify-chains.json override found. " +
-          "Set chains.remoteUrl in the server config to the URL of the chains config file.",
-      );
-    }
-    chainsExtensions = await fetchChainsConfigWithRetry(
-      opts.remoteUrl,
-      opts.retryAttempts,
-      opts.retryDelayMs,
-    );
-  }
+  const chainsExtensions = await loadChainsExtensions(opts);
 
   const sourcifyChainsMap: SourcifyChainMap = {};
 
