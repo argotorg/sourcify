@@ -18,6 +18,7 @@ import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
+import { ZkSolcLocal } from "./services/compiler/local/ZkSolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
 
@@ -74,6 +75,13 @@ const selectedSolidityCompiler = new SolcLocal(solcRepoPath, solJsonRepoPath);
 
 export const solc = selectedSolidityCompiler;
 
+logger.info("Using local zksolc compiler");
+const zksolcRepoPath =
+  (config.get("zksolcRepo") as string) || path.join("/tmp", "zksolc-repo");
+const eraSolcRepoPath =
+  (config.get("eraSolcRepo") as string) || path.join("/tmp", "era-solc-repo");
+export const zksolc = new ZkSolcLocal(zksolcRepoPath, eraSolcRepoPath);
+
 logger.info("Using local vyper compiler");
 const vyperRepoPath =
   (config.get("vyperRepo") as string) || path.join("/tmp", "vyper-repo");
@@ -126,6 +134,8 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       sourcifyChainMap: sourcifyChainsMap,
       solcRepoPath,
       solJsonRepoPath,
+      zksolcRepoPath,
+      eraSolcRepoPath,
       vyperRepoPath,
       feRepoPath,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT

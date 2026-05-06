@@ -25,6 +25,8 @@ module.exports = {
   },
   solcRepo: "/home/app/data/compilers/solc",
   solJsonRepo: "/home/app/data/compilers/soljson",
+  zksolcRepo: "/home/app/data/compilers/zksolc",
+  eraSolcRepo: "/home/app/data/compilers/era-solc",
   vyperRepo: "/home/app/data/compilers/vyper",
   feRepo: "/home/app/data/compilers/fe",
   initCompilers: true,

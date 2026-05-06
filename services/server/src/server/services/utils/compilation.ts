@@ -2,12 +2,14 @@ import type {
   AnyCompilation,
   CompilationTarget,
   ISolidityCompiler,
+  IZkSolcCompiler,
   IVyperCompiler,
   IFeCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   CompilationError,
   SolidityCompilation,
+  ZkSolcCompilation,
   VyperCompilation,
   YulCompilation,
   FeCompilation,
@@ -66,4 +68,26 @@ export function createCompilationFromJsonInput(
       throw new CompilationError({ code: "invalid_language" });
     }
   }
+}
+
+export function createZkSolcCompilationFromJsonInput(
+  compilers: {
+    zksolc: IZkSolcCompiler;
+  },
+  zksolcVersion: string,
+  solcVersion: string,
+  jsonInput: SolidityJsonInput,
+  compilationTarget: CompilationTarget,
+): ZkSolcCompilation {
+  if (jsonInput?.language !== "Solidity") {
+    throw new CompilationError({ code: "invalid_language" });
+  }
+
+  return new ZkSolcCompilation(
+    compilers.zksolc,
+    zksolcVersion,
+    solcVersion,
+    jsonInput,
+    compilationTarget,
+  );
 }

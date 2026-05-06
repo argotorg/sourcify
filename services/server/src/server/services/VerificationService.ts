@@ -37,6 +37,7 @@ import type {
 import {
   VerifyError,
   type VerifyFromJsonInput,
+  type VerifyFromZkSolcJsonInput,
   type VerifyFromMetadataInput,
   type VerifyOutput,
   type VerifySimilarityInput,
@@ -52,6 +53,8 @@ export interface VerificationServiceOptions {
   sourcifyChainMap: SourcifyChainMap;
   solcRepoPath: string;
   solJsonRepoPath: string;
+  zksolcRepoPath: string;
+  eraSolcRepoPath: string;
   vyperRepoPath: string;
   feRepoPath: string;
   workerIdleTimeout?: number;
@@ -63,6 +66,8 @@ export class VerificationService {
   initCompilers: boolean;
   solcRepoPath: string;
   solJsonRepoPath: string;
+  zksolcRepoPath: string;
+  eraSolcRepoPath: string;
   storageService: StorageService;
   private sourcifyChainMap: SourcifyChainMap;
 
@@ -83,6 +88,8 @@ export class VerificationService {
     this.initCompilers = options.initCompilers || false;
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
+    this.zksolcRepoPath = options.zksolcRepoPath;
+    this.eraSolcRepoPath = options.eraSolcRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
 
@@ -132,6 +139,8 @@ export class VerificationService {
         sourcifyChainInstanceMap,
         solcRepoPath: options.solcRepoPath,
         solJsonRepoPath: options.solJsonRepoPath,
+        zksolcRepoPath: options.zksolcRepoPath,
+        eraSolcRepoPath: options.eraSolcRepoPath,
         vyperRepoPath: options.vyperRepoPath,
         feRepoPath: options.feRepoPath,
       },
@@ -283,6 +292,39 @@ export class VerificationService {
     return verificationId;
   }
 
+  public async verifyFromZkSolcJsonInputViaWorker(
+    verificationEndpoint: string,
+    chainId: string,
+    address: string,
+    jsonInput: SolidityJsonInput,
+    zksolcVersion: string,
+    solcVersion: string,
+    compilationTarget: CompilationTarget,
+    creationTransactionHash?: string,
+  ): Promise<VerificationJobId> {
+    const verificationId = await this.storageService.performServiceOperation(
+      "storeVerificationJob",
+      [new Date(), chainId, address, verificationEndpoint],
+    );
+
+    const input: VerifyFromZkSolcJsonInput = {
+      chainId,
+      address,
+      jsonInput,
+      zksolcVersion,
+      solcVersion,
+      compilationTarget,
+      creationTransactionHash,
+      traceId: asyncLocalStorage.getStore()?.traceId,
+    };
+
+    this.runInBackground(
+      this.verifyViaWorker(verificationId, "verifyFromZkSolcJsonInput", input),
+    );
+
+    return verificationId;
+  }
+
   public async verifyFromMetadataViaWorker(
     verificationEndpoint: string,
     chainId: string,
@@ -428,6 +470,7 @@ export class VerificationService {
     functionName: string,
     input:
       | VerifyFromJsonInput
+      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
@@ -503,6 +546,7 @@ export class VerificationService {
     verificationId: VerificationJobId,
     verificationInput:
       | VerifyFromJsonInput
+      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
@@ -542,6 +586,7 @@ export class VerificationService {
     storageArgs: Parameters<Required<WStorageService>["setJobError"]>,
     verificationInput?:
       | VerifyFromJsonInput
+      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,

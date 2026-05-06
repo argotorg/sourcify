@@ -105,6 +105,8 @@ export class ServerFixture {
           sourcifyChainMap: sourcifyChainsMap,
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
+          zksolcRepoPath: config.get("zksolcRepo"),
+          eraSolcRepoPath: config.get("eraSolcRepo"),
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
         },

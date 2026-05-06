@@ -24,6 +24,16 @@ export interface VerifyFromJsonInput extends VerificationWorkerInput {
   creationTransactionHash?: string;
 }
 
+export interface VerifyFromZkSolcJsonInput extends VerificationWorkerInput {
+  chainId: string;
+  address: string;
+  jsonInput: SolidityJsonInput;
+  zksolcVersion: string;
+  solcVersion: string;
+  compilationTarget: CompilationTarget;
+  creationTransactionHash?: string;
+}
+
 export interface VerifyFromMetadataInput extends VerificationWorkerInput {
   chainId: string;
   address: string;

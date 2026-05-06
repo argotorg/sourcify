@@ -17,6 +17,7 @@ import {
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
+import { ZkSolcLocal } from "../compiler/local/ZkSolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
 import { FeLocal } from "../compiler/local/FeLocal";
 import { v4 as uuidv4 } from "uuid";
@@ -25,6 +26,7 @@ import type {
   VerifyErrorExport,
   VerifyFromEtherscanInput,
   VerifyFromJsonInput,
+  VerifyFromZkSolcJsonInput,
   VerifyFromMetadataInput,
   VerifyOutput,
   VerificationWorkerInput,
@@ -34,16 +36,20 @@ import logger, { setLogLevel } from "../../../common/logger";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
-import { createCompilationFromJsonInput } from "../utils/compilation";
+import {
+  createCompilationFromJsonInput,
+  createZkSolcCompilationFromJsonInput,
+} from "../utils/compilation";
 
 export const filename = resolve(__filename);
 
 let chainRepository: ChainRepository;
 let solc: SolcLocal;
+let zksolc: ZkSolcLocal;
 let vyper: VyperLocal;
 let fe: FeLocal;
 const initWorker = () => {
-  if (chainRepository && solc && vyper && fe) {
+  if (chainRepository && solc && zksolc && vyper && fe) {
     return;
   }
 
@@ -65,6 +71,10 @@ const initWorker = () => {
     Piscina.workerData.solcRepoPath,
     Piscina.workerData.solJsonRepoPath,
   );
+  zksolc = new ZkSolcLocal(
+    Piscina.workerData.zksolcRepoPath,
+    Piscina.workerData.eraSolcRepoPath,
+  );
   vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
   fe = new FeLocal(Piscina.workerData.feRepoPath);
 };
@@ -83,6 +93,12 @@ export async function verifyFromJsonInput(
   input: VerifyFromJsonInput,
 ): Promise<VerifyOutput> {
   return runWorkerFunctionWithContext(_verifyFromJsonInput, input);
+}
+
+export async function verifyFromZkSolcJsonInput(
+  input: VerifyFromZkSolcJsonInput,
+): Promise<VerifyOutput> {
+  return runWorkerFunctionWithContext(_verifyFromZkSolcJsonInput, input);
 }
 
 export async function verifyFromMetadata(
@@ -131,6 +147,56 @@ async function _verifyFromJsonInput({
         customCode: "unsupported_language",
         errorId: uuidv4(),
       },
+    };
+  }
+
+  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+  const foundCreationTxHash =
+    creationTransactionHash ||
+    (await getCreatorTx(sourcifyChain, address)) ||
+    undefined;
+
+  const verification = new Verification(
+    compilation,
+    sourcifyChain,
+    address,
+    foundCreationTxHash,
+  );
+
+  try {
+    await verification.verify();
+  } catch (error: any) {
+    return {
+      errorExport: createErrorExport(error, verification),
+    };
+  }
+
+  return {
+    verificationExport: verification.export(),
+  };
+}
+
+async function _verifyFromZkSolcJsonInput({
+  chainId,
+  address,
+  jsonInput,
+  zksolcVersion,
+  solcVersion,
+  compilationTarget,
+  creationTransactionHash,
+}: VerifyFromZkSolcJsonInput): Promise<VerifyOutput> {
+  let compilation: AnyCompilation;
+  try {
+    compilation = createZkSolcCompilationFromJsonInput(
+      { zksolc },
+      zksolcVersion,
+      solcVersion,
+      jsonInput,
+      compilationTarget,
+    );
+  } catch (error: any) {
+    return {
+      errorExport: createErrorExport(error),
     };
   }
 
