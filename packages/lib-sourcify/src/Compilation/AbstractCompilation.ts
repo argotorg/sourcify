@@ -5,6 +5,7 @@ import type {
   CompilationLanguage,
   StringMap,
   ISolidityCompiler,
+  IZkSolcCompiler,
   IVyperCompiler,
   IFeCompiler,
 } from './CompilationTypes';
@@ -34,7 +35,11 @@ export abstract class AbstractCompilation {
   /**
    * Constructor parameters
    */
-  abstract compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler;
+  abstract compiler:
+    | ISolidityCompiler
+    | IZkSolcCompiler
+    | IVyperCompiler
+    | IFeCompiler;
   compilerVersion: string;
   abstract compilationTarget: CompilationTarget;
   jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
@@ -81,11 +86,9 @@ export abstract class AbstractCompilation {
     });
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
     try {
-      this.compilerOutput = await this.compiler.compile(
-        version,
-        this.jsonInput as any,
-        forceEmscripten,
-      );
+      this.compilerOutput = await (
+        this.compiler as ISolidityCompiler | IVyperCompiler | IFeCompiler
+      ).compile(version, this.jsonInput as any, forceEmscripten);
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

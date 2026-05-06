@@ -11,6 +11,7 @@ import { SourcifyLibError } from '../SourcifyLibError';
 import type { SolidityCompilation } from './SolidityCompilation';
 import type { VyperCompilation } from './VyperCompilation';
 import type { FeCompilation } from './FeCompilation';
+import type { ZkSolcCompilation } from './ZkSolcCompilation';
 
 export interface CompiledContractCborAuxdata {
   [key: string]: {
@@ -66,6 +67,14 @@ export interface ISolidityCompiler {
   ): Promise<SolidityOutput>;
 }
 
+export interface IZkSolcCompiler {
+  compile(
+    zksolcVersion: string,
+    solcVersion: string,
+    solcJsonInput: SolidityJsonInput,
+  ): Promise<SolidityOutput>;
+}
+
 export interface IVyperCompiler {
   compile(
     version: string,
@@ -79,5 +88,6 @@ export interface IFeCompiler {
 
 export type AnyCompilation =
   | SolidityCompilation
+  | ZkSolcCompilation
   | VyperCompilation
   | FeCompilation;
