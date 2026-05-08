@@ -12,57 +12,28 @@ import {
   verifyAndAssertEtherscanViaApiV1,
 } from "../../../helpers/helpers";
 import type { Response } from "superagent";
+import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import nock from "nock";
 import {
-  INVALID_API_KEY_RESPONSE,
   mockEtherscanApi,
-  MULTIPLE_CONTRACT_RESPONSE,
-  RATE_LIMIT_REACHED_RESPONSE,
-  SINGLE_CONTRACT_RESPONSE,
-  STANDARD_JSON_CONTRACT_RESPONSE,
+  deployEtherscanFixtures,
+  SINGLE_CONTRACT,
+  MULTIPLE_CONTRACT,
+  STANDARD_JSON_CONTRACT,
+  VYPER_SINGLE_CONTRACT,
+  VYPER_STANDARD_JSON_CONTRACT,
+  MALFORMED_VERSION_CONTRACT,
   UNVERIFIED_CONTRACT_RESPONSE,
-  VYPER_SINGLE_CONTRACT_RESPONSE,
-  VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
-  MALFORMED_VERSION_RESPONSE,
-} from "../../../helpers/etherscanResponseMocks";
-import {
-  startMockRpcServer,
-  stopMockRpcServer,
-} from "../../../helpers/mockRpcServer";
-import type http from "http";
-import {
-  SourcifyChain,
-  type VerificationStatus,
-} from "@ethereum-sourcify/lib-sourcify";
+  INVALID_API_KEY_RESPONSE,
+  RATE_LIMIT_REACHED_RESPONSE,
+} from "../../../helpers/etherscanTestCases";
+import type { EtherscanDeployments } from "../../../helpers/etherscanTestCases";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 
-const testContracts: Record<
-  string,
-  { address: string; type: string; expectedStatus: string }[]
-> = {
-  "1": [
-    {
-      address: "0x1F3c21c9D16C5Bfc8956a433eC34bfcDEAa9D740",
-      type: "single",
-      expectedStatus: "partial",
-    },
-    {
-      address: "0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2",
-      type: "multiple",
-      expectedStatus: "partial",
-    },
-    {
-      address: "0x5Aa653A076c1dbB47cec8C1B4d152444CAD91941",
-      type: "standard-json",
-      expectedStatus: "partial",
-    },
-  ],
-};
-
 const CUSTOM_PORT = 5678;
-const MOCK_RPC_PORT = 18545;
 
 describe("Import From Etherscan and Verify", function () {
   // Don't run if it's an external PR. Etherscan tests need API keys that can't be exposed to external PRs.
@@ -70,23 +41,24 @@ describe("Import From Etherscan and Verify", function () {
     return;
   }
 
-  let mockRpcServer: http.Server;
-  before(async () => {
-    mockRpcServer = await startMockRpcServer("1", MOCK_RPC_PORT);
-  });
-  after(async () => {
-    await stopMockRpcServer(mockRpcServer);
-  });
-
+  const chainFixture = new LocalChainFixture();
+  // Mainnet stub points at the real hardhat node that LocalChainFixture
+  // spawns. We deliberately do NOT set fetchContractCreationTxUsing.etherscanApi
+  // here: the verification worker runs in a Piscina thread, and nock's
+  // http-module patches don't propagate across thread boundaries — so an
+  // Etherscan-based getcontractcreation call from the worker would have to
+  // hit the real internet. Leaving etherscanApi out of the fetchers makes
+  // getCreatorTx fall back to RPC binary search, which stays inside the
+  // hardhat node and is fast on a chain with only a handful of blocks.
   const mainnetStub = new SourcifyChain({
     name: "Ethereum Mainnet (test stub)",
     chainId: 1,
     supported: true,
     rpcs: [
       {
-        rpc: `http://127.0.0.1:${MOCK_RPC_PORT}`,
-        urlWithoutApiKey: `http://127.0.0.1:${MOCK_RPC_PORT}`,
-        maskedUrl: `http://127.0.0.1:${MOCK_RPC_PORT}`,
+        rpc: "http://localhost:8545",
+        urlWithoutApiKey: "http://localhost:8545",
+        maskedUrl: "http://localhost:8545",
       },
     ],
     etherscanApi: { supported: true, apiKeyEnvName: "ETHERSCAN_API_KEY" },
@@ -97,15 +69,11 @@ describe("Import From Etherscan and Verify", function () {
   });
 
   const testChainId = "1";
-  const singleContract = testContracts[testChainId].find(
-    (contract) => contract.type === "single",
-  )!;
-  const multipleContract = testContracts[testChainId].find(
-    (contract) => contract.type === "multiple",
-  )!;
-  const standardJsonContract = testContracts[testChainId].find(
-    (contract) => contract.type === "standard-json",
-  )!;
+  let deployments: EtherscanDeployments;
+
+  before(async () => {
+    deployments = await deployEtherscanFixtures(chainFixture.localSigner);
+  });
 
   this.afterEach(() => {
     nock.cleanAll();
@@ -216,18 +184,19 @@ describe("Import From Etherscan and Verify", function () {
         });
     });
 
-    it(`Non-Session: Should import a single contract from Etherscan for ${testChainId} and verify the contract, finding a ${singleContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a single contract from Etherscan for ${testChainId} and verify the contract, finding a ${SINGLE_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.SINGLE_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        singleContract.address,
-        SINGLE_CONTRACT_RESPONSE,
+        address,
+        SINGLE_CONTRACT.etherscanResponse,
       );
 
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
-        singleContract.address,
-        singleContract.expectedStatus as VerificationStatus,
+        address,
+        SINGLE_CONTRACT.expectedStatus,
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
@@ -235,18 +204,19 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a multiple contract from Etherscan for ${testChainId} and verify the contract, finding a ${multipleContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a multiple contract from Etherscan for ${testChainId} and verify the contract, finding a ${MULTIPLE_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.MULTIPLE_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        multipleContract.address,
-        MULTIPLE_CONTRACT_RESPONSE,
+        address,
+        MULTIPLE_CONTRACT.etherscanResponse,
       );
 
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
-        multipleContract.address,
-        multipleContract.expectedStatus as VerificationStatus,
+        address,
+        MULTIPLE_CONTRACT.expectedStatus,
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
@@ -254,18 +224,19 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a ${STANDARD_JSON_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.STANDARD_JSON_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        standardJsonContract.address,
-        STANDARD_JSON_CONTRACT_RESPONSE,
+        address,
+        STANDARD_JSON_CONTRACT.etherscanResponse,
       );
 
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
-        standardJsonContract.address,
-        standardJsonContract.expectedStatus as VerificationStatus,
+        address,
+        STANDARD_JSON_CONTRACT.expectedStatus,
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
@@ -273,38 +244,19 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a Vyper single contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
+    it(`Non-Session: Should import a Vyper single contract from Etherscan for ${testChainId} and verify the contract, finding a ${VYPER_SINGLE_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.VYPER_SINGLE_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
-        VYPER_SINGLE_CONTRACT_RESPONSE,
+        address,
+        VYPER_SINGLE_CONTRACT.etherscanResponse,
       );
 
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
-        "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc",
-        "partial",
-        () => {
-          chai.expect(nockScope.isDone()).to.equal(true);
-          done();
-        },
-        false,
-      );
-    });
-
-    it(`Non-Session: Should import a Vyper standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a partial match`, (done) => {
-      const nockScope = mockEtherscanApi(
-        serverFixture.sourcifyChainsMap[testChainId],
-        "0x2dFd89449faff8a532790667baB21cF733C064f2",
-        VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
-      );
-
-      verifyAndAssertEtherscanViaApiV1(
-        serverFixture,
-        testChainId,
-        "0x2dFd89449faff8a532790667baB21cF733C064f2",
-        "partial",
+        address,
+        VYPER_SINGLE_CONTRACT.expectedStatus,
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
@@ -313,18 +265,40 @@ describe("Import From Etherscan and Verify", function () {
       );
     });
 
-    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${testChainId} and verify the contract, finding a ${standardJsonContract.expectedStatus} match`, (done) => {
+    it(`Non-Session: Should import a Vyper standard-json contract from Etherscan for ${testChainId} and verify the contract, finding a ${VYPER_STANDARD_JSON_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.VYPER_STANDARD_JSON_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
-        MALFORMED_VERSION_RESPONSE,
+        address,
+        VYPER_STANDARD_JSON_CONTRACT.etherscanResponse,
       );
 
       verifyAndAssertEtherscanViaApiV1(
         serverFixture,
         testChainId,
-        "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB",
-        "partial",
+        address,
+        VYPER_STANDARD_JSON_CONTRACT.expectedStatus,
+        () => {
+          chai.expect(nockScope.isDone()).to.equal(true);
+          done();
+        },
+        false,
+      );
+    });
+
+    it(`Non-Session: Should import a contract with malformed version field from Etherscan for ${testChainId} and verify the contract, finding a ${MALFORMED_VERSION_CONTRACT.expectedStatus} match`, (done) => {
+      const address = deployments.MALFORMED_VERSION_CONTRACT!.address;
+      const nockScope = mockEtherscanApi(
+        serverFixture.sourcifyChainsMap[testChainId],
+        address,
+        MALFORMED_VERSION_CONTRACT.etherscanResponse,
+      );
+
+      verifyAndAssertEtherscanViaApiV1(
+        serverFixture,
+        testChainId,
+        address,
+        MALFORMED_VERSION_CONTRACT.expectedStatus,
         () => {
           chai.expect(nockScope.isDone()).to.equal(true);
           done();
@@ -335,17 +309,17 @@ describe("Import From Etherscan and Verify", function () {
 
     // Non-session's default is `chain` but should also work with `chainId`
     it("should also work with `chainId` instead of `chain`", (done) => {
-      const contract = singleContract;
+      const address = deployments.SINGLE_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        contract.address,
-        SINGLE_CONTRACT_RESPONSE,
+        address,
+        SINGLE_CONTRACT.etherscanResponse,
       );
 
       chai
         .request(serverFixture.server.app)
         .post("/verify/etherscan")
-        .field("address", contract.address)
+        .field("address", address)
         .field("chainId", testChainId)
         .end(async (err, res) => {
           await assertVerification(
@@ -356,26 +330,26 @@ describe("Import From Etherscan and Verify", function () {
               chai.expect(nockScope.isDone()).to.equal(true);
               done();
             },
-            contract.address,
+            address,
             testChainId,
-            contract.expectedStatus as VerificationStatus,
+            SINGLE_CONTRACT.expectedStatus,
           );
         });
     });
 
     it("should support a custom api key", (done) => {
-      const contract = singleContract;
+      const address = deployments.SINGLE_CONTRACT!.address;
       const apiKey = "TEST";
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
-        contract.address,
+        address,
         INVALID_API_KEY_RESPONSE,
         apiKey,
       );
       chai
         .request(serverFixture.server.app)
         .post("/verify/etherscan")
-        .field("address", contract.address)
+        .field("address", address)
         .field("chainId", testChainId)
         .field("apiKey", apiKey)
         .end((err, res) => {
@@ -390,7 +364,7 @@ describe("Import From Etherscan and Verify", function () {
     });
 
     it("should fail by exceeding rate limit on etherscan APIs", async () => {
-      const address = "0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2";
+      const address = deployments.MULTIPLE_CONTRACT!.address;
       const nockScope = mockEtherscanApi(
         serverFixture.sourcifyChainsMap[testChainId],
         address,

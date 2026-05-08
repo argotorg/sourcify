@@ -27,6 +27,7 @@ export const extractFiles = (req: Request, shouldThrow = false) => {
   if (shouldThrow) {
     throw new BadRequestError("There should be files in the <files> field");
   }
+  return undefined;
 };
 
 const extractFilesFromForm = (files: any): PathBuffer[] => {
