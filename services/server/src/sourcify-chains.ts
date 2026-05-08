@@ -14,6 +14,10 @@ import rawSourcifyChainExtentions from "./sourcify-chains-default.json";
 import logger from "./common/logger";
 import fs from "fs";
 import path from "path";
+import {
+  fetchChainRegistry,
+  type ChainRegistryOptions,
+} from "./chain-registry";
 
 import dotenv from "dotenv";
 
@@ -38,39 +42,41 @@ interface SourcifyChainsExtensionsObjectWithHeaderEnvName {
   };
 }
 
-let sourcifyChainsExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName =
-  {};
-
-// If sourcify-chains.json exists, override sourcify-chains-default.json
-if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
-  logger.warn(
-    "Overriding default chains: using sourcify-chains.json instead of sourcify-chains-default.json",
-  );
-  const rawSourcifyChainExtentionsFromFile = fs.readFileSync(
-    path.resolve(__dirname, "./sourcify-chains.json"),
-    "utf8",
-  );
-  sourcifyChainsExtensions = JSON.parse(
-    rawSourcifyChainExtentionsFromFile,
-  ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-}
-// sourcify-chains-default.json
-else {
-  sourcifyChainsExtensions =
-    rawSourcifyChainExtentions as SourcifyChainsExtensionsObjectWithHeaderEnvName;
-}
-
-const chainMapById = new Map<number, Chain>();
-// Add chains.json from ethereum-lists (chainId.network/chains.json)
-chainsRaw.forEach((chain) => chainMapById.set(chain.chainId, chain));
-// Chains that we decide to support but that are not in chains.json
-extraChainsRaw.forEach((chain) => {
-  // Skip if chainsRaw already defines this chainId so canonical entry wins
-  if (!chainMapById.has(chain.chainId)) {
-    chainMapById.set(chain.chainId, chain);
+function loadDefaultExtensions(): SourcifyChainsExtensionsObjectWithHeaderEnvName {
+  // If sourcify-chains.json exists, override sourcify-chains-default.json
+  if (fs.existsSync(path.resolve(__dirname, "./sourcify-chains.json"))) {
+    logger.warn(
+      "Overriding default chains: using sourcify-chains.json instead of sourcify-chains-default.json",
+    );
+    const rawSourcifyChainExtentionsFromFile = fs.readFileSync(
+      path.resolve(__dirname, "./sourcify-chains.json"),
+      "utf8",
+    );
+    return JSON.parse(
+      rawSourcifyChainExtentionsFromFile,
+    ) as SourcifyChainsExtensionsObjectWithHeaderEnvName;
   }
-});
-const allChains = Array.from(chainMapById.values());
+  // sourcify-chains-default.json
+  return rawSourcifyChainExtentions as SourcifyChainsExtensionsObjectWithHeaderEnvName;
+}
+
+const sourcifyChainsExtensions = loadDefaultExtensions();
+
+function loadDefaultAllChains(): Chain[] {
+  const chainMapById = new Map<number, Chain>();
+  // Add chains.json from ethereum-lists (chainId.network/chains.json)
+  chainsRaw.forEach((chain) => chainMapById.set(chain.chainId, chain));
+  // Chains that we decide to support but that are not in chains.json
+  extraChainsRaw.forEach((chain) => {
+    // Skip if chainsRaw already defines this chainId so canonical entry wins
+    if (!chainMapById.has(chain.chainId)) {
+      chainMapById.set(chain.chainId, chain);
+    }
+  });
+  return Array.from(chainMapById.values());
+}
+
+const allChains = loadDefaultAllChains();
 
 export const LOCAL_CHAINS: SourcifyChain[] = [
   new SourcifyChain({
@@ -239,95 +245,187 @@ function buildCustomRpcs(
   return rpcs;
 }
 
-const sourcifyChainsMap: SourcifyChainMap = {};
+/**
+ * Assembles a SourcifyChainMap from a chain metadata list (chains.json layer)
+ * and a sourcify chain extensions object (sourcify-chains-default.json layer).
+ *
+ * Pure: does not depend on module-level state. Used both for the static
+ * `sourcifyChainsMap` export and for the merged map produced by
+ * `buildSourcifyChainsMap()` once remote additions have been applied.
+ */
+function assembleSourcifyChainsMap(
+  chainsList: Chain[],
+  extensions: SourcifyChainsExtensionsObjectWithHeaderEnvName,
+): SourcifyChainMap {
+  const result: SourcifyChainMap = {};
 
-// Add test chains too if developing or testing
-if (process.env.NODE_ENV !== "production") {
-  for (const chain of LOCAL_CHAINS) {
-    sourcifyChainsMap[chain.chainId.toString()] = chain;
-  }
-}
-
-// iterate over chainid.network's chains.json file and get the chains included in sourcify-chains.json.
-// Merge the chains.json object with the values from sourcify-chains.json
-// Must iterate over all chains because it's not a mapping but an array.
-for (const chain of allChains) {
-  const chainId = chain.chainId;
-  if (chainId in sourcifyChainsMap) {
-    // Don't throw on test chains in development, override the chain.json item as test chains are found in chains.json.
-    if (
-      process.env.NODE_ENV !== "production" &&
-      LOCAL_CHAINS.map((c) => c.chainId).includes(chainId)
-    ) {
-      // do nothing.
-    } else {
-      const err = `Corrupt chains file (chains.json): multiple chains have the same chainId: ${chainId}`;
-      throw new Error(err);
+  // Add test chains too if developing or testing
+  if (process.env.NODE_ENV !== "production") {
+    for (const chain of LOCAL_CHAINS) {
+      result[chain.chainId.toString()] = chain;
     }
   }
 
-  if (chainId in sourcifyChainsExtensions) {
-    const sourcifyExtension = sourcifyChainsExtensions[chainId];
-
-    let rpcs: SourcifyRpc[] = [];
-    if (sourcifyExtension.rpc) {
-      rpcs = buildCustomRpcs(sourcifyExtension.rpc);
-    }
-    // Add rpcs of chains.json as a fallback
-    rpcs = [...rpcs, ...buildCustomRpcs(chain.rpc)];
-
-    // sourcifyExtension is spread later to overwrite chains.json values
-    // Exclude rpc from sourcifyExtension as we now use rpcs
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { rpc: _rpc, ...sourcifyExtensionWithoutRpc } = sourcifyExtension;
-    const sourcifyChain = new SourcifyChain({
-      ...chain,
-      ...sourcifyExtensionWithoutRpc,
-      rpcs,
-    });
-    sourcifyChainsMap[chainId] = sourcifyChain;
-  }
-}
-
-// Check if all chains in sourcify-chains.json are in chains.json
-const missingChains = [];
-for (const chainId in sourcifyChainsExtensions) {
-  if (!sourcifyChainsMap[chainId]) {
-    missingChains.push(chainId);
-  }
-}
-if (missingChains.length > 0) {
-  // Don't let CircleCI pass for the main repo if sourcify-chains.json has chains that are not in chains.json
-  if (process.env.CIRCLE_PROJECT_REPONAME === "sourcify") {
-    throw new Error(
-      `Some of the chains in sourcify-chains.json are not in chains.json: ${missingChains.join(
-        ",",
-      )}`,
-    );
-  }
-  // Don't throw for forks or others running Sourcify, instead add them to sourcifyChainsMap
-  else {
-    logger.warn(
-      `Some of the chains in sourcify-chains.json are not in chains.json`,
-      missingChains,
-    );
-    missingChains.forEach((chainId) => {
-      const chain = sourcifyChainsExtensions[chainId];
-      if (!chain.rpc) {
-        throw new Error(
-          `Chain ${chainId} is missing rpc in sourcify-chains.json`,
-        );
+  // iterate over chainid.network's chains.json file and get the chains included in sourcify-chains.json.
+  // Merge the chains.json object with the values from sourcify-chains.json
+  // Must iterate over all chains because it's not a mapping but an array.
+  for (const chain of chainsList) {
+    const chainId = chain.chainId;
+    if (chainId in result) {
+      // Don't throw on test chains in development, override the chain.json item as test chains are found in chains.json.
+      if (
+        process.env.NODE_ENV !== "production" &&
+        LOCAL_CHAINS.map((c) => c.chainId).includes(chainId)
+      ) {
+        // do nothing.
+      } else {
+        const err = `Corrupt chains file (chains.json): multiple chains have the same chainId: ${chainId}`;
+        throw new Error(err);
       }
-      const rpcs = buildCustomRpcs(chain.rpc);
-      sourcifyChainsMap[chainId] = new SourcifyChain({
-        name: chain.sourcifyName,
-        chainId: parseInt(chainId),
-        supported: chain.supported,
+    }
+
+    if (chainId in extensions) {
+      const sourcifyExtension = extensions[chainId];
+
+      let rpcs: SourcifyRpc[] = [];
+      if (sourcifyExtension.rpc) {
+        rpcs = buildCustomRpcs(sourcifyExtension.rpc);
+      }
+      // Add rpcs of chains.json as a fallback
+      rpcs = [...rpcs, ...buildCustomRpcs(chain.rpc)];
+
+      // sourcifyExtension is spread later to overwrite chains.json values
+      // Exclude rpc from sourcifyExtension as we now use rpcs
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { rpc: _rpc, ...sourcifyExtensionWithoutRpc } = sourcifyExtension;
+      const sourcifyChain = new SourcifyChain({
+        ...chain,
+        ...sourcifyExtensionWithoutRpc,
         rpcs,
-        fetchContractCreationTxUsing: chain.fetchContractCreationTxUsing,
       });
-    });
+      result[chainId] = sourcifyChain;
+    }
   }
+
+  // Check if all chains in sourcify-chains.json are in chains.json
+  const missingChains: string[] = [];
+  for (const chainId in extensions) {
+    if (!result[chainId]) {
+      missingChains.push(chainId);
+    }
+  }
+  if (missingChains.length > 0) {
+    // Don't let CircleCI pass for the main repo if sourcify-chains.json has chains that are not in chains.json
+    if (process.env.CIRCLE_PROJECT_REPONAME === "sourcify") {
+      throw new Error(
+        `Some of the chains in sourcify-chains.json are not in chains.json: ${missingChains.join(
+          ",",
+        )}`,
+      );
+    }
+    // Don't throw for forks or others running Sourcify, instead add them to result
+    else {
+      logger.warn(
+        `Some of the chains in sourcify-chains.json are not in chains.json`,
+        missingChains,
+      );
+      missingChains.forEach((chainId) => {
+        const chain = extensions[chainId];
+        if (!chain.rpc) {
+          throw new Error(
+            `Chain ${chainId} is missing rpc in sourcify-chains.json`,
+          );
+        }
+        const rpcs = buildCustomRpcs(chain.rpc);
+        result[chainId] = new SourcifyChain({
+          name: chain.sourcifyName,
+          chainId: parseInt(chainId),
+          supported: chain.supported,
+          rpcs,
+          fetchContractCreationTxUsing: chain.fetchContractCreationTxUsing,
+        });
+      });
+    }
+  }
+
+  return result;
 }
 
-export { sourcifyChainsMap };
+/**
+ * Static SourcifyChainMap built from the bundled chains.json,
+ * extra-chains.json and sourcify-chains-default.json (or sourcify-chains.json
+ * if present). This is the synchronous map used by tests and any caller that
+ * doesn't need the optional remote chain registry.
+ *
+ * Production code paths (the server bootstrap in cli.ts) should prefer
+ * `buildSourcifyChainsMap()` so a configured remote registry can augment the
+ * static set.
+ */
+export const sourcifyChainsMap = assembleSourcifyChainsMap(
+  allChains,
+  sourcifyChainsExtensions,
+);
+
+export interface BuildSourcifyChainsMapOptions {
+  chainRegistry?: ChainRegistryOptions;
+  /**
+   * If true, throw when the chain registry fetch fails or yields no entries.
+   * Defaults to false: failures fall back to the static map and are logged.
+   */
+  chainRegistryRequired?: boolean;
+}
+
+/**
+ * Builds a SourcifyChainMap, optionally augmenting the static set with chains
+ * fetched from a remote chain registry. Static config always wins: a chainId
+ * present in chains.json/extra-chains.json or sourcify-chains-default.json is
+ * never overwritten by a remote entry.
+ */
+export async function buildSourcifyChainsMap(
+  options: BuildSourcifyChainsMapOptions = {},
+): Promise<SourcifyChainMap> {
+  if (!options.chainRegistry) {
+    return assembleSourcifyChainsMap(allChains, sourcifyChainsExtensions);
+  }
+
+  const result = await fetchChainRegistry(options.chainRegistry);
+
+  const hasAdditions =
+    result.chainsJsonAdditions.length > 0 ||
+    Object.keys(result.extensionAdditions).length > 0;
+
+  if (!hasAdditions && options.chainRegistryRequired) {
+    throw new Error(
+      `chainRegistry: required registry at ${options.chainRegistry.url} returned no chains`,
+    );
+  }
+
+  // Merge remote additions, honoring static precedence on both layers.
+  const mergedChainIds = new Set(allChains.map((c) => c.chainId));
+  const mergedChains: Chain[] = [...allChains];
+  for (const chain of result.chainsJsonAdditions) {
+    if (mergedChainIds.has(chain.chainId)) {
+      logger.debug("chainRegistry: static chain wins over remote", {
+        chainId: chain.chainId,
+      });
+      continue;
+    }
+    mergedChains.push(chain);
+    mergedChainIds.add(chain.chainId);
+  }
+
+  const mergedExtensions: SourcifyChainsExtensionsObjectWithHeaderEnvName = {
+    ...sourcifyChainsExtensions,
+  };
+  for (const [chainId, ext] of Object.entries(result.extensionAdditions)) {
+    if (chainId in mergedExtensions) {
+      logger.debug("chainRegistry: static extension wins over remote", {
+        chainId,
+      });
+      continue;
+    }
+    mergedExtensions[chainId] = ext;
+  }
+
+  return assembleSourcifyChainsMap(mergedChains, mergedExtensions);
+}

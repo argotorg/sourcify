@@ -45,6 +45,16 @@ module.exports = {
   // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
   replaceContract: false,
+  // Optional remote chain registry. When `url` is set the server fetches
+  // additional chains at boot and merges them with the bundled chains.json
+  // and sourcify-chains-default.json. Static chains/extensions always win;
+  // remote entries are only added for chainIds that aren't already known.
+  // The bearer token (if any) lives in process.env.CHAIN_REGISTRY_AUTH_TOKEN.
+  chainRegistry: {
+    url: process.env.CHAIN_REGISTRY_URL || undefined,
+    required: false,
+    timeoutMs: 10000,
+  },
   brownoutV1: {
     enabled: false,
     windows: [],
