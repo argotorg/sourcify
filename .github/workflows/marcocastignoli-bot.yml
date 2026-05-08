@@ -1,0 +1,20 @@
+name: marcocastignoli-bot routine
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fire:
+    if: >
+      github.event.comment.user.login == 'marcocastignoli' && 
+      startsWith(github.event.comment.body, '/marcobot')
+    permissions:
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/_fire-routine.yml
+    with:
+      trigger_prefix: /marcobot
+      routine_url: https://api.anthropic.com/v1/claude_code/routines/trig_01AKoQ2ReqVqUqHyp7RkNsXu/fire
+    secrets:
+      anthropic_token: ${{ secrets.ANTHROPIC_TOKEN_MARCO }}

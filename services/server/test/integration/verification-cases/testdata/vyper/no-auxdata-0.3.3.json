@@ -1,0 +1,72 @@
+{
+  "_comment": "Vyper 0.3.3 — no CBOR auxdata in runtime bytecode (pre-0.3.4)",
+  "onchain": {
+    "creationBytecode": "0x6100a56100186300000000396100a56000016300000000f3600436101561000d5761009a565b60003560e01c346100a05763c605f76c811861009857602080608052600c6040527f48656c6c6f20576f726c642100000000000000000000000000000000000000006060526040816080018151808252602083016020830181518152505050805180602083010181600003601f163682375050601f19601f8251602001011690509050810190506080f35b505b60006000fd5b600080fd",
+    "deployedBytecode": "0x600436101561000d5761009a565b60003560e01c346100a05763c605f76c811861009857602080608052600c6040527f48656c6c6f20576f726c642100000000000000000000000000000000000000006060526040816080018151808252602083016020830181518152505050805180602083010181600003601f163682375050601f19601f8251602001011690509050810190506080f35b505b60006000fd5b600080fd"
+  },
+  "input": {
+    "compilerVersion": "0.3.3+commit.48e326f0",
+    "contractIdentifier": "test.vy:test",
+    "stdJsonInput": {
+      "language": "Vyper",
+      "sources": {
+        "test.vy": {
+          "content": "# @version >=0.3.2\n\n# @notice Simple greeting contract\n\n# @notice Returns the string \"Hello World!\"\n@external\n@view\ndef helloWorld() -> String[24]:\n    return \"Hello World!\""
+        }
+      },
+      "settings": {
+        "evmVersion": "istanbul",
+        "libraries": {}
+      }
+    }
+  },
+  "output": {
+    "creationBytecode": "0x6100a56100186300000000396100a56000016300000000f3600436101561000d5761009a565b60003560e01c346100a05763c605f76c811861009857602080608052600c6040527f48656c6c6f20576f726c642100000000000000000000000000000000000000006060526040816080018151808252602083016020830181518152505050805180602083010181600003601f163682375050601f19601f8251602001011690509050810190506080f35b505b60006000fd5b600080fd",
+    "deployedBytecode": "0x600436101561000d5761009a565b60003560e01c346100a05763c605f76c811861009857602080608052600c6040527f48656c6c6f20576f726c642100000000000000000000000000000000000000006060526040816080018151808252602083016020830181518152505050805180602083010181600003601f163682375050601f19601f8251602001011690509050810190506080f35b505b60006000fd5b600080fd",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [],
+          "name": "helloWorld",
+          "outputs": [
+            {
+              "name": "",
+              "type": "string"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "userdoc": {},
+      "devdoc": {},
+      "storageLayout": null,
+      "transientStorageLayout": null,
+      "sources": {
+        "test.vy": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "sourceMap": null,
+      "linkReferences": null,
+      "cborAuxdata": {}
+    },
+    "runtimeCodeArtifacts": {
+      "sourceMap": "-1:-1:0:-;;;;;:::-;;:::-;:::-;;;;;;;:::-;;;;116:57;:::-;-1:-1;;;;;;159:14;-1:-1;;159:14;;-1:-1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;152:21;-1:-1;116:57::-;-1:-1;:::-;;;;:::-;;;;",
+      "linkReferences": null,
+      "immutableReferences": null,
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [],
+    "creationValues": {},
+    "runtimeTransformations": [],
+    "runtimeValues": {}
+  }
+}

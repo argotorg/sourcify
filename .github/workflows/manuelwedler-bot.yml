@@ -1,0 +1,20 @@
+name: manuelwedler-bot routine
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fire:
+    if: >
+      github.event.comment.user.login == 'manuelwedler'
+      &&  startsWith(github.event.comment.body, '/manuelbot')
+    permissions:
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/_fire-routine.yml
+    with:
+      trigger_prefix: /manuelbot
+      routine_url: https://api.anthropic.com/v1/claude_code/routines/trig_01VWRwFSZ6Qz4LTYtk5P92gW/fire
+    secrets:
+      anthropic_token: ${{ secrets.ANTHROPIC_TOKEN_MANUEL }}

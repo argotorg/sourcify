@@ -1,6 +1,6 @@
 {
   "name": "sourcify-server",
-  "version": "3.13.0",
+  "version": "3.14.0",
   "description": "Solidity metadata-based re-compilation and source verification tool",
   "main": "dist/server/server.js",
   "types": "dist/server/server.d.ts",
@@ -47,9 +47,9 @@
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
     "@aws-sdk/client-s3": "3.1033.0",
-    "@ethereum-sourcify/bytecode-utils": "^1.5.0",
+    "@ethereum-sourcify/bytecode-utils": "^1.5.1",
     "@ethereum-sourcify/compilers": "^1.1.1",
-    "@ethereum-sourcify/lib-sourcify": "^3.5.0",
+    "@ethereum-sourcify/lib-sourcify": "^3.5.1",
     "@google-cloud/cloud-sql-connector": "1.10.0",
     "@shazow/whatsabi": "0.26.0",
     "@solidity-parser/parser": "0.20.2",

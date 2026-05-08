@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/lib-sourcify",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "Library for Sourcify's contract verification methods, contract validation, types, and interfaces.",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
@@ -34,7 +34,7 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "@ethereum-sourcify/bytecode-utils": "^1.5.0",
+    "@ethereum-sourcify/bytecode-utils": "^1.5.1",
     "@ethereumjs/blockchain": "7.3.0",
     "@ethereumjs/common": "4.4.0",
     "@ethereumjs/evm": "3.1.1",

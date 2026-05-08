@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.14.0 - 2026-05-06
+
+- refactor: move v1 verification edge case tests to v2 and verification-cases (#2743)
+- Fix OOM error in CircleCI (#2754)
+- feat: implement brownout windows for API v1 endpoints to drive migration to v2 (#2744)
+
 ## sourcify-server@3.13.0 - 2026-04-14
 
 - Add support for Vyper integrity hash (#2715)

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.5.1 - 2026-05-06
+
+- fix: add VYPER_LT_0_3_4 auxdata style for Vyper versions without CBOR (#2766)
+
 ## @ethereum-sourcify/bytecode-utils@1.5.0 - 2026-04-14
 
 - Fix Vyper execution bytecode extraction and add splitAuxdata tests (#2715)

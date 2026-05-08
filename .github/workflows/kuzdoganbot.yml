@@ -1,0 +1,20 @@
+name: kuzdoganbot routine
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fire:
+    if: >
+      github.event.comment.user.login == 'kuzdogan' &&
+      startsWith(github.event.comment.body, '/kuzdoganbot')
+    permissions:
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/_fire-routine.yml
+    with:
+      trigger_prefix: /kuzdoganbot
+      routine_url: https://api.anthropic.com/v1/claude_code/routines/trig_01G8ZiE6uu9reRQrx39dduvg/fire
+    secrets:
+      anthropic_token: ${{ secrets.ANTHROPIC_TOKEN_KAAN }}
