@@ -61,6 +61,9 @@
     "axios": "1.16.0",
     "yaml": "2.8.4",
     "brace-expansion": "5.0.6",
-    "follow-redirects": "1.16.0"
+    "follow-redirects": "1.16.0",
+    "sinon": {
+      "diff": "8.0.4"
+    }
   }
 }
