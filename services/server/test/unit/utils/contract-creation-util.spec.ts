@@ -52,15 +52,6 @@ describe("contract creation util", function () {
           },
         },
       }),
-      "40": new SourcifyChain({
-        name: "Telos Mainnet",
-        chainId: 40,
-        supported: true,
-        rpcs: dummyRpcs,
-        fetchContractCreationTxUsing: {
-          telosApi: { url: "https://api.teloscan.io/" },
-        },
-      }),
       "43114": new SourcifyChain({
         name: "Avalanche C-Chain",
         chainId: 43114,
@@ -102,30 +93,6 @@ describe("contract creation util", function () {
         },
       }),
     };
-  });
-
-  // Skipped: https://api.teloscan.io currently serves the SPA frontend at
-  // every path (returns 404 HTML for /v1/contract/...), so getCreatorTx
-  // can't fetch the creation tx via telosApi. Re-enable once the public
-  // Telos API is available again at a stable URL.
-  it.skip("should run getCreatorTx with chainId 40", async function () {
-    const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
-      .sourcifyChainsArray;
-    const sourcifyChain = sourcifyChainsArray.find(
-      (sourcifyChain) => sourcifyChain.chainId === 40,
-    );
-    if (!sourcifyChain) {
-      chai.assert.fail("No chain for chainId 40 configured");
-    }
-    const creatorTx = await getCreatorTx(
-      sourcifyChain,
-      "0x4c09368a4bccD1675F276D640A0405Efa9CD4944",
-    );
-    chai
-      .expect(creatorTx)
-      .equals(
-        "0xb7efb33c736b1e8ea97e356467f99d99221343f077ce31a3e3ac1d2e0636df1d",
-      );
   });
 
   // Commenting out as fails way too often
