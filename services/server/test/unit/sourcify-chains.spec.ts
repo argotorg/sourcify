@@ -210,7 +210,7 @@ describe("initializeSourcifyChains", function () {
       expect(second).to.not.have.property("1");
     });
 
-    it("skips supported chains that have no usable RPCs", async function () {
+    it("throws on supported chains that have no usable RPCs", async function () {
       const chainsWithNoRpc = {
         "99998": {
           sourcifyName: "No RPC Chain",
@@ -222,9 +222,11 @@ describe("initializeSourcifyChains", function () {
         .stub(globalThis, "fetch")
         .resolves(makeOkResponse(chainsWithNoRpc));
 
-      const result = await initializeSourcifyChains({ remoteUrl: REMOTE_URL });
-
-      expect(result).to.not.have.property("99998");
+      await expect(
+        initializeSourcifyChains({ remoteUrl: REMOTE_URL }),
+      ).to.be.rejectedWith(
+        "Supported chain 99998 (No RPC Chain) has no usable RPCs configured",
+      );
     });
 
     it("includes deprecated chains that have no RPCs (supported: false)", async function () {

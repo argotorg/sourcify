@@ -103,18 +103,9 @@ function buildCustomRpcs(
       const apiKey =
         process.env[sourcifyRpc.apiKeyEnvName] || process.env["API_KEY"] || "";
       if (!apiKey) {
-        // Just warn on CI or development
-        if (
-          process.env.CI === "true" ||
-          process.env.NODE_ENV !== "production"
-        ) {
-          logger.warn(
-            `API key not found for ${sourcifyRpc.apiKeyEnvName} on ${sourcifyRpc.url}, skipping on CI or development`,
-          );
-          return;
-        } else {
-          throw new Error(`API key not found for ${sourcifyRpc.apiKeyEnvName}`);
-        }
+        throw new Error(
+          `API key not found for ${sourcifyRpc.apiKeyEnvName} on ${sourcifyRpc.url}`,
+        );
       }
       let secretUrl = sourcifyRpc.url.replace("{API_KEY}", apiKey);
       const maskedApiKey =
@@ -295,10 +286,9 @@ export async function initializeSourcifyChains(opts: {
     const chainId = parseInt(chainIdStr);
     const rpcs = buildCustomRpcs(extension.rpc || []);
     if (rpcs.length === 0 && extension.supported) {
-      logger.warn(
-        `Skipping supported chain ${chainId} (${extension.sourcifyName}): no usable RPCs configured`,
+      throw new Error(
+        `Supported chain ${chainId} (${extension.sourcifyName}) has no usable RPCs configured`,
       );
-      continue;
     }
     sourcifyChainsMap[chainIdStr] = new SourcifyChain({
       name: extension.sourcifyName,
