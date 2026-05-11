@@ -304,6 +304,7 @@ export async function initializeSourcifyChains(opts: {
       name: extension.sourcifyName,
       chainId,
       supported: extension.supported,
+      hidden: extension.hidden ?? false,
       rpcs,
       etherscanApi: extension.etherscanApi,
       fetchContractCreationTxUsing: extension.fetchContractCreationTxUsing,

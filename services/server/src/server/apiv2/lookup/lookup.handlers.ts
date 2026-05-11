@@ -179,10 +179,18 @@ export async function getContractAllChainsEndpoint(
     address: req.params.address,
   });
   const services = req.app.get("services") as Services;
+  const chainRepository = req.app.get("chainRepository") as ChainRepository;
   const resultsObject = await services.storage.performServiceOperation(
     "getContractsAllChains",
     [req.params.address],
   );
+
+  // Filter out results for chains marked as hidden so they don't appear
+  // in endpoints that return a list of chains without an explicit chainId request.
+  resultsObject.results = resultsObject.results.filter((result) => {
+    const chain = chainRepository.sourcifyChainMap[String(result.chainId)];
+    return !chain?.hidden;
+  });
 
   if (resultsObject.results.length === 0) {
     res.status(StatusCodes.NOT_FOUND).json(resultsObject);

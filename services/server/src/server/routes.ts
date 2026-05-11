@@ -58,7 +58,9 @@ router.post("/private/change-log-level", (req, res) => {
 
 router.get("/chains", (_req, res) => {
   const chainRepository = _req.app.get("chainRepository") as ChainRepository;
-  const sourcifyChainsArray = chainRepository.sourcifyChainsArray;
+  const sourcifyChainsArray = chainRepository.sourcifyChainsArray.filter(
+    (chain) => !chain.hidden,
+  );
   const sourcifyChains = sourcifyChainsArray.map(
     ({ rpcs, name, title, chainId, supported, etherscanApi }) => {
       return {
