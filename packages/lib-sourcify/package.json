@@ -52,6 +52,7 @@
   "devDependencies": {
     "@ethereum-sourcify/compilers": "^1.1.1",
     "@ethereum-sourcify/compilers-types": "^1.2.0",
+    "@ethereum-sourcify/test-helpers": "^1.0.0",
     "@types/chai": "4.3.20",
     "@types/chai-as-promised": "7.1.8",
     "@types/debug": "4.1.13",
@@ -66,14 +67,12 @@
     "cspell": "8.19.4",
     "cz-conventional-changelog": "3.3.0",
     "gh-pages": "6.3.0",
-    "hardhat": "2.28.6",
     "mocha": "10.8.2",
     "nock": "14.0.14",
     "npm-run-all2": "5.0.2",
     "open-cli": "8.0.0",
     "sinon": "19.0.5",
-    "sinon-chai": "3.7.0",
-    "tree-kill": "1.2.2"
+    "sinon-chai": "3.7.0"
   },
   "files": [
     "build/main",
