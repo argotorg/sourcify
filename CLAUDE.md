@@ -189,6 +189,7 @@ The server supports multiple storage backends:
 ## Automated Review Guidelines
 
 When reviewing PRs as an automated agent:
+
 - Check database migration safety (services/database/) — flag destructive operations
 - Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
@@ -206,3 +207,9 @@ Never push additional commits to a branch whose PR was already merged. Always cr
 git fetch origin
 git checkout -b <new-descriptive-branch> origin/staging
 ```
+
+## Pull Request Conventions
+
+### Do not add a "Test plan" section to PR descriptions
+
+When opening PRs, omit the default "Test plan" / "## Test plan" checklist section. Keep the body to Summary (and Why / Notes / context as relevant). Testing is tracked elsewhere; the checklist is noise in this repo.
