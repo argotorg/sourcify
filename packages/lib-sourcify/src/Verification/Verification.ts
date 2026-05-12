@@ -49,6 +49,10 @@ function auxdataLacksMetadataOrIntegrityHash(
   auxdata: CompiledContractCborAuxdata[string],
   compilation: AbstractCompilation,
 ): boolean {
+  if (compilation instanceof ZkSolcCompilation) {
+    return false;
+  }
+
   try {
     if (
       compilation.auxdataStyle === AuxdataStyle.SOLIDITY &&

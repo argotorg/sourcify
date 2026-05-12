@@ -80,7 +80,12 @@ const zksolcRepoPath =
   (config.get("zksolcRepo") as string) || path.join("/tmp", "zksolc-repo");
 const eraSolcRepoPath =
   (config.get("eraSolcRepo") as string) || path.join("/tmp", "era-solc-repo");
-export const zksolc = new ZkSolcLocal(zksolcRepoPath, eraSolcRepoPath);
+export const zksolc = new ZkSolcLocal(
+  zksolcRepoPath,
+  eraSolcRepoPath,
+  solcRepoPath,
+  solJsonRepoPath,
+);
 
 logger.info("Using local vyper compiler");
 const vyperRepoPath =

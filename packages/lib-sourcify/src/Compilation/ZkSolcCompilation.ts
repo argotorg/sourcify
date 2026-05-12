@@ -21,7 +21,7 @@ import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 const ZKSOLC_CONTRACT_OUTPUTS = ['abi', 'metadata', 'evm'] as const;
 const ZKSOLC_LEGACY_CONTRACT_OUTPUTS = ['abi', 'metadata'] as const;
 const SOLC_RELEASE_VERSION_REGEX =
-  /^v?(\d+\.\d+\.\d+)(?:\+commit\.[a-fA-F0-9]+)?$/;
+  /^v?(\d+\.\d+\.\d+)(\+commit\.[a-fA-F0-9]+)?$/;
 const ERA_SOLC_VERSION_REGEX = /^v?(?:zkVM-)?(\d+\.\d+\.\d+)-(1\.0\.[0-2])$/;
 const ERA_SOLC_EDITIONS = ['1.0.2', '1.0.1', '1.0.0'] as const;
 const MIN_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.4.12';
@@ -175,9 +175,14 @@ export function getZkSolcCompilerVersionCandidates(
   }
 
   const solcVersion = solcReleaseMatch[1];
-  return ERA_SOLC_EDITIONS.filter((edition) =>
+  const eraSolcCandidates = ERA_SOLC_EDITIONS.filter((edition) =>
     isSupportedEraSolcVersion(solcVersion, edition, zksolcVersion),
   ).map((edition) => `${solcVersion}-${edition}`);
+  if (solcReleaseMatch[2]) {
+    return [normalizedCompilerVersion, ...eraSolcCandidates];
+  }
+
+  return eraSolcCandidates;
 }
 
 /**

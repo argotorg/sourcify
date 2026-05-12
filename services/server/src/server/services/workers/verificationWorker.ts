@@ -70,6 +70,8 @@ const initWorker = () => {
   zksolc = new ZkSolcLocal(
     Piscina.workerData.zksolcRepoPath,
     Piscina.workerData.eraSolcRepoPath,
+    Piscina.workerData.solcRepoPath,
+    Piscina.workerData.solJsonRepoPath,
   );
   vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
   fe = new FeLocal(Piscina.workerData.feRepoPath);

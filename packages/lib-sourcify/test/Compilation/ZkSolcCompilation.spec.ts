@@ -191,11 +191,11 @@ describe('ZkSolcCompilation', () => {
     expect(compiler.calls[0].solcVersion).to.equal('0.8.24-1.0.1');
   });
 
-  it('should expand solc release strings with v prefix and commit hash to era-solc candidates', async () => {
+  it('should try exact solc release strings with v prefix and commit hash before era-solc candidates', async () => {
     const solcVersion = 'v0.8.26+commit.8a97fa7a';
     const compiler = makeCompiler(
       makeContract({
-        metadata: makeMetadata('0.8.26-1.0.2'),
+        metadata: makeMetadata(solcVersion),
       }),
     );
     const compilation = new ZkSolcCompilation(
@@ -208,10 +208,10 @@ describe('ZkSolcCompilation', () => {
 
     await compilation.compile();
 
-    expect(compiler.calls[0].solcVersion).to.equal('0.8.26-1.0.2');
+    expect(compiler.calls[0].solcVersion).to.equal(solcVersion);
     expect(compilation.requestedSolcCompilerVersion).to.equal(solcVersion);
-    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.2');
-    expect(compilation.metadata?.compiler.version).to.equal('0.8.26-1.0.2');
+    expect(compilation.solcCompilerVersion).to.equal(solcVersion);
+    expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
   });
 
   it('should accept object metadata from zksolc output', async () => {
@@ -237,6 +237,7 @@ describe('ZkSolcCompilation', () => {
   it('should retry era-solc candidates when compilation fails', async () => {
     const solcVersion = 'v0.8.26+commit.8a97fa7a';
     const compiler = makeCompilerBySolcVersion({
+      [solcVersion]: new Error('unsupported upstream solc candidate'),
       '0.8.26-1.0.2': new Error('unsupported era-solc candidate'),
       '0.8.26-1.0.1': makeContract({
         metadata: makeMetadata('0.8.26-1.0.1'),
@@ -253,6 +254,7 @@ describe('ZkSolcCompilation', () => {
     await compilation.compile();
 
     expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
+      solcVersion,
       '0.8.26-1.0.2',
       '0.8.26-1.0.1',
     ]);
@@ -263,6 +265,17 @@ describe('ZkSolcCompilation', () => {
   it('should retry era-solc candidates when bytecode matching fails', async () => {
     const solcVersion = 'v0.8.26+commit.8a97fa7a';
     const compiler = makeCompilerBySolcVersion({
+      [solcVersion]: makeContract({
+        metadata: makeMetadata(solcVersion),
+        evm: {
+          bytecode: {
+            object: '888888',
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
       '0.8.26-1.0.2': makeContract({
         metadata: makeMetadata('0.8.26-1.0.2'),
         evm: {
@@ -307,6 +320,7 @@ describe('ZkSolcCompilation', () => {
     await verification.verify();
 
     expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
+      solcVersion,
       '0.8.26-1.0.2',
       '0.8.26-1.0.1',
     ]);
@@ -565,16 +579,25 @@ describe('ZkSolcCompilation', () => {
 });
 
 describe('ZkSolcCompilerVersionCandidates', () => {
-  it('should expand supported Solidity release strings newest-first', () => {
+  it('should try exact commit-bearing Solidity release strings before era-solc candidates', () => {
     expect(
       getZkSolcCompilerVersionCandidates('v0.8.26+commit.8a97fa7a', 'v1.5.7'),
-    ).to.deep.equal(['0.8.26-1.0.2', '0.8.26-1.0.1']);
+    ).to.deep.equal([
+      'v0.8.26+commit.8a97fa7a',
+      '0.8.26-1.0.2',
+      '0.8.26-1.0.1',
+    ]);
   });
 
   it('should include era-solc 1.0.0 only for supported older Solidity versions', () => {
     expect(
       getZkSolcCompilerVersionCandidates('v0.8.24+commit.e11b9ed9', 'v1.5.7'),
-    ).to.deep.equal(['0.8.24-1.0.2', '0.8.24-1.0.1', '0.8.24-1.0.0']);
+    ).to.deep.equal([
+      'v0.8.24+commit.e11b9ed9',
+      '0.8.24-1.0.2',
+      '0.8.24-1.0.1',
+      '0.8.24-1.0.0',
+    ]);
 
     expect(
       getZkSolcCompilerVersionCandidates('v0.8.26+commit.8a97fa7a', 'v1.5.7'),

@@ -6,6 +6,7 @@ import { spawn, spawnSync } from 'child_process';
 import semver from 'semver';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import { CompilerError, fetchWithBackoff } from './common';
+import { findSolcPlatform, getSolcExecutable } from './solidityCompiler';
 import type {
   SolidityJsonInput,
   SolidityOutput,
@@ -17,6 +18,9 @@ const HOST_LEGACY_ZKSOLC_REPO =
   'https://github.com/matter-labs/zksolc-bin/releases/download/';
 const HOST_ERA_SOLC_REPO =
   'https://github.com/matter-labs/era-solidity/releases/download/';
+const ERA_SOLC_VERSION_REGEX = /^v?(?:zkVM-)?\d+\.\d+\.\d+-1\.0\.[0-2]$/;
+const SOLC_RELEASE_VERSION_REGEX =
+  /^v?\d+\.\d+\.\d+(?:\+commit\.[a-fA-F0-9]+)?$/;
 
 function stripLeadingV(version: string): string {
   return version.trim().replace(/^v/, '');
@@ -83,6 +87,8 @@ export async function useZkSolcCompiler(
   zksolcVersion: string,
   solcVersion: string,
   solcJsonInput: SolidityJsonInput,
+  solcRepoPath?: string,
+  solJsonRepoPath?: string,
 ): Promise<SolidityOutput> {
   const zksolcPlatform = findZkSolcPlatform();
   if (!zksolcPlatform) {
@@ -99,10 +105,12 @@ export async function useZkSolcCompiler(
     zksolcPlatform,
     zksolcVersion,
   );
-  const eraSolcPath = await getEraSolcExecutable(
+  const solcPath = await getZkSolcBaseSolcExecutable(
     eraSolcRepoPath,
     eraSolcPlatform,
     solcVersion,
+    solcRepoPath,
+    solJsonRepoPath,
   );
 
   const inputStringified = JSON.stringify(solcJsonInput);
@@ -114,7 +122,7 @@ export async function useZkSolcCompiler(
       zksolcPath,
       getZkSolcStandardJsonArgs(
         zksolcVersion,
-        eraSolcPath,
+        solcPath,
         compileDir,
         solcJsonInput,
       ),
@@ -143,6 +151,77 @@ export async function useZkSolcCompiler(
     throw new CompilerError('Compiler error', errorMessages);
   }
   return compiledJSON;
+}
+
+async function getZkSolcBaseSolcExecutable(
+  eraSolcRepoPath: string,
+  eraSolcPlatform: string,
+  solcVersion: string,
+  solcRepoPath?: string,
+  solJsonRepoPath?: string, // Mirrors the Solidity compiler API; upstream solc-js is not usable by zksolc's --solc path.
+): Promise<string> {
+  if (ERA_SOLC_VERSION_REGEX.test(solcVersion)) {
+    return getEraSolcExecutable(eraSolcRepoPath, eraSolcPlatform, solcVersion);
+  }
+
+  if (
+    SOLC_RELEASE_VERSION_REGEX.test(solcVersion) &&
+    solcRepoPath &&
+    solJsonRepoPath
+  ) {
+    return getUpstreamSolcExecutable(
+      solcRepoPath,
+      solJsonRepoPath,
+      solcVersion,
+    );
+  }
+
+  return getEraSolcExecutable(eraSolcRepoPath, eraSolcPlatform, solcVersion);
+}
+
+async function getUpstreamSolcExecutable(
+  solcRepoPath: string,
+  _solJsonRepoPath: string,
+  solcVersion: string,
+): Promise<string> {
+  const normalizedVersion = stripLeadingV(solcVersion);
+  const solcPlatforms = getUpstreamSolcPlatformCandidates();
+
+  for (const solcPlatform of solcPlatforms) {
+    try {
+      const solcPath = await getSolcExecutable(
+        solcRepoPath,
+        solcPlatform,
+        normalizedVersion,
+      );
+      if (solcPath) {
+        return solcPath;
+      }
+    } catch (error) {
+      logWarn('Failed to resolve native solc for zksolc', {
+        solcVersion,
+        solcPlatform,
+        error,
+      });
+    }
+  }
+
+  throw new Error(
+    `Unsupported upstream solc platform for zksolc: ${solcVersion}`,
+  );
+}
+
+function getUpstreamSolcPlatformCandidates(): string[] {
+  const nativePlatform = findSolcPlatform();
+  if (nativePlatform) {
+    return [nativePlatform];
+  }
+
+  if (process.platform === 'darwin' && process.arch === 'arm64') {
+    return ['macosx-amd64'];
+  }
+
+  return [];
 }
 
 function getZkSolcStandardJsonArgs(
