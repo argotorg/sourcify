@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Sourceify is an open-source smart contract verification service for Ethereum and compatible blockchains. The repository is a monorepo containing:
+Sourcify is an open-source smart contract verification service for Ethereum and compatible blockchains. The repository is a monorepo containing:
 
 - **services/server**: HTTP API server for contract verification with PostgreSQL database backend
 - **services/monitor**: Chain monitoring service that automatically detects new contracts and submits them for verification
@@ -198,6 +198,7 @@ The `FIELDS_TO_STORED_PROPERTIES` map is the authoritative source used by the va
 ## Automated Review Guidelines
 
 When reviewing PRs as an automated agent:
+
 - Check database migration safety (services/database/) — flag destructive operations
 - Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
