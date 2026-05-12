@@ -4,9 +4,10 @@ import type {
   FeJsonInput,
   CompilationTarget,
   Metadata,
+  ZkSolcJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
-import type { TypedResponse, ZkSolcJsonInput } from "../../types";
+import type { TypedResponse } from "../../types";
 import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { Services } from "../../services/services";

@@ -120,6 +120,36 @@ async function _verifyFromJsonInput({
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
+  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+  const isZkSolcVerification =
+    Boolean(zksolcVersion) || hasZkSolcInputFlags(jsonInput);
+
+  if (isZkSolcVerification) {
+    if (jsonInput.language !== "Solidity") {
+      return {
+        errorExport: createInvalidParameterErrorExport(
+          "ZkSolc verification only supports Solidity standard JSON input.",
+        ),
+      };
+    }
+
+    if (!zksolcVersion) {
+      return {
+        errorExport: createInvalidParameterErrorExport(
+          "zksolcVersion is required when zksolc-specific settings are provided.",
+        ),
+      };
+    }
+
+    if (!sourcifyChain?.zksolc?.supported) {
+      return {
+        errorExport: createInvalidParameterErrorExport(
+          `ZkSolc verification is not supported on chain ${chainId}.`,
+        ),
+      };
+    }
+  }
+
   let compilation: AnyCompilation;
   try {
     compilation = createCompilationFromJsonInput(
@@ -144,7 +174,6 @@ async function _verifyFromJsonInput({
     };
   }
 
-  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
   const foundCreationTxHash =
     creationTransactionHash ||
     (await getCreatorTx(sourcifyChain, address)) ||
@@ -403,6 +432,31 @@ async function _verifySimilarity({
       customCode: "no_similar_match_found",
       errorId: uuidv4(),
       errorData: undefined,
+    },
+  };
+}
+
+function hasZkSolcInputFlags(jsonInput: VerifyFromJsonInput["jsonInput"]) {
+  const settings = (jsonInput as { settings?: Record<string, unknown> })
+    .settings;
+  if (!settings) {
+    return false;
+  }
+
+  return (
+    "enableEraVMExtensions" in settings ||
+    "forceEVMLA" in settings ||
+    "isSystem" in settings ||
+    "forceEvmla" in settings
+  );
+}
+
+function createInvalidParameterErrorExport(message: string): VerifyErrorExport {
+  return {
+    customCode: "invalid_parameter",
+    errorId: uuidv4(),
+    errorData: {
+      apiErrorMessage: message,
     },
   };
 }

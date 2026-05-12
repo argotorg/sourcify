@@ -2,17 +2,17 @@ import type {
   CompiledContractCborAuxdata,
   Devdoc,
   ImmutableReferences,
-  SolidityJsonInput,
   CompilationLanguage,
   LinkReferences,
   Metadata,
-  SolidityOutput,
   StorageLayout,
   TransientStorageLayout,
   Transformation,
   TransformationValues,
   Userdoc,
   VyperJsonInput,
+  SolidityJsonInput,
+  SolidityOutput,
   VyperOutput,
   VyperSourceMap,
   VyperStorageLayout,
@@ -135,15 +135,6 @@ export type ProxyResolution = Partial<ProxyDetectionResult> & {
 };
 
 export type VerificationJobId = string;
-
-export type ZkSolcJsonInput = SolidityJsonInput & {
-  settings: SolidityJsonInput["settings"] & {
-    isSystem?: boolean;
-    forceEvmla?: boolean;
-    enableEraVMExtensions?: boolean;
-    forceEVMLA?: boolean;
-  };
-};
 
 export type ApiExternalVerification = ExternalVerification & {
   statusUrl?: string;

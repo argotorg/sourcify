@@ -6,10 +6,11 @@ import type {
   CompilationTarget,
   Metadata,
   EtherscanResult,
+  ZkSolcJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
 import type { JobErrorData } from "../utils/database-util";
-import type { SimilarityCandidate, ZkSolcJsonInput } from "../../types";
+import type { SimilarityCandidate } from "../../types";
 
 export interface VerificationWorkerInput {
   traceId?: string;

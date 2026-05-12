@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import { assertJobVerification } from "../../../helpers/assertions";
 import sinon from "sinon";
+import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
@@ -98,6 +99,8 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(verifyRes.body).to.deep.equal({ verificationId });
     chai.expect(verifyFromJsonInputViaWorkerStub.calledOnce).to.equal(true);
+    const { contractPath, contractName } =
+      splitFullyQualifiedName(contractIdentifier);
     chai.expect(verifyFromJsonInputViaWorkerStub.firstCall.args).to.deep.equal([
       `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       chainFixture.chainId,
@@ -105,8 +108,8 @@ describe("POST /v2/verify/:chainId/:address", function () {
       chainFixture.defaultContractJsonInput,
       "v0.8.26+commit.8a97fa7a",
       {
-        path: contractIdentifier.split(":")[0],
-        name: contractIdentifier.split(":")[1],
+        path: contractPath,
+        name: contractName,
       },
       chainFixture.defaultContractCreatorTx,
       "1.5.10",
@@ -114,6 +117,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
   });
 
   it("should reject zksolc verification on chains without zksolc support", async () => {
+    const { resolveWorkers } = makeWorkersWait();
     const contractIdentifier = Object.entries(
       chainFixture.defaultContractMetadataObject.settings.compilationTarget,
     )[0].join(":");
@@ -131,56 +135,69 @@ describe("POST /v2/verify/:chainId/:address", function () {
         creationTransactionHash: chainFixture.defaultContractCreatorTx,
       });
 
-    chai.expect(verifyRes.status).to.equal(400);
-    chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body).to.include({
+      isJobCompleted: true,
+    });
+    chai.expect(jobRes.body.error.customCode).to.equal("invalid_parameter");
     chai
-      .expect(verifyRes.body.message)
+      .expect(jobRes.body.error.message)
       .to.equal(
         `ZkSolc verification is not supported on chain ${chainFixture.chainId}.`,
       );
   });
 
   it("should reject non-Solidity standard input JSON when zksolcVersion is provided", async () => {
-    const sourcifyChain =
-      serverFixture.server.chainRepository.supportedChainMap[
-        chainFixture.chainId
-      ];
-    const previousZkSolcConfig = sourcifyChain.zksolc;
-    (sourcifyChain as any).zksolc = { supported: true };
-
-    try {
-      const verifyRes = await chai
-        .request(serverFixture.server.app)
-        .post(
-          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
-        )
-        .send({
-          stdJsonInput: {
-            language: "Vyper",
-            sources: {
-              "test.vy": {
-                content: "# @version ^0.3.10\nnumber: public(uint256)\n",
-              },
+    const { resolveWorkers } = makeWorkersWait();
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: {
+          language: "Vyper",
+          sources: {
+            "test.vy": {
+              content: "# @version ^0.3.10\nnumber: public(uint256)\n",
             },
           },
-          zksolcVersion: "1.5.10",
-          compilerVersion: "v0.8.26+commit.8a97fa7a",
-          contractIdentifier: "test.vy:test",
-        });
+        },
+        zksolcVersion: "1.5.10",
+        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        contractIdentifier: "test.vy:test",
+      });
 
-      chai.expect(verifyRes.status).to.equal(400);
-      chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
-      chai
-        .expect(verifyRes.body.message)
-        .to.equal(
-          "ZkSolc verification only supports Solidity standard JSON input.",
-        );
-    } finally {
-      (sourcifyChain as any).zksolc = previousZkSolcConfig;
-    }
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body).to.include({
+      isJobCompleted: true,
+    });
+    chai.expect(jobRes.body.error.customCode).to.equal("invalid_parameter");
+    chai
+      .expect(jobRes.body.error.message)
+      .to.equal(
+        "ZkSolc verification only supports Solidity standard JSON input.",
+      );
   });
 
   it("should reject zksolc-specific settings without zksolcVersion", async () => {
+    const { resolveWorkers } = makeWorkersWait();
     const contractIdentifier = Object.entries(
       chainFixture.defaultContractMetadataObject.settings.compilationTarget,
     )[0].join(":");
@@ -203,10 +220,21 @@ describe("POST /v2/verify/:chainId/:address", function () {
         contractIdentifier,
       });
 
-    chai.expect(verifyRes.status).to.equal(400);
-    chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body).to.include({
+      isJobCompleted: true,
+    });
+    chai.expect(jobRes.body.error.customCode).to.equal("invalid_parameter");
     chai
-      .expect(verifyRes.body.message)
+      .expect(jobRes.body.error.message)
       .to.equal(
         "zksolcVersion is required when zksolc-specific settings are provided.",
       );

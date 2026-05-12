@@ -804,13 +804,15 @@ export class Verification {
       compilation: {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
-        compiler: zksolcCompilation ? 'zksolc' : undefined,
+        ...(zksolcCompilation ? { compiler: 'zksolc' } : {}),
         compilerVersion: this.compilation.compilerVersion,
-        zksolc: zksolcCompilation
+        ...(zksolcCompilation
           ? {
-              solcCompilerVersion: zksolcCompilation.solcCompilerVersion,
+              zksolc: {
+                solcCompilerVersion: zksolcCompilation.solcCompilerVersion,
+              },
             }
-          : undefined,
+          : {}),
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {

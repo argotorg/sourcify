@@ -36,6 +36,15 @@ export interface CompilationTarget {
 
 export type CompilationLanguage = 'Solidity' | 'Vyper' | 'Yul' | 'Fe';
 
+export type ZkSolcJsonInput = SolidityJsonInput & {
+  settings: SolidityJsonInput['settings'] & {
+    isSystem?: boolean;
+    forceEvmla?: boolean;
+    enableEraVMExtensions?: boolean;
+    forceEVMLA?: boolean;
+  };
+};
+
 export type CompilationErrorCode =
   | 'invalid_language'
   | 'cannot_generate_cbor_auxdata_positions'
