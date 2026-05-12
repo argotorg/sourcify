@@ -343,8 +343,10 @@ export function extractAuxdataTransformation(
   recompiledBytecodeWith0x: string,
   onchainBytecodeWith0x: string,
   cborAuxdataPositions: CompiledContractCborAuxdata,
+  options: { validateCbor?: boolean } = {},
 ) {
   try {
+    const validateCbor = options.validateCbor ?? true;
     const onchainBytecode = onchainBytecodeWith0x.slice(2);
     let populatedRecompiledBytecode = recompiledBytecodeWith0x.slice(2);
     const transformations: Transformation[] = [];
@@ -367,6 +369,7 @@ export function extractAuxdataTransformation(
         // We need to validate the onchain auxdata is actually a valid CBOR object
         // If the recompiled auxdata length is different from the onchain auxdata length,
         // then `onchainAuxdata` will contain bytes that are not part of the auxdata.
+        validateCbor &&
         onchainAuxdata.length > 0 &&
         !(
           // We first try to decode the auxdata removing the auxdata length bytes,

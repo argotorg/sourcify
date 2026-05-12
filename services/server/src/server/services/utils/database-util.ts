@@ -105,6 +105,7 @@ export namespace Tables {
     };
     additional_input: Nullable<{
       storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
+      era_solc_version?: string;
     }>;
   }
 
@@ -703,6 +704,26 @@ export function getCompilerNameFromLanguage(language: string): string {
   }
 }
 
+function getAdditionalInputFromVerification(
+  verification: VerificationExport,
+): Tables.CompiledContract["additional_input"] {
+  const additionalInput: NonNullable<
+    Tables.CompiledContract["additional_input"]
+  > = {};
+
+  if (verification.compilation.jsonInput.storageLayoutOverrides) {
+    additionalInput.storage_layout_overrides =
+      verification.compilation.jsonInput.storageLayoutOverrides;
+  }
+
+  if (verification.compilation.zksolc) {
+    additionalInput.era_solc_version =
+      verification.compilation.zksolc.solcCompilerVersion;
+  }
+
+  return Object.keys(additionalInput).length > 0 ? additionalInput : null;
+}
+
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
@@ -879,7 +900,9 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler: getCompilerNameFromLanguage(verification.compilation.language),
+      compiler:
+        verification.compilation.compiler ||
+        getCompilerNameFromLanguage(verification.compilation.language),
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,
@@ -887,13 +910,7 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
-      additional_input: verification.compilation.jsonInput
-        .storageLayoutOverrides
-        ? {
-            storage_layout_overrides:
-              verification.compilation.jsonInput.storageLayoutOverrides,
-          }
-        : null,
+      additional_input: getAdditionalInputFromVerification(verification),
     },
     sourcesInformation,
     verifiedContract: {

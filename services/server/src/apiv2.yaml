@@ -837,7 +837,7 @@ components:
                   additionalInput:
                     type: object
                     nullable: true
-                    description: Additional compiler input fields from the top level of the standard JSON input that are not part of `settings`. Currently contains Vyper's `storage_layout_overrides` when used.
+                    description: Additional compiler input fields from the top level of the standard JSON input that are not part of `settings`, plus compiler plumbing metadata needed to reproduce non-standard compilations.
                     properties:
                       storage_layout_overrides:
                         type: object
@@ -853,6 +853,10 @@ components:
                                 type: integer
                               n_slots:
                                 type: integer
+                      era_solc_version:
+                        type: string
+                        description: EraVM solc version used by zksolc.
+                        example: "0.8.26-1.0.1"
                   stdJsonInput:
                     type: object
                     description: The input fields conforming the compiler standard-JSON format.

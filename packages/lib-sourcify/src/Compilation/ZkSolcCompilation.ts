@@ -7,16 +7,29 @@ import type {
   SolidityOutput,
   SolidityOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import semver from 'semver';
 import { AbstractCompilation } from './AbstractCompilation';
 import type {
   CompilationLanguage,
   CompilationTarget,
+  CompiledContractCborAuxdata,
   IZkSolcCompiler,
 } from './CompilationTypes';
 import { CompilationError } from './CompilationTypes';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
 const ZKSOLC_CONTRACT_OUTPUTS = ['abi', 'metadata', 'evm'] as const;
+const ZKSOLC_LEGACY_CONTRACT_OUTPUTS = ['abi', 'metadata'] as const;
+const SOLC_RELEASE_VERSION_REGEX =
+  /^v?(\d+\.\d+\.\d+)(?:\+commit\.[a-fA-F0-9]+)?$/;
+const ERA_SOLC_VERSION_REGEX = /^v?(?:zkVM-)?(\d+\.\d+\.\d+)-(1\.0\.[0-2])$/;
+const ERA_SOLC_EDITIONS = ['1.0.2', '1.0.1', '1.0.0'] as const;
+const MIN_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.4.12';
+const MAX_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.8.30';
+const MAX_ERA_SOLC_1_0_0_SOLIDITY_VERSION = '0.8.25';
+const ERA_VM_BYTECODE_HASH_LENGTH_BYTES = 32;
+
+type EraSolcEdition = (typeof ERA_SOLC_EDITIONS)[number];
 
 type OutputSelection = NonNullable<
   SolidityJsonInput['settings']['outputSelection']
@@ -50,20 +63,121 @@ function ensureSelectorOutputs(
 function mergeOutputSelection(
   jsonInput: SolidityJsonInput,
   compilationTarget: CompilationTarget,
+  zksolcVersion: string,
 ): OutputSelection {
   const existingOutputSelection = jsonInput.settings.outputSelection || {};
   const outputSelection = structuredClone(existingOutputSelection);
+  const contractOutputs = isZkSolcVersionAtLeast(zksolcVersion, '1.5.0')
+    ? ZKSOLC_CONTRACT_OUTPUTS
+    : ZKSOLC_LEGACY_CONTRACT_OUTPUTS;
 
-  ensureSelectorOutputs(outputSelection, '*', '*', ZKSOLC_CONTRACT_OUTPUTS);
+  ensureSelectorOutputs(outputSelection, '*', '*', contractOutputs);
   ensureSelectorOutputs(outputSelection, '*', '', ['abi']);
   ensureSelectorOutputs(
     outputSelection,
     compilationTarget.path,
     compilationTarget.name,
-    ZKSOLC_CONTRACT_OUTPUTS,
+    contractOutputs,
   );
 
   return outputSelection;
+}
+
+function parseContractMetadata(metadata: unknown): Metadata | undefined {
+  if (!metadata) {
+    return undefined;
+  }
+
+  if (typeof metadata === 'string') {
+    return JSON.parse(metadata.trim()) as Metadata;
+  }
+
+  return metadata as Metadata;
+}
+
+function stripLeadingV(version: string): string {
+  return version.trim().replace(/^v/, '');
+}
+
+function isZkSolcVersionAtLeast(version: string, target: string): boolean {
+  if (version === 'vm-1.5.0-a167aa3') {
+    return false;
+  }
+
+  const parsedVersion = semver.parse(stripLeadingV(version));
+  if (!parsedVersion) {
+    return true;
+  }
+
+  return semver.gte(parsedVersion, target);
+}
+
+function isSupportedSolidityVersion(solcVersion: string): boolean {
+  return (
+    Boolean(semver.valid(solcVersion)) &&
+    semver.gte(solcVersion, MIN_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION) &&
+    semver.lte(solcVersion, MAX_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION)
+  );
+}
+
+function isEraSolcEditionAvailable(
+  solcVersion: string,
+  edition: EraSolcEdition,
+): boolean {
+  if (!isSupportedSolidityVersion(solcVersion)) {
+    return false;
+  }
+
+  if (edition === '1.0.0') {
+    return semver.lte(solcVersion, MAX_ERA_SOLC_1_0_0_SOLIDITY_VERSION);
+  }
+
+  return true;
+}
+
+function isEraSolcEditionCompatibleWithZkSolc(
+  zksolcVersion: string,
+  edition: EraSolcEdition,
+): boolean {
+  return edition !== '1.0.2' || isZkSolcVersionAtLeast(zksolcVersion, '1.5.0');
+}
+
+function isSupportedEraSolcVersion(
+  solcVersion: string,
+  edition: EraSolcEdition,
+  zksolcVersion: string,
+): boolean {
+  return (
+    isEraSolcEditionAvailable(solcVersion, edition) &&
+    isEraSolcEditionCompatibleWithZkSolc(zksolcVersion, edition)
+  );
+}
+
+export function getZkSolcCompilerVersionCandidates(
+  compilerVersion: string,
+  zksolcVersion: string,
+): string[] {
+  const normalizedCompilerVersion = compilerVersion.trim();
+  const eraSolcMatch = normalizedCompilerVersion.match(ERA_SOLC_VERSION_REGEX);
+  if (eraSolcMatch?.[1] && eraSolcMatch?.[2]) {
+    const solcVersion = eraSolcMatch[1];
+    const edition = eraSolcMatch[2] as EraSolcEdition;
+    return isSupportedEraSolcVersion(solcVersion, edition, zksolcVersion)
+      ? [`${solcVersion}-${edition}`]
+      : [];
+  }
+
+  const solcReleaseMatch = normalizedCompilerVersion.match(
+    SOLC_RELEASE_VERSION_REGEX,
+  );
+  if (!solcReleaseMatch?.[1]) {
+    return [compilerVersion];
+  }
+
+  const solcVersion = solcReleaseMatch[1];
+  return ERA_SOLC_EDITIONS.filter((edition) =>
+    isSupportedEraSolcVersion(solcVersion, edition, zksolcVersion),
+  ).map((edition) => `${solcVersion}-${edition}`);
 }
 
 /**
@@ -82,6 +196,9 @@ export class ZkSolcCompilation extends AbstractCompilation {
   readonly auxdataStyle: AuxdataStyle.SOLIDITY = AuxdataStyle.SOLIDITY;
 
   public readonly zksolcVersion: string;
+  public readonly requestedSolcCompilerVersion: string;
+  private readonly solcCompilerVersionCandidates: string[];
+  private solcCompilerVersionCandidateIndex = 0;
 
   public constructor(
     public compiler: IZkSolcCompiler,
@@ -92,6 +209,13 @@ export class ZkSolcCompilation extends AbstractCompilation {
   ) {
     super(zksolcVersion, jsonInput);
     this.zksolcVersion = zksolcVersion;
+    this.requestedSolcCompilerVersion = solcCompilerVersion;
+    this.solcCompilerVersionCandidates = getZkSolcCompilerVersionCandidates(
+      solcCompilerVersion,
+      zksolcVersion,
+    );
+    this.solcCompilerVersion =
+      this.solcCompilerVersionCandidates[0] || solcCompilerVersion;
     this.initZkSolcJsonInput();
   }
 
@@ -99,10 +223,39 @@ export class ZkSolcCompilation extends AbstractCompilation {
     this.jsonInput.settings.outputSelection = mergeOutputSelection(
       this.jsonInput,
       this.compilationTarget,
+      this.zksolcVersion,
     );
   }
 
+  public useNextSolcCompilerVersionCandidate(): boolean {
+    if (
+      this.solcCompilerVersionCandidateIndex + 1 >=
+      this.solcCompilerVersionCandidates.length
+    ) {
+      return false;
+    }
+
+    this.solcCompilerVersionCandidateIndex += 1;
+    this.solcCompilerVersion =
+      this.solcCompilerVersionCandidates[
+        this.solcCompilerVersionCandidateIndex
+      ]!;
+    this.compilerOutput = undefined;
+    this.compilationTime = undefined;
+    this._metadata = undefined;
+    this._creationBytecodeCborAuxdata = undefined;
+    this._runtimeBytecodeCborAuxdata = undefined;
+    return true;
+  }
+
   public async compileAndReturnCompilationTarget(): Promise<SolidityOutputContract> {
+    if (this.solcCompilerVersionCandidates.length === 0) {
+      throw new CompilationError({
+        code: 'compiler_error',
+        compilerErrorMessage: `Unsupported era-solc version combination: zksolc ${this.zksolcVersion} with solc ${this.requestedSolcCompilerVersion}`,
+      });
+    }
+
     const compilationStartTime = Date.now();
     logDebug('Compiling zkSync EraVM contract', {
       zksolcVersion: this.zksolcVersion,
@@ -152,17 +305,54 @@ export class ZkSolcCompilation extends AbstractCompilation {
   }
 
   public async compile() {
-    const contract = await this.compileAndReturnCompilationTarget();
-    if (contract.metadata) {
-      this._metadata = JSON.parse(contract.metadata.trim()) as Metadata;
-    } else {
-      this._metadata = undefined;
+    for (;;) {
+      try {
+        const contract = await this.compileAndReturnCompilationTarget();
+        this._metadata = parseContractMetadata(contract.metadata);
+        return;
+      } catch (error: any) {
+        if (
+          error instanceof CompilationError &&
+          error.code === 'compiler_error' &&
+          this.useNextSolcCompilerVersionCandidate()
+        ) {
+          logDebug('Retrying zksolc compilation with next era-solc candidate', {
+            zksolcVersion: this.zksolcVersion,
+            solcVersion: this.solcCompilerVersion,
+            requestedSolcVersion: this.requestedSolcCompilerVersion,
+          });
+          continue;
+        }
+
+        throw error;
+      }
     }
   }
 
   public async generateCborAuxdataPositions() {
     this._creationBytecodeCborAuxdata = {};
-    this._runtimeBytecodeCborAuxdata = {};
+    this._runtimeBytecodeCborAuxdata = this.generateEraVmBytecodeHashPosition(
+      this.runtimeBytecode,
+    );
+  }
+
+  private generateEraVmBytecodeHashPosition(
+    bytecode: string,
+  ): CompiledContractCborAuxdata {
+    const bytecodeWithoutPrefix = bytecode.slice(2);
+    const bytecodeHashLength = ERA_VM_BYTECODE_HASH_LENGTH_BYTES * 2;
+
+    if (bytecodeWithoutPrefix.length < bytecodeHashLength) {
+      return {};
+    }
+
+    return {
+      '1': {
+        offset:
+          bytecodeWithoutPrefix.length / 2 - ERA_VM_BYTECODE_HASH_LENGTH_BYTES,
+        value: `0x${bytecodeWithoutPrefix.slice(-bytecodeHashLength)}`,
+      },
+    };
   }
 
   get creationBytecode() {

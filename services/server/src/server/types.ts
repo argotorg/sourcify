@@ -109,6 +109,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   >;
   additionalInput?: Nullable<{
     storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
+    era_solc_version?: string;
   }>;
   stdJsonInput?: SolidityJsonInput | VyperJsonInput;
   stdJsonOutput?: SolidityOutput | VyperOutput;

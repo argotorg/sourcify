@@ -233,7 +233,7 @@ BEGIN
         validate_json_object_keys(
             obj,
             array []::text[],
-            array ['storage_layout_overrides']
+            array ['storage_layout_overrides', 'era_solc_version']
         )
     );
 END;

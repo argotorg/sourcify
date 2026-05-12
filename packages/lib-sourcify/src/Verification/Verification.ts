@@ -16,6 +16,7 @@ import type {
   ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
+import { ZkSolcCompilation } from '../Compilation/ZkSolcCompilation';
 import semver from 'semver';
 
 import type { Transformation, TransformationValues } from './Transformations';
@@ -106,6 +107,21 @@ export class Verification {
   ) {}
 
   async verify({
+    forceEmscripten = false,
+  }: { forceEmscripten?: boolean } = {}): Promise<void> {
+    try {
+      await this.verifyOnce({ forceEmscripten });
+    } catch (error: any) {
+      if (this.retryWithNextZkSolcCompilerVersionCandidate(error)) {
+        this.resetVerificationAttempt();
+        return await this.verify({ forceEmscripten });
+      }
+
+      throw error;
+    }
+  }
+
+  private async verifyOnce({
     forceEmscripten = false,
   }: { forceEmscripten?: boolean } = {}): Promise<void> {
     logInfo('Verifying contract', {
@@ -308,6 +324,50 @@ export class Verification {
     });
   }
 
+  private retryWithNextZkSolcCompilerVersionCandidate(error: any): boolean {
+    if (!(this.compilation instanceof ZkSolcCompilation)) {
+      return false;
+    }
+
+    if (
+      !(error instanceof VerificationError) ||
+      (error.code !== 'no_match' && error.code !== 'bytecode_length_mismatch')
+    ) {
+      return false;
+    }
+
+    const shouldRetry = this.compilation.useNextSolcCompilerVersionCandidate();
+    if (shouldRetry) {
+      logInfo(
+        'Retrying zkSync EraVM verification with next era-solc candidate',
+        {
+          address: this.address,
+          chainId: this.sourcifyChain.chainId,
+          zksolcVersion: this.compilation.zksolcVersion,
+          solcVersion: this.compilation.solcCompilerVersion,
+        },
+      );
+    }
+
+    return shouldRetry;
+  }
+
+  private resetVerificationAttempt() {
+    this._onchainRuntimeBytecode = undefined;
+    this._onchainCreationBytecode = undefined;
+    this.runtimeTransformations = [];
+    this.creationTransformations = [];
+    this.runtimeTransformationValues = {};
+    this.creationTransformationValues = {};
+    this.runtimeMatch = null;
+    this.creationMatch = null;
+    this.runtimeLibraryMap = undefined;
+    this.creationLibraryMap = undefined;
+    this.blockNumber = undefined;
+    this.txIndex = undefined;
+    this.deployer = undefined;
+  }
+
   private async checkForPerfectMetadata(forceEmscripten: boolean) {
     if (this.compilation.metadata === undefined) {
       return;
@@ -475,6 +535,7 @@ export class Verification {
       populatedRecompiledBytecode,
       onchainBytecode,
       cborAuxdata,
+      { validateCbor: !(this.compilation instanceof ZkSolcCompilation) },
     );
 
     result.populatedRecompiledBytecode =
@@ -722,6 +783,10 @@ export class Verification {
     } catch {
       // pass
     }
+    const zksolcCompilation =
+      this.compilation instanceof ZkSolcCompilation
+        ? this.compilation
+        : undefined;
 
     return {
       address: this.address,
@@ -735,7 +800,13 @@ export class Verification {
       compilation: {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
+        compiler: zksolcCompilation ? 'zksolc' : undefined,
         compilerVersion: this.compilation.compilerVersion,
+        zksolc: zksolcCompilation
+          ? {
+              solcCompilerVersion: zksolcCompilation.solcCompilerVersion,
+            }
+          : undefined,
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {

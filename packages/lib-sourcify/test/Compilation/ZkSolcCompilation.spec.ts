@@ -1,11 +1,11 @@
 import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { ZkSolcCompilation } from '../../src/Compilation/ZkSolcCompilation';
 import {
-  findZkSolcVersionInBytecode,
-  getZkSolcVersionCandidates,
-} from '../../src/Compilation/ZkSolcVersionSelection';
+  getZkSolcCompilerVersionCandidates,
+  ZkSolcCompilation,
+} from '../../src/Compilation/ZkSolcCompilation';
+import { Verification } from '../../src/Verification/Verification';
 import {
   CompilationError,
   type CompilationTarget,
@@ -110,13 +110,57 @@ function makeCompiler(contract: SolidityOutputContract): IZkSolcCompiler & {
   };
 }
 
+function makeCompilerBySolcVersion(
+  contractsBySolcVersion: Record<string, SolidityOutputContract | Error>,
+): IZkSolcCompiler & {
+  calls: Array<{
+    zksolcVersion: string;
+    solcVersion: string;
+    solcJsonInput: SolidityJsonInput;
+  }>;
+} {
+  return {
+    calls: [],
+    async compile(
+      zksolcVersion: string,
+      solcVersion: string,
+      solcJsonInput: SolidityJsonInput,
+    ): Promise<SolidityOutput> {
+      this.calls.push({
+        zksolcVersion,
+        solcVersion,
+        solcJsonInput,
+      });
+      const contractOrError = contractsBySolcVersion[solcVersion];
+      if (contractOrError instanceof Error) {
+        throw contractOrError;
+      }
+      if (!contractOrError) {
+        throw new Error(`Unexpected solc version: ${solcVersion}`);
+      }
+      return {
+        contracts: {
+          [compilationTarget.path]: {
+            [compilationTarget.name]: contractOrError,
+          },
+        },
+      };
+    },
+  };
+}
+
 describe('ZkSolcCompilation', () => {
   it('should compile with zksolc and solc versions', async () => {
-    const compiler = makeCompiler(makeContract());
+    const solcVersion = '0.8.24-1.0.1';
+    const compiler = makeCompiler(
+      makeContract({
+        metadata: makeMetadata(solcVersion),
+      }),
+    );
     const compilation = new ZkSolcCompilation(
       compiler,
       'v1.5.3',
-      '0.8.24',
+      solcVersion,
       makeJsonInput(),
       compilationTarget,
     );
@@ -125,10 +169,10 @@ describe('ZkSolcCompilation', () => {
 
     expect(compiler.calls).to.have.length(1);
     expect(compiler.calls[0].zksolcVersion).to.equal('v1.5.3');
-    expect(compiler.calls[0].solcVersion).to.equal('0.8.24');
+    expect(compiler.calls[0].solcVersion).to.equal(solcVersion);
     expect(compilation.creationBytecode).to.equal('0x010203');
     expect(compilation.runtimeBytecode).to.equal('0x010203');
-    expect(compilation.metadata?.compiler.version).to.equal('0.8.24');
+    expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
   });
 
   it('should preserve non-semver zksolc versions for the compiler', async () => {
@@ -147,11 +191,11 @@ describe('ZkSolcCompilation', () => {
     expect(compiler.calls[0].solcVersion).to.equal('0.8.24-1.0.1');
   });
 
-  it('should preserve solc release strings with v prefix and commit hash', async () => {
+  it('should expand solc release strings with v prefix and commit hash to era-solc candidates', async () => {
     const solcVersion = 'v0.8.26+commit.8a97fa7a';
     const compiler = makeCompiler(
       makeContract({
-        metadata: makeMetadata(solcVersion),
+        metadata: makeMetadata('0.8.26-1.0.2'),
       }),
     );
     const compilation = new ZkSolcCompilation(
@@ -164,9 +208,117 @@ describe('ZkSolcCompilation', () => {
 
     await compilation.compile();
 
-    expect(compiler.calls[0].solcVersion).to.equal(solcVersion);
-    expect(compilation.solcCompilerVersion).to.equal(solcVersion);
-    expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
+    expect(compiler.calls[0].solcVersion).to.equal('0.8.26-1.0.2');
+    expect(compilation.requestedSolcCompilerVersion).to.equal(solcVersion);
+    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.2');
+    expect(compilation.metadata?.compiler.version).to.equal('0.8.26-1.0.2');
+  });
+
+  it('should accept object metadata from zksolc output', async () => {
+    const metadata = JSON.parse(makeMetadata('0.8.26-1.0.2'));
+    const compiler = makeCompiler(
+      makeContract({
+        metadata,
+      } as any),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.7',
+      '0.8.26-1.0.2',
+      makeJsonInput(),
+      compilationTarget,
+    );
+
+    await compilation.compile();
+
+    expect(compilation.metadata).to.deep.equal(metadata);
+  });
+
+  it('should retry era-solc candidates when compilation fails', async () => {
+    const solcVersion = 'v0.8.26+commit.8a97fa7a';
+    const compiler = makeCompilerBySolcVersion({
+      '0.8.26-1.0.2': new Error('unsupported era-solc candidate'),
+      '0.8.26-1.0.1': makeContract({
+        metadata: makeMetadata('0.8.26-1.0.1'),
+      }),
+    });
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.7',
+      solcVersion,
+      makeJsonInput(),
+      compilationTarget,
+    );
+
+    await compilation.compile();
+
+    expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
+      '0.8.26-1.0.2',
+      '0.8.26-1.0.1',
+    ]);
+    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.1');
+    expect(compilation.metadata?.compiler.version).to.equal('0.8.26-1.0.1');
+  });
+
+  it('should retry era-solc candidates when bytecode matching fails', async () => {
+    const solcVersion = 'v0.8.26+commit.8a97fa7a';
+    const compiler = makeCompilerBySolcVersion({
+      '0.8.26-1.0.2': makeContract({
+        metadata: makeMetadata('0.8.26-1.0.2'),
+        evm: {
+          bytecode: {
+            object: '999999',
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+      '0.8.26-1.0.1': makeContract({
+        metadata: makeMetadata('0.8.26-1.0.1'),
+        evm: {
+          bytecode: {
+            object: '010203',
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    });
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.7',
+      solcVersion,
+      makeJsonInput(),
+      compilationTarget,
+    );
+    const verification = new Verification(
+      compilation,
+      {
+        chainId: 2741,
+        async getBytecode() {
+          return '0x010203';
+        },
+      } as any,
+      '0xbc176Ac2373614F9858A118917d83b139bcb3f8c',
+    );
+
+    await verification.verify();
+
+    expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
+      '0.8.26-1.0.2',
+      '0.8.26-1.0.1',
+    ]);
+    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.1');
+    expect(verification.status.runtimeMatch).to.equal('partial');
+    expect(verification.export().compilation).to.include({
+      compiler: 'zksolc',
+      compilerVersion: '1.5.7',
+    });
+    expect(verification.export().compilation.zksolc).to.deep.equal({
+      solcCompilerVersion: '0.8.26-1.0.1',
+    });
   });
 
   for (const { zksolcVersion, solcVersion } of [
@@ -200,15 +352,40 @@ describe('ZkSolcCompilation', () => {
         compiler.calls[0].solcJsonInput.settings.outputSelection,
       ).to.deep.equal({
         '*': {
-          '*': ['abi', 'metadata', 'evm'],
+          '*': ['abi', 'metadata'],
           '': ['abi'],
         },
         [compilationTarget.path]: {
-          [compilationTarget.name]: ['abi', 'metadata', 'evm'],
+          [compilationTarget.name]: ['abi', 'metadata'],
         },
       });
     });
   }
+
+  it('should omit aggregate evm output selection for pre-1.5 zksolc', () => {
+    const compiler = makeCompiler(makeContract());
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.3.19',
+      '0.6.12-1.0.1',
+      makeJsonInput({
+        '*': {
+          '*': ['abi'],
+        },
+      }),
+      compilationTarget,
+    );
+
+    expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
+      '*': {
+        '*': ['abi', 'metadata'],
+        '': ['abi'],
+      },
+      [compilationTarget.path]: {
+        [compilationTarget.name]: ['abi', 'metadata'],
+      },
+    });
+  });
 
   it('should preserve existing output selection and add zksolc outputs', () => {
     const compiler = makeCompiler(makeContract());
@@ -328,8 +505,20 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.immutableReferences).to.deep.equal({});
   });
 
-  it('should set empty CBOR auxdata positions', async () => {
-    const compiler = makeCompiler(makeContract());
+  it('should set EraVM bytecode hash auxdata positions', async () => {
+    const bytecodeHash = '11'.repeat(32);
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: `010203${bytecodeHash}`,
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
     const compilation = new ZkSolcCompilation(
       compiler,
       '1.5.3',
@@ -341,7 +530,12 @@ describe('ZkSolcCompilation', () => {
     await compilation.compile();
     await compilation.generateCborAuxdataPositions();
 
-    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({});
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
+      '1': {
+        offset: 3,
+        value: `0x${bytecodeHash}`,
+      },
+    });
     expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
   });
 
@@ -370,36 +564,45 @@ describe('ZkSolcCompilation', () => {
   });
 });
 
-describe('ZkSolcVersionSelection', () => {
-  it('should prefer an explicit requested zksolc version', () => {
+describe('ZkSolcCompilerVersionCandidates', () => {
+  it('should expand supported Solidity release strings newest-first', () => {
     expect(
-      getZkSolcVersionCandidates({
-        requestedZkSolcVersion: '1.4.1',
-        availableZkSolcVersions: ['1.5.10', '1.4.1', '1.3.17'],
-      }),
-    ).to.deep.equal(['1.4.1']);
+      getZkSolcCompilerVersionCandidates('v0.8.26+commit.8a97fa7a', 'v1.5.7'),
+    ).to.deep.equal(['0.8.26-1.0.2', '0.8.26-1.0.1']);
   });
 
-  it('should use a bytecode zksolc indicator before falling back', () => {
-    const bytecodeIndicator = Buffer.from(
-      'zksolc:1.4.1;solc:0.8.4;llvm:1.0.1',
-      'utf8',
-    ).toString('hex');
-
-    expect(findZkSolcVersionInBytecode(bytecodeIndicator)).to.equal('1.4.1');
+  it('should include era-solc 1.0.0 only for supported older Solidity versions', () => {
     expect(
-      getZkSolcVersionCandidates({
-        availableZkSolcVersions: ['1.5.10', 'v1.4.1', '1.3.17'],
-        bytecodes: [bytecodeIndicator],
-      }),
-    ).to.deep.equal(['v1.4.1', '1.5.10', '1.3.17']);
+      getZkSolcCompilerVersionCandidates('v0.8.24+commit.e11b9ed9', 'v1.5.7'),
+    ).to.deep.equal(['0.8.24-1.0.2', '0.8.24-1.0.1', '0.8.24-1.0.0']);
+
+    expect(
+      getZkSolcCompilerVersionCandidates('v0.8.26+commit.8a97fa7a', 'v1.5.7'),
+    ).not.to.include('0.8.26-1.0.0');
   });
 
-  it('should try available zksolc versions newest-first without indicators', () => {
+  it('should omit era-solc 1.0.2 for pre-1.5 zksolc versions', () => {
+    expect(getZkSolcCompilerVersionCandidates('0.8.4', '1.4.1')).to.deep.equal([
+      '0.8.4-1.0.1',
+      '0.8.4-1.0.0',
+    ]);
+    expect(getZkSolcCompilerVersionCandidates('0.7.6', '1.3.17')).to.deep.equal(
+      ['0.7.6-1.0.1', '0.7.6-1.0.0'],
+    );
+  });
+
+  it('should preserve supported exact era-solc versions', () => {
     expect(
-      getZkSolcVersionCandidates({
-        availableZkSolcVersions: ['1.4.1', '1.5.10', '1.3.17'],
-      }),
-    ).to.deep.equal(['1.5.10', '1.4.1', '1.3.17']);
+      getZkSolcCompilerVersionCandidates('zkVM-0.8.19-1.0.0', '1.5.7'),
+    ).to.deep.equal(['0.8.19-1.0.0']);
+  });
+
+  it('should reject unsupported exact era-solc combinations', () => {
+    expect(
+      getZkSolcCompilerVersionCandidates('0.8.26-1.0.0', '1.5.7'),
+    ).to.deep.equal([]);
+    expect(
+      getZkSolcCompilerVersionCandidates('0.8.4-1.0.2', '1.4.1'),
+    ).to.deep.equal([]);
   });
 });
