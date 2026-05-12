@@ -36,7 +36,6 @@ import type {
 import {
   VerifyError,
   type VerifyFromJsonInput,
-  type VerifyFromZkSolcJsonInput,
   type VerifyFromMetadataInput,
   type VerifyOutput,
   type VerifySimilarityInput,
@@ -297,8 +296,7 @@ export class VerificationService {
     const isZkSolcVerification =
       Boolean(zksolcVersion) || hasZkSolcInputFlags(jsonInput);
 
-    let workerFunctionName = "verifyFromJsonInput";
-    let input: VerifyFromJsonInput | VerifyFromZkSolcJsonInput;
+    let input: VerifyFromJsonInput;
 
     if (isZkSolcVerification) {
       if (jsonInput.language !== "Solidity") {
@@ -319,13 +317,12 @@ export class VerificationService {
         );
       }
 
-      workerFunctionName = "verifyFromZkSolcJsonInput";
       input = {
         chainId,
         address,
         jsonInput: jsonInput as ZkSolcJsonInput,
         zksolcVersion,
-        solcVersion: compilerVersion,
+        compilerVersion,
         compilationTarget,
         creationTransactionHash,
         traceId: asyncLocalStorage.getStore()?.traceId,
@@ -348,7 +345,7 @@ export class VerificationService {
     );
 
     this.runInBackground(
-      this.verifyViaWorker(verificationId, workerFunctionName, input),
+      this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
     );
 
     return verificationId;
@@ -499,7 +496,6 @@ export class VerificationService {
     functionName: string,
     input:
       | VerifyFromJsonInput
-      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
@@ -575,7 +571,6 @@ export class VerificationService {
     verificationId: VerificationJobId,
     verificationInput:
       | VerifyFromJsonInput
-      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
@@ -615,7 +610,6 @@ export class VerificationService {
     storageArgs: Parameters<Required<WStorageService>["setJobError"]>,
     verificationInput?:
       | VerifyFromJsonInput
-      | VerifyFromZkSolcJsonInput
       | VerifyFromMetadataInput
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,

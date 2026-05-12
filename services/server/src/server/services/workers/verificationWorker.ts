@@ -4,6 +4,7 @@ import type {
   SourcifyChainMap,
   AnyCompilation,
   SolidityCompilation,
+  SolidityJsonInput,
   VyperCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -26,7 +27,6 @@ import type {
   VerifyErrorExport,
   VerifyFromEtherscanInput,
   VerifyFromJsonInput,
-  VerifyFromZkSolcJsonInput,
   VerifyFromMetadataInput,
   VerifyOutput,
   VerificationWorkerInput,
@@ -95,12 +95,6 @@ export async function verifyFromJsonInput(
   return runWorkerFunctionWithContext(_verifyFromJsonInput, input);
 }
 
-export async function verifyFromZkSolcJsonInput(
-  input: VerifyFromZkSolcJsonInput,
-): Promise<VerifyOutput> {
-  return runWorkerFunctionWithContext(_verifyFromZkSolcJsonInput, input);
-}
-
 export async function verifyFromMetadata(
   input: VerifyFromMetadataInput,
 ): Promise<VerifyOutput> {
@@ -124,17 +118,28 @@ async function _verifyFromJsonInput({
   address,
   jsonInput,
   compilerVersion,
+  zksolcVersion,
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
   let compilation: AnyCompilation;
   try {
-    compilation = createCompilationFromJsonInput(
-      { solc, vyper, fe },
-      compilerVersion,
-      jsonInput,
-      compilationTarget,
-    );
+    if (zksolcVersion) {
+      compilation = createZkSolcCompilationFromJsonInput(
+        { zksolc },
+        zksolcVersion,
+        compilerVersion,
+        jsonInput as SolidityJsonInput,
+        compilationTarget,
+      );
+    } else {
+      compilation = createCompilationFromJsonInput(
+        { solc, vyper, fe },
+        compilerVersion,
+        jsonInput,
+        compilationTarget,
+      );
+    }
   } catch (error: any) {
     return {
       errorExport: createErrorExport(error),
@@ -147,56 +152,6 @@ async function _verifyFromJsonInput({
         customCode: "unsupported_language",
         errorId: uuidv4(),
       },
-    };
-  }
-
-  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
-  const foundCreationTxHash =
-    creationTransactionHash ||
-    (await getCreatorTx(sourcifyChain, address)) ||
-    undefined;
-
-  const verification = new Verification(
-    compilation,
-    sourcifyChain,
-    address,
-    foundCreationTxHash,
-  );
-
-  try {
-    await verification.verify();
-  } catch (error: any) {
-    return {
-      errorExport: createErrorExport(error, verification),
-    };
-  }
-
-  return {
-    verificationExport: verification.export(),
-  };
-}
-
-async function _verifyFromZkSolcJsonInput({
-  chainId,
-  address,
-  jsonInput,
-  zksolcVersion,
-  solcVersion,
-  compilationTarget,
-  creationTransactionHash,
-}: VerifyFromZkSolcJsonInput): Promise<VerifyOutput> {
-  let compilation: AnyCompilation;
-  try {
-    compilation = createZkSolcCompilationFromJsonInput(
-      { zksolc },
-      zksolcVersion,
-      solcVersion,
-      jsonInput,
-      compilationTarget,
-    );
-  } catch (error: any) {
-    return {
-      errorExport: createErrorExport(error),
     };
   }
 

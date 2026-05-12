@@ -261,13 +261,13 @@ describe("VerificationService", function () {
 
     expect(workerPoolStub.calledOnce).to.equal(true);
     expect(workerPoolStub.firstCall.args[1]).to.deep.equal({
-      name: "verifyFromZkSolcJsonInput",
+      name: "verifyFromJsonInput",
     });
     expect(workerPoolStub.firstCall.args[0]).to.deep.include({
       chainId: "324",
       address: "0x1234567890123456789012345678901234567890",
       zksolcVersion: "1.5.10",
-      solcVersion: "v0.8.26+commit.8a97fa7a",
+      compilerVersion: "v0.8.26+commit.8a97fa7a",
     });
   });
 

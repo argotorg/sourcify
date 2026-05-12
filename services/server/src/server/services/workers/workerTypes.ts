@@ -20,16 +20,7 @@ export interface VerifyFromJsonInput extends VerificationWorkerInput {
   address: string;
   jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput | ZkSolcJsonInput;
   compilerVersion: string;
-  compilationTarget: CompilationTarget;
-  creationTransactionHash?: string;
-}
-
-export interface VerifyFromZkSolcJsonInput extends VerificationWorkerInput {
-  chainId: string;
-  address: string;
-  jsonInput: ZkSolcJsonInput;
-  zksolcVersion: string;
-  solcVersion: string;
+  zksolcVersion?: string;
   compilationTarget: CompilationTarget;
   creationTransactionHash?: string;
 }
