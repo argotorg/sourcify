@@ -24,15 +24,31 @@ import type {
 export function createCompilationFromJsonInput(
   compilers: {
     solc: ISolidityCompiler;
+    zksolc?: IZkSolcCompiler;
     vyper: IVyperCompiler;
     fe: IFeCompiler;
   },
   compilerVersion: string,
   jsonInput: AnyJsonInput,
   compilationTarget: CompilationTarget,
+  zksolcVersion?: string,
 ): AnyCompilation {
   switch (jsonInput?.language) {
     case "Solidity": {
+      if (zksolcVersion) {
+        if (!compilers.zksolc) {
+          throw new CompilationError({ code: "invalid_language" });
+        }
+
+        return new ZkSolcCompilation(
+          compilers.zksolc,
+          zksolcVersion,
+          compilerVersion,
+          jsonInput as SolidityJsonInput,
+          compilationTarget,
+        );
+      }
+
       return new SolidityCompilation(
         compilers.solc,
         compilerVersion,
@@ -68,26 +84,4 @@ export function createCompilationFromJsonInput(
       throw new CompilationError({ code: "invalid_language" });
     }
   }
-}
-
-export function createZkSolcCompilationFromJsonInput(
-  compilers: {
-    zksolc: IZkSolcCompiler;
-  },
-  zksolcVersion: string,
-  solcVersion: string,
-  jsonInput: SolidityJsonInput,
-  compilationTarget: CompilationTarget,
-): ZkSolcCompilation {
-  if (jsonInput?.language !== "Solidity") {
-    throw new CompilationError({ code: "invalid_language" });
-  }
-
-  return new ZkSolcCompilation(
-    compilers.zksolc,
-    zksolcVersion,
-    solcVersion,
-    jsonInput,
-    compilationTarget,
-  );
 }

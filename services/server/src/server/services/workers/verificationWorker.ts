@@ -4,7 +4,6 @@ import type {
   SourcifyChainMap,
   AnyCompilation,
   SolidityCompilation,
-  SolidityJsonInput,
   VyperCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -36,10 +35,7 @@ import logger, { setLogLevel } from "../../../common/logger";
 import { asyncLocalStorage } from "../../../common/async-context";
 import SourcifyChainMock from "../utils/SourcifyChainMock";
 import { createPreRunCompilationFromStoredCandidate } from "../utils/database-util";
-import {
-  createCompilationFromJsonInput,
-  createZkSolcCompilationFromJsonInput,
-} from "../utils/compilation";
+import { createCompilationFromJsonInput } from "../utils/compilation";
 
 export const filename = resolve(__filename);
 
@@ -124,22 +120,13 @@ async function _verifyFromJsonInput({
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
   let compilation: AnyCompilation;
   try {
-    if (zksolcVersion) {
-      compilation = createZkSolcCompilationFromJsonInput(
-        { zksolc },
-        zksolcVersion,
-        compilerVersion,
-        jsonInput as SolidityJsonInput,
-        compilationTarget,
-      );
-    } else {
-      compilation = createCompilationFromJsonInput(
-        { solc, vyper, fe },
-        compilerVersion,
-        jsonInput,
-        compilationTarget,
-      );
-    }
+    compilation = createCompilationFromJsonInput(
+      { solc, zksolc, vyper, fe },
+      compilerVersion,
+      jsonInput,
+      compilationTarget,
+      zksolcVersion,
+    );
   } catch (error: any) {
     return {
       errorExport: createErrorExport(error),
