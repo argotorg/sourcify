@@ -59,6 +59,9 @@ export class SourcifyChain {
     apiKeyEnvName?: string;
     url?: string;
   };
+  readonly zksolc?: {
+    supported: boolean;
+  };
 
   private static rpcTimeout: number = 10 * 1000;
 
@@ -83,6 +86,7 @@ export class SourcifyChain {
     this.fetchContractCreationTxUsing =
       sourcifyChainObj.fetchContractCreationTxUsing;
     this.etherscanApi = sourcifyChainObj.etherscanApi;
+    this.zksolc = sourcifyChainObj.zksolc;
 
     this.rpcs = sourcifyChainObj.rpcs;
     this.traceSupport = this.rpcs.some((r) => r.traceSupport !== undefined);
@@ -134,6 +138,7 @@ export class SourcifyChain {
       hidden: this.hidden,
       fetchContractCreationTxUsing: this.fetchContractCreationTxUsing,
       etherscanApi: this.etherscanApi,
+      zksolc: this.zksolc,
     };
   };
 

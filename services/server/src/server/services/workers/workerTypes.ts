@@ -9,7 +9,7 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
 import type { JobErrorData } from "../utils/database-util";
-import type { SimilarityCandidate } from "../../types";
+import type { SimilarityCandidate, ZkSolcJsonInput } from "../../types";
 
 export interface VerificationWorkerInput {
   traceId?: string;
@@ -18,7 +18,7 @@ export interface VerificationWorkerInput {
 export interface VerifyFromJsonInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
-  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
+  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput | ZkSolcJsonInput;
   compilerVersion: string;
   compilationTarget: CompilationTarget;
   creationTransactionHash?: string;
@@ -27,7 +27,7 @@ export interface VerifyFromJsonInput extends VerificationWorkerInput {
 export interface VerifyFromZkSolcJsonInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
-  jsonInput: SolidityJsonInput;
+  jsonInput: ZkSolcJsonInput;
   zksolcVersion: string;
   solcVersion: string;
   compilationTarget: CompilationTarget;

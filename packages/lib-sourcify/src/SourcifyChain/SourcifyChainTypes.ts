@@ -17,6 +17,9 @@ export type SourcifyChainExtension = {
     apiKeyEnvName?: string;
     url?: string; // Custom base URL for Etherscan-compatible APIs (e.g. "https://block-explorer-api.testnet.battlechain.com")
   };
+  zksolc?: {
+    supported: boolean;
+  };
   fetchContractCreationTxUsing?: FetchContractCreationTxMethods;
   rpc?: Array<string | BaseRPC | APIKeyRPC | FetchRequestRPC>;
 };

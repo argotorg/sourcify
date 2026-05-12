@@ -135,6 +135,15 @@ export type ProxyResolution = Partial<ProxyDetectionResult> & {
 
 export type VerificationJobId = string;
 
+export type ZkSolcJsonInput = SolidityJsonInput & {
+  settings: SolidityJsonInput["settings"] & {
+    isSystem?: boolean;
+    forceEvmla?: boolean;
+    enableEraVMExtensions?: boolean;
+    forceEVMLA?: boolean;
+  };
+};
+
 export type ApiExternalVerification = ExternalVerification & {
   statusUrl?: string;
   explorerUrl?: string;

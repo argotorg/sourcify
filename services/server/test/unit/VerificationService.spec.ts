@@ -213,7 +213,18 @@ describe("VerificationService", function () {
     verificationService = new VerificationService(
       {
         initCompilers: false,
-        sourcifyChainMap: {},
+        sourcifyChainMap: {
+          "324": {
+            zksolc: { supported: true },
+            getSourcifyChainObj: () => ({
+              name: "ZKsync Era",
+              chainId: 324,
+              rpcs: [],
+              supported: true,
+              zksolc: { supported: true },
+            }),
+          },
+        } as any,
         solcRepoPath: config.get("solcRepo"),
         solJsonRepoPath: config.get("solJsonRepo"),
         zksolcRepoPath: config.get("zksolcRepo"),
@@ -226,7 +237,7 @@ describe("VerificationService", function () {
 
     const workerPoolStub = mockWorkerPoolError(verificationService);
 
-    await verificationService.verifyFromZkSolcJsonInputViaWorker(
+    await verificationService.verifyFromJsonInputViaWorker(
       "test-zksolc-endpoint",
       "324",
       "0x1234567890123456789012345678901234567890",
@@ -239,12 +250,13 @@ describe("VerificationService", function () {
         },
         settings: {},
       },
-      "1.5.10",
       "v0.8.26+commit.8a97fa7a",
       {
         path: "contracts/Storage.sol",
         name: "Storage",
       },
+      undefined,
+      "1.5.10",
     );
 
     expect(workerPoolStub.calledOnce).to.equal(true);

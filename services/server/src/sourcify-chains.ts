@@ -298,6 +298,7 @@ export async function initializeSourcifyChains(opts: {
       rpcs,
       etherscanApi: extension.etherscanApi,
       fetchContractCreationTxUsing: extension.fetchContractCreationTxUsing,
+      zksolc: extension.zksolc,
     });
   }
 

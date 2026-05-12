@@ -1,10 +1,8 @@
 import type {
   SourcifyChain,
-  ISolidityCompiler,
   SolidityJsonInput,
   VyperJsonInput,
   FeJsonInput,
-  PathBuffer,
   SourcifyChainMap,
   VerificationExport,
   SourcifyChainInstance,
@@ -23,6 +21,7 @@ import {
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
 import type { S3Config, VerificationJobId } from "../types";
+import type { ZkSolcJsonInput } from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
 import path from "path";
@@ -43,10 +42,34 @@ import {
   type VerifySimilarityInput,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
-import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
+import {
+  ContractNotDeployedError,
+  GetBytecodeError,
+  InvalidParametersError,
+} from "../apiv2/errors";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
+
+type JsonInputWithZkSolc =
+  | SolidityJsonInput
+  | VyperJsonInput
+  | FeJsonInput
+  | ZkSolcJsonInput;
+
+function hasZkSolcInputFlags(jsonInput: JsonInputWithZkSolc): boolean {
+  const settings = (jsonInput as Partial<ZkSolcJsonInput>).settings;
+  if (!settings) {
+    return false;
+  }
+
+  return (
+    "enableEraVMExtensions" in settings ||
+    "forceEVMLA" in settings ||
+    "isSystem" in settings ||
+    "forceEvmla" in settings
+  );
+}
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -265,61 +288,67 @@ export class VerificationService {
     verificationEndpoint: string,
     chainId: string,
     address: string,
-    jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
+    jsonInput: JsonInputWithZkSolc,
     compilerVersion: string,
     compilationTarget: CompilationTarget,
     creationTransactionHash?: string,
+    zksolcVersion?: string,
   ): Promise<VerificationJobId> {
+    const isZkSolcVerification =
+      Boolean(zksolcVersion) || hasZkSolcInputFlags(jsonInput);
+
+    let workerFunctionName = "verifyFromJsonInput";
+    let input: VerifyFromJsonInput | VerifyFromZkSolcJsonInput;
+
+    if (isZkSolcVerification) {
+      if (jsonInput.language !== "Solidity") {
+        throw new InvalidParametersError(
+          "ZkSolc verification only supports Solidity standard JSON input.",
+        );
+      }
+
+      if (!zksolcVersion) {
+        throw new InvalidParametersError(
+          "zksolcVersion is required when zksolc-specific settings are provided.",
+        );
+      }
+
+      if (!this.sourcifyChainMap[chainId]?.zksolc?.supported) {
+        throw new InvalidParametersError(
+          `ZkSolc verification is not supported on chain ${chainId}.`,
+        );
+      }
+
+      workerFunctionName = "verifyFromZkSolcJsonInput";
+      input = {
+        chainId,
+        address,
+        jsonInput: jsonInput as ZkSolcJsonInput,
+        zksolcVersion,
+        solcVersion: compilerVersion,
+        compilationTarget,
+        creationTransactionHash,
+        traceId: asyncLocalStorage.getStore()?.traceId,
+      };
+    } else {
+      input = {
+        chainId,
+        address,
+        jsonInput,
+        compilerVersion,
+        compilationTarget,
+        creationTransactionHash,
+        traceId: asyncLocalStorage.getStore()?.traceId,
+      };
+    }
+
     const verificationId = await this.storageService.performServiceOperation(
       "storeVerificationJob",
       [new Date(), chainId, address, verificationEndpoint],
     );
 
-    const input: VerifyFromJsonInput = {
-      chainId,
-      address,
-      jsonInput,
-      compilerVersion,
-      compilationTarget,
-      creationTransactionHash,
-      traceId: asyncLocalStorage.getStore()?.traceId,
-    };
-
     this.runInBackground(
-      this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
-    );
-
-    return verificationId;
-  }
-
-  public async verifyFromZkSolcJsonInputViaWorker(
-    verificationEndpoint: string,
-    chainId: string,
-    address: string,
-    jsonInput: SolidityJsonInput,
-    zksolcVersion: string,
-    solcVersion: string,
-    compilationTarget: CompilationTarget,
-    creationTransactionHash?: string,
-  ): Promise<VerificationJobId> {
-    const verificationId = await this.storageService.performServiceOperation(
-      "storeVerificationJob",
-      [new Date(), chainId, address, verificationEndpoint],
-    );
-
-    const input: VerifyFromZkSolcJsonInput = {
-      chainId,
-      address,
-      jsonInput,
-      zksolcVersion,
-      solcVersion,
-      compilationTarget,
-      creationTransactionHash,
-      traceId: asyncLocalStorage.getStore()?.traceId,
-    };
-
-    this.runInBackground(
-      this.verifyViaWorker(verificationId, "verifyFromZkSolcJsonInput", input),
+      this.verifyViaWorker(verificationId, workerFunctionName, input),
     );
 
     return verificationId;

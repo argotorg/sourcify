@@ -6,34 +6,27 @@ import type {
   Metadata,
 } from "@ethereum-sourcify/lib-sourcify";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
-import type { TypedResponse } from "../../types";
+import type { TypedResponse, ZkSolcJsonInput } from "../../types";
 import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { Services } from "../../services/services";
 import { StatusCodes } from "http-status-codes";
-import { InvalidParametersError } from "../errors";
 import { fetchFromEtherscanOrThrowError } from "../../services/utils/etherscan-util";
 import type { ChainRepository } from "../../../sourcify-chain-repository";
-
-type ZkSolcRequestBody = {
-  zksolcVersion?: string;
-};
-
-type ZkSolcSettings = SolidityJsonInput["settings"] & {
-  isSystem?: boolean;
-  forceEvmla?: boolean;
-  enableEraVMExtensions?: boolean;
-  forceEVMLA?: boolean;
-};
 
 interface VerifyFromJsonInputRequest extends Request {
   params: {
     chainId: string;
     address: string;
   };
-  body: ZkSolcRequestBody & {
-    stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
+  body: {
+    stdJsonInput:
+      | SolidityJsonInput
+      | VyperJsonInput
+      | FeJsonInput
+      | ZkSolcJsonInput;
     compilerVersion: string;
+    zksolcVersion?: string;
     contractIdentifier: string;
     creationTransactionHash?: string;
   };
@@ -43,40 +36,15 @@ type VerifyResponse = TypedResponse<{
   verificationId: string;
 }>;
 
-function getZkSolcVersion(body: ZkSolcRequestBody): string | undefined {
-  return body.zksolcVersion;
-}
-
-function hasZkSolcInputFlags(
-  stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
-): boolean {
-  const settings = stdJsonInput.settings as ZkSolcSettings | undefined;
-  if (!settings) {
-    return false;
-  }
-
-  return (
-    "enableEraVMExtensions" in settings ||
-    "forceEVMLA" in settings ||
-    "isSystem" in settings ||
-    "forceEvmla" in settings
-  );
-}
-
 export async function verifyFromJsonInputEndpoint(
   req: VerifyFromJsonInputRequest,
   res: VerifyResponse,
 ) {
-  const zksolcVersion = getZkSolcVersion(req.body);
-  const isZkSolcVerification =
-    Boolean(zksolcVersion) || hasZkSolcInputFlags(req.body.stdJsonInput);
-
   logger.debug("verifyFromJsonInputEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
     compilerVersion: req.body.compilerVersion,
-    zksolcVersion,
-    isZkSolcVerification,
+    zksolcVersion: req.body.zksolcVersion,
     contractIdentifier: req.body.contractIdentifier,
     creationTransactionHash: req.body.creationTransactionHash,
   });
@@ -92,34 +60,6 @@ export async function verifyFromJsonInputEndpoint(
   };
 
   const services = req.app.get("services") as Services;
-  if (isZkSolcVerification) {
-    if (req.body.stdJsonInput.language !== "Solidity") {
-      throw new InvalidParametersError(
-        "ZkSolc verification only supports Solidity standard JSON input.",
-      );
-    }
-    if (!zksolcVersion) {
-      throw new InvalidParametersError(
-        "zksolcVersion is required when zksolc-specific settings are provided.",
-      );
-    }
-
-    const verificationId =
-      await services.verification.verifyFromZkSolcJsonInputViaWorker(
-        req.baseUrl + req.path,
-        req.params.chainId,
-        req.params.address,
-        req.body.stdJsonInput,
-        zksolcVersion,
-        req.body.compilerVersion,
-        compilationTarget,
-        req.body.creationTransactionHash,
-      );
-
-    res.status(StatusCodes.ACCEPTED).json({ verificationId });
-    return;
-  }
-
   const verificationId =
     await services.verification.verifyFromJsonInputViaWorker(
       req.baseUrl + req.path,
@@ -129,6 +69,7 @@ export async function verifyFromJsonInputEndpoint(
       req.body.compilerVersion,
       compilationTarget,
       req.body.creationTransactionHash,
+      req.body.zksolcVersion,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });
