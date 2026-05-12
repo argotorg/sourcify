@@ -269,11 +269,16 @@ export type VerificationErrorCode =
   | "internal_error"
   | "no_similar_match_found";
 
+type ApiErrorMessageParameters = Pick<
+  Extract<SourcifyLibErrorParameters, { code: "etherscan_api_error" }>,
+  "apiErrorMessage"
+>;
+
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
   | ({
       code: VerificationErrorCode;
-    } & Partial<Pick<JobErrorData, "apiErrorMessage">>);
+    } & Partial<ApiErrorMessageParameters>);
 
 export function getVerificationErrorMessage(
   params: VerificationErrorParameters,
