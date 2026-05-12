@@ -470,19 +470,32 @@ function spawnCompiler(
     });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    let stdinError: Error | undefined;
+    let settled = false;
+
+    function settle<T>(callback: (value: T) => void, value: T): void {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      callback(value);
+    }
 
     child.stdout.on('data', (data) => stdout.push(data));
     child.stderr.on('data', (data) => stderr.push(data));
-    child.once('error', reject);
+    child.once('error', (error) => settle(reject, error));
     child.once('close', (code) => {
       const stdoutString = Buffer.concat(stdout).toString();
       const stderrString = Buffer.concat(stderr).toString();
       if (code === 0) {
-        resolve(stdoutString);
+        settle(resolve, stdoutString);
       } else {
-        reject(
+        settle(
+          reject,
           new Error(
-            `Compiler process returned with code ${code}:\n ${stderrString}`,
+            `Compiler process returned with code ${code}:\n ${
+              stderrString || stdinError?.message || ''
+            }`,
           ),
         );
       }
@@ -491,7 +504,12 @@ function spawnCompiler(
     if (!child.stdin) {
       throw new Error('No stdin on child process');
     }
-    child.stdin.write(inputStringified);
-    child.stdin.end();
+    child.stdin.on('error', (error) => {
+      stdinError = error;
+      if ((error as NodeJS.ErrnoException).code !== 'EPIPE') {
+        settle(reject, error);
+      }
+    });
+    child.stdin.end(inputStringified);
   });
 }
