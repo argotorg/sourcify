@@ -17,6 +17,7 @@ import type {
   SolidityOutput,
   SolidityOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 
 use(chaiAsPromised);
 
@@ -173,6 +174,13 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.creationBytecode).to.equal('0x010203');
     expect(compilation.runtimeBytecode).to.equal('0x010203');
     expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
+    expect(compilation.auxdataStyle).to.equal(AuxdataStyle.ZKSYNC);
+    expect(compilation.compilationExportMetadata).to.deep.equal({
+      compiler: 'zksolc',
+      zksolc: {
+        solcCompilerVersion: solcVersion,
+      },
+    });
   });
 
   it('should preserve non-semver zksolc versions for the compiler', async () => {

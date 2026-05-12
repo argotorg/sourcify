@@ -174,7 +174,10 @@ export function extractImmutablesTransformation(
         ImmutablesTransformation(
           start,
           astId,
-          auxdataStyle === AuxdataStyle.SOLIDITY ? 'replace' : 'insert',
+          auxdataStyle === AuxdataStyle.SOLIDITY ||
+            auxdataStyle === AuxdataStyle.ZKSYNC
+            ? 'replace'
+            : 'insert',
         ),
       );
 
@@ -190,7 +193,10 @@ export function extractImmutablesTransformation(
       }
       transformationValues.immutables[astId] = `0x${immutableValue}`;
 
-      if (auxdataStyle === AuxdataStyle.SOLIDITY) {
+      if (
+        auxdataStyle === AuxdataStyle.SOLIDITY ||
+        auxdataStyle === AuxdataStyle.ZKSYNC
+      ) {
         // Replace the placeholder in the recompiled bytecode with the onchain immutable value.
         populatedRecompiledBytecode =
           populatedRecompiledBytecode.slice(0, start * 2) +

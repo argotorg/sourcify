@@ -26,6 +26,8 @@ import type {
 } from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
+export type CompilationExportMetadata = Record<string, unknown>;
+
 function cleanCompilerVersion(version: string): string {
   // Remove non-numerical characters from the beginning of the version string
   return version.replace(/^[^\d]*/, '');
@@ -63,6 +65,18 @@ export abstract class AbstractCompilation {
   abstract generateCborAuxdataPositions(
     forceEmscripten?: boolean,
   ): Promise<void>;
+  protected abstract runCompiler(
+    version: string,
+    forceEmscripten: boolean,
+  ): Promise<SolidityOutput | VyperOutput | FeOutput>;
+
+  public useNextCompilerVersionCandidate(): boolean {
+    return false;
+  }
+
+  public get compilationExportMetadata(): CompilationExportMetadata {
+    return {};
+  }
 
   constructor(
     compilerVersion: string,
@@ -86,9 +100,7 @@ export abstract class AbstractCompilation {
     });
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
     try {
-      this.compilerOutput = await (
-        this.compiler as ISolidityCompiler | IVyperCompiler | IFeCompiler
-      ).compile(version, this.jsonInput as any, forceEmscripten);
+      this.compilerOutput = await this.runCompiler(version, forceEmscripten);
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

@@ -34,6 +34,7 @@ export enum AuxdataStyle {
   VYPER_LT_0_3_5 = 'vyper_lt_0_3_5',
   VYPER_LT_0_3_4 = 'vyper_lt_0_3_4',
   FE = 'fe',
+  ZKSYNC = 'zksync',
 }
 
 /**
@@ -163,7 +164,8 @@ export const splitAuxdata = (
   // FE and Vyper < 0.3.4 have no CBOR metadata — return the full bytecode with no auxdata
   if (
     auxdataStyle === AuxdataStyle.FE ||
-    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4 ||
+    auxdataStyle === AuxdataStyle.ZKSYNC
   ) {
     return [bytecode];
   }

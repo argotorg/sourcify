@@ -196,9 +196,7 @@ export class ZkSolcCompilation extends AbstractCompilation {
   declare jsonInput: SolidityJsonInput;
   declare compilerOutput?: SolidityOutput;
 
-  // EraVM auxdata handling is different from Solidity/EVM CBOR extraction and is
-  // intentionally left empty until the verification matcher handles EraVM.
-  readonly auxdataStyle: AuxdataStyle.SOLIDITY = AuxdataStyle.SOLIDITY;
+  readonly auxdataStyle: AuxdataStyle.ZKSYNC = AuxdataStyle.ZKSYNC;
 
   public readonly zksolcVersion: string;
   public readonly requestedSolcCompilerVersion: string;
@@ -253,6 +251,27 @@ export class ZkSolcCompilation extends AbstractCompilation {
     return true;
   }
 
+  public useNextCompilerVersionCandidate(): boolean {
+    return this.useNextSolcCompilerVersionCandidate();
+  }
+
+  public get compilationExportMetadata() {
+    return {
+      compiler: 'zksolc',
+      zksolc: {
+        solcCompilerVersion: this.solcCompilerVersion,
+      },
+    };
+  }
+
+  protected async runCompiler(): Promise<SolidityOutput> {
+    return this.compiler.compile(
+      this.zksolcVersion,
+      this.solcCompilerVersion,
+      this.jsonInput,
+    );
+  }
+
   public async compileAndReturnCompilationTarget(): Promise<SolidityOutputContract> {
     if (this.solcCompilerVersionCandidates.length === 0) {
       throw new CompilationError({
@@ -271,11 +290,7 @@ export class ZkSolcCompilation extends AbstractCompilation {
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
 
     try {
-      this.compilerOutput = await this.compiler.compile(
-        this.zksolcVersion,
-        this.solcCompilerVersion,
-        this.jsonInput,
-      );
+      this.compilerOutput = await this.runCompiler();
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

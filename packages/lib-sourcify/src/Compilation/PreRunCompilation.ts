@@ -86,6 +86,12 @@ export class PreRunCompilation extends AbstractCompilation {
     return;
   }
 
+  protected async runCompiler(): Promise<
+    SolidityOutput | VyperOutput | FeOutput
+  > {
+    return this.compilerOutput!;
+  }
+
   get immutableReferences(): ImmutableReferences {
     switch (this.language) {
       case 'Yul':

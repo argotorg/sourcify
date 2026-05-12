@@ -78,6 +78,10 @@ export class SolidityCompilation extends AbstractCompilation {
     this.jsonInput.settings.outputSelection = DEFAULT_OUTPUT_SELECTION;
   }
 
+  protected async runCompiler(version: string, forceEmscripten: boolean) {
+    return this.compiler.compile(version, this.jsonInput, forceEmscripten);
+  }
+
   /** Generates an edited contract with a space at the end of each source file to create a different source file hash and consequently a different metadata hash.
    * This differenence is then used to determine the positions of the auxdata in the raw bytecode.
    */

@@ -16,7 +16,6 @@ import type {
   ISolidityCompiler,
   StringMap,
 } from '../Compilation/CompilationTypes';
-import { ZkSolcCompilation } from '../Compilation/ZkSolcCompilation';
 import semver from 'semver';
 
 import type { Transformation, TransformationValues } from './Transformations';
@@ -49,7 +48,7 @@ function auxdataLacksMetadataOrIntegrityHash(
   auxdata: CompiledContractCborAuxdata[string],
   compilation: AbstractCompilation,
 ): boolean {
-  if (compilation instanceof ZkSolcCompilation) {
+  if (compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
     return false;
   }
 
@@ -116,7 +115,7 @@ export class Verification {
     try {
       await this.verifyOnce({ forceEmscripten });
     } catch (error: any) {
-      if (this.retryWithNextZkSolcCompilerVersionCandidate(error)) {
+      if (this.retryWithNextCompilerVersionCandidate(error)) {
         this.resetVerificationAttempt();
         return await this.verify({ forceEmscripten });
       }
@@ -328,11 +327,7 @@ export class Verification {
     });
   }
 
-  private retryWithNextZkSolcCompilerVersionCandidate(error: any): boolean {
-    if (!(this.compilation instanceof ZkSolcCompilation)) {
-      return false;
-    }
-
+  private retryWithNextCompilerVersionCandidate(error: any): boolean {
     if (
       !(error instanceof VerificationError) ||
       (error.code !== 'no_match' && error.code !== 'bytecode_length_mismatch')
@@ -340,17 +335,13 @@ export class Verification {
       return false;
     }
 
-    const shouldRetry = this.compilation.useNextSolcCompilerVersionCandidate();
+    const shouldRetry = this.compilation.useNextCompilerVersionCandidate();
     if (shouldRetry) {
-      logInfo(
-        'Retrying zkSync EraVM verification with next era-solc candidate',
-        {
-          address: this.address,
-          chainId: this.sourcifyChain.chainId,
-          zksolcVersion: this.compilation.zksolcVersion,
-          solcVersion: this.compilation.solcCompilerVersion,
-        },
-      );
+      logInfo('Retrying verification with next compiler version candidate', {
+        address: this.address,
+        chainId: this.sourcifyChain.chainId,
+        compilerVersion: this.compilation.compilerVersion,
+      });
     }
 
     return shouldRetry;
@@ -539,7 +530,7 @@ export class Verification {
       populatedRecompiledBytecode,
       onchainBytecode,
       cborAuxdata,
-      { validateCbor: !(this.compilation instanceof ZkSolcCompilation) },
+      { validateCbor: this.compilation.auxdataStyle !== AuxdataStyle.ZKSYNC },
     );
 
     result.populatedRecompiledBytecode =
@@ -787,10 +778,8 @@ export class Verification {
     } catch {
       // pass
     }
-    const zksolcCompilation =
-      this.compilation instanceof ZkSolcCompilation
-        ? this.compilation
-        : undefined;
+    const compilationExportMetadata =
+      this.compilation.compilationExportMetadata;
 
     return {
       address: this.address,
@@ -804,15 +793,8 @@ export class Verification {
       compilation: {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
-        ...(zksolcCompilation ? { compiler: 'zksolc' } : {}),
         compilerVersion: this.compilation.compilerVersion,
-        ...(zksolcCompilation
-          ? {
-              zksolc: {
-                solcCompilerVersion: zksolcCompilation.solcCompilerVersion,
-              },
-            }
-          : {}),
+        ...compilationExportMetadata,
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {
