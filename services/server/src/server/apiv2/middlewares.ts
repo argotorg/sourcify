@@ -171,20 +171,6 @@ export function validateStandardJsonInput(
   next();
 }
 
-export function validateSolidityStandardJsonInput(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  if (req.body.stdJsonInput?.language !== "Solidity") {
-    throw new InvalidParametersError(
-      "ZkSolc verification only supports Solidity standard JSON input.",
-    );
-  }
-
-  next();
-}
-
 export function validateContractIdentifier(
   req: Request,
   res: Response,

@@ -8,6 +8,8 @@ paths:
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description), [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description), or Fe JSON input (a Sourcify-defined format — Fe has no official compiler JSON interface).
 
+        Solidity standard JSON requests with `zksolcVersion` are verified as ZKsync EraVM/zksolc compilations. In that case `compilerVersion` is the underlying era-solc/solc version, for example `v0.8.26+commit.8a97fa7a`.
+
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
@@ -35,44 +37,6 @@ paths:
                   value:
                     customCode: already_verified
                     message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is already verified with runtimeMatch and creationMatch both being exact matches.
-                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
-        "429":
-          $ref: "#/components/responses/TooManyRequestsResponse"
-        "500":
-          $ref: "#/components/responses/InternalServerErrorResponse"
-  "/v2/verify/zksolc/{chainId}/{address}":
-    post:
-      tags:
-        - Verify Contracts
-      summary: Verify ZKsync EraVM Contract (zksolc Standard JSON)
-      description: |-
-        Submit a Solidity contract for ZKsync EraVM verification via standard JSON input compiled with zksolc.
-
-        This endpoint requires both the zksolc version and the underlying era-solc/solc version. The `compilerVersion` field is the Solidity compiler version, for example `v0.8.26+commit.8a97fa7a`.
-
-        You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetch the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
-      operationId: verify-zksolc
-      parameters:
-        - $ref: "#/components/parameters/chainId"
-        - $ref: "#/components/parameters/address"
-      requestBody:
-        $ref: "#/components/requestBodies/ZkSolcStdJSONVerificationRequest"
-      responses:
-        "202":
-          $ref: "#/components/responses/ReturnVerificationJob"
-        "400":
-          $ref: "#/components/responses/BadRequestResponse"
-        "409":
-          description: The contract is already verified
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-              examples:
-                Example 1:
-                  value:
-                    customCode: already_verified
-                    message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 324 is already verified with runtimeMatch and creationMatch both being exact matches.
                     errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
         "429":
           $ref: "#/components/responses/TooManyRequestsResponse"
@@ -426,6 +390,10 @@ components:
                   Must include the `language` field inside the stdJsonInput object. Currently supports Solidity, Vyper, and Fe.
               compilerVersion:
                 $ref: "#/components/schemas/CompilerVersion"
+              zksolcVersion:
+                allOf:
+                  - $ref: "#/components/schemas/ZkSolcVersion"
+                  - description: Optional. If present, this request is verified as a ZKsync EraVM/zksolc compilation.
               contractIdentifier:
                 type: string
                 description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
@@ -465,6 +433,35 @@ components:
                       enabled: false
                       runs: 200
                 compilerVersion: "0.8.7+commit.e28d00a7"
+                contractIdentifier: "contracts/Storage.sol:Storage"
+                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
+            ZKsync EraVM Solidity Contract:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+
+                            function getNumber() public view returns (uint256) {
+                                return number;
+                            }
+                        }
+                  settings:
+                    optimizer:
+                      enabled: true
+                      runs: 200
+                compilerVersion: "v0.8.26+commit.8a97fa7a"
+                zksolcVersion: "1.5.10"
                 contractIdentifier: "contracts/Storage.sol:Storage"
                 creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
             Vyper Contract:
@@ -588,67 +585,6 @@ components:
                         }
                 compilerVersion: "26.0.0-alpha.10"
                 contractIdentifier: "src/lib.fe:Counter"
-    ZkSolcStdJSONVerificationRequest:
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              stdJsonInput:
-                type: object
-                description: |
-                  Full Solidity standard JSON object to pass to zksolc.
-
-                  Must include `language: Solidity`.
-              zksolcVersion:
-                $ref: "#/components/schemas/ZkSolcVersion"
-              compilerVersion:
-                allOf:
-                  - $ref: "#/components/schemas/CompilerVersion"
-                  - description: The underlying era-solc/solc version used by zksolc.
-              contractIdentifier:
-                type: string
-                description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
-                example: "contracts/Storage.sol:Storage"
-              creationTransactionHash:
-                allOf:
-                  - $ref: "#/components/schemas/Keccak256"
-                  - description: The hash of the transaction that created this contract. Optional.
-            required:
-              - stdJsonInput
-              - zksolcVersion
-              - compilerVersion
-              - contractIdentifier
-          examples:
-            ZKsync EraVM Solidity Contract:
-              value:
-                stdJsonInput:
-                  language: Solidity
-                  sources:
-                    "contracts/Storage.sol":
-                      content: |
-                        // SPDX-License-Identifier: MIT
-                        pragma solidity ^0.8.0;
-
-                        contract Storage {
-                            uint256 number;
-
-                            function setNumber(uint256 newNumber) public {
-                                number = newNumber;
-                            }
-
-                            function getNumber() public view returns (uint256) {
-                                return number;
-                            }
-                        }
-                  settings:
-                    optimizer:
-                      enabled: true
-                      runs: 200
-                zksolcVersion: "1.5.10"
-                compilerVersion: "v0.8.26+commit.8a97fa7a"
-                contractIdentifier: "contracts/Storage.sol:Storage"
-                creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
     MetadataVerificationRequest:
       description: ""
       content:

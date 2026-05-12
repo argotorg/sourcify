@@ -11,30 +11,28 @@ import logger from "../../../common/logger";
 import type { Request } from "express";
 import type { Services } from "../../services/services";
 import { StatusCodes } from "http-status-codes";
+import { InvalidParametersError } from "../errors";
 import { fetchFromEtherscanOrThrowError } from "../../services/utils/etherscan-util";
 import type { ChainRepository } from "../../../sourcify-chain-repository";
+
+type ZkSolcRequestBody = {
+  zksolcVersion?: string;
+};
+
+type ZkSolcSettings = SolidityJsonInput["settings"] & {
+  isSystem?: boolean;
+  forceEvmla?: boolean;
+  enableEraVMExtensions?: boolean;
+  forceEVMLA?: boolean;
+};
 
 interface VerifyFromJsonInputRequest extends Request {
   params: {
     chainId: string;
     address: string;
   };
-  body: {
+  body: ZkSolcRequestBody & {
     stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
-    compilerVersion: string;
-    contractIdentifier: string;
-    creationTransactionHash?: string;
-  };
-}
-
-interface VerifyFromZkSolcJsonInputRequest extends Request {
-  params: {
-    chainId: string;
-    address: string;
-  };
-  body: {
-    stdJsonInput: SolidityJsonInput;
-    zksolcVersion: string;
     compilerVersion: string;
     contractIdentifier: string;
     creationTransactionHash?: string;
@@ -45,14 +43,40 @@ type VerifyResponse = TypedResponse<{
   verificationId: string;
 }>;
 
+function getZkSolcVersion(body: ZkSolcRequestBody): string | undefined {
+  return body.zksolcVersion;
+}
+
+function hasZkSolcInputFlags(
+  stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
+): boolean {
+  const settings = stdJsonInput.settings as ZkSolcSettings | undefined;
+  if (!settings) {
+    return false;
+  }
+
+  return (
+    "enableEraVMExtensions" in settings ||
+    "forceEVMLA" in settings ||
+    "isSystem" in settings ||
+    "forceEvmla" in settings
+  );
+}
+
 export async function verifyFromJsonInputEndpoint(
   req: VerifyFromJsonInputRequest,
   res: VerifyResponse,
 ) {
+  const zksolcVersion = getZkSolcVersion(req.body);
+  const isZkSolcVerification =
+    Boolean(zksolcVersion) || hasZkSolcInputFlags(req.body.stdJsonInput);
+
   logger.debug("verifyFromJsonInputEndpoint", {
     chainId: req.params.chainId,
     address: req.params.address,
     compilerVersion: req.body.compilerVersion,
+    zksolcVersion,
+    isZkSolcVerification,
     contractIdentifier: req.body.contractIdentifier,
     creationTransactionHash: req.body.creationTransactionHash,
   });
@@ -68,49 +92,40 @@ export async function verifyFromJsonInputEndpoint(
   };
 
   const services = req.app.get("services") as Services;
+  if (isZkSolcVerification) {
+    if (req.body.stdJsonInput.language !== "Solidity") {
+      throw new InvalidParametersError(
+        "ZkSolc verification only supports Solidity standard JSON input.",
+      );
+    }
+    if (!zksolcVersion) {
+      throw new InvalidParametersError(
+        "zksolcVersion is required when zksolc-specific settings are provided.",
+      );
+    }
+
+    const verificationId =
+      await services.verification.verifyFromZkSolcJsonInputViaWorker(
+        req.baseUrl + req.path,
+        req.params.chainId,
+        req.params.address,
+        req.body.stdJsonInput,
+        zksolcVersion,
+        req.body.compilerVersion,
+        compilationTarget,
+        req.body.creationTransactionHash,
+      );
+
+    res.status(StatusCodes.ACCEPTED).json({ verificationId });
+    return;
+  }
+
   const verificationId =
     await services.verification.verifyFromJsonInputViaWorker(
       req.baseUrl + req.path,
       req.params.chainId,
       req.params.address,
       req.body.stdJsonInput,
-      req.body.compilerVersion,
-      compilationTarget,
-      req.body.creationTransactionHash,
-    );
-
-  res.status(StatusCodes.ACCEPTED).json({ verificationId });
-}
-
-export async function verifyFromZkSolcJsonInputEndpoint(
-  req: VerifyFromZkSolcJsonInputRequest,
-  res: VerifyResponse,
-) {
-  logger.debug("verifyFromZkSolcJsonInputEndpoint", {
-    chainId: req.params.chainId,
-    address: req.params.address,
-    zksolcVersion: req.body.zksolcVersion,
-    compilerVersion: req.body.compilerVersion,
-    contractIdentifier: req.body.contractIdentifier,
-    creationTransactionHash: req.body.creationTransactionHash,
-  });
-
-  const { contractName, contractPath } = splitFullyQualifiedName(
-    req.body.contractIdentifier,
-  );
-  const compilationTarget: CompilationTarget = {
-    name: contractName,
-    path: contractPath,
-  };
-
-  const services = req.app.get("services") as Services;
-  const verificationId =
-    await services.verification.verifyFromZkSolcJsonInputViaWorker(
-      req.baseUrl + req.path,
-      req.params.chainId,
-      req.params.address,
-      req.body.stdJsonInput,
-      req.body.zksolcVersion,
       req.body.compilerVersion,
       compilationTarget,
       req.body.creationTransactionHash,

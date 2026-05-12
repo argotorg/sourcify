@@ -6,12 +6,10 @@ import {
   checkIfAlreadyVerified,
   checkIfJobIsAlreadyRunning,
   validateStandardJsonInput,
-  validateSolidityStandardJsonInput,
   validateAndNormalizeFeInput,
 } from "../middlewares";
 import {
   verifyFromJsonInputEndpoint,
-  verifyFromZkSolcJsonInputEndpoint,
   verifyFromMetadataEndpoint,
   verifyFromEtherscanEndpoint,
   verifySimilarityEndpoint,
@@ -31,19 +29,6 @@ router
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromJsonInputEndpoint,
-  );
-
-router
-  .route("/verify/zksolc/:chainId/:address")
-  .post(
-    validateChainId,
-    validateAddress,
-    validateStandardJsonInput,
-    validateSolidityStandardJsonInput,
-    validateContractIdentifier,
-    checkIfAlreadyVerified,
-    checkIfJobIsAlreadyRunning,
-    verifyFromZkSolcJsonInputEndpoint,
   );
 
 router
