@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Sourcify is an open-source smart contract verification service for Ethereum and compatible blockchains. The repository is a monorepo containing:
+Sourceify is an open-source smart contract verification service for Ethereum and compatible blockchains. The repository is a monorepo containing:
 
 - **services/server**: HTTP API server for contract verification with PostgreSQL database backend
 - **services/monitor**: Chain monitoring service that automatically detects new contracts and submits them for verification
@@ -153,6 +153,15 @@ The server supports multiple storage backends:
 - For Sourcify-specific changes: Add migration in `services/database/migrations/`
 - For Verifier Alliance changes: Update submodule in `services/database/database-specs/`
 
+### API and Documentation Maintenance
+
+Whenever API response fields are added or removed (especially those defined in `FIELDS_TO_STORED_PROPERTIES` in `services/server/src/utils/database-util.ts`), you **must** also:
+
+- Update the OpenAPI/Swagger spec (`services/server/src/apiv2.yaml`) to reflect the new or removed fields, including the **Available fields** section of any affected endpoint description and the `fields` query parameter description
+- Update any relevant README or documentation files that reference the API fields
+
+The `FIELDS_TO_STORED_PROPERTIES` map is the authoritative source used by the validation middleware, so the Swagger docs and READMEs must stay in sync with it.
+
 ### Testing Strategy
 
 - Unit tests for individual components
@@ -192,7 +201,7 @@ When reviewing PRs as an automated agent:
 - Check database migration safety (services/database/) — flag destructive operations
 - Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
-- Verify the OpenAPI/Swagger spec is updated if API endpoints change
+- Verify the OpenAPI/Swagger spec (`apiv2.yaml`) is updated if API endpoints or response fields change — including the **Available fields** section and the `fields` query parameter description
 - Flag any hardcoded secrets, credentials, or API keys
 - For verification flow changes, ensure both full and partial match paths are covered
 
