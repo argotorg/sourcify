@@ -46,7 +46,7 @@
   },
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1033.0",
+    "@aws-sdk/client-s3": "3.1041.0",
     "@ethereum-sourcify/bytecode-utils": "^1.5.1",
     "@ethereum-sourcify/compilers": "^1.1.1",
     "@ethereum-sourcify/lib-sourcify": "^3.5.1",
@@ -97,7 +97,7 @@
     "copyfiles": "2.4.1",
     "hardhat": "2.28.6",
     "mocha": "10.8.2",
-    "nock": "14.0.13",
+    "nock": "14.0.14",
     "npm-run-all2": "5.0.2",
     "open-cli": "8.0.0",
     "rimraf": "4.4.1",

@@ -46,7 +46,7 @@
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
     "semver": "7.7.4",
-    "solc": "0.8.34"
+    "solc": "0.8.35"
   },
   "devDependencies": {
     "@ethereum-sourcify/compilers-types": "^1.2.0",
