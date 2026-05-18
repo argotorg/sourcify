@@ -17,7 +17,7 @@ First you need to provide which chains to monitor in a json file.
   {
     "chainId": 1,
     "name": "Ethereum Mainnet",
-    "rpc": ["http://localhost:8545", "https://mainnet.infura.io/v3/{INFURA_API_KEY}"],
+    "rpc": ["http://localhost:8545", "https://lb.drpc.org/ogrpc?network=ethereum&dkey={DRPC_API_KEY}", "https://eth-mainnet.alchemyapi.io/v2/{ALCHEMY_API_KEY}"],
   },
   {
     "chainId": 11155111,
@@ -28,7 +28,7 @@ First you need to provide which chains to monitor in a json file.
 ]
 ```
 
-Infura and Alchemy keys must be placed in the url string as above in `{INFURA_API_KEY}`
+DRPC and Alchemy keys must be placed in the url string as above in `{DRPC_API_KEY}`
 
 See [monitorChains.json](./monitorChains.json) for a full example and to see which chains we monitor ourselves. You can also use the [chainid.network/chains.json](https://chainid.network/chains.json) to find chains.
 
@@ -102,10 +102,10 @@ The structure of the file is as such:
 By default you can pass the following environment variables in `.env.template` for authenticating with the RPCs:
 
 ```bash
-# If your RPCs are Alchemy or Infura
-# In the rpc url it must have {INFURA_API_KEY} or {ALCHEMY_API_KEY}
+# If your RPCs are Alchemy or DRPC
+# In the rpc url it must have {DRPC_API_KEY} or {ALCHEMY_API_KEY}
 ALCHEMY_API_KEY=
-INFURA_API_KEY=
+DRPC_API_KEY=
 
 # ethpandaops.io authentication
 CF_ACCESS_CLIENT_ID=
@@ -165,7 +165,7 @@ $ docker run \
   -v /path/to/chains.json:/home/app/services/monitor/monitorChains.json \
   -v /path/to/config.json:/home/app/services/monitor/config.json \
   -e ALCHEMY_API_KEY=xxx \
-  -e INFURA_API_KEY=xxx \
+  -e DRPC_API_KEY=xxx \
   ghcr.io/argotorg/sourcify/monitor:latest
 ```
 

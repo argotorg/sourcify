@@ -55,9 +55,6 @@ workflows:
   #     equal: [ master, << pipeline.git.branch >> ]
   #   jobs:
   #     - check-s3-backup
-  etherscan-instances:
-    jobs:
-      - check-etherscan-instances
 
 jobs:
   monitor-e2e-sepolia:
@@ -92,30 +89,3 @@ jobs:
           command: node --experimental-fetch ./scripts/check-s3-backup.mjs
     docker:
       - image: cimg/node:22.22.0
-  check-etherscan-instances:
-    working_directory: ~/sourcify
-    steps:
-      - checkout
-      - run:
-          name: install dependencies
-          command: npm install
-      - run:
-          name: build
-          command: npx lerna run build
-      - run:
-          name: test
-          command: cd ./services/server && npm run test:etherscan-instances
-          environment:
-            DOCKER_HOST_POSTGRES_TEST_PORT: 5432
-            SOURCIFY_POSTGRES_HOST: "localhost"
-            SOURCIFY_POSTGRES_DB: "sourcify"
-            SOURCIFY_POSTGRES_USER: "sourcify"
-            SOURCIFY_POSTGRES_PASSWORD: "sourcify"
-            SOURCIFY_POSTGRES_PORT: 5432
-    docker:
-      - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
-        environment:
-          POSTGRES_DB: sourcify
-          POSTGRES_USER: sourcify
-          POSTGRES_PASSWORD: sourcify

@@ -164,14 +164,41 @@ paths:
         - Contract Lookup
       summary: Get verified contract
       description: |-
-        By default returns minimal information about the contract: `match`, `creation_match`, `runtime_match`, `chainId`, `address`, and `verifiedAt`
+        By default returns minimal information about the contract: `match`, `creationMatch`, `runtimeMatch`, `chainId`, `address`, and `verifiedAt`.
 
         To get other details one can either list the fields requested in the `fields` query param or ask all fields but omit several with `omit`. To get everything just pass `fields=all`.
+
+        **Available fields:**
+
+        - `matchId` – unique match ID
+        - `creationMatch` – creation bytecode match status (`match`, `exact_match`, or `null`)
+        - `runtimeMatch` – runtime bytecode match status (`match`, `exact_match`, or `null`)
+        - `verifiedAt` – ISO 8601 timestamp of when the contract was verified
+        - `abi` – contract ABI
+        - `metadata` – Solidity compiler metadata object
+        - `sources` – map of source file paths to their content
+        - `sourceIds` – AST source IDs from the standard JSON compiler output
+        - `userdoc` – user-facing NatSpec documentation
+        - `devdoc` – developer NatSpec documentation
+        - `storageLayout` – contract storage layout
+        - `transientStorageLayout` – transient storage layout (Solidity >= 0.8.24)
+        - `additionalInput` – extra top-level compiler input fields (e.g. Vyper `storage_layout_overrides`)
+        - `stdJsonInput` – full standard JSON compiler input
+        - `stdJsonOutput` – full standard JSON compiler output
+
+        Nested objects support dot-notation sub-selection (e.g. `creationBytecode.onchainBytecode`):
+
+        - `creationBytecode` — sub-fields: `onchainBytecode`, `recompiledBytecode`, `sourceMap`, `linkReferences`, `cborAuxdata`, `transformations`, `transformationValues`
+        - `runtimeBytecode` — sub-fields: `onchainBytecode`, `recompiledBytecode`, `sourceMap`, `linkReferences`, `cborAuxdata`, `immutableReferences`, `transformations`, `transformationValues`
+        - `deployment` — sub-fields: `transactionHash`, `blockNumber`, `transactionIndex`, `deployer`
+        - `compilation` — sub-fields: `language`, `compiler`, `compilerVersion`, `compilerSettings`, `name`, `fullyQualifiedName`
+        - `signatures` — sub-fields: `function`, `event`, `error`
+        - `proxyResolution` – proxy detection result (no sub-fields)
       operationId: get-contract
       parameters:
         - name: fields
           in: query
-          description: Comma seperated fields to include in the response. Can also take `all`
+          description: Comma-separated list of fields to include in the response. Can also be `all` to return every available field. See the endpoint description for the full list of available fields.
           allowReserved: true
           schema:
             type: string

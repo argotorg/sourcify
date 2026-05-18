@@ -8,12 +8,11 @@
     "services/*"
   ],
   "scripts": {
-    "build:clean": "rm -rf node_modules services/monitor/node_modules services/database/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
+    "build:clean": "echo '#######\nWarning: this script is executed without Socket DEV cli. Please manually run npm install after this to check for vulnerabilities.\n#######\n' && rm -rf node_modules services/monitor/node_modules services/database/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
     "build:lerna": "lerna run build",
     "server:start": "cd services/server && node ./dist/server/cli.js",
     "monitor:start": "node ./services/monitor/dist/index.js",
     "4byte:start": "node ./services/4byte/dist/cli.js",
-    "update-chains": "node --experimental-fetch scripts/updateChains.mjs && prettier --write services/server/src/chains.json",
     "lerna-test": "lerna run test --stream",
     "lerna-lint": "lerna run check",
     "lerna-fix": "lerna run fix",
@@ -38,14 +37,14 @@
   },
   "homepage": "https://sourcify.dev",
   "devDependencies": {
-    "@google-cloud/bigquery": "8.2.0",
-    "@typescript-eslint/eslint-plugin": "6.21.0",
-    "@typescript-eslint/parser": "6.21.0",
+    "@google-cloud/bigquery": "8.3.0",
+    "@typescript-eslint/eslint-plugin": "7.6.0",
+    "@typescript-eslint/parser": "7.6.0",
     "eslint": "8.57.1",
     "eslint-config-prettier": "9.1.2",
-    "eslint-plugin-no-only-tests": "3.3.0",
+    "eslint-plugin-no-only-tests": "3.4.0",
     "husky": "9.1.7",
-    "lerna": "8.2.4",
+    "lerna": "9.0.7",
     "lint-staged": "16.4.0",
     "prettier": "3.8.3",
     "ts-node": "10.9.2",
@@ -57,5 +56,14 @@
   },
   "optionalDependencies": {
     "fsevents": "2.3.3"
+  },
+  "overrides": {
+    "axios": "1.16.0",
+    "yaml": "2.8.4",
+    "brace-expansion": "5.0.6",
+    "follow-redirects": "1.16.0",
+    "sinon": {
+      "diff": "8.0.4"
+    }
   }
 }

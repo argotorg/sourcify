@@ -29,7 +29,7 @@ LABEL org.opencontainers.image.source https://github.com/argotorg/sourcify
 LABEL org.opencontainers.image.licenses MIT
 
 ARG ALCHEMY_API_KEY
-ARG INFURA_API_KEY
+ARG DRPC_API_KEY
 ARG CF_ACCESS_CLIENT_ID
 ARG CF_ACCESS_CLIENT_SECRET
 

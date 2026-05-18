@@ -26,7 +26,7 @@ export const VERIFY_ENDPOINTS_DEPRECATION_WARNING =
 
 export function checksumAddresses(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
   // stateless
@@ -44,7 +44,7 @@ export function checksumAddresses(
 
 export function validateAddress(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
   if (req.params.address) {

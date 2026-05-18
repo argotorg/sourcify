@@ -87,9 +87,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
   it("should return an error when fetching the runtime bytecode fails", async () => {
     const getBytecodeStub = sandbox
       .stub(
-        serverFixture.server.chainRepository.sourcifyChainMap[
-          chainFixture.chainId
-        ],
+        serverFixture.sourcifyChainsMap[chainFixture.chainId],
         "getBytecode",
       )
       .rejects(new Error("RPC failure"));
@@ -114,9 +112,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
   it("should return an error when fetching the runtime bytecode fails", async () => {
     const getBytecodeStub = sandbox
       .stub(
-        serverFixture.server.chainRepository.sourcifyChainMap[
-          chainFixture.chainId
-        ],
+        serverFixture.sourcifyChainsMap[chainFixture.chainId],
         "getBytecode",
       )
       .resolves("0x");
@@ -151,8 +147,8 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
   });
 
   it("should return a 400 when the chain is not found", async function () {
-    const unknownChainId = "5";
-    const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
+    const unknownChainId = "1337";
+    const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
 
     const verifyRes = await chai

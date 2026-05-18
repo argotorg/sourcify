@@ -1,5 +1,6 @@
 import { expect, use, request } from "chai";
 import chaiHttp from "chai-http";
+import nock from "nock";
 import {
   hookIntoVerificationWorkerRun,
   unusedAddress,
@@ -10,21 +11,22 @@ import { assertJobVerification } from "../../../helpers/assertions";
 import sinon from "sinon";
 import {
   mockEtherscanApi,
-  MULTIPLE_CONTRACT_RESPONSE,
-  SINGLE_CONTRACT_RESPONSE,
-  STANDARD_JSON_CONTRACT_RESPONSE,
-  VYPER_SINGLE_CONTRACT_RESPONSE,
-  VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
+  deployEtherscanFixtures,
+  SINGLE_CONTRACT,
+  MULTIPLE_CONTRACT,
+  STANDARD_JSON_CONTRACT,
+  VYPER_SINGLE_CONTRACT,
+  VYPER_STANDARD_JSON_CONTRACT,
+  MALFORMED_VERSION_CONTRACT,
+  STANDARD_JSON_CONTRACT_EXACT_MATCH,
   UNVERIFIED_CONTRACT_RESPONSE,
   INVALID_API_KEY_RESPONSE,
   RATE_LIMIT_REACHED_RESPONSE,
-  STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
-  MALFORMED_VERSION_RESPONSE,
-} from "../../../helpers/etherscanResponseMocks";
-import { sourcifyChainsMap } from "../../../../src/sourcify-chains";
-import testContracts from "../../../helpers/etherscanInstanceContracts.json";
-import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
+} from "../../../helpers/etherscanTestCases";
+import type { EtherscanDeployments } from "../../../helpers/etherscanTestCases";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { toMatchLevel } from "../../../../src/server/services/utils/util";
+import { LOCAL_CHAINS } from "../../../../src/sourcify-chains";
 import {
   testAlreadyBeingVerified,
   testAlreadyVerified,
@@ -39,35 +41,59 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   }
 
   const chainFixture = new LocalChainFixture();
-  const serverFixture = new ServerFixture();
+  // Mainnet stub points at the real hardhat node that LocalChainFixture
+  // spawns. We deliberately do NOT set fetchContractCreationTxUsing.etherscanApi
+  // here: the verification worker runs in a Piscina thread, and nock's
+  // http-module patches don't propagate across thread boundaries — so an
+  // Etherscan-based getcontractcreation call from the worker would have to
+  // hit the real internet. Leaving etherscanApi out of the fetchers makes
+  // getCreatorTx fall back to RPC binary search, which stays inside the
+  // hardhat node and is fast on a chain with only a handful of blocks.
+  const mainnetStub = new SourcifyChain({
+    name: "Ethereum Mainnet (test stub)",
+    chainId: 1,
+    supported: true,
+    rpcs: [
+      {
+        rpc: "http://localhost:8545",
+        urlWithoutApiKey: "http://localhost:8545",
+        maskedUrl: "http://localhost:8545",
+      },
+    ],
+    etherscanApi: {
+      supported: true,
+      apiKeyEnvName: "ETHERSCAN_API_KEY",
+    },
+  });
+  const serverFixture = new ServerFixture({
+    chains: {
+      ...Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c])),
+      "1": mainnetStub,
+    },
+  });
   const sandbox = sinon.createSandbox();
   const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
   const testChainId = "1";
-  const singleContract = testContracts[testChainId].find(
-    (contract) => contract.type === "single",
-  )!;
-  const multipleContract = testContracts[testChainId].find(
-    (contract) => contract.type === "multiple",
-  )!;
-  const standardJsonContract = testContracts[testChainId].find(
-    (contract) => contract.type === "standard-json",
-  )!;
+  let deployments: EtherscanDeployments;
+
+  before(async () => {
+    deployments = await deployEtherscanFixtures(chainFixture.localSigner);
+  });
 
   afterEach(async () => {
     sandbox.restore();
+    nock.cleanAll();
   });
 
   it("should import a contract from Etherscan via single contract response", async () => {
-    const testAddress = singleContract.address;
-    const expectedStatus = toMatchLevel(
-      singleContract.expectedStatus as VerificationStatus,
-    );
+    const testAddress = deployments.SINGLE_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(SINGLE_CONTRACT.expectedStatus);
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      SINGLE_CONTRACT_RESPONSE,
+      SINGLE_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -85,16 +111,14 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should import a contract from Etherscan via multiple contract response", async () => {
-    const testAddress = multipleContract.address;
-    const expectedStatus = toMatchLevel(
-      multipleContract.expectedStatus as VerificationStatus,
-    );
+    const testAddress = deployments.MULTIPLE_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(MULTIPLE_CONTRACT.expectedStatus);
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      MULTIPLE_CONTRACT_RESPONSE,
+      MULTIPLE_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -112,16 +136,14 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should import a contract from Etherscan via standard json contract response", async () => {
-    const testAddress = standardJsonContract.address;
-    const expectedStatus = toMatchLevel(
-      standardJsonContract.expectedStatus as VerificationStatus,
-    );
+    const testAddress = deployments.STANDARD_JSON_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(STANDARD_JSON_CONTRACT.expectedStatus);
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      STANDARD_JSON_CONTRACT_RESPONSE,
+      STANDARD_JSON_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -139,14 +161,14 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should import a contract from Etherscan via vyper single contract response", async () => {
-    const testAddress = "0x7BA33456EC00812C6B6BB6C1C3dfF579c34CC2cc";
-    const expectedStatus = "match";
+    const testAddress = deployments.VYPER_SINGLE_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(VYPER_SINGLE_CONTRACT.expectedStatus);
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      VYPER_SINGLE_CONTRACT_RESPONSE,
+      VYPER_SINGLE_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -165,14 +187,16 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should import a contract from Etherscan via vyper standard json contract response", async () => {
-    const testAddress = "0x2dFd89449faff8a532790667baB21cF733C064f2";
-    const expectedStatus = "match";
+    const testAddress = deployments.VYPER_STANDARD_JSON_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(
+      VYPER_STANDARD_JSON_CONTRACT.expectedStatus,
+    );
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
+      VYPER_STANDARD_JSON_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -191,16 +215,16 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should import a contract with malformed version field from Etherscan via single contract response", async () => {
-    const testAddress = "0x7E45a7dB30Dc2244cCEED7A4EE55C282017140BB";
+    const testAddress = deployments.MALFORMED_VERSION_CONTRACT!.address;
     const expectedStatus = toMatchLevel(
-      singleContract.expectedStatus as VerificationStatus,
+      MALFORMED_VERSION_CONTRACT.expectedStatus,
     );
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      MALFORMED_VERSION_RESPONSE,
+      MALFORMED_VERSION_CONTRACT.etherscanResponse,
     );
 
     const verifyRes = await request(serverFixture.server.app)
@@ -220,16 +244,14 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
   it("should allow for using a custom api key", async () => {
     const apiKey = "TEST";
-    const testAddress = singleContract.address;
-    const expectedStatus = toMatchLevel(
-      singleContract.expectedStatus as VerificationStatus,
-    );
+    const testAddress = deployments.SINGLE_CONTRACT!.address;
+    const expectedStatus = toMatchLevel(SINGLE_CONTRACT.expectedStatus);
 
     const { resolveWorkers } = makeWorkersWait();
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      SINGLE_CONTRACT_RESPONSE,
+      SINGLE_CONTRACT.etherscanResponse,
       apiKey,
     );
 
@@ -251,7 +273,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
     const testAddress = unusedAddress;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       UNVERIFIED_CONTRACT_RESPONSE,
     );
@@ -268,10 +290,10 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
   it("should return a 502 if an invalid api key is provided", async () => {
     const apiKey = "TEST";
-    const testAddress = singleContract.address;
+    const testAddress = deployments.SINGLE_CONTRACT!.address;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       INVALID_API_KEY_RESPONSE,
       apiKey,
@@ -288,10 +310,10 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should return a 429 if the Etherscan API rate limit is reached", async () => {
-    const testAddress = singleContract.address;
+    const testAddress = deployments.SINGLE_CONTRACT!.address;
 
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
       RATE_LIMIT_REACHED_RESPONSE,
     );
@@ -307,11 +329,11 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should return a 429 if the contract is being verified at the moment already", async () => {
-    const testAddress = singleContract.address;
+    const testAddress = deployments.SINGLE_CONTRACT!.address;
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      SINGLE_CONTRACT_RESPONSE,
+      SINGLE_CONTRACT.etherscanResponse,
     );
 
     await testAlreadyBeingVerified(
@@ -324,11 +346,11 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
 
   it("should return a 409 if the contract is already verified", async () => {
     // Must be an exact match for this test
-    const testAddress = "0xbD65e16894EF6Dd9C58e4bbeC55D7E33769f43D9";
+    const testAddress = deployments.STANDARD_JSON_CONTRACT_EXACT_MATCH!.address;
     mockEtherscanApi(
-      sourcifyChainsMap[testChainId],
+      serverFixture.sourcifyChainsMap[testChainId],
       testAddress,
-      STANDARD_JSON_CONTRACT_EXACT_MATCH_RESPONSE,
+      STANDARD_JSON_CONTRACT_EXACT_MATCH.etherscanResponse,
     );
 
     await testAlreadyVerified(
@@ -356,7 +378,7 @@ describe("POST /v2/verify/etherscan/:chainId/:address", function () {
   });
 
   it("should return a 400 when the chain is not found", async function () {
-    const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
+    const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, testChainId).value(undefined);
 
     const verifyRes = await request(serverFixture.server.app)

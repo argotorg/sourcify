@@ -6,6 +6,12 @@ export interface SourcifyChainsExtensionsObject {
 export type SourcifyChainExtension = {
   sourcifyName: string; // Keep it required to not forget name in sourcify-chains.json
   supported: boolean;
+  /**
+   * When true, the chain is hidden from public listings such as the /chains
+   * endpoint and the /v2/contract/all-chains/{address} response. Verification
+   * for the chain still works when its chainId is explicitly requested.
+   */
+  hidden?: boolean;
   etherscanApi?: {
     supported: boolean;
     apiKeyEnvName?: string;
@@ -19,21 +25,11 @@ export interface FetchContractCreationTxMethods {
   blockscoutApi?: {
     url: string;
   };
-  blockscoutScrape?: {
-    url: string;
-    blockscoutPrefix?: string;
-  };
   routescanApi?: {
     type: 'mainnet' | 'testnet';
   };
   etherscanApi?: boolean;
-  etherscanScrape?: {
-    url: string;
-  };
   blocksScanApi?: {
-    url: string;
-  };
-  telosApi?: {
     url: string;
   };
   avalancheApi?: boolean;

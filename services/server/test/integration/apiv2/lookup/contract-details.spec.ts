@@ -894,8 +894,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when the chain is not found", async function () {
-    const unknownChainId = "5";
-    const chainMap = serverFixture.server.chainRepository.sourcifyChainMap;
+    const unknownChainId = "1337";
+    const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
 
     await verifyContract(serverFixture, chainFixture);

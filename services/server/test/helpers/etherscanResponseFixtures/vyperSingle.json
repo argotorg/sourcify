@@ -1,0 +1,27 @@
+{
+  "creationBytecode": "0x6101415150346100365760206101905f395f518060a01c610036576040526040516101415261014161003a61000039610161610000f35b5f80fd5f3560e01c60026001821660011b61013d01601e395f51565b63307121098118610135573461013957602061014160403960206040f3610135565b630197d972811861005657346101395761708060405260206040f35b632c4e722e811861013557346101395760206101415f395f516301e1d114606052602060606004607c845afa61008e573d5f5f3e3d5ffd5b60203d106101395760609050516040526040511561012a5760206101415f395f5162728f76606052602060606004607c845afa6100cd573d5f5f3e3d5ffd5b60203d10610139576060905051670de0b6b3a7640000810281670de0b6b3a76400008204186101395790506040516170808102816170808204186101395790508015610139578082049050905060a052602060a061013356610133565b5f606052602060605bf35b5f5ffd5b5f80fd003a00188419014181041820a16576797065728300030a00150000000000000000000000009d39a5de30e57443bff2a8307a4256c8797a3497",
+  "etherscanResponse": {
+    "status": "1",
+    "message": "OK",
+    "result": [
+      {
+        "SourceCode": "# @version 0.3.10\r\n\"\"\"\r\n@title sUSDe Rate Calculator\r\n@notice Returns the per-second yield rate for sUSDe.\r\n\"\"\"\r\n\r\ninterface ISUSDE:\r\n    def totalAssets() -> uint256: view\r\n    def vestingAmount() -> uint256: view\r\n\r\n\r\nSUSDE: public(immutable(ISUSDE))\r\n\r\nVESTING_PERIOD: public(constant(uint256)) = 8 * 3600\r\n\r\n\r\n@external\r\ndef __init__(_susde: address):\r\n    SUSDE = ISUSDE(_susde)\r\n\r\n\r\n@external\r\n@view\r\ndef rate() -> uint256:\r\n    \"\"\"\r\n    @return Per-second yield rate (1e18 scale).\r\n    \"\"\"\r\n    assets: uint256 = SUSDE.totalAssets()\r\n    if assets > 0:\r\n        return SUSDE.vestingAmount() * 10**18 / (assets * VESTING_PERIOD)\r\n    else:\r\n        return 0",
+        "ABI": "[{\"stateMutability\":\"nonpayable\",\"type\":\"constructor\",\"inputs\":[{\"name\":\"_susde\",\"type\":\"address\"}],\"outputs\":[]},{\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"rate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]},{\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"SUSDE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\"}]},{\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"VESTING_PERIOD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]}]",
+        "ContractName": "sUSDe Rate Calculator",
+        "CompilerVersion": "vyper:0.3.10",
+        "CompilerType": "vyper",
+        "OptimizationUsed": "0",
+        "Runs": "0",
+        "ConstructorArguments": "0000000000000000000000009d39a5de30e57443bff2a8307a4256c8797a3497",
+        "EVMVersion": "Default",
+        "Library": "",
+        "ContractFileName": "",
+        "LicenseType": "None",
+        "Proxy": "0",
+        "Implementation": "",
+        "SwarmSource": "",
+        "SimilarMatch": ""
+      }
+    ]
+  }
+}

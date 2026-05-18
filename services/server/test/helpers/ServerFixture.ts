@@ -3,7 +3,7 @@ import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
 import config from "config";
-import { sourcifyChainsMap } from "../../src/sourcify-chains";
+import { LOCAL_CHAINS } from "../../src/sourcify-chains";
 import type { StorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import type { Pool } from "pg";
@@ -35,6 +35,9 @@ export class ServerFixture {
 
   // Getters for type safety
   // Can be safely accessed in "it" blocks
+  get sourcifyChainsMap(): SourcifyChainMap {
+    return this.server.chainRepository.sourcifyChainMap;
+  }
   get sourcifyDatabase(): Pool {
     // sourcifyDatabase is just a shorter way to get databasePool inside SourcifyDatabaseService
     const _sourcifyDatabase = (
@@ -62,6 +65,13 @@ export class ServerFixture {
     this.repositoryV1Path = config.get<string>("repositoryV1.path");
 
     before(async () => {
+      // fixtureOptions_?.chains takes priority; fall back to fetching from the
+      // remote/local config. The same map is passed to both serverOptions.chains
+      // and sourcifyChainMap so both are always consistent.
+      const sourcifyChainsMap =
+        fixtureOptions_?.chains ??
+        Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c]));
+
       process.env.SOURCIFY_POSTGRES_PORT =
         process.env.DOCKER_HOST_POSTGRES_TEST_PORT || "5431";
 
@@ -79,7 +89,7 @@ export class ServerFixture {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
-        chains: fixtureOptions_?.chains || sourcifyChainsMap,
+        chains: sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
@@ -182,7 +192,7 @@ export class ServerFixture {
   }
 
   resetChainHealthStates(): void {
-    const chains = this.server.chainRepository.sourcifyChainMap;
+    const chains = this.sourcifyChainsMap;
     for (const chain of Object.values(chains)) {
       for (const rpc of chain.rpcs) {
         if (rpc.health) {
