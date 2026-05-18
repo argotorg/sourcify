@@ -87,7 +87,7 @@
     "@types/node": "22.19.17",
     "@types/pg": "8.20.0",
     "@types/serve-index": "1.9.4",
-    "@types/sinon": "17.0.4",
+    "@types/sinon": "21.0.1",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
     "c8": "10.1.3",
