@@ -37,10 +37,10 @@ export function normalizeEraSolcVersion(version: string): string {
   return stripLeadingV(version).replace(/^zkVM-/, '');
 }
 
-export function isZkSolcVersionAtLeast(
-  version: string,
-  target: string,
-): boolean {
+export function isZkSolcVersionAtLeastV15(version: string): boolean {
+  // Pre-release of 1.5.0 (git-SHA suffix). semver.parse rejects it; without
+  // this guard the unparseable-default below would treat it as ≥ 1.5, when in
+  // fact it predates the 1.5.0 release and must use the pre-1.5 CLI shape.
   if (version === 'vm-1.5.0-a167aa3') {
     return false;
   }
@@ -48,7 +48,7 @@ export function isZkSolcVersionAtLeast(
   if (!parsedVersion) {
     return true;
   }
-  return semver.gte(parsedVersion, target);
+  return semver.gte(parsedVersion, '1.5.0');
 }
 
 export function findZkSolcPlatform(): string | false {
@@ -238,7 +238,7 @@ function getZkSolcStandardJsonArgs(
     forceEVMLA?: boolean;
   };
 
-  if (!isZkSolcVersionAtLeast(zksolcVersion, '1.5.0')) {
+  if (!isZkSolcVersionAtLeastV15(zksolcVersion)) {
     if (settings.enableEraVMExtensions || settings.isSystem) {
       args.push('--system-mode');
     }

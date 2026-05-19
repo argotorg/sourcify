@@ -67,7 +67,7 @@ function mergeOutputSelection(
 ): OutputSelection {
   const existingOutputSelection = jsonInput.settings.outputSelection || {};
   const outputSelection = structuredClone(existingOutputSelection);
-  const contractOutputs = isZkSolcVersionAtLeast(zksolcVersion, '1.5.0')
+  const contractOutputs = isZkSolcVersionAtLeastV15(zksolcVersion)
     ? ZKSOLC_CONTRACT_OUTPUTS
     : ZKSOLC_LEGACY_CONTRACT_OUTPUTS;
 
@@ -99,7 +99,10 @@ function stripLeadingV(version: string): string {
   return version.trim().replace(/^v/, '');
 }
 
-function isZkSolcVersionAtLeast(version: string, target: string): boolean {
+function isZkSolcVersionAtLeastV15(version: string): boolean {
+  // Pre-release of 1.5.0 (git-SHA suffix). semver.parse rejects it; without
+  // this guard the unparseable-default below would treat it as ≥ 1.5, when in
+  // fact it predates the 1.5.0 release and must use the pre-1.5 CLI shape.
   if (version === 'vm-1.5.0-a167aa3') {
     return false;
   }
@@ -109,7 +112,7 @@ function isZkSolcVersionAtLeast(version: string, target: string): boolean {
     return true;
   }
 
-  return semver.gte(parsedVersion, target);
+  return semver.gte(parsedVersion, '1.5.0');
 }
 
 function isSupportedSolidityVersion(solcVersion: string): boolean {
@@ -139,7 +142,7 @@ function isEraSolcEditionCompatibleWithZkSolc(
   zksolcVersion: string,
   edition: EraSolcEdition,
 ): boolean {
-  return edition !== '1.0.2' || isZkSolcVersionAtLeast(zksolcVersion, '1.5.0');
+  return edition !== '1.0.2' || isZkSolcVersionAtLeastV15(zksolcVersion);
 }
 
 function isSupportedEraSolcVersion(

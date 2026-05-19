@@ -7,7 +7,7 @@ import {
   findZkSolcPlatform,
   getEraSolcExecutable,
   getZkSolcExecutable,
-  isZkSolcVersionAtLeast,
+  isZkSolcVersionAtLeastV15,
   normalizeEraSolcVersion,
   normalizeZkSolcVersion,
   useZkSolcCompiler,
@@ -40,9 +40,9 @@ describe('Verify zksolc compiler plumbing', () => {
     expect(normalizeEraSolcVersion('zkVM-0.8.19-1.0.0')).to.equal(
       '0.8.19-1.0.0',
     );
-    expect(isZkSolcVersionAtLeast('v1.5.0', '1.5.0')).to.equal(true);
-    expect(isZkSolcVersionAtLeast('1.4.1', '1.5.0')).to.equal(false);
-    expect(isZkSolcVersionAtLeast('vm-1.5.0-a167aa3', '1.5.0')).to.equal(false);
+    expect(isZkSolcVersionAtLeastV15('v1.5.0')).to.equal(true);
+    expect(isZkSolcVersionAtLeastV15('1.4.1')).to.equal(false);
+    expect(isZkSolcVersionAtLeastV15('vm-1.5.0-a167aa3')).to.equal(false);
   });
 
   it('Should throw an error if zksolc is not found', async () => {
