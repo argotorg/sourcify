@@ -320,6 +320,7 @@ paths:
           description: The last `matchId` returned to get contracts older or newer than it (depending on `sort`)
           schema:
             type: string
+            pattern: '^\d+$'
         - $ref: "#/components/parameters/chainId"
       responses:
         "200":

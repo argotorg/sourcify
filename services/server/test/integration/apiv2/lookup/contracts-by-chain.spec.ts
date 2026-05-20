@@ -162,4 +162,15 @@ describe("GET /v2/contracts/:chainId", function () {
     chai.expect(res.body).to.have.property("errorId");
     chai.expect(res.body).to.have.property("message");
   });
+
+  it("should return a 400 when afterMatchId is not a non-negative integer", async function () {
+    const res = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/contracts/${chainFixture.chainId}?afterMatchId=m1`);
+
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.customCode).to.equal("invalid_parameter");
+    chai.expect(res.body).to.have.property("errorId");
+    chai.expect(res.body).to.have.property("message");
+  });
 });
