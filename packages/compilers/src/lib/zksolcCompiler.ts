@@ -1,3 +1,5 @@
+// See ZKSOLC.md in this package for the compiler model
+// (zksolc vs era-solc vs upstream solc, the 1.5.0 split, gnu/musl).
 // TODO: Handle nodejs only dependencies
 import path from 'path';
 import fs from 'fs';
