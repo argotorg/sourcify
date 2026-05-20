@@ -157,7 +157,7 @@ export async function useZkSolcCompiler(
   return compiledJSON;
 }
 
-async function getZkSolcBaseSolcExecutable(
+export async function getZkSolcBaseSolcExecutable(
   eraSolcRepoPath: string,
   eraSolcPlatform: string,
   solcVersion: string,
@@ -228,7 +228,7 @@ function getUpstreamSolcPlatformCandidates(): string[] {
   return [];
 }
 
-function getZkSolcStandardJsonArgs(
+export function getZkSolcStandardJsonArgs(
   zksolcVersion: string,
   eraSolcPath: string,
   allowedPath: string,
