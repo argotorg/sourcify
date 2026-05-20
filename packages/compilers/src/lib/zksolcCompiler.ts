@@ -61,6 +61,8 @@ export function findZkSolcPlatform(): string | false {
     if (process.arch === 'arm64') return 'linux-arm64-gnu';
   }
   if (process.platform === 'win32' && process.arch === 'x64') {
+    // Matter Labs publishes the Windows zksolc as a MinGW build; the -gnu
+    // suffix is part of the upstream filename, not a libc choice.
     return 'windows-amd64-gnu';
   }
   return false;
@@ -354,6 +356,8 @@ export async function getEraSolcExecutable(
   return eraSolcPath;
 }
 
+// Linux zksolc ships in two libc flavors: -gnu (glibc; most distros) and
+// -musl (Alpine, etc.). Return both so the caller can fall back if needed.
 function getZkSolcFileNameCandidates(
   platform: string,
   normalizedVersion: string,
