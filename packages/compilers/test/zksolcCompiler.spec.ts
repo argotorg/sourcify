@@ -507,7 +507,6 @@ describe('getZkSolcBaseSolcExecutable upstream solc', () => {
       'linux-amd64',
       'v0.8.26+commit.8a97fa7a',
       '/solc-repo',
-      '/soljson-repo',
     );
 
     expect(resolved).to.equal('/fake/solc-bin/solc');
@@ -528,7 +527,6 @@ describe('getZkSolcBaseSolcExecutable upstream solc', () => {
         'linux-amd64',
         'v0.8.26+commit.8a97fa7a',
         '/solc-repo',
-        '/soljson-repo',
       );
       expect.fail('Expected getZkSolcBaseSolcExecutable to throw');
     } catch (error) {

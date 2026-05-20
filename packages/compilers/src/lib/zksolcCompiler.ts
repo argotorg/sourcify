@@ -92,7 +92,6 @@ export async function useZkSolcCompiler(
   solcVersion: string,
   solcJsonInput: SolidityJsonInput,
   solcRepoPath?: string,
-  solJsonRepoPath?: string,
 ): Promise<SolidityOutput> {
   const zksolcPlatform = findZkSolcPlatform();
   if (!zksolcPlatform) {
@@ -114,7 +113,6 @@ export async function useZkSolcCompiler(
     eraSolcPlatform,
     solcVersion,
     solcRepoPath,
-    solJsonRepoPath,
   );
 
   const inputStringified = JSON.stringify(solcJsonInput);
@@ -162,22 +160,13 @@ export async function getZkSolcBaseSolcExecutable(
   eraSolcPlatform: string,
   solcVersion: string,
   solcRepoPath?: string,
-  solJsonRepoPath?: string, // Mirrors the Solidity compiler API; upstream solc-js is not usable by zksolc's --solc path.
 ): Promise<string> {
   if (ERA_SOLC_VERSION_REGEX.test(solcVersion)) {
     return getEraSolcExecutable(eraSolcRepoPath, eraSolcPlatform, solcVersion);
   }
 
-  if (
-    SOLC_RELEASE_VERSION_REGEX.test(solcVersion) &&
-    solcRepoPath &&
-    solJsonRepoPath
-  ) {
-    return getUpstreamSolcExecutable(
-      solcRepoPath,
-      solJsonRepoPath,
-      solcVersion,
-    );
+  if (SOLC_RELEASE_VERSION_REGEX.test(solcVersion) && solcRepoPath) {
+    return getUpstreamSolcExecutable(solcRepoPath, solcVersion);
   }
 
   return getEraSolcExecutable(eraSolcRepoPath, eraSolcPlatform, solcVersion);
@@ -185,7 +174,6 @@ export async function getZkSolcBaseSolcExecutable(
 
 async function getUpstreamSolcExecutable(
   solcRepoPath: string,
-  _solJsonRepoPath: string,
   solcVersion: string,
 ): Promise<string> {
   const normalizedVersion = stripLeadingV(solcVersion);

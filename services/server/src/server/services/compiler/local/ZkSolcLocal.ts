@@ -10,7 +10,6 @@ export class ZkSolcLocal implements IZkSolcCompiler {
     private zksolcRepoPath: string,
     private eraSolcRepoPath: string,
     private solcRepoPath?: string,
-    private solJsonRepoPath?: string,
   ) {}
 
   async compile(
@@ -25,7 +24,6 @@ export class ZkSolcLocal implements IZkSolcCompiler {
       solcVersion,
       solcJsonInput,
       this.solcRepoPath,
-      this.solJsonRepoPath,
     );
   }
 }

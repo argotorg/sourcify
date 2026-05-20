@@ -3,6 +3,11 @@
 Reviewer-oriented notes on how zksolc / EraVM verification resolves and runs
 compilers. Companion to the "Solc Compiler Internals" section in `CLAUDE.md`.
 
+![zkSync EraVM compiler toolchain](./zksync-compiler-toolchain.png)
+
+_zkSync's compiler toolchain: a high-level frontend (zksolc) drives a Solidity
+frontend, which feeds a shared LLVM-based backend that emits EraVM bytecode._
+
 ## Three compilers, three roles
 
 zksolc verification involves three distinct compiler binaries. zksolc is the
@@ -23,6 +28,51 @@ Upstream solc is used because block-explorer submissions usually only know the
 commit-bearing solc version, not the era-solc edition. `ZkSolcCompilation` tries
 upstream solc first (when given a commit-bearing version), then falls back
 through era-solc candidates.
+
+## How Sourcify drives zksolc, and how zksolc drives solc
+
+zksolc does not compile Solidity itself — it is a **wrapper around solc**. It
+takes Solidity source, hands it to a real Solidity compiler for the front-end
+output (AST, Yul / EVM-legacy IR), then runs that through its own LLVM-based
+backend to emit EraVM bytecode. So one EraVM compilation is a two-process chain:
+
+```
+Sourcify ──spawn──▶ zksolc ──spawn──▶ solc (era-solc or upstream)
+```
+
+**1. Sourcify spawns only zksolc.** For EraVM contracts Sourcify never runs solc
+directly. It resolves _two_ binaries up front — the `zksolc` executable and a
+solc backend — but spawns only `zksolc` as a child process (`useZkSolcCompiler`
+→ `spawnCompiler`). The Standard JSON input is written to zksolc's **stdin**;
+the Standard-JSON-shaped output is read back from its **stdout**.
+
+**2. Sourcify tells zksolc where solc is.** zksolc neither bundles nor downloads
+solc — it must be handed a path. `getZkSolcStandardJsonArgs` builds the argv:
+
+```
+--standard-json  --solc <solcPath>  --allow-paths <tmpDir>
+```
+
+`--solc` is the whole interface: it points zksolc at the backend binary Sourcify
+already resolved (era-solc or upstream solc — see the table above).
+`--allow-paths` confines file access to a freshly created temp directory, which
+Sourcify deletes once the compile finishes.
+
+**3. zksolc spawns solc.** Under `--standard-json`, zksolc reads the JSON from
+stdin, spawns the `--solc` binary as _its own_ child process, feeds it the
+Solidity sources, and collects the front-end output. Its LLVM backend turns that
+into EraVM bytecode, and zksolc writes the combined output to stdout.
+
+The backend must be a **native solc binary** — zksolc spawns it as a child
+process, so the Emscripten `soljson` JS build cannot be used for EraVM
+verification. `getZkSolcBaseSolcExecutable` therefore only ever resolves native
+binaries: era-solc (always native) or upstream solc via the native-solc
+downloader.
+
+Sourcify's responsibility is therefore narrow: **resolve both binaries, pass the
+JSON in, pass `--solc` so zksolc can find the backend, parse the JSON out.** The
+solc invocation itself is entirely zksolc's doing — Sourcify only ever talks to
+one process.
 
 ## The 1.5.0 split
 

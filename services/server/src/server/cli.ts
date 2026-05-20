@@ -84,7 +84,6 @@ export const zksolc = new ZkSolcLocal(
   zksolcRepoPath,
   eraSolcRepoPath,
   solcRepoPath,
-  solJsonRepoPath,
 );
 
 logger.info("Using local vyper compiler");
