@@ -7,10 +7,10 @@
   "types": "src/index.ts",
   "license": "MIT",
   "dependencies": {
-    "hardhat": "^3.4.5",
+    "hardhat": "3.5.0",
     "tree-kill": "1.2.2"
   },
   "devDependencies": {
-    "@types/node": "^20"
+    "@types/node": "20.19.40"
   }
 }

@@ -71,7 +71,7 @@
     "nock": "14.0.14",
     "npm-run-all2": "5.0.2",
     "open-cli": "9.0.0",
-    "sinon": "21.0.1",
+    "sinon": "21.1.2",
     "sinon-chai": "3.7.0"
   },
   "files": [
