@@ -47,6 +47,12 @@ export class SourcifyChain {
   /** Whether the chain supports tracing, used for fetching the creation bytecode for factory contracts */
   readonly traceSupport?: boolean;
   readonly supported: boolean;
+  /**
+   * When true, the chain is hidden from public listings such as the /chains
+   * endpoint and the /v2/contract/all-chains/{address} response. Verification
+   * for the chain still works when its chainId is explicitly requested.
+   */
+  readonly hidden: boolean;
   readonly fetchContractCreationTxUsing?: FetchContractCreationTxMethods;
   readonly etherscanApi?: {
     supported: boolean;
@@ -73,6 +79,7 @@ export class SourcifyChain {
     this.title = sourcifyChainObj.title;
     this.chainId = sourcifyChainObj.chainId;
     this.supported = sourcifyChainObj.supported;
+    this.hidden = sourcifyChainObj.hidden ?? false;
     this.fetchContractCreationTxUsing =
       sourcifyChainObj.fetchContractCreationTxUsing;
     this.etherscanApi = sourcifyChainObj.etherscanApi;
@@ -124,6 +131,7 @@ export class SourcifyChain {
       // eslint-disable-next-line
       rpcs: this.rpcs.map(({ provider: _provider, ...rest }) => rest), // SourcifyChainInstance should not include class instances
       supported: this.supported,
+      hidden: this.hidden,
       fetchContractCreationTxUsing: this.fetchContractCreationTxUsing,
       etherscanApi: this.etherscanApi,
     };

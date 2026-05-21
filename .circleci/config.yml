@@ -10,9 +10,6 @@ parameters:
   run-nightly:
     type: boolean
     default: false
-  run-test-chains-regularly:
-    type: boolean
-    default: false
 
 # the path-filtering orb is required to continue a pipeline based on
 # the path of an updated fileset see https://circleci.com/docs/2.0/using-dynamic-configuration/
@@ -27,7 +24,6 @@ workflows:
     when:
       and:
         - not: << pipeline.parameters.run-nightly >>
-        - not: << pipeline.parameters.run-test-chains-regularly >>
         - or:
             - equal: [master, << pipeline.git.branch >>]
             - equal: [staging, << pipeline.git.branch >>]
@@ -116,7 +112,6 @@ workflows:
     when:
       and:
         - not: << pipeline.parameters.run-nightly >>
-        - not: << pipeline.parameters.run-test-chains-regularly >>
         - not:
             equal: [master, << pipeline.git.branch >>]
         - not:
@@ -135,13 +130,6 @@ workflows:
       - continuation/continue:
           name: continue-nightly
           configuration_path: .circleci/nightly.yml
-
-  test-chains-regularly:
-    when: << pipeline.parameters.run-test-chains-regularly >>
-    jobs:
-      - continuation/continue:
-          name: continue-test-chains-regularly
-          configuration_path: .circleci/test-chains-regularly.yml
 
 # Different than the one on continue_config.yml, this one DOES NOT persist the workspace and trigger a deploy job.
 aliases:

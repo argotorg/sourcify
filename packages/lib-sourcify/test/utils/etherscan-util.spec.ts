@@ -16,20 +16,20 @@ import { solc, vyperCompiler } from '../utils';
 import {
   INVALID_API_KEY_RESPONSE,
   MALFORMED_VYPER_VERSION_RESPONSE,
-  MULTIPLE_CONTRACT_RESPONSE,
+  MULTIPLE_CONTRACT,
   RATE_LIMIT_REACHED_RESPONSE,
-  SINGLE_CONTRACT_RESPONSE,
-  STANDARD_JSON_CONTRACT_RESPONSE,
+  SINGLE_CONTRACT,
+  STANDARD_JSON_CONTRACT,
   UNVERIFIED_CONTRACT_RESPONSE,
-  VYPER_SINGLE_CONTRACT_RESPONSE,
-  VYPER_STANDARD_JSON_CONTRACT_RESPONSE,
+  VYPER_SINGLE_CONTRACT,
+  VYPER_STANDARD_JSON_CONTRACT,
   mockEtherscanApi,
-} from '../../../../services/server/test/helpers/etherscanResponseMocks';
+} from '../../../../services/server/test/helpers/etherscanTestCases';
 import { EtherscanImportError } from '../../src/utils/etherscan/EtherscanTypes';
 import {
-  MALFORMED_VERSION_RESPONSE,
+  MALFORMED_VERSION_CONTRACT,
   MALFORMED_NIGHLTY_VERSION_RESPONSE,
-} from '../../../../services/server/test/helpers/etherscanResponseMocks';
+} from '../../../../services/server/test/helpers/etherscanTestCases';
 
 use(chaiHttp);
 use(chaiAsPromised);
@@ -101,11 +101,14 @@ describe('etherscan util (lib)', function () {
     });
 
     [
-      ['single contract', SINGLE_CONTRACT_RESPONSE],
-      ['multiple contract', MULTIPLE_CONTRACT_RESPONSE],
-      ['standard json contract', STANDARD_JSON_CONTRACT_RESPONSE],
-      ['vyper single contract', VYPER_SINGLE_CONTRACT_RESPONSE],
-      ['vyper standard json contract', VYPER_STANDARD_JSON_CONTRACT_RESPONSE],
+      ['single contract', SINGLE_CONTRACT.etherscanResponse],
+      ['multiple contract', MULTIPLE_CONTRACT.etherscanResponse],
+      ['standard json contract', STANDARD_JSON_CONTRACT.etherscanResponse],
+      ['vyper single contract', VYPER_SINGLE_CONTRACT.etherscanResponse],
+      [
+        'vyper standard json contract',
+        VYPER_STANDARD_JSON_CONTRACT.etherscanResponse,
+      ],
     ].forEach(([description, response]) => {
       it(`should return a ${description} response from etherscan`, async () => {
         const scope = mockEtherscanApi(
@@ -128,52 +131,58 @@ describe('etherscan util (lib)', function () {
   describe('processSolidityResultFromEtherscan', () => {
     it('should process a single contract response from etherscan', async () => {
       const result = EtherscanUtils.processSolidityResultFromEtherscan(
-        SINGLE_CONTRACT_RESPONSE.result[0] as any,
+        SINGLE_CONTRACT.etherscanResponse.result[0] as any,
       );
       expect(result).to.deep.equal({
         compilerVersion: (
-          SINGLE_CONTRACT_RESPONSE.result[0] as any
+          SINGLE_CONTRACT.etherscanResponse.result[0] as any
         ).CompilerVersion.substring(1),
         jsonInput: {
           language: 'Solidity',
           sources: {
-            [(SINGLE_CONTRACT_RESPONSE.result[0] as any).ContractName + '.sol']:
-              {
-                content: (SINGLE_CONTRACT_RESPONSE.result[0] as any).SourceCode,
-              },
+            [(SINGLE_CONTRACT.etherscanResponse.result[0] as any).ContractName +
+            '.sol']: {
+              content: (SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+                .SourceCode,
+            },
           },
           settings: {
             optimizer: {
               enabled:
-                (SINGLE_CONTRACT_RESPONSE.result[0] as any).OptimizationUsed ===
-                '1',
-              runs: parseInt((SINGLE_CONTRACT_RESPONSE.result[0] as any).Runs),
+                (SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+                  .OptimizationUsed === '1',
+              runs: parseInt(
+                (SINGLE_CONTRACT.etherscanResponse.result[0] as any).Runs,
+              ),
             },
             evmVersion:
               (
-                SINGLE_CONTRACT_RESPONSE.result[0] as any
+                SINGLE_CONTRACT.etherscanResponse.result[0] as any
               ).EVMVersion.toLowerCase() !== 'default'
-                ? (SINGLE_CONTRACT_RESPONSE.result[0] as any).EVMVersion
+                ? (SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+                    .EVMVersion
                 : undefined,
             libraries: {},
           },
         },
-        contractName: (SINGLE_CONTRACT_RESPONSE.result[0] as any).ContractName,
+        contractName: (SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+          .ContractName,
         contractPath:
-          (SINGLE_CONTRACT_RESPONSE.result[0] as any).ContractName + '.sol',
+          (SINGLE_CONTRACT.etherscanResponse.result[0] as any).ContractName +
+          '.sol',
       });
     });
 
     it('should process a multiple contract response from etherscan', async () => {
       const result = EtherscanUtils.processSolidityResultFromEtherscan(
-        MULTIPLE_CONTRACT_RESPONSE.result[0] as any,
+        MULTIPLE_CONTRACT.etherscanResponse.result[0] as any,
       );
       const expectedSources = JSON.parse(
-        (MULTIPLE_CONTRACT_RESPONSE.result[0] as any).SourceCode,
+        (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any).SourceCode,
       );
       expect(result).to.deep.equal({
         compilerVersion: (
-          MULTIPLE_CONTRACT_RESPONSE.result[0] as any
+          MULTIPLE_CONTRACT.etherscanResponse.result[0] as any
         ).CompilerVersion.substring(1),
         jsonInput: {
           language: 'Solidity',
@@ -181,53 +190,56 @@ describe('etherscan util (lib)', function () {
           settings: {
             optimizer: {
               enabled:
-                (MULTIPLE_CONTRACT_RESPONSE.result[0] as any)
+                (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any)
                   .OptimizationUsed === '1',
               runs: parseInt(
-                (MULTIPLE_CONTRACT_RESPONSE.result[0] as any).Runs,
+                (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any).Runs,
               ),
             },
             evmVersion:
               (
-                MULTIPLE_CONTRACT_RESPONSE.result[0] as any
+                MULTIPLE_CONTRACT.etherscanResponse.result[0] as any
               ).EVMVersion.toLowerCase() !== 'default'
-                ? (MULTIPLE_CONTRACT_RESPONSE.result[0] as any).EVMVersion
+                ? (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any)
+                    .EVMVersion
                 : undefined,
             libraries: {},
           },
         },
-        contractName: (MULTIPLE_CONTRACT_RESPONSE.result[0] as any)
+        contractName: (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any)
           .ContractName,
-        contractPath: (MULTIPLE_CONTRACT_RESPONSE.result[0] as any)
+        contractPath: (MULTIPLE_CONTRACT.etherscanResponse.result[0] as any)
           .ContractFileName,
       });
     });
 
     it('should process a standard json contract response from etherscan', async () => {
       const result = EtherscanUtils.processSolidityResultFromEtherscan(
-        STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any,
+        STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any,
       );
       const expectedJsonInput = JSON.parse(
         (
-          (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+          (STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any)
             .SourceCode as string
         ).slice(
           1,
           (
-            (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+            (STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any)
               .SourceCode as string
           ).length - 1,
         ),
       );
       expect(result).to.deep.equal({
         compilerVersion: (
-          STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any
+          STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any
         ).CompilerVersion.substring(1),
         jsonInput: expectedJsonInput,
-        contractName: (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
-          .ContractName,
-        contractPath: (STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
-          .ContractFileName,
+        contractName: (
+          STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any
+        ).ContractName,
+        contractPath: (
+          STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any
+        ).ContractFileName,
       });
     });
   });
@@ -278,7 +290,7 @@ describe('etherscan util (lib)', function () {
   describe('processSolidityResultFromEtherscan with malformed versions', () => {
     it('should resolve a malformed date-based version with truncated hash', () => {
       const result = EtherscanUtils.processSolidityResultFromEtherscan(
-        MALFORMED_VERSION_RESPONSE.result[0] as any,
+        MALFORMED_VERSION_CONTRACT.etherscanResponse.result[0] as any,
       );
       // v0.3.2-2016-04-18-81ae2a7 → 0.3.2+commit.81ae2a7 → resolved to 0.3.2+commit.81ae2a78
       expect(result.compilerVersion).to.equal('0.3.2+commit.81ae2a78');
@@ -306,34 +318,35 @@ describe('etherscan util (lib)', function () {
         ]);
 
       const result = await EtherscanUtils.processVyperResultFromEtherscan(
-        VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any,
+        VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any,
       );
       const expectedName = (
-        VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any
+        VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any
       ).ContractName.replace(/\s+/g, '')
         .replace(/\n/g, '')
         .replace(/\r/g, '');
       const expectedPath = `${expectedName}.vy`;
       expect(result).to.deep.equal({
         compilerVersion: await EtherscanUtils.getVyperCompilerVersion(
-          (VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any).CompilerVersion,
+          (VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+            .CompilerVersion,
         ),
         jsonInput: {
           language: 'Vyper',
           sources: {
             [expectedPath]: {
               content: (
-                VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any
+                VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any
               ).SourceCode.replace(/\r/g, ''),
             },
           },
           settings: {
             outputSelection: { '*': ['evm.deployedBytecode.object'] },
             evmVersion:
-              (VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any).EVMVersion !==
-              'Default'
+              (VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+                .EVMVersion !== 'Default'
                 ? // eslint-disable-next-line indent
-                  ((VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any)
+                  ((VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
                     .EVMVersion as any)
                 : undefined,
             search_paths: ['.'],
@@ -353,16 +366,16 @@ describe('etherscan util (lib)', function () {
         ]);
 
       const result = await EtherscanUtils.processVyperResultFromEtherscan(
-        VYPER_STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any,
+        VYPER_STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any,
       );
       const expectedJsonInput = JSON.parse(
         (
-          (VYPER_STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+          (VYPER_STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any)
             .SourceCode as string
         ).slice(
           1,
           (
-            (VYPER_STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+            (VYPER_STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any)
               .SourceCode as string
           ).length - 1,
         ),
@@ -375,7 +388,7 @@ describe('etherscan util (lib)', function () {
       const expectedName = expectedPath.split('/').pop()!.split('.')[0];
       expect(result).to.deep.equal({
         compilerVersion: await EtherscanUtils.getVyperCompilerVersion(
-          (VYPER_STANDARD_JSON_CONTRACT_RESPONSE.result[0] as any)
+          (VYPER_STANDARD_JSON_CONTRACT.etherscanResponse.result[0] as any)
             .CompilerVersion,
         ),
         jsonInput: expectedJsonInput,
@@ -388,11 +401,11 @@ describe('etherscan util (lib)', function () {
   describe('getCompilationFromEtherscanResult', () => {
     it('should return a SolidityCompilation', async () => {
       const solidityResult = EtherscanUtils.processSolidityResultFromEtherscan(
-        SINGLE_CONTRACT_RESPONSE.result[0] as any,
+        SINGLE_CONTRACT.etherscanResponse.result[0] as any,
       );
       const compilation =
         await EtherscanUtils.getCompilationFromEtherscanResult(
-          SINGLE_CONTRACT_RESPONSE.result[0] as any,
+          SINGLE_CONTRACT.etherscanResponse.result[0] as any,
           solc,
           vyperCompiler,
         );
@@ -427,11 +440,11 @@ describe('etherscan util (lib)', function () {
         ]);
 
       const vyperResult = await EtherscanUtils.processVyperResultFromEtherscan(
-        VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any,
+        VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any,
       );
       const compilation =
         await EtherscanUtils.getCompilationFromEtherscanResult(
-          VYPER_SINGLE_CONTRACT_RESPONSE.result[0] as any,
+          VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any,
           solc,
           vyperCompiler,
         );

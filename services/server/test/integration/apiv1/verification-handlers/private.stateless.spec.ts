@@ -10,6 +10,8 @@ import {
 import { assertVerification } from "../../../helpers/assertions";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
+import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import { LOCAL_CHAINS } from "../../../../src/sourcify-chains";
 
 chai.use(chaiHttp);
 
@@ -210,7 +212,17 @@ describe("/private/replace-contract", function () {
 
 describe("/private/verify-deprecated", function () {
   const chainFixture = new LocalChainFixture();
-  const serverFixture = new ServerFixture();
+  const serverFixture = new ServerFixture({
+    chains: {
+      ...Object.fromEntries(LOCAL_CHAINS.map((c) => [c.chainId.toString(), c])),
+      "5": new SourcifyChain({
+        name: "Goerli (deprecated stub)",
+        chainId: 5,
+        supported: false,
+        rpcs: [],
+      }),
+    },
+  });
 
   it("should verify a contract on deprecated chain (Goerli) and store it correctly in the database", async () => {
     const address = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f";

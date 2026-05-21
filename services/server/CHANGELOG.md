@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.15.0 - 2026-05-21
+
+- feat: fetch chain config from remote URL and remove HTML scraping
+  #2709
+- Refactor Etherscan tests to fully mock the requests
+- fix(server): throw on chains with no usable RPCs, add DRPC_API_KEY
+  #2782
+- feat: add hidden chain config option to filter chains from public listings
+  #2780
+
 ## sourcify-server@3.14.0 - 2026-05-06
 
 - refactor: move v1 verification edge case tests to v2 and verification-cases (#2743)

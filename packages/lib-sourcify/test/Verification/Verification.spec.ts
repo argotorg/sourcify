@@ -19,7 +19,7 @@ import {
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
-} from '../hardhat-network-helper';
+} from '@ethereum-sourcify/test-helpers';
 import fs from 'fs';
 import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
 import chaiAsPromised from 'chai-as-promised';

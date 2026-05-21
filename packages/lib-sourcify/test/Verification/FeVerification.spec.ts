@@ -8,7 +8,7 @@ import { deployFeContract, expectVerification, feCompiler } from '../utils';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
-} from '../hardhat-network-helper';
+} from '@ethereum-sourcify/test-helpers';
 import fs from 'fs';
 import { FeCompilation } from '../../src/Compilation/FeCompilation';
 import chaiAsPromised from 'chai-as-promised';

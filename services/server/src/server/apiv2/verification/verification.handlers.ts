@@ -88,7 +88,6 @@ export async function verifyFromMetadataEndpoint(
     chainId: req.params.chainId,
     address: req.params.address,
     sources: req.body.sources,
-    metadata: req.body.metadata,
     creationTransactionHash: req.body.creationTransactionHash,
   });
 

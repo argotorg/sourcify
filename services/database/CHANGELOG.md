@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.12.3 - 2026-05-21
+
+- Update dependencies
+
 ## sourcify-database@2.12.2 - 2026-04-14
 
 - update dependencies

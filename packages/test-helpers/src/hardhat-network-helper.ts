@@ -1,22 +1,39 @@
-import treeKill from "tree-kill";
+import path from "path";
 import type { ChildProcess } from "child_process";
 import { spawn } from "child_process";
+import treeKill from "tree-kill";
 
-export function startHardhatNetwork(port: number) {
-  return new Promise<ChildProcess>((resolve, reject) => {
-    const hardhatNodeProcess = spawn("npx", [
-      "hardhat",
-      "node",
-      "--port",
-      port.toString(),
-    ]);
+export interface StartHardhatNetworkOptions {
+  chainId?: number;
+  miningInterval?: number;
+}
+
+const RUNNER_DIR = path.resolve(__dirname, "..", "hardhat-runner");
+
+export function startHardhatNetwork(
+  port: number,
+  options: StartHardhatNetworkOptions = {},
+) {
+  return new Promise<ChildProcess>((resolve) => {
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    if (options.chainId !== undefined) {
+      env.HARDHAT_TEST_CHAIN_ID = String(options.chainId);
+    }
+    if (options.miningInterval !== undefined) {
+      env.HARDHAT_TEST_MINING_INTERVAL = String(options.miningInterval);
+    }
+
+    const hardhatNodeProcess = spawn(
+      "npx",
+      ["hardhat", "node", "--port", port.toString()],
+      { cwd: RUNNER_DIR, env },
+    );
 
     hardhatNodeProcess.stderr.on("data", (data: Buffer) => {
       console.error(`Hardhat Network Error: ${data.toString()}`);
     });
 
     hardhatNodeProcess.stdout.on("data", (data: Buffer) => {
-      console.log(data.toString());
       if (
         data
           .toString()

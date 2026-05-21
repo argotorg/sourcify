@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.5.2 - 2026-05-21
+
+- feat: add hidden chain config option to filter chains from public listings
+  #2780
+- feat: fetch chain config from remote URL and remove HTML scraping
+  #2709
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.5.1 - 2026-05-06
 
 - fix(lib-sourcify): normalize old Vyper beta versions from Etherscan (#2748)

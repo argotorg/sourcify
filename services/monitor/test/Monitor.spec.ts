@@ -13,7 +13,7 @@ import { logger as testLogger } from "./testLogger";
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
-} from "./hardhat-network-helper";
+} from "@ethereum-sourcify/test-helpers";
 import type { ChildProcess } from "child_process";
 import storageContractArtifact from "./sources/Storage/1_Storage.json";
 import nock from "nock";
@@ -43,7 +43,10 @@ describe("Monitor", function () {
   beforeEach(async function () {
     sandbox = sinon.createSandbox();
 
-    hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT);
+    hardhatNodeProcess = await startHardhatNetwork(HARDHAT_PORT, {
+      chainId: 1337,
+      miningInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
+    });
     testLogger.info("Started hardhat node at port " + HARDHAT_PORT);
     const ethersNetwork = new Network(localChain.rpc[0], localChain.chainId);
     signer = await new JsonRpcProvider(
