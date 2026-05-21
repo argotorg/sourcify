@@ -393,15 +393,42 @@ describe('ZkSolcCompilation', () => {
         compiler.calls[0].solcJsonInput.settings.outputSelection,
       ).to.deep.equal({
         '*': {
-          '*': ['abi', 'metadata'],
+          '*': ['abi', 'storageLayout', 'metadata', 'userdoc', 'devdoc'],
           '': ['abi'],
         },
         [compilationTarget.path]: {
-          [compilationTarget.name]: ['abi', 'metadata'],
+          [compilationTarget.name]: [
+            'abi',
+            'storageLayout',
+            'metadata',
+            'userdoc',
+            'devdoc',
+          ],
         },
       });
     });
   }
+
+  it('should force only older supported output selections for zksolc 1.3.5', () => {
+    const compiler = makeCompiler(makeContract());
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.3.5',
+      '0.6.12-1.0.1',
+      makeJsonInput(),
+      compilationTarget,
+    );
+
+    expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
+      '*': {
+        '*': ['abi', 'storageLayout'],
+        '': ['abi'],
+      },
+      [compilationTarget.path]: {
+        [compilationTarget.name]: ['abi', 'storageLayout'],
+      },
+    });
+  });
 
   it('should omit aggregate evm output selection for pre-1.5 zksolc', () => {
     const compiler = makeCompiler(makeContract());
@@ -419,11 +446,17 @@ describe('ZkSolcCompilation', () => {
 
     expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
       '*': {
-        '*': ['abi', 'metadata'],
+        '*': ['abi', 'storageLayout', 'metadata', 'userdoc', 'devdoc'],
         '': ['abi'],
       },
       [compilationTarget.path]: {
-        [compilationTarget.name]: ['abi', 'metadata'],
+        [compilationTarget.name]: [
+          'abi',
+          'storageLayout',
+          'metadata',
+          'userdoc',
+          'devdoc',
+        ],
       },
     });
   });
@@ -448,11 +481,26 @@ describe('ZkSolcCompilation', () => {
 
     expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
       '*': {
-        '*': ['abi', 'evm.bytecode.object', 'metadata', 'evm'],
+        '*': [
+          'abi',
+          'evm.bytecode.object',
+          'storageLayout',
+          'metadata',
+          'userdoc',
+          'devdoc',
+          'evm',
+        ],
         '': ['ast', 'abi'],
       },
       [compilationTarget.path]: {
-        [compilationTarget.name]: ['storageLayout', 'abi', 'metadata', 'evm'],
+        [compilationTarget.name]: [
+          'storageLayout',
+          'abi',
+          'metadata',
+          'userdoc',
+          'devdoc',
+          'evm',
+        ],
       },
     });
   });
@@ -474,11 +522,18 @@ describe('ZkSolcCompilation', () => {
 
     expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
       '*': {
-        '*': ['abi', 'metadata', 'evm'],
+        '*': ['abi', 'storageLayout', 'metadata', 'userdoc', 'devdoc', 'evm'],
         '': ['abi'],
       },
       [compilationTarget.path]: {
-        [compilationTarget.name]: ['abi', 'metadata', 'evm'],
+        [compilationTarget.name]: [
+          'abi',
+          'storageLayout',
+          'metadata',
+          'userdoc',
+          'devdoc',
+          'evm',
+        ],
       },
     });
   });
@@ -544,6 +599,110 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.runtimeLinkReferences).to.deep.equal(linkReferences);
     expect(compilation.creationLinkReferences).to.deep.equal(linkReferences);
     expect(compilation.immutableReferences).to.deep.equal({});
+  });
+
+  it('should export forced generic EraVM artifacts and bytecode link references', async () => {
+    const userdoc = {
+      kind: 'user',
+      methods: {
+        'value()': {
+          notice: 'Returns the stored value.',
+        },
+      },
+      version: 1,
+    } as const;
+    const devdoc = {
+      kind: 'dev',
+      methods: {
+        'value()': {
+          details: 'Reads the value slot.',
+        },
+      },
+      version: 1,
+    } as const;
+    const storageLayout = {
+      storage: [
+        {
+          astId: 1,
+          contract: 'contracts/Storage.sol:Storage',
+          label: 'value',
+          offset: 0,
+          slot: '0',
+          type: 't_uint256',
+        },
+      ],
+      types: {
+        t_uint256: {
+          encoding: 'inplace',
+          label: 'uint256',
+          numberOfBytes: '32',
+        },
+      },
+    };
+    const linkReferences: LinkReferences = {
+      'contracts/Library.sol': {
+        Library: [
+          {
+            start: 8,
+            length: 20,
+          },
+        ],
+      },
+    };
+    const compiler = makeCompiler(
+      makeContract({
+        userdoc,
+        devdoc,
+        storageLayout,
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL),
+            linkReferences,
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.15',
+      '0.8.26-1.0.2',
+      makeJsonInput(),
+      compilationTarget,
+    );
+    const verification = new Verification(
+      compilation,
+      {
+        chainId: 2741,
+        async getBytecode() {
+          return ABSTRACT_ZKSYNC_1_5_15_TAIL;
+        },
+      } as any,
+      '0x0929d81a73a83b73e5de2ba63a15ce2a18addbe2',
+    );
+
+    await verification.verify();
+
+    const exported = verification.export();
+    const contractOutput = exported.compilation.contractCompilerOutput;
+    expect(contractOutput.userdoc).to.deep.equal(userdoc);
+    expect(contractOutput.devdoc).to.deep.equal(devdoc);
+    expect(contractOutput.storageLayout).to.deep.equal(storageLayout);
+    expect(contractOutput.evm.bytecode.linkReferences).to.deep.equal(
+      linkReferences,
+    );
+    expect(contractOutput.evm.deployedBytecode.linkReferences).to.deep.equal(
+      linkReferences,
+    );
+    expect(exported.compilation.creationBytecodeCborAuxdata).to.deep.equal({});
+    expect(exported.compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
+      '1': {
+        offset: 128,
+        value: `0x${strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL).slice(128 * 2)}`,
+      },
+    });
   });
 
   it('should set EraVM bytecode hash auxdata positions', async () => {
@@ -612,6 +771,77 @@ describe('ZkSolcCompilation', () => {
     });
     expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
   });
+
+  for (const sample of [
+    {
+      address: '0xbc176ac2373614f9858a118917d83b139bcb3f8c',
+      zksolcVersion: '1.5.7',
+      solcVersion: '0.8.26-1.0.1',
+      bytecode: ABSTRACT_ZKSYNC_1_5_7_TAIL,
+      auxdataOffset: 224,
+    },
+    {
+      address: '0x4f7589c619d59443db52489dd375de63e03e671d',
+      zksolcVersion: '1.3.19',
+      solcVersion: 'v0.6.12+commit.27d51765',
+      bytecode: ABSTRACT_ZKSYNC_1_3_19_TAIL,
+      auxdataOffset: 192,
+    },
+    {
+      address: '0x0929d81a73a83b73e5de2ba63a15ce2a18addbe2',
+      zksolcVersion: '1.5.15',
+      solcVersion: '0.8.26-1.0.2',
+      bytecode: ABSTRACT_ZKSYNC_1_5_15_TAIL,
+      auxdataOffset: 128,
+    },
+  ]) {
+    it(`should verify PR-body Abstract EraVM bytecode sample ${sample.address}`, async () => {
+      const compiler = makeCompiler(
+        makeContract({
+          evm: {
+            bytecode: {
+              object: strip0x(sample.bytecode),
+            },
+            deployedBytecode: {
+              object: '',
+            },
+          },
+        }),
+      );
+      const compilation = new ZkSolcCompilation(
+        compiler,
+        sample.zksolcVersion,
+        sample.solcVersion,
+        makeJsonInput(),
+        compilationTarget,
+      );
+      const verification = new Verification(
+        compilation,
+        {
+          chainId: 2741,
+          async getBytecode() {
+            return sample.bytecode;
+          },
+        } as any,
+        sample.address,
+      );
+
+      await verification.verify();
+
+      expect(verification.status.runtimeMatch).to.equal('perfect');
+      expect(verification.status.creationMatch).to.equal(null);
+      expect(
+        verification.export().compilation.runtimeBytecodeCborAuxdata,
+      ).to.deep.equal({
+        '1': {
+          offset: sample.auxdataOffset,
+          value: `0x${strip0x(sample.bytecode).slice(
+            sample.auxdataOffset * 2,
+          )}`,
+        },
+      });
+    });
+  }
 
   it('should include EraVM zero-word padding in bare hash auxdata positions', async () => {
     const compiler = makeCompiler(

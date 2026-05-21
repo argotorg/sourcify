@@ -18,8 +18,13 @@ import type {
 import { CompilationError } from './CompilationTypes';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
-const ZKSOLC_CONTRACT_OUTPUTS = ['abi', 'metadata', 'evm'] as const;
-const ZKSOLC_LEGACY_CONTRACT_OUTPUTS = ['abi', 'metadata'] as const;
+const ZKSOLC_BASE_CONTRACT_OUTPUTS = ['abi', 'storageLayout'] as const;
+const ZKSOLC_METADATA_CONTRACT_OUTPUTS = [
+  'metadata',
+  'userdoc',
+  'devdoc',
+] as const;
+const ZKSOLC_EVM_CONTRACT_OUTPUTS = ['evm'] as const;
 const SOLC_RELEASE_VERSION_REGEX =
   /^v?(\d+\.\d+\.\d+)(\+commit\.[a-fA-F0-9]+)?$/;
 const ERA_SOLC_VERSION_REGEX = /^v?(?:zkVM-)?(\d+\.\d+\.\d+)-(1\.0\.[0-2])$/;
@@ -27,6 +32,7 @@ const ERA_SOLC_EDITIONS = ['1.0.2', '1.0.1', '1.0.0'] as const;
 const MIN_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.4.12';
 const MAX_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.8.30';
 const MAX_ERA_SOLC_1_0_0_SOLIDITY_VERSION = '0.8.25';
+const MIN_ZKSOLC_VERSION_WITH_METADATA_OUTPUTS = '1.3.6';
 const ERA_VM_METADATA_HASH_LENGTH_BYTES = 32;
 const ERA_VM_WORD_SIZE_BYTES = 32;
 const ERA_VM_ZERO_WORD_HEX = '00'.repeat(ERA_VM_WORD_SIZE_BYTES);
@@ -69,9 +75,7 @@ function mergeOutputSelection(
 ): OutputSelection {
   const existingOutputSelection = jsonInput.settings.outputSelection || {};
   const outputSelection = structuredClone(existingOutputSelection);
-  const contractOutputs = isZkSolcVersionAtLeastV15(zksolcVersion)
-    ? ZKSOLC_CONTRACT_OUTPUTS
-    : ZKSOLC_LEGACY_CONTRACT_OUTPUTS;
+  const contractOutputs = getZkSolcContractOutputs(zksolcVersion);
 
   ensureSelectorOutputs(outputSelection, '*', '*', contractOutputs);
   ensureSelectorOutputs(outputSelection, '*', '', ['abi']);
@@ -115,6 +119,29 @@ function isZkSolcVersionAtLeastV15(version: string): boolean {
   }
 
   return semver.gte(parsedVersion, '1.5.0');
+}
+
+function supportsZkSolcMetadataOutputs(version: string): boolean {
+  const parsedVersion = semver.parse(stripLeadingV(version));
+  if (!parsedVersion) {
+    return true;
+  }
+
+  return semver.gte(parsedVersion, MIN_ZKSOLC_VERSION_WITH_METADATA_OUTPUTS);
+}
+
+function getZkSolcContractOutputs(zksolcVersion: string): readonly string[] {
+  const outputs: string[] = [...ZKSOLC_BASE_CONTRACT_OUTPUTS];
+
+  if (supportsZkSolcMetadataOutputs(zksolcVersion)) {
+    outputs.push(...ZKSOLC_METADATA_CONTRACT_OUTPUTS);
+  }
+
+  if (isZkSolcVersionAtLeastV15(zksolcVersion)) {
+    outputs.push(...ZKSOLC_EVM_CONTRACT_OUTPUTS);
+  }
+
+  return outputs;
 }
 
 function isSupportedSolidityVersion(solcVersion: string): boolean {

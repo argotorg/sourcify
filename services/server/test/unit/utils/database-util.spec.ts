@@ -4,7 +4,38 @@ import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 
 describe("database-util", function () {
   describe("getDatabaseColumnsFromVerification", function () {
-    it("should store zksolc compiler identity and era-solc version", async function () {
+    it("should store zksolc compiler identity, era-solc version, and generic artifacts", async function () {
+      const userdoc = { kind: "user", methods: {}, version: 1 };
+      const devdoc = { kind: "dev", methods: {}, version: 1 };
+      const storageLayout = {
+        storage: [
+          {
+            astId: 1,
+            contract: "src/AbstractBadge.sol:AbstractBadge",
+            label: "value",
+            offset: 0,
+            slot: "0",
+            type: "t_uint256",
+          },
+        ],
+        types: {
+          t_uint256: {
+            encoding: "inplace",
+            label: "uint256",
+            numberOfBytes: "32",
+          },
+        },
+      };
+      const linkReferences = {
+        "src/Library.sol": {
+          Library: [
+            {
+              start: 8,
+              length: 20,
+            },
+          ],
+        },
+      };
       const verification = {
         address: "0xbc176Ac2373614F9858A118917d83b139bcb3f8c",
         chainId: 2741,
@@ -44,14 +75,17 @@ describe("database-util", function () {
           },
           contractCompilerOutput: {
             abi: [],
+            userdoc,
+            devdoc,
+            storageLayout,
             evm: {
               bytecode: {
                 sourceMap: "",
-                linkReferences: {},
+                linkReferences,
               },
               deployedBytecode: {
                 sourceMap: "",
-                linkReferences: {},
+                linkReferences,
               },
             },
           },
@@ -73,6 +107,21 @@ describe("database-util", function () {
       expect(columns.compiledContract.additional_input).to.deep.equal({
         era_solc_version: "0.8.26-1.0.1",
       });
+      expect(columns.compiledContract.compilation_artifacts.userdoc).to.equal(
+        userdoc,
+      );
+      expect(columns.compiledContract.compilation_artifacts.devdoc).to.equal(
+        devdoc,
+      );
+      expect(
+        columns.compiledContract.compilation_artifacts.storageLayout,
+      ).to.equal(storageLayout);
+      expect(
+        columns.compiledContract.creation_code_artifacts.linkReferences,
+      ).to.equal(linkReferences);
+      expect(
+        columns.compiledContract.runtime_code_artifacts.linkReferences,
+      ).to.equal(linkReferences);
     });
   });
 });

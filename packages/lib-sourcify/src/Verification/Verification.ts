@@ -40,6 +40,7 @@ import type {
   FeOutputContract,
   SoliditySettings,
   Metadata,
+  LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
@@ -778,6 +779,22 @@ export class Verification {
     } catch {
       // pass
     }
+
+    let creationLinkReferencesFallback: LinkReferences | undefined;
+    let runtimeLinkReferencesFallback: LinkReferences | undefined;
+    if (this.compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
+      try {
+        creationLinkReferencesFallback =
+          this.compilation.creationLinkReferences;
+      } catch {
+        // pass
+      }
+      try {
+        runtimeLinkReferencesFallback = this.compilation.runtimeLinkReferences;
+      } catch {
+        // pass
+      }
+    }
     const compilationExportMetadata =
       this.compilation.compilationExportMetadata;
 
@@ -815,14 +832,17 @@ export class Verification {
                   | SolidityOutputContract
                   | VyperOutputContract
               )?.evm?.bytecode?.sourceMap,
-              linkReferences: (contractCompilerOutput as SolidityOutputContract)
-                ?.evm?.bytecode?.linkReferences,
+              linkReferences:
+                (contractCompilerOutput as SolidityOutputContract)?.evm
+                  ?.bytecode?.linkReferences ?? creationLinkReferencesFallback,
             },
             deployedBytecode: {
               sourceMap:
                 contractCompilerOutput?.evm?.deployedBytecode?.sourceMap,
-              linkReferences: (contractCompilerOutput as SolidityOutputContract)
-                ?.evm?.deployedBytecode?.linkReferences,
+              linkReferences:
+                (contractCompilerOutput as SolidityOutputContract)?.evm
+                  ?.deployedBytecode?.linkReferences ??
+                runtimeLinkReferencesFallback,
             },
           },
         },
