@@ -8,6 +8,11 @@ type CBOR = {
   length: number;
 };
 
+const CBOR_LENGTH_HEX_BYTES = 4;
+const ERA_VM_WORD_SIZE_BYTES = 32;
+const ERA_VM_WORD_SIZE_HEX = ERA_VM_WORD_SIZE_BYTES * 2;
+const ERA_VM_ZERO_WORD_HEX = '00'.repeat(ERA_VM_WORD_SIZE_BYTES);
+
 export type SolidityDecodedObject = {
   // Known CBOR fields that are defined in the spec
   ipfs?: string;
@@ -164,13 +169,16 @@ export const splitAuxdata = (
   // FE and Vyper < 0.3.4 have no CBOR metadata — return the full bytecode with no auxdata
   if (
     auxdataStyle === AuxdataStyle.FE ||
-    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4 ||
-    auxdataStyle === AuxdataStyle.ZKSYNC
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4
   ) {
     return [bytecode];
   }
 
-  const bytesLength = 4;
+  if (auxdataStyle === AuxdataStyle.ZKSYNC) {
+    return splitEraVmAuxdata(bytecode);
+  }
+
+  const bytesLength = CBOR_LENGTH_HEX_BYTES;
   const cborBytesLength = getCborBytesLength(
     bytecode,
     auxdataStyle,
@@ -203,6 +211,70 @@ export const splitAuxdata = (
 
   return [bytecode];
 };
+
+const splitEraVmAuxdata = (bytecode: string): [string, string?, string?] => {
+  const bytecodeWithoutPrefix = bytecode.slice(2);
+  const cborLengthHex = bytecodeWithoutPrefix.slice(-CBOR_LENGTH_HEX_BYTES);
+  const cborByteLength = parseInt(cborLengthHex, 16);
+
+  if (!Number.isFinite(cborByteLength) || cborByteLength <= 0) {
+    return [bytecode];
+  }
+
+  const cborHexLength = cborByteLength * 2;
+  const cborStart =
+    bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES - cborHexLength;
+  if (cborStart < 0) {
+    return [bytecode];
+  }
+
+  const cborPayload = bytecodeWithoutPrefix.substring(
+    cborStart,
+    bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES,
+  );
+  if (!isCborEncoded(cborPayload)) {
+    return [bytecode];
+  }
+
+  const logicalMetadataLengthBytes = cborByteLength + 2;
+  const alignedMetadataLengthBytes =
+    Math.ceil(logicalMetadataLengthBytes / ERA_VM_WORD_SIZE_BYTES) *
+    ERA_VM_WORD_SIZE_BYTES;
+  let metadataStart =
+    bytecodeWithoutPrefix.length - alignedMetadataLengthBytes * 2;
+
+  if (metadataStart < 0 || metadataStart > cborStart) {
+    return [bytecode];
+  }
+
+  const alignmentPadding = bytecodeWithoutPrefix.substring(
+    metadataStart,
+    cborStart,
+  );
+  if (alignmentPadding.length > 0 && !isZeroHex(alignmentPadding)) {
+    return [bytecode];
+  }
+
+  const paddingWordStart = metadataStart - ERA_VM_WORD_SIZE_HEX;
+  if (
+    paddingWordStart >= 0 &&
+    bytecodeWithoutPrefix.substring(paddingWordStart, metadataStart) ===
+      ERA_VM_ZERO_WORD_HEX
+  ) {
+    metadataStart = paddingWordStart;
+  }
+
+  return [
+    `0x${bytecodeWithoutPrefix.substring(0, metadataStart)}`,
+    bytecodeWithoutPrefix.substring(
+      metadataStart,
+      bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES,
+    ),
+    cborLengthHex,
+  ];
+};
+
+const isZeroHex = (hex: string): boolean => /^0*$/.test(hex);
 
 /**
  * Validates that the bytecode is not empty.

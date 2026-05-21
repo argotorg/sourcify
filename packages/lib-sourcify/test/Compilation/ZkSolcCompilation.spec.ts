@@ -30,6 +30,25 @@ const source = {
   content: 'contract Storage { uint256 value; }',
 };
 
+const ABSTRACT_ZKSYNC_1_5_15_TAIL =
+  '0x9e2cb40b00000000000000000000000000000000000000000000000000000000d543610e6057093c81336d006b5249a51d6844768d5a0ffcf85636f37df255ac319284ad7d4265c99e51f9e0112e2425b1ad54f8c4e06d7a4191eaa263c72b15000000000000000000000000000000000000000000000000ffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000a264697066735822122007a4f6fdcc0e2b25207322b1a32774e47a4cfef8ba295d46da4f0f0be49859d964736f6c6378247a6b736f6c633a312e352e31353b736f6c633a302e382e32363b6c6c766d3a312e302e320055';
+const ABSTRACT_ZKSYNC_1_5_7_TAIL =
+  '0x416273747261637420426164676573000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000d9b67a260000000000000000000000000000000000000020000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1ba3b6579b23c9248232fe1a7fb885b70411346f3aad2273798356706e601a5a';
+const ABSTRACT_ZKSYNC_1_3_19_TAIL =
+  '0x45524332303a207472616e7366657220616d6f756e7420657863656564732061426c61636b6c69737461626c653a206163636f756e7420697320626c61636b6c426c61636b6c69737461626c653a2063616c6c6572206973206e6f742074686520626c61636b6c69737465720000000000000000000000000000000000000000117e3210bb9aa7d9baff172026820255c6f6c30ba8999d1c2fd88e2848137c4e020000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007e80383289496555d88a2468c5201b230bbc2d259b63f115fafc41dff7e0a304';
+
+function strip0x(bytecode: string) {
+  return bytecode.startsWith('0x') ? bytecode.slice(2) : bytecode;
+}
+
+function replaceHex(bytecode: string, from: string, to: string) {
+  const replaced = bytecode.replace(from, to);
+  if (replaced === bytecode) {
+    throw new Error(`Could not replace ${from} in bytecode`);
+  }
+  return replaced;
+}
+
 function makeMetadata(solcVersion: string) {
   return JSON.stringify({
     compiler: {
@@ -559,6 +578,201 @@ describe('ZkSolcCompilation', () => {
       },
     });
     expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
+  });
+
+  it('should set EraVM CBOR auxdata positions with alignment padding', async () => {
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL),
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.15',
+      '0.8.26-1.0.2',
+      makeJsonInput(),
+      compilationTarget,
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
+      '1': {
+        offset: 128,
+        value: `0x${strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL).slice(128 * 2)}`,
+      },
+    });
+    expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
+  });
+
+  it('should include EraVM zero-word padding in bare hash auxdata positions', async () => {
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_3_19_TAIL),
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.3.19',
+      'v0.6.12+commit.27d51765',
+      makeJsonInput(),
+      compilationTarget,
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
+      '1': {
+        offset: 192,
+        value: `0x${strip0x(ABSTRACT_ZKSYNC_1_3_19_TAIL).slice(192 * 2)}`,
+      },
+    });
+  });
+
+  it('should omit EraVM bare hash auxdata positions when metadata is disabled', async () => {
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_5_7_TAIL),
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const jsonInput = makeJsonInput();
+    (jsonInput.settings as any).metadata = {
+      bytecodeHash: 'none',
+      appendCBOR: false,
+    };
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.7',
+      '0.8.26-1.0.1',
+      jsonInput,
+      compilationTarget,
+    );
+
+    await compilation.compile();
+    await compilation.generateCborAuxdataPositions();
+
+    expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({});
+  });
+
+  it('should partially match zkSync EraVM bytecode when only CBOR metadata differs', async () => {
+    const onchainBytecode = replaceHex(
+      ABSTRACT_ZKSYNC_1_5_15_TAIL,
+      '07a4f6fd',
+      '08a4f6fd',
+    );
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL),
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.5.15',
+      '0.8.26-1.0.2',
+      makeJsonInput(),
+      compilationTarget,
+    );
+    const verification = new Verification(
+      compilation,
+      {
+        chainId: 2741,
+        async getBytecode() {
+          return onchainBytecode;
+        },
+      } as any,
+      '0x0929d81a73a83b73e5de2ba63a15ce2a18addbe2',
+    );
+
+    await verification.verify();
+
+    expect(verification.status.runtimeMatch).to.equal('partial');
+    expect(verification.transformations.runtime?.list).to.deep.equal([
+      {
+        type: 'replace',
+        reason: 'cborAuxdata',
+        offset: 128,
+        id: '1',
+      },
+    ]);
+  });
+
+  it('should partially match zkSync EraVM bytecode when only bare metadata hash differs', async () => {
+    const onchainBytecode = replaceHex(
+      ABSTRACT_ZKSYNC_1_3_19_TAIL,
+      '7e803832',
+      '7f803832',
+    );
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: {
+            object: strip0x(ABSTRACT_ZKSYNC_1_3_19_TAIL),
+          },
+          deployedBytecode: {
+            object: '',
+          },
+        },
+      }),
+    );
+    const compilation = new ZkSolcCompilation(
+      compiler,
+      '1.3.19',
+      'v0.6.12+commit.27d51765',
+      makeJsonInput(),
+      compilationTarget,
+    );
+    const verification = new Verification(
+      compilation,
+      {
+        chainId: 2741,
+        async getBytecode() {
+          return onchainBytecode;
+        },
+      } as any,
+      '0x4f7589c619d59443db52489dd375de63e03e671d',
+    );
+
+    await verification.verify();
+
+    expect(verification.status.runtimeMatch).to.equal('partial');
+    expect(verification.transformations.runtime?.list).to.deep.equal([
+      {
+        type: 'replace',
+        reason: 'cborAuxdata',
+        offset: 192,
+        id: '1',
+      },
+    ]);
   });
 
   it('should throw when the compilation target is missing', async () => {

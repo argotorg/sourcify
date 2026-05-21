@@ -1,4 +1,4 @@
-import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import { AuxdataStyle, splitAuxdata } from '@ethereum-sourcify/bytecode-utils';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -27,7 +27,9 @@ const ERA_SOLC_EDITIONS = ['1.0.2', '1.0.1', '1.0.0'] as const;
 const MIN_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.4.12';
 const MAX_SUPPORTED_ERA_SOLC_SOLIDITY_VERSION = '0.8.30';
 const MAX_ERA_SOLC_1_0_0_SOLIDITY_VERSION = '0.8.25';
-const ERA_VM_BYTECODE_HASH_LENGTH_BYTES = 32;
+const ERA_VM_METADATA_HASH_LENGTH_BYTES = 32;
+const ERA_VM_WORD_SIZE_BYTES = 32;
+const ERA_VM_ZERO_WORD_HEX = '00'.repeat(ERA_VM_WORD_SIZE_BYTES);
 
 type EraSolcEdition = (typeof ERA_SOLC_EDITIONS)[number];
 
@@ -354,28 +356,80 @@ export class ZkSolcCompilation extends AbstractCompilation {
 
   public async generateCborAuxdataPositions() {
     this._creationBytecodeCborAuxdata = {};
-    this._runtimeBytecodeCborAuxdata = this.generateEraVmBytecodeHashPosition(
+    this._runtimeBytecodeCborAuxdata = this.generateEraVmAuxdataPosition(
       this.runtimeBytecode,
     );
   }
 
-  private generateEraVmBytecodeHashPosition(
+  private generateEraVmAuxdataPosition(
     bytecode: string,
   ): CompiledContractCborAuxdata {
     const bytecodeWithoutPrefix = bytecode.slice(2);
-    const bytecodeHashLength = ERA_VM_BYTECODE_HASH_LENGTH_BYTES * 2;
+    const [, cborAuxdata, cborLengthHex] = splitAuxdata(
+      bytecode,
+      AuxdataStyle.ZKSYNC,
+    );
 
-    if (bytecodeWithoutPrefix.length < bytecodeHashLength) {
+    if (cborAuxdata && cborLengthHex !== undefined) {
+      const auxdata = `${cborAuxdata}${cborLengthHex}`;
+      return {
+        '1': {
+          offset: bytecodeWithoutPrefix.length / 2 - auxdata.length / 2,
+          value: `0x${auxdata}`,
+        },
+      };
+    }
+
+    return this.generateEraVmMetadataHashPosition(bytecodeWithoutPrefix);
+  }
+
+  private generateEraVmMetadataHashPosition(
+    bytecodeWithoutPrefix: string,
+  ): CompiledContractCborAuxdata {
+    if (this.isEraVmMetadataDisabled()) {
       return {};
+    }
+
+    const metadataHashLength = ERA_VM_METADATA_HASH_LENGTH_BYTES * 2;
+
+    if (bytecodeWithoutPrefix.length < metadataHashLength) {
+      return {};
+    }
+
+    let metadataStart = bytecodeWithoutPrefix.length - metadataHashLength;
+    const paddingWordStart = metadataStart - ERA_VM_WORD_SIZE_BYTES * 2;
+    if (
+      paddingWordStart >= 0 &&
+      bytecodeWithoutPrefix.substring(paddingWordStart, metadataStart) ===
+        ERA_VM_ZERO_WORD_HEX
+    ) {
+      metadataStart = paddingWordStart;
     }
 
     return {
       '1': {
-        offset:
-          bytecodeWithoutPrefix.length / 2 - ERA_VM_BYTECODE_HASH_LENGTH_BYTES,
-        value: `0x${bytecodeWithoutPrefix.slice(-bytecodeHashLength)}`,
+        offset: metadataStart / 2,
+        value: `0x${bytecodeWithoutPrefix.slice(metadataStart)}`,
       },
     };
+  }
+
+  private isEraVmMetadataDisabled(): boolean {
+    const metadata = (
+      this.jsonInput.settings as {
+        metadata?: {
+          bytecodeHash?: string;
+          hashType?: string;
+          appendCBOR?: boolean;
+        };
+      }
+    ).metadata;
+
+    return (
+      metadata?.bytecodeHash === 'none' ||
+      metadata?.hashType === 'none' ||
+      metadata?.appendCBOR === false
+    );
   }
 
   get creationBytecode() {
