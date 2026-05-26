@@ -592,6 +592,18 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(jobRes.body.error).to.not.exist;
     chai.expect(jobRes.body.contract.creationMatch).to.be.null;
     chai.expect(jobRes.body.contract.runtimeMatch).to.equal("exact_match");
+
+    // The deployer and blockNumber stored in contract_deployments must NOT
+    // come from the wrong transaction. Since the creationTransactionHash
+    // validation failed, these fields should be null.
+    const deploymentResult = await serverFixture.sourcifyDatabase.query(
+      `SELECT encode(deployer, 'hex') as deployer, block_number, encode(transaction_hash, 'hex') as transaction_hash
+       FROM contract_deployments`,
+    );
+    chai.expect(deploymentResult?.rows).to.have.length(1);
+    chai.expect(deploymentResult?.rows[0].transaction_hash).to.be.null;
+    chai.expect(deploymentResult?.rows[0].deployer).to.be.null;
+    chai.expect(deploymentResult?.rows[0].block_number).to.be.null;
   });
 
   describe("match upgrades", function () {
