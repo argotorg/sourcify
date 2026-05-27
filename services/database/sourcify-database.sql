@@ -1122,7 +1122,7 @@ CREATE TABLE public.sourcify_matches (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     metadata json,
-    chain_id bigint
+    chain_id bigint NOT NULL
 );
 
 
@@ -1658,6 +1658,13 @@ CREATE INDEX signatures_signature_trgm_idx ON public.signatures USING gin (signa
 --
 
 CREATE INDEX sources_created_at ON public.sources USING btree (created_at);
+
+
+--
+-- Name: sourcify_matches_chain_id_id_desc_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX sourcify_matches_chain_id_id_desc_idx ON public.sourcify_matches USING btree (chain_id, id DESC);
 
 
 --
@@ -2201,4 +2208,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260225083159'),
     ('20260302082853'),
     ('20260309080000'),
-    ('20260527081526');
+    ('20260527081526'),
+    ('20260527085036'),
+    ('20260527085037');
