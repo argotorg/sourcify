@@ -1,7 +1,7 @@
 // Type definitions for rows fetched from the database with the pg client
 // E.g. pg fetches numbers as strings
 
-import {
+import type {
   Transformation,
   TransformationValues,
 } from "@ethereum-sourcify/lib-sourcify";
@@ -103,4 +103,5 @@ export interface PgSourcifyMatch {
   created_at: Date;
   updated_at: Date;
   metadata: any;
+  chain_id: string | null;
 }
