@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.16.1 - 2026-05-27
+
+- Fix hanging contracts endpoint (#2807)
+
 ## sourcify-server@3.16.0 - 2026-05-27
 
 - clear deployer and blockNumber when creationTransactionHash validation fails (#2803)

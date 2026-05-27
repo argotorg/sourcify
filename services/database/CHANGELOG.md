@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.13.1 - 2026-05-27
+
+- Fix hanging contracts endpoint (#2807)
+
 ## sourcify-database@2.13.0 - 2026-05-27
 
 - Add chain_id column to sourcify_matches (#2805)
