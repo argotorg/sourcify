@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/test-helpers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared test helpers for the Sourcify monorepo (internal, not published).",
   "private": true,
   "main": "src/index.ts",
@@ -11,6 +11,6 @@
     "tree-kill": "1.2.2"
   },
   "devDependencies": {
-    "@types/node": "20.19.40"
+    "@types/node": "20.19.41"
   }
 }

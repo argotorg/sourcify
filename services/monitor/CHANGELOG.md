@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.5.7 - 2026-05-27
+
+- Update dependencies
+
 ## sourcify-monitor@1.5.6 - 2026-05-21
 
 - fix(server): throw on chains with no usable RPCs, add DRPC_API_KEY

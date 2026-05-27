@@ -1085,6 +1085,7 @@ export class SourcifyDatabaseService
             creation_match: verification.status.creationMatch,
             runtime_match: verification.status.runtimeMatch,
             metadata: verification.compilation.metadata as any,
+            chain_id: verification.chainId.toString(),
           },
           poolClient,
         );
@@ -1106,6 +1107,7 @@ export class SourcifyDatabaseService
             creation_match: verification.status.creationMatch,
             runtime_match: verification.status.runtimeMatch,
             metadata: verification.compilation.metadata as any,
+            chain_id: verification.chainId.toString(),
           },
           oldVerifiedContractId,
           poolClient,

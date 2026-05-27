@@ -1,5 +1,11 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.13.0 - 2026-05-27
+
+- Add chain_id column to sourcify_matches (#2805)
+- Add backfill script for sourcify_matches.chain_id (#2806)
+- WARNING: After importing the migrations, execute `post-v2.12-to-v2.13-upgrade.mjs` in order to upgrade database, see more details here: https://github.com/argotorg/sourcify/issues/2111#issuecomment-4552389122
+
 ## sourcify-database@2.12.3 - 2026-05-21
 
 - Update dependencies

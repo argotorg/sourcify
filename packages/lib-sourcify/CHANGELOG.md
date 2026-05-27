@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.5.3 - 2026-05-27
+
+- clear deployer and blockNumber when creationTransactionHash validation fails (#2803)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.5.2 - 2026-05-21
 
 - feat: add hidden chain config option to filter chains from public listings

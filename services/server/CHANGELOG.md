@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.16.0 - 2026-05-27
+
+- clear deployer and blockNumber when creationTransactionHash validation fails (#2803)
+- Add chain_id column to sourcify_matches (#2805)
+- Update dependencies
+
 ## sourcify-server@3.15.0 - 2026-05-21
 
 - feat: fetch chain config from remote URL and remove HTML scraping

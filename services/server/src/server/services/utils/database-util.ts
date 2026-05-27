@@ -142,6 +142,7 @@ export namespace Tables {
     creation_match: VerificationStatus | null;
     metadata: Metadata;
     created_at: Date;
+    chain_id: string;
   }
 
   export interface SourcifySync {
