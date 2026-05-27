@@ -8,7 +8,7 @@ import { JsonRpcProvider } from 'ethers';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
-} from './hardhat-network-helper';
+} from '@ethereum-sourcify/test-helpers';
 import type { ChildProcess } from 'child_process';
 
 chai.use(chaiAsPromised);

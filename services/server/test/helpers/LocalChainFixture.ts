@@ -14,8 +14,10 @@ import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
 import storageJsonInput from "../testcontracts/Storage/StorageJsonInput.json";
 import type { ChildProcess } from "child_process";
-import { spawn } from "child_process";
-import treeKill from "tree-kill";
+import {
+  startHardhatNetwork,
+  stopHardhatNetwork,
+} from "@ethereum-sourcify/test-helpers";
 import { SolidityMetadataContract } from "@ethereum-sourcify/lib-sourcify";
 import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
 
@@ -168,45 +170,6 @@ export class LocalChainFixture {
       nock.cleanAll();
     });
   }
-}
-
-function startHardhatNetwork(port: number) {
-  return new Promise<ChildProcess>((resolve) => {
-    const hardhatNodeProcess = spawn("npx", [
-      "hardhat",
-      "node",
-      "--port",
-      port.toString(),
-    ]);
-
-    hardhatNodeProcess.stderr.on("data", (data: Buffer) => {
-      console.error(`Hardhat Network Error: ${data.toString()}`);
-    });
-
-    hardhatNodeProcess.stdout.on("data", (data: Buffer) => {
-      console.log(data.toString());
-      if (
-        data
-          .toString()
-          .includes("Started HTTP and WebSocket JSON-RPC server at")
-      ) {
-        resolve(hardhatNodeProcess);
-      }
-    });
-  });
-}
-
-function stopHardhatNetwork(hardhatNodeProcess: ChildProcess) {
-  return new Promise<void>((resolve, reject) => {
-    treeKill(hardhatNodeProcess.pid!, "SIGTERM", (err) => {
-      if (err) {
-        console.error(`Failed to kill process tree: ${err}`);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
 }
 
 // Changes the IPFS hash inside the metadata file to make the source unfetchable

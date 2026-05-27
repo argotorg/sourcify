@@ -369,6 +369,7 @@ ${
       runtime_match,
       creation_match,
       metadata,
+      chain_id,
     }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
     poolClient?: PoolClient,
   ) {
@@ -377,9 +378,10 @@ ${
         verified_contract_id,
         creation_match,
         runtime_match,
-        metadata
-      ) VALUES ($1, $2, $3, $4)`,
-      [verified_contract_id, creation_match, runtime_match, metadata],
+        metadata,
+        chain_id
+      ) VALUES ($1, $2, $3, $4, $5)`,
+      [verified_contract_id, creation_match, runtime_match, metadata, chain_id],
     );
   }
 
@@ -392,22 +394,25 @@ ${
       runtime_match,
       creation_match,
       metadata,
+      chain_id,
     }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: string,
     poolClient?: PoolClient,
   ) {
     await (poolClient || this.pool).query(
-      `UPDATE ${this.schema}.sourcify_matches SET 
+      `UPDATE ${this.schema}.sourcify_matches SET
       verified_contract_id = $1,
       creation_match=$2,
       runtime_match=$3,
-      metadata=$4
-    WHERE  verified_contract_id = $5`,
+      metadata=$4,
+      chain_id=$5
+    WHERE  verified_contract_id = $6`,
       [
         verified_contract_id,
         creation_match,
         runtime_match,
         metadata,
+        chain_id,
         oldVerifiedContractId,
       ],
     );
@@ -472,7 +477,7 @@ ${
     JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
     JOIN ${this.schema}.contract_deployments ON
         contract_deployments.id = verified_contracts.deployment_id
-    WHERE contract_deployments.chain_id = $1
+    WHERE sourcify_matches.chain_id = $1
     ${queryCursorCondition}
     ${orderBy}
     LIMIT $2

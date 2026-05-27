@@ -1,0 +1,5 @@
+{
+  "name": "sourcify-hardhat-runner",
+  "private": true,
+  "type": "module"
+}

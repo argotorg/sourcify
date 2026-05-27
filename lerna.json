@@ -4,9 +4,6 @@
       "message": "chore(release): publish",
       "registry": "https://npm.pkg.github.com"
     },
-    "bootstrap": {
-      "npmClientArgs": ["--no-package-lock"]
-    },
     "version": {
       "allowBranch": "release-*"
     }

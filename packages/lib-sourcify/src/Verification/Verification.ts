@@ -291,6 +291,8 @@ export class Verification {
           error: e.message,
         });
         this.creatorTxHash = undefined;
+        this.blockNumber = undefined;
+        this.deployer = undefined;
       }
     }
 
