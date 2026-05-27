@@ -31,6 +31,8 @@ After updating the submodule, the schema dump `sourcify-database.sql` should be 
 
 Any new migration should be capable of updating the live Sourcify staging and production databases.
 
+Please also see the section on [schema upgrade scripts](#schema-upgrade-scripts) as some migrations on a live database might require running a follow-up script to complete the schema change.
+
 ### Prerequisites
 
 Please initialize the Verifier Alliance [database-specs](https://github.com/verifier-alliance/database-specs) submodule before moving on with the migrations:
