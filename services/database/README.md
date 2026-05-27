@@ -94,6 +94,30 @@ Please follow these steps:
 Important: Since the schema dump should be committed, ensure that the connected database does not contain any custom schema changes that are not part of the migrations.
 If you are unsure whether your local database has custom schema changes, run the process against a fresh database.
 
+## Schema upgrade scripts
+
+Some schema changes cannot be completed inside a single dbmate migration; for example, data backfills that touch millions of rows and need to run in small batches outside a long transaction. For these cases we keep one-off Node scripts under [`./schema-updates/`](./schema-updates/) that complement the migrations.
+
+When upgrading a live Sourcify database, check the table below for any scripts that apply to the version range you are crossing. Each script's header comment documents its prerequisites, the migration it pairs with, and the CLI flags it accepts.
+
+The scripts are idempotent, resumable and they only touch rows that still need work. Run them against the same database configured in `./.env`.
+
+### Available upgrade scripts
+
+| Script                                                                                | When to run                                                                                                                                                               | What it does                                                                           |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [`post-v0-to-v1-upgrade.mjs`](./schema-updates/post-v0-to-v1-upgrade.mjs)             | After upgrading to the v1 schema, once the `sources` table is populated.                                                                                                  | Backfills `sources.source_hash_keccak` with the keccak256 hash of each source.         |
+| [`post-v2.12-to-v2.13-upgrade.mjs`](./schema-updates/post-v2.12-to-v2.13-upgrade.mjs) | After applying the v2.13 migration that adds the nullable `sourcify_matches.chain_id` column, and before applying the follow-up migration that promotes it to `NOT NULL`. | Backfills `sourcify_matches.chain_id` from `contract_deployments.chain_id` in batches. |
+
+Run a script with:
+
+```bash
+cd services/database/schema-updates
+node <script-name>.mjs [options]
+```
+
+Pass `--help` (where supported) for the full list of options. The scripts read database connection details from `services/database/.env`, the same file used by dbmate.
+
 ## Migrating from the legacy repository (RepositoryV1) to the database
 
 Following v2.0.0, Sourcify no longer uses the filesystem as its source of truth. To switch from the legacy repository to the new database, contracts need to be re-compiled and verified with a new Sourcify instance.
