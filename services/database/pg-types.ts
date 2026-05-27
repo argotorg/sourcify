@@ -103,5 +103,5 @@ export interface PgSourcifyMatch {
   created_at: Date;
   updated_at: Date;
   metadata: any;
-  chain_id: string | null;
+  chain_id: string;
 }

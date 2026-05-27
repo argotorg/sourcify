@@ -477,7 +477,7 @@ ${
     JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
     JOIN ${this.schema}.contract_deployments ON
         contract_deployments.id = verified_contracts.deployment_id
-    WHERE contract_deployments.chain_id = $1
+    WHERE sourcify_matches.chain_id = $1
     ${queryCursorCondition}
     ${orderBy}
     LIMIT $2
