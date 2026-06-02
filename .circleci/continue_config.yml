@@ -71,7 +71,7 @@ parameters:
 aliases:
   - &build-base
     docker:
-      - image: cimg/base:2024.07
+      - image: cimg/base:2024.12
     resource_class: xlarge
     parameters:
       run-build:

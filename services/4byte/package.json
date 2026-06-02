@@ -35,7 +35,7 @@
     "ethers": "6.16.0",
     "express": "5.2.1",
     "http-status-codes": "2.3.0",
-    "pg": "8.20.0",
+    "pg": "8.21.0",
     "swagger-ui-express": "5.0.1",
     "winston": "3.19.0",
     "yamljs": "0.3.0"
