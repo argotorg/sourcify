@@ -771,7 +771,61 @@ describe('VyperCompilation outputSelection version gating', () => {
 });
 
 describe('returnLegacyVyperImmutableReferences', () => {
-  it('derives references from unwrapped Vyper 0.3.7 immutable annotations', () => {
+  it('derives a synthetic tail reference from the real Vyper 0.3.7 AST', async () => {
+    const contractPath = path.join(
+      __dirname,
+      '..',
+      'sources',
+      'Vyper',
+      'legacyImmutables_0_3_7',
+    );
+    const contractFileName = 'test.vy';
+    const contractContent = fs.readFileSync(
+      path.join(contractPath, contractFileName),
+      'utf8',
+    );
+    const compilation = new VyperCompilation(
+      vyperCompiler,
+      '0.3.7+commit.6020b8bb',
+      {
+        language: 'Vyper',
+        sources: {
+          [contractFileName]: {
+            content: contractContent,
+          },
+        },
+        settings: {
+          evmVersion: 'istanbul',
+          outputSelection: {
+            '*': ['evm.bytecode'],
+          },
+        },
+      },
+      {
+        name: contractFileName.split('.')[0],
+        path: contractFileName,
+      },
+    );
+
+    await compilation.compile();
+
+    const ast = compilation.compilerOutput?.sources?.[contractFileName]?.ast;
+    const targetDecl = ast?.body.find(
+      (node: any) => node.ast_type === 'VariableDecl',
+    );
+    expect(targetDecl?.target?.id).to.equal('TARGET');
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilation.compilerOutput,
+        contractFileName,
+        compilation.runtimeBytecode,
+      ),
+    ).to.deep.equal({
+      '0': [{ length: 32, start: 88 }],
+    });
+  });
+
+  it('derives a synthetic tail reference from unwrapped Vyper 0.3.7 immutable annotations', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
@@ -791,12 +845,11 @@ describe('returnLegacyVyperImmutableReferences', () => {
         '0x6000',
       ),
     ).to.deep.equal({
-      A: [{ length: 96, start: 2 }],
-      B: [{ length: 64, start: 98 }],
+      '0': [{ length: 160, start: 2 }],
     });
   });
 
-  it('derives references from wrapped Vyper 0.3.4-0.3.6 immutable annotations', () => {
+  it('derives a synthetic tail reference from wrapped Vyper 0.3.4-0.3.6 immutable annotations', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
@@ -816,12 +869,11 @@ describe('returnLegacyVyperImmutableReferences', () => {
         '0x6000',
       ),
     ).to.deep.equal({
-      A: [{ length: 96, start: 2 }],
-      B: [{ length: 64, start: 98 }],
+      '0': [{ length: 160, start: 2 }],
     });
   });
 
-  it('derives references from old Vyper 0.3.1-0.3.3 AnnAssign immutables', () => {
+  it('derives a synthetic tail reference from old Vyper 0.3.1-0.3.3 AnnAssign immutables', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
@@ -841,12 +893,11 @@ describe('returnLegacyVyperImmutableReferences', () => {
         '0x6000',
       ),
     ).to.deep.equal({
-      A: [{ length: 96, start: 2 }],
-      B: [{ length: 64, start: 98 }],
+      '0': [{ length: 160, start: 2 }],
     });
   });
 
-  it('derives references for structs and dynamic arrays', () => {
+  it('derives a synthetic tail reference for structs and dynamic arrays', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
@@ -870,8 +921,7 @@ describe('returnLegacyVyperImmutableReferences', () => {
         '0x60',
       ),
     ).to.deep.equal({
-      C: [{ length: 64, start: 1 }],
-      D: [{ length: 128, start: 65 }],
+      '0': [{ length: 192, start: 1 }],
     });
   });
 
@@ -906,7 +956,7 @@ describe('returnLegacyVyperImmutableReferences', () => {
         '0x6000',
       ),
     ).to.deep.equal({
-      A: [{ length: 32, start: 2 }],
+      '0': [{ length: 32, start: 2 }],
     });
   });
 });

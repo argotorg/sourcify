@@ -88,7 +88,9 @@ function isAstNode(node: unknown): node is VyperAstNode {
   return node !== null && typeof node === 'object';
 }
 
-function getImmutableTypeAnnotation(node: VyperAstNode): VyperAstNode | undefined {
+function getImmutableTypeAnnotation(
+  node: VyperAstNode,
+): VyperAstNode | undefined {
   const annotation = node.annotation;
   if (!isAstNode(annotation)) {
     return undefined;
@@ -174,7 +176,9 @@ function getTypeByteLength(
     if (subtypeByteLength === undefined) {
       return undefined;
     }
-    return DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE + maxLength * subtypeByteLength;
+    return (
+      DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE + maxLength * subtypeByteLength
+    );
   }
 
   const length = getSubscriptLength(annotation);
@@ -209,7 +213,6 @@ export function returnLegacyVyperImmutableReferences(
 
   const structs = collectStructDefinitions(ast);
   const runtimeByteLength = runtimeBytecode.substring(2).length / 2;
-  const immutableReferences: ImmutableReferences = {};
   let immutableOffset = 0;
 
   for (const node of ast.body.filter(isAstNode)) {
@@ -219,25 +222,29 @@ export function returnLegacyVyperImmutableReferences(
     }
 
     const immutableByteLength = getTypeByteLength(annotation, structs);
-    const immutableName = node.target?.id;
     if (
       immutableByteLength === undefined ||
       immutableByteLength <= 0 ||
-      typeof immutableName !== 'string'
+      typeof node.target?.id !== 'string'
     ) {
       return {};
     }
 
-    immutableReferences[immutableName] = [
-      {
-        length: immutableByteLength,
-        start: runtimeByteLength + immutableOffset,
-      },
-    ];
     immutableOffset += immutableByteLength;
   }
 
-  return immutableReferences;
+  if (immutableOffset === 0) {
+    return {};
+  }
+
+  return {
+    '0': [
+      {
+        length: immutableOffset,
+        start: runtimeByteLength,
+      },
+    ],
+  };
 }
 
 export function returnImmutableReferences(

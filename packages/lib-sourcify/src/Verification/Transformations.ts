@@ -186,9 +186,13 @@ function getImmutableReferencesByteLength(
   immutableReferences: ImmutableReferences,
   runtimeByteLength: number,
 ): number | undefined {
-  const references = Object.values(immutableReferences)
-    .flat()
-    .sort((a, b) => a.start - b.start);
+  const references: Array<{ length: number; start: number }> = [];
+
+  for (const refs of Object.values(immutableReferences)) {
+    references.push(...refs);
+  }
+
+  references.sort((a, b) => a.start - b.start);
 
   let nextStart = runtimeByteLength;
   for (const reference of references) {
@@ -263,11 +267,22 @@ export function extractImmutablesTransformation(
           compilerVersion,
         );
 
-  const immutableReferenceEntries = Object.entries(effectiveImmutableReferences)
-    .flatMap(([astId, references]) =>
-      references.map((reference) => ({ astId, reference })),
-    )
-    .sort((a, b) => a.reference.start - b.reference.start);
+  const immutableReferenceEntries: Array<{
+    astId: string;
+    reference: { length: number; start: number };
+  }> = [];
+
+  for (const [astId, references] of Object.entries(
+    effectiveImmutableReferences,
+  )) {
+    for (const reference of references) {
+      immutableReferenceEntries.push({ astId, reference });
+    }
+  }
+
+  immutableReferenceEntries.sort(
+    (a, b) => a.reference.start - b.reference.start,
+  );
 
   immutableReferenceEntries.forEach(({ astId, reference }) => {
     const { start, length } = reference;
@@ -301,7 +316,8 @@ export function extractImmutablesTransformation(
         populatedRecompiledBytecode.slice(start * 2 + length * 2);
     } else if (isVyperImmutableAuxdataStyle(auxdataStyle)) {
       // For Vyper, insert the immutable value.
-      populatedRecompiledBytecode = populatedRecompiledBytecode + immutableValue;
+      populatedRecompiledBytecode =
+        populatedRecompiledBytecode + immutableValue;
     }
   });
   return {

@@ -69,10 +69,10 @@ describe('Transformations', () => {
     const onchainRuntime = recompiledRuntime + immutableValue.slice(2);
     const immutableOffset = 15;
     const legacyImmutableReferences = {
-      VALUE: [{ length: 32, start: immutableOffset }],
+      '0': [{ length: 32, start: immutableOffset }],
     };
 
-    it('infers a synthetic immutable reference for an append-only legacy Vyper tail', () => {
+    it('infers the synthetic immutable reference for an append-only legacy Vyper tail', () => {
       const immutableReferences = inferLegacyVyperImmutableReferences(
         recompiledRuntime,
         onchainRuntime,
@@ -100,24 +100,23 @@ describe('Transformations', () => {
           type: 'insert',
           reason: 'immutable',
           offset: immutableOffset,
-          id: 'VALUE',
+          id: '0',
         },
       ]);
       expect(result.transformationValues).to.deep.equal({
         immutables: {
-          VALUE: immutableValue,
+          '0': immutableValue,
         },
       });
     });
 
-    it('appends multiword legacy Vyper immutable values using the derived layout', () => {
+    it('appends a multiword legacy Vyper immutable tail using the derived length', () => {
       const firstImmutableValue = '11'.repeat(32);
       const secondImmutableValue = '22'.repeat(64);
       const multiwordOnchainRuntime =
         recompiledRuntime + firstImmutableValue + secondImmutableValue;
       const multiwordImmutableReferences = {
-        A: [{ length: 32, start: immutableOffset }],
-        B: [{ length: 64, start: immutableOffset + 32 }],
+        '0': [{ length: 96, start: immutableOffset }],
       };
 
       const result = extractImmutablesTransformation(
@@ -137,19 +136,12 @@ describe('Transformations', () => {
           type: 'insert',
           reason: 'immutable',
           offset: immutableOffset,
-          id: 'A',
-        },
-        {
-          type: 'insert',
-          reason: 'immutable',
-          offset: immutableOffset + 32,
-          id: 'B',
+          id: '0',
         },
       ]);
       expect(result.transformationValues).to.deep.equal({
         immutables: {
-          A: `0x${firstImmutableValue}`,
-          B: `0x${secondImmutableValue}`,
+          '0': `0x${firstImmutableValue}${secondImmutableValue}`,
         },
       });
     });
@@ -179,8 +171,7 @@ describe('Transformations', () => {
     });
 
     it('does not infer a legacy Vyper immutable for an oversized tail', () => {
-      const onchainRuntimeWithOversizedTail =
-        onchainRuntime + '00'.repeat(32);
+      const onchainRuntimeWithOversizedTail = onchainRuntime + '00'.repeat(32);
 
       const immutableReferences = inferLegacyVyperImmutableReferences(
         recompiledRuntime,
