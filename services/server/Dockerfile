@@ -39,8 +39,10 @@ LABEL org.opencontainers.image.licenses MIT
 # Set default value for ARG
 ARG NODE_ENV=production
 
-# Set environment variable
-ENV NODE_ENV=${NODE_ENV}
+# Set environment variables
+ENV NODE_ENV=${NODE_ENV} \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
 
 WORKDIR /home/app/services/server
 # node command has to be used directly for SIGTERM handling (NOT npm start)
