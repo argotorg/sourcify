@@ -13,6 +13,7 @@ import { logError } from '../logger';
 import semver from 'semver';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
+const LEGACY_VYPER_IMMUTABLE_BYTE_LENGTH = 32;
 
 export type Transformation = {
   type: 'insert' | 'replace' | 'delete';
@@ -156,6 +157,8 @@ export function inferLegacyVyperImmutableReferences(
     populatedRecompiledBytecodeWith0x.slice(2);
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
 
+  // Legacy Vyper metadata does not encode immutable size. Keep this fallback
+  // limited to prefix-identical runtimes with the observed single-word tail.
   if (
     onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
     !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)
@@ -165,7 +168,7 @@ export function inferLegacyVyperImmutableReferences(
 
   const immutableLength =
     (onchainRuntimeBytecode.length - populatedRecompiledBytecode.length) / 2;
-  if (immutableLength <= 0 || immutableLength % 32 !== 0) {
+  if (immutableLength !== LEGACY_VYPER_IMMUTABLE_BYTE_LENGTH) {
     return {};
   }
 

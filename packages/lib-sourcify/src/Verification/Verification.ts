@@ -533,6 +533,7 @@ export class Verification {
       this.compilation.language === 'Vyper' &&
         compilerOutputContainsImmutableVariables(
           this.compilation.compilerOutput as VyperOutput | undefined,
+          this.compilation.compilationTarget.path,
         ),
     );
 

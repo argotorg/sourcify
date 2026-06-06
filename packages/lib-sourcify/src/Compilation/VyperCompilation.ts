@@ -96,14 +96,15 @@ function astContainsImmutableVariable(node: unknown): boolean {
 }
 
 export function compilerOutputContainsImmutableVariables(
-  compilerOutput?: VyperOutput,
+  compilerOutput: VyperOutput | undefined,
+  compilationTargetPath: string,
 ): boolean {
   if (!compilerOutput?.sources) {
     return false;
   }
 
-  return Object.values(compilerOutput.sources).some((source) =>
-    astContainsImmutableVariable(source.ast),
+  return astContainsImmutableVariable(
+    compilerOutput.sources[compilationTargetPath]?.ast,
   );
 }
 

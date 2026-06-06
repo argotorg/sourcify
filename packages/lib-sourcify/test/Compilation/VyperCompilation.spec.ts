@@ -790,7 +790,7 @@ describe('compilerOutputContainsImmutableVariables', () => {
     };
 
     expect(
-      compilerOutputContainsImmutableVariables(compilerOutput as any),
+      compilerOutputContainsImmutableVariables(compilerOutput as any, 'test.vy'),
     ).to.equal(true);
   });
 
@@ -808,7 +808,46 @@ describe('compilerOutputContainsImmutableVariables', () => {
     };
 
     expect(
-      compilerOutputContainsImmutableVariables(compilerOutput as any),
+      compilerOutputContainsImmutableVariables(compilerOutput as any, 'test.vy'),
     ).to.equal(false);
+  });
+
+  it('only checks the compilation target source for immutable declarations', () => {
+    const compilerOutput = {
+      sources: {
+        'target.vy': {
+          id: 0,
+          ast: {
+            ast_type: 'Module',
+            body: [{ ast_type: 'FunctionDef' }],
+          },
+        },
+        'unused.vy': {
+          id: 1,
+          ast: {
+            ast_type: 'Module',
+            body: [
+              {
+                ast_type: 'VariableDecl',
+                is_immutable: true,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    expect(
+      compilerOutputContainsImmutableVariables(
+        compilerOutput as any,
+        'target.vy',
+      ),
+    ).to.equal(false);
+    expect(
+      compilerOutputContainsImmutableVariables(
+        compilerOutput as any,
+        'unused.vy',
+      ),
+    ).to.equal(true);
   });
 });

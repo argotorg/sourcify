@@ -132,5 +132,72 @@ describe('Transformations', () => {
 
       expect(immutableReferences).to.deep.equal({});
     });
+
+    it('does not infer a legacy Vyper immutable for an oversized tail', () => {
+      const onchainRuntimeWithOversizedTail =
+        onchainRuntime + '00'.repeat(32);
+
+      const immutableReferences = inferLegacyVyperImmutableReferences(
+        recompiledRuntime,
+        onchainRuntimeWithOversizedTail,
+        AuxdataStyle.VYPER_LT_0_3_10,
+        compilerVersion,
+        true,
+      );
+
+      expect(immutableReferences).to.deep.equal({});
+    });
+
+    [
+      {
+        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_4,
+        compilerVersion: '0.3.1+commit.b6b9fb7b',
+      },
+      {
+        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_5,
+        compilerVersion: '0.3.4+commit.f31f0ec4',
+      },
+      {
+        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_10,
+        compilerVersion: '0.3.9+commit.66b96705',
+      },
+    ].forEach(({ auxdataStyle, compilerVersion }) => {
+      it(`infers a legacy Vyper immutable for ${compilerVersion}`, () => {
+        const immutableReferences = inferLegacyVyperImmutableReferences(
+          recompiledRuntime,
+          onchainRuntime,
+          auxdataStyle,
+          compilerVersion,
+          true,
+        );
+
+        expect(immutableReferences).to.deep.equal({
+          '0': [{ length: 32, start: immutableOffset }],
+        });
+      });
+    });
+
+    [
+      {
+        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_4,
+        compilerVersion: '0.3.0+commit.8d3d8f8b',
+      },
+      {
+        auxdataStyle: AuxdataStyle.VYPER,
+        compilerVersion: '0.3.10+commit.91361694',
+      },
+    ].forEach(({ auxdataStyle, compilerVersion }) => {
+      it(`does not infer a legacy Vyper immutable for ${compilerVersion}`, () => {
+        const immutableReferences = inferLegacyVyperImmutableReferences(
+          recompiledRuntime,
+          onchainRuntime,
+          auxdataStyle,
+          compilerVersion,
+          true,
+        );
+
+        expect(immutableReferences).to.deep.equal({});
+      });
+    });
   });
 });
