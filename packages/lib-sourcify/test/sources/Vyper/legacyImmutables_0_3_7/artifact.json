@@ -1,0 +1,28 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "name": "_target",
+          "type": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "target",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x602061008e6000396000518060a01c6100895760405234610089576040516060526100586100306008396100786008f36003361161000c57610040565b60003560e01c346100465763d4b83992811861003e576004361061004657602061005860003960005160405260206040f35b505b60006000fd5b600080fda165767970657283000307000b005b600080fd"
+}

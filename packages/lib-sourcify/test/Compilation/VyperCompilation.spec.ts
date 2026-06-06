@@ -3,7 +3,10 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
-import { VyperCompilation } from '../../src/Compilation/VyperCompilation';
+import {
+  compilerOutputContainsImmutableVariables,
+  VyperCompilation,
+} from '../../src/Compilation/VyperCompilation';
 import { vyperCompiler } from '../utils';
 
 chai.use(chaiAsPromised);
@@ -764,5 +767,48 @@ describe('VyperCompilation outputSelection version gating', () => {
     expect(outputs).to.include('devdoc');
     expect(outputs).to.include('layout');
     expect(outputs).to.include('evm.bytecode.sourceMap');
+  });
+});
+
+describe('compilerOutputContainsImmutableVariables', () => {
+  it('detects Vyper immutable declarations from compiler AST output', () => {
+    const compilerOutput = {
+      sources: {
+        'test.vy': {
+          id: 0,
+          ast: {
+            ast_type: 'Module',
+            body: [
+              {
+                ast_type: 'VariableDecl',
+                is_immutable: true,
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    expect(
+      compilerOutputContainsImmutableVariables(compilerOutput as any),
+    ).to.equal(true);
+  });
+
+  it('returns false when compiler AST output has no immutable declarations', () => {
+    const compilerOutput = {
+      sources: {
+        'test.vy': {
+          id: 0,
+          ast: {
+            ast_type: 'Module',
+            body: [{ ast_type: 'FunctionDef' }],
+          },
+        },
+      },
+    };
+
+    expect(
+      compilerOutputContainsImmutableVariables(compilerOutput as any),
+    ).to.equal(false);
   });
 });

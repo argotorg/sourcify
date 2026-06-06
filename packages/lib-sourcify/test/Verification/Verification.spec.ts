@@ -1453,6 +1453,64 @@ describe('Verification Class Tests', () => {
       });
     });
 
+    it('should verify a Vyper 0.3.7 contract with legacy immutables', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Vyper',
+        'legacyImmutables_0_3_7',
+      );
+      const immutableAddress = await signer.getAddress();
+      const { contractAddress } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+        [immutableAddress],
+      );
+
+      const vyperCompilation = await createVyperCompilation(
+        contractFolderPath,
+        '0.3.7+commit.6020b8bb',
+      );
+
+      const verification = new Verification(
+        vyperCompilation,
+        sourcifyChainHardhat,
+        contractAddress,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'partial',
+          creationMatch: null,
+        },
+        transformations: {
+          runtime: {
+            list: [
+              {
+                type: 'insert',
+                reason: 'immutable',
+                offset: 88,
+                id: '0',
+              },
+            ],
+            values: {
+              immutables: {
+                '0': `0x${'0'.repeat(24)}${immutableAddress
+                  .slice(2)
+                  .toLowerCase()}`,
+              },
+            },
+          },
+          creation: {
+            list: [],
+            values: {},
+          },
+        },
+      });
+    });
+
     it('should add constructor transformation with correct offset and arguments for Vyper contract', async () => {
       const contractFolderPath = path.join(
         __dirname,

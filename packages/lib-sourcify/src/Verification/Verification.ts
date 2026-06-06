@@ -34,6 +34,7 @@ import type {
 import { SolidityBugType, VerificationError } from './VerificationTypes';
 import type {
   VyperJsonInput,
+  VyperOutput,
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
@@ -42,6 +43,7 @@ import type {
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
+import { compilerOutputContainsImmutableVariables } from '../Compilation/VyperCompilation';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
 
 function auxdataLacksMetadataOrIntegrityHash(
@@ -523,6 +525,15 @@ export class Verification {
       this.onchainRuntimeBytecode,
       this.compilation.immutableReferences,
       this.compilation.auxdataStyle,
+      this.compilation.language === 'Vyper'
+        ? ((this.compilation as VyperCompilation)
+            .compilerVersionCompatibleWithSemver ??
+            this.compilation.compilerVersion)
+        : this.compilation.compilerVersion,
+      this.compilation.language === 'Vyper' &&
+        compilerOutputContainsImmutableVariables(
+          this.compilation.compilerOutput as VyperOutput | undefined,
+        ),
     );
 
     const matchBytecodesResult = await this.matchBytecodes(

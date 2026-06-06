@@ -74,6 +74,39 @@ export function returnAuxdataStyle(
   return AuxdataStyle.VYPER;
 }
 
+function astContainsImmutableVariable(node: unknown): boolean {
+  if (!node || typeof node !== 'object') {
+    return false;
+  }
+
+  const objectNode = node as Record<string, unknown>;
+  if (
+    objectNode.ast_type === 'VariableDecl' &&
+    objectNode.is_immutable === true
+  ) {
+    return true;
+  }
+
+  return Object.values(objectNode).some((value) => {
+    if (Array.isArray(value)) {
+      return value.some(astContainsImmutableVariable);
+    }
+    return astContainsImmutableVariable(value);
+  });
+}
+
+export function compilerOutputContainsImmutableVariables(
+  compilerOutput?: VyperOutput,
+): boolean {
+  if (!compilerOutput?.sources) {
+    return false;
+  }
+
+  return Object.values(compilerOutput.sources).some((source) =>
+    astContainsImmutableVariable(source.ast),
+  );
+}
+
 export function returnImmutableReferences(
   compilerVersion: string,
   creationBytecode: string,

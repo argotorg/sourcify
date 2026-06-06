@@ -10,6 +10,7 @@ import type {
 import type { InterfaceAbi } from 'ethers';
 import { AbiCoder, id as keccak256Str, Interface } from 'ethers';
 import { logError } from '../logger';
+import semver from 'semver';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
 
@@ -115,6 +116,69 @@ export interface TransformationValues {
   };
 }
 
+function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
+  return (
+    auxdataStyle === AuxdataStyle.VYPER ||
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5 ||
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4
+  );
+}
+
+function isLegacyVyperImmutableAuxdataStyle(
+  auxdataStyle: AuxdataStyle,
+): boolean {
+  return (
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5 ||
+    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4
+  );
+}
+
+export function inferLegacyVyperImmutableReferences(
+  populatedRecompiledBytecodeWith0x: string,
+  onchainRuntimeBytecodeWith0x: string,
+  auxdataStyle: AuxdataStyle,
+  compilerVersion?: string,
+  hasImmutableVariables = false,
+): ImmutableReferences {
+  if (
+    !hasImmutableVariables ||
+    compilerVersion === undefined ||
+    !isLegacyVyperImmutableAuxdataStyle(auxdataStyle) ||
+    !semver.gte(compilerVersion, '0.3.1') ||
+    !semver.lt(compilerVersion, '0.3.10')
+  ) {
+    return {};
+  }
+
+  const populatedRecompiledBytecode =
+    populatedRecompiledBytecodeWith0x.slice(2);
+  const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
+
+  if (
+    onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
+    !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)
+  ) {
+    return {};
+  }
+
+  const immutableLength =
+    (onchainRuntimeBytecode.length - populatedRecompiledBytecode.length) / 2;
+  if (immutableLength <= 0 || immutableLength % 32 !== 0) {
+    return {};
+  }
+
+  return {
+    '0': [
+      {
+        length: immutableLength,
+        start: populatedRecompiledBytecode.length / 2,
+      },
+    ],
+  };
+}
+
 // returns the full bytecode with the call protection replaced with the real address
 export function extractCallProtectionTransformation(
   populatedRecompiledBytecode: string,
@@ -158,15 +222,27 @@ export function extractImmutablesTransformation(
   onchainRuntimeBytecodeWith0x: string,
   immutableReferences: ImmutableReferences,
   auxdataStyle: AuxdataStyle,
+  compilerVersion?: string,
+  hasImmutableVariables = false,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
   // Remove "0x" from the beginning of both bytecodes.
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
   let populatedRecompiledBytecode = populatedRecompiledBytecodeWith0x.slice(2);
+  const effectiveImmutableReferences =
+    Object.keys(immutableReferences).length > 0
+      ? immutableReferences
+      : inferLegacyVyperImmutableReferences(
+          populatedRecompiledBytecodeWith0x,
+          onchainRuntimeBytecodeWith0x,
+          auxdataStyle,
+          compilerVersion,
+          hasImmutableVariables,
+        );
 
-  Object.keys(immutableReferences).forEach((astId) => {
-    immutableReferences[astId].forEach((reference) => {
+  Object.keys(effectiveImmutableReferences).forEach((astId) => {
+    effectiveImmutableReferences[astId].forEach((reference) => {
       const { start, length } = reference;
 
       // Save the transformation
@@ -196,7 +272,7 @@ export function extractImmutablesTransformation(
           populatedRecompiledBytecode.slice(0, start * 2) +
           immutableValue +
           populatedRecompiledBytecode.slice(start * 2 + length * 2);
-      } else if (auxdataStyle === AuxdataStyle.VYPER) {
+      } else if (isVyperImmutableAuxdataStyle(auxdataStyle)) {
         // For Vyper, insert the immutable value.
         populatedRecompiledBytecode =
           populatedRecompiledBytecode + immutableValue;
