@@ -829,14 +829,26 @@ describe('returnLegacyVyperImmutableReferences', () => {
     const contractFileName = 'test.vy';
     const contractContent = `# @version 0.3.7
 
+N_COINS: constant(int128) = 2
+N_STABLECOINS: constant(int128) = 3
+N_UL_COINS: constant(int128) = N_COINS + N_STABLECOINS - 1
 TARGET: public(immutable(address))
 SALT: immutable(bytes32)
+COINS: immutable(address[N_COINS])
+UNDERLYING_COINS: immutable(address[N_UL_COINS])
 
 
 @external
-def __init__(_target: address, _salt: bytes32):
+def __init__(
+    _target: address,
+    _salt: bytes32,
+    _coins: address[N_COINS],
+    _underlying_coins: address[N_UL_COINS]
+):
     TARGET = _target
     SALT = _salt
+    COINS = _coins
+    UNDERLYING_COINS = _underlying_coins
 
 
 @external
@@ -879,6 +891,12 @@ def salt() -> bytes32:
     const saltDecl = declarations?.find(
       (node: any) => node.target?.id === 'SALT',
     );
+    const coinsDecl = declarations?.find(
+      (node: any) => node.target?.id === 'COINS',
+    );
+    const underlyingCoinsDecl = declarations?.find(
+      (node: any) => node.target?.id === 'UNDERLYING_COINS',
+    );
     expect(targetDecl?.target?.id).to.equal('TARGET');
     expect(targetDecl?.is_public).to.equal(true);
     expect(targetDecl?.is_immutable).to.equal(true);
@@ -887,6 +905,12 @@ def salt() -> bytes32:
     expect(saltDecl?.is_public).to.equal(false);
     expect(saltDecl?.is_immutable).to.equal(true);
     expect(saltDecl?.annotation?.id).to.equal('bytes32');
+    expect(coinsDecl?.is_immutable).to.equal(true);
+    expect(coinsDecl?.annotation?.slice?.value?.id).to.equal('N_COINS');
+    expect(underlyingCoinsDecl?.is_immutable).to.equal(true);
+    expect(underlyingCoinsDecl?.annotation?.slice?.value?.id).to.equal(
+      'N_UL_COINS',
+    );
     expect(
       returnLegacyVyperImmutableReferences(
         compilation.compilerOutput,
@@ -894,7 +918,7 @@ def salt() -> bytes32:
         compilation.runtimeBytecode,
       ),
     ).to.deep.equal({
-      '0': [{ length: 64, start: compilation.runtimeBytecode.length / 2 - 1 }],
+      '0': [{ length: 256, start: compilation.runtimeBytecode.length / 2 - 1 }],
     });
   });
 
@@ -967,6 +991,51 @@ def salt() -> bytes32:
       ),
     ).to.deep.equal({
       '0': [{ length: 160, start: 2 }],
+    });
+  });
+
+  it('resolves legacy Vyper integer constants in immutable array bounds', () => {
+    const compilerOutput = {
+      sources: {
+        'test.vy': {
+          id: 0,
+          ast: moduleAst([
+            annAssign('N_COINS', constantCall(name('int128')), int(2)),
+            annAssign('N_STABLECOINS', constantCall(name('int128')), int(3)),
+            annAssign(
+              'N_UL_COINS',
+              constantCall(name('int128')),
+              binOp(
+                binOp(name('N_COINS'), 'Add', name('N_STABLECOINS')),
+                'Sub',
+                int(1),
+              ),
+            ),
+            annAssign(
+              'COINS',
+              immutableCall(
+                subscriptWithLength(name('address'), name('N_COINS')),
+              ),
+            ),
+            annAssign(
+              'UNDERLYING_COINS',
+              immutableCall(
+                subscriptWithLength(name('address'), name('N_UL_COINS')),
+              ),
+            ),
+          ]),
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        'test.vy',
+        '0x6000',
+      ),
+    ).to.deep.equal({
+      '0': [{ length: 192, start: 2 }],
     });
   });
 
@@ -1047,12 +1116,16 @@ function int(value: number) {
 }
 
 function subscript(value: any, length: number) {
+  return subscriptWithLength(value, int(length));
+}
+
+function subscriptWithLength(value: any, length: any) {
   return {
     ast_type: 'Subscript',
     value,
     slice: {
       ast_type: 'Index',
-      value: int(length),
+      value: length,
     },
   };
 }
@@ -1079,6 +1152,25 @@ function immutableCall(annotation: any) {
   };
 }
 
+function constantCall(annotation: any) {
+  return {
+    ast_type: 'Call',
+    func: name('constant'),
+    args: [annotation],
+  };
+}
+
+function binOp(left: any, op: string, right: any) {
+  return {
+    ast_type: 'BinOp',
+    left,
+    op: {
+      ast_type: op,
+    },
+    right,
+  };
+}
+
 function variableDecl(variableName: string, annotation: any) {
   return {
     ast_type: 'VariableDecl',
@@ -1088,12 +1180,16 @@ function variableDecl(variableName: string, annotation: any) {
   };
 }
 
-function annAssign(variableName: string, annotation: any) {
-  return {
+function annAssign(variableName: string, annotation: any, value?: any) {
+  const node: any = {
     ast_type: 'AnnAssign',
     target: name(variableName),
     annotation,
   };
+  if (value !== undefined) {
+    node.value = value;
+  }
+  return node;
 }
 
 function structDef(structName: string, members: Array<[string, any]>) {

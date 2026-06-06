@@ -76,6 +76,7 @@ export function returnAuxdataStyle(
 
 type VyperAstNode = Record<string, any>;
 type VyperStructDefinitions = Record<string, VyperAstNode[]>;
+type VyperIntegerConstants = Record<string, number>;
 
 const WORD_SIZE = 32;
 const DYNAMIC_ARRAY_OVERHEAD_WORDS = 1;
@@ -125,7 +126,148 @@ function collectStructDefinitions(ast: VyperAstNode): VyperStructDefinitions {
   return structs;
 }
 
-function getSubscriptLength(node: VyperAstNode): number | undefined {
+function getAstIntegerValue(node: VyperAstNode): number | undefined {
+  const value = node.value ?? node.n;
+  if (Number.isSafeInteger(value)) {
+    return value;
+  }
+  return undefined;
+}
+
+function evaluateIntegerExpression(
+  node: unknown,
+  constants: VyperIntegerConstants,
+): number | undefined {
+  if (!isAstNode(node)) {
+    return undefined;
+  }
+
+  const integerValue = getAstIntegerValue(node);
+  if (integerValue !== undefined) {
+    return integerValue;
+  }
+
+  if (node.ast_type === 'Name' && typeof node.id === 'string') {
+    return constants[node.id];
+  }
+
+  if (node.ast_type === 'UnaryOp') {
+    const operand = evaluateIntegerExpression(node.operand, constants);
+    if (operand === undefined) {
+      return undefined;
+    }
+    if (node.op?.ast_type === 'USub') {
+      return -operand;
+    }
+    if (node.op?.ast_type === 'UAdd') {
+      return operand;
+    }
+    return undefined;
+  }
+
+  if (node.ast_type !== 'BinOp') {
+    return undefined;
+  }
+
+  const left = evaluateIntegerExpression(node.left, constants);
+  const right = evaluateIntegerExpression(node.right, constants);
+  if (left === undefined || right === undefined) {
+    return undefined;
+  }
+
+  let result: number | undefined;
+  switch (node.op?.ast_type) {
+    case 'Add':
+      result = left + right;
+      break;
+    case 'Sub':
+      result = left - right;
+      break;
+    case 'Mult':
+      result = left * right;
+      break;
+    case 'Pow':
+      result = left ** right;
+      break;
+    case 'Div':
+    case 'FloorDiv':
+      if (right === 0 || left % right !== 0) {
+        return undefined;
+      }
+      result = left / right;
+      break;
+    default:
+      return undefined;
+  }
+
+  if (Number.isSafeInteger(result)) {
+    return result;
+  }
+  return undefined;
+}
+
+function getConstantTypeAnnotation(
+  node: VyperAstNode,
+): VyperAstNode | undefined {
+  const annotation = node.annotation;
+  if (!isAstNode(annotation)) {
+    return undefined;
+  }
+
+  if (node.is_constant === true) {
+    return annotation;
+  }
+
+  const constantCall =
+    annotation.ast_type === 'Call' && annotation.func?.id === 'constant';
+  if (constantCall && isAstNode(annotation.args?.[0])) {
+    return annotation.args[0];
+  }
+
+  return undefined;
+}
+
+function collectIntegerConstantDefinitions(
+  ast: VyperAstNode,
+): VyperIntegerConstants {
+  const constants: VyperIntegerConstants = {};
+  let pendingConstants: VyperAstNode[] = ast.body
+    .filter(isAstNode)
+    .filter(
+      (node: VyperAstNode) =>
+        typeof node.target?.id === 'string' &&
+        getConstantTypeAnnotation(node) !== undefined &&
+        isAstNode(node.value),
+    );
+
+  while (pendingConstants.length > 0) {
+    const remainingConstants: VyperAstNode[] = [];
+    let madeProgress = false;
+
+    for (const node of pendingConstants) {
+      const value = evaluateIntegerExpression(node.value, constants);
+      if (value === undefined) {
+        remainingConstants.push(node);
+        continue;
+      }
+
+      constants[node.target.id] = value;
+      madeProgress = true;
+    }
+
+    if (!madeProgress) {
+      break;
+    }
+    pendingConstants = remainingConstants;
+  }
+
+  return constants;
+}
+
+function getSubscriptLength(
+  node: VyperAstNode,
+  constants: VyperIntegerConstants,
+): number | undefined {
   const value = node.slice?.value;
   if (typeof value?.value === 'number') {
     return value.value;
@@ -133,19 +275,24 @@ function getSubscriptLength(node: VyperAstNode): number | undefined {
   if (typeof value?.n === 'number') {
     return value.n;
   }
-  return undefined;
+  return evaluateIntegerExpression(value, constants);
 }
 
 function getTypeByteLength(
   annotation: VyperAstNode,
   structs: VyperStructDefinitions,
+  constants: VyperIntegerConstants,
 ): number | undefined {
   if (annotation.ast_type === 'Name' && typeof annotation.id === 'string') {
     const structMembers = structs[annotation.id];
     if (structMembers !== undefined) {
       let structByteLength = 0;
       for (const member of structMembers) {
-        const memberByteLength = getTypeByteLength(member.annotation, structs);
+        const memberByteLength = getTypeByteLength(
+          member.annotation,
+          structs,
+          constants,
+        );
         if (memberByteLength === undefined) {
           return undefined;
         }
@@ -167,12 +314,12 @@ function getTypeByteLength(
   if (typeName === 'DynArray') {
     const elements = annotation.slice?.value?.elements;
     const subtype = elements?.[0];
-    const maxLength = elements?.[1]?.value ?? elements?.[1]?.n;
+    const maxLength = evaluateIntegerExpression(elements?.[1], constants);
     if (!isAstNode(subtype) || typeof maxLength !== 'number') {
       return undefined;
     }
 
-    const subtypeByteLength = getTypeByteLength(subtype, structs);
+    const subtypeByteLength = getTypeByteLength(subtype, structs, constants);
     if (subtypeByteLength === undefined) {
       return undefined;
     }
@@ -181,7 +328,7 @@ function getTypeByteLength(
     );
   }
 
-  const length = getSubscriptLength(annotation);
+  const length = getSubscriptLength(annotation, constants);
   if (length === undefined) {
     return undefined;
   }
@@ -190,7 +337,11 @@ function getTypeByteLength(
     return ceil32(length) + DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE;
   }
 
-  const subtypeByteLength = getTypeByteLength(annotation.value, structs);
+  const subtypeByteLength = getTypeByteLength(
+    annotation.value,
+    structs,
+    constants,
+  );
   if (subtypeByteLength === undefined) {
     return undefined;
   }
@@ -212,6 +363,7 @@ export function returnLegacyVyperImmutableReferences(
   }
 
   const structs = collectStructDefinitions(ast);
+  const constants = collectIntegerConstantDefinitions(ast);
   const runtimeByteLength = runtimeBytecode.substring(2).length / 2;
   let immutableOffset = 0;
 
@@ -221,7 +373,11 @@ export function returnLegacyVyperImmutableReferences(
       continue;
     }
 
-    const immutableByteLength = getTypeByteLength(annotation, structs);
+    const immutableByteLength = getTypeByteLength(
+      annotation,
+      structs,
+      constants,
+    );
     if (
       immutableByteLength === undefined ||
       immutableByteLength <= 0 ||
