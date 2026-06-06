@@ -158,7 +158,8 @@ export function inferLegacyVyperImmutableReferences(
   const runtimeByteLength = populatedRecompiledBytecode.length / 2;
 
   // Legacy Vyper metadata does not encode immutable size. Keep this fallback
-  // limited to prefix-identical runtimes with the AST-derived immutable layout.
+  // limited to prefix-identical runtimes with the compiler-derived immutable
+  // tail length.
   if (
     onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
     !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)

@@ -523,7 +523,7 @@ export class Verification {
       this.compilation.language === 'Vyper'
         ? returnLegacyVyperImmutableReferences(
             this.compilation.compilerOutput as VyperOutput | undefined,
-            this.compilation.compilationTarget.path,
+            this.compilation.compilationTarget,
             callProtectionTransformationResult.populatedRecompiledBytecode,
           )
         : {};

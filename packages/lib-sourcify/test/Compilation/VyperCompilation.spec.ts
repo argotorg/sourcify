@@ -771,7 +771,7 @@ describe('VyperCompilation outputSelection version gating', () => {
 });
 
 describe('returnLegacyVyperImmutableReferences', () => {
-  it('derives a synthetic tail reference from the real Vyper 0.3.7 AST', async () => {
+  it('derives a synthetic tail reference from real Vyper 0.3.7 structured IR', async () => {
     const contractPath = path.join(
       __dirname,
       '..',
@@ -809,15 +809,10 @@ describe('returnLegacyVyperImmutableReferences', () => {
 
     await compilation.compile();
 
-    const ast = compilation.compilerOutput?.sources?.[contractFileName]?.ast;
-    const targetDecl = ast?.body.find(
-      (node: any) => node.ast_type === 'VariableDecl',
-    );
-    expect(targetDecl?.target?.id).to.equal('TARGET');
     expect(
       returnLegacyVyperImmutableReferences(
         compilation.compilerOutput,
-        contractFileName,
+        compilation.compilationTarget,
         compilation.runtimeBytecode,
       ),
     ).to.deep.equal({
@@ -825,7 +820,7 @@ describe('returnLegacyVyperImmutableReferences', () => {
     });
   });
 
-  it('derives a synthetic tail reference from real Vyper 0.3.7 mixed public and non-public immutable ASTs', async () => {
+  it('uses compiler-resolved structured IR size for Vyper 0.3.7 constant-bound immutables', async () => {
     const contractFileName = 'test.vy';
     const contractContent = `# @version 0.3.7
 
@@ -881,40 +876,10 @@ def salt() -> bytes32:
 
     await compilation.compile();
 
-    const ast = compilation.compilerOutput?.sources?.[contractFileName]?.ast;
-    const declarations = ast?.body.filter(
-      (node: any) => node.ast_type === 'VariableDecl',
-    );
-    const targetDecl = declarations?.find(
-      (node: any) => node.target?.id === 'TARGET',
-    );
-    const saltDecl = declarations?.find(
-      (node: any) => node.target?.id === 'SALT',
-    );
-    const coinsDecl = declarations?.find(
-      (node: any) => node.target?.id === 'COINS',
-    );
-    const underlyingCoinsDecl = declarations?.find(
-      (node: any) => node.target?.id === 'UNDERLYING_COINS',
-    );
-    expect(targetDecl?.target?.id).to.equal('TARGET');
-    expect(targetDecl?.is_public).to.equal(true);
-    expect(targetDecl?.is_immutable).to.equal(true);
-    expect(targetDecl?.annotation?.id).to.equal('address');
-    expect(saltDecl?.target?.id).to.equal('SALT');
-    expect(saltDecl?.is_public).to.equal(false);
-    expect(saltDecl?.is_immutable).to.equal(true);
-    expect(saltDecl?.annotation?.id).to.equal('bytes32');
-    expect(coinsDecl?.is_immutable).to.equal(true);
-    expect(coinsDecl?.annotation?.slice?.value?.id).to.equal('N_COINS');
-    expect(underlyingCoinsDecl?.is_immutable).to.equal(true);
-    expect(underlyingCoinsDecl?.annotation?.slice?.value?.id).to.equal(
-      'N_UL_COINS',
-    );
     expect(
       returnLegacyVyperImmutableReferences(
         compilation.compilerOutput,
-        contractFileName,
+        compilation.compilationTarget,
         compilation.runtimeBytecode,
       ),
     ).to.deep.equal({
@@ -922,164 +887,44 @@ def salt() -> bytes32:
     });
   });
 
-  it('derives a synthetic tail reference from unwrapped Vyper 0.3.7 immutable annotations', () => {
+  it('derives a synthetic tail reference from Vyper 0.3.1 text IR', () => {
     const compilerOutput = {
-      sources: {
+      contracts: {
         'test.vy': {
-          id: 0,
-          ast: moduleAst([
-            variableDecl('A', subscript(name('uint256'), 3)),
-            variableDecl('B', subscript(name('String'), 10)),
-          ]),
-        },
-      },
-    };
-
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilerOutput as any,
-        'test.vy',
-        '0x6000',
-      ),
-    ).to.deep.equal({
-      '0': [{ length: 160, start: 2 }],
-    });
-  });
-
-  it('derives a synthetic tail reference from wrapped Vyper 0.3.4-0.3.6 immutable annotations', () => {
-    const compilerOutput = {
-      sources: {
-        'test.vy': {
-          id: 0,
-          ast: moduleAst([
-            variableDecl('A', immutableCall(subscript(name('uint256'), 3))),
-            variableDecl('B', immutableCall(subscript(name('String'), 10))),
-          ]),
-        },
-      },
-    };
-
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilerOutput as any,
-        'test.vy',
-        '0x6000',
-      ),
-    ).to.deep.equal({
-      '0': [{ length: 160, start: 2 }],
-    });
-  });
-
-  it('derives a synthetic tail reference from old Vyper 0.3.1-0.3.3 AnnAssign immutables', () => {
-    const compilerOutput = {
-      sources: {
-        'test.vy': {
-          id: 0,
-          ast: moduleAst([
-            annAssign('A', immutableCall(subscript(name('uint256'), 3))),
-            annAssign('B', immutableCall(subscript(name('String'), 10))),
-          ]),
-        },
-      },
-    };
-
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilerOutput as any,
-        'test.vy',
-        '0x6000',
-      ),
-    ).to.deep.equal({
-      '0': [{ length: 160, start: 2 }],
-    });
-  });
-
-  it('resolves legacy Vyper integer constants in immutable array bounds', () => {
-    const compilerOutput = {
-      sources: {
-        'test.vy': {
-          id: 0,
-          ast: moduleAst([
-            annAssign('N_COINS', constantCall(name('int128')), int(2)),
-            annAssign('N_STABLECOINS', constantCall(name('int128')), int(3)),
-            annAssign(
-              'N_UL_COINS',
-              constantCall(name('int128')),
-              binOp(
-                binOp(name('N_COINS'), 'Add', name('N_STABLECOINS')),
-                'Sub',
-                int(1),
-              ),
-            ),
-            annAssign(
-              'COINS',
-              immutableCall(
-                subscriptWithLength(name('address'), name('N_COINS')),
-              ),
-            ),
-            annAssign(
-              'UNDERLYING_COINS',
-              immutableCall(
-                subscriptWithLength(name('address'), name('N_UL_COINS')),
-              ),
-            ),
-          ]),
-        },
-      },
-    };
-
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilerOutput as any,
-        'test.vy',
-        '0x6000',
-      ),
-    ).to.deep.equal({
-      '0': [{ length: 192, start: 2 }],
-    });
-  });
-
-  it('derives a synthetic tail reference for structs and dynamic arrays', () => {
-    const compilerOutput = {
-      sources: {
-        'test.vy': {
-          id: 0,
-          ast: moduleAst([
-            structDef('MyStruct', [
-              ['a', name('uint256')],
-              ['b', name('address')],
-            ]),
-            variableDecl('C', name('MyStruct')),
-            variableDecl('D', dynArray(name('uint256'), 3)),
-          ]),
-        },
-      },
-    };
-
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilerOutput as any,
-        'test.vy',
-        '0x60',
-      ),
-    ).to.deep.equal({
-      '0': [{ length: 192, start: 1 }],
-    });
-  });
-
-  it('only checks the compilation target source for immutable declarations', () => {
-    const compilerOutput = {
-      sources: {
-        'target.vy': {
-          id: 0,
-          ast: {
-            ast_type: 'Module',
-            body: [{ ast_type: 'FunctionDef' }],
+          test: {
+            ir: `
+              [seq,
+                [mstore, [add, 320, _lllsz], [mload, 256]],
+                [mstore, [add, 352, _lllsz], [mload, 288]],
+                [return, 320, [add, 64, _lllsz]]]
+              ]
+            `,
           },
         },
-        'unused.vy': {
-          id: 1,
-          ast: moduleAst([variableDecl('A', name('uint256'))]),
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        { name: 'test', path: 'test.vy' },
+        '0x600102',
+      ),
+    ).to.deep.equal({
+      '0': [{ length: 64, start: 3 }],
+    });
+  });
+
+  it('ignores ambiguous Vyper 0.3.1 text IR immutable lengths', () => {
+    const compilerOutput = {
+      contracts: {
+        'test.vy': {
+          test: {
+            ir: `
+              [return, 256, [add, 32, _lllsz]]
+              [return, 320, [add, 64, _lllsz]]
+            `,
+          },
         },
       },
     };
@@ -1087,14 +932,61 @@ def salt() -> bytes32:
     expect(
       returnLegacyVyperImmutableReferences(
         compilerOutput as any,
-        'target.vy',
+        { name: 'test', path: 'test.vy' },
+        '0x6000',
+      ),
+    ).to.deep.equal({});
+  });
+
+  it('ignores invalid structured IR immutable lengths', () => {
+    const compilerOutput = {
+      contracts: {
+        'test.vy': {
+          test: {
+            ir: {
+              deploy: [256, { runtime: [] }, 31],
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        { name: 'test', path: 'test.vy' },
+        '0x6000',
+      ),
+    ).to.deep.equal({});
+  });
+
+  it('only checks the compilation target contract IR', () => {
+    const compilerOutput = {
+      contracts: {
+        'target.vy': {
+          target: {
+            ir: { seq: [] },
+          },
+          unused: {
+            ir: {
+              deploy: [256, { runtime: [] }, 32],
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        { name: 'target', path: 'target.vy' },
         '0x6000',
       ),
     ).to.deep.equal({});
     expect(
       returnLegacyVyperImmutableReferences(
         compilerOutput as any,
-        'unused.vy',
+        { name: 'unused', path: 'target.vy' },
         '0x6000',
       ),
     ).to.deep.equal({
@@ -1102,102 +994,3 @@ def salt() -> bytes32:
     });
   });
 });
-
-function moduleAst(body: any[]) {
-  return { ast_type: 'Module', body };
-}
-
-function name(id: string) {
-  return { ast_type: 'Name', id };
-}
-
-function int(value: number) {
-  return { ast_type: 'Int', value };
-}
-
-function subscript(value: any, length: number) {
-  return subscriptWithLength(value, int(length));
-}
-
-function subscriptWithLength(value: any, length: any) {
-  return {
-    ast_type: 'Subscript',
-    value,
-    slice: {
-      ast_type: 'Index',
-      value: length,
-    },
-  };
-}
-
-function dynArray(subtype: any, maxLength: number) {
-  return {
-    ast_type: 'Subscript',
-    value: name('DynArray'),
-    slice: {
-      ast_type: 'Index',
-      value: {
-        ast_type: 'Tuple',
-        elements: [subtype, int(maxLength)],
-      },
-    },
-  };
-}
-
-function immutableCall(annotation: any) {
-  return {
-    ast_type: 'Call',
-    func: name('immutable'),
-    args: [annotation],
-  };
-}
-
-function constantCall(annotation: any) {
-  return {
-    ast_type: 'Call',
-    func: name('constant'),
-    args: [annotation],
-  };
-}
-
-function binOp(left: any, op: string, right: any) {
-  return {
-    ast_type: 'BinOp',
-    left,
-    op: {
-      ast_type: op,
-    },
-    right,
-  };
-}
-
-function variableDecl(variableName: string, annotation: any) {
-  return {
-    ast_type: 'VariableDecl',
-    is_immutable: true,
-    target: name(variableName),
-    annotation,
-  };
-}
-
-function annAssign(variableName: string, annotation: any, value?: any) {
-  const node: any = {
-    ast_type: 'AnnAssign',
-    target: name(variableName),
-    annotation,
-  };
-  if (value !== undefined) {
-    node.value = value;
-  }
-  return node;
-}
-
-function structDef(structName: string, members: Array<[string, any]>) {
-  return {
-    ast_type: 'StructDef',
-    name: structName,
-    body: members.map(([memberName, annotation]) =>
-      annAssign(memberName, annotation),
-    ),
-  };
-}

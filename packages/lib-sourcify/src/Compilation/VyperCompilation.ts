@@ -74,329 +74,94 @@ export function returnAuxdataStyle(
   return AuxdataStyle.VYPER;
 }
 
-type VyperAstNode = Record<string, any>;
-type VyperStructDefinitions = Record<string, VyperAstNode[]>;
-type VyperIntegerConstants = Record<string, number>;
-
 const WORD_SIZE = 32;
-const DYNAMIC_ARRAY_OVERHEAD_WORDS = 1;
+const LEGACY_VYPER_TEXT_IR_IMMUTABLE_RETURN =
+  /\[return,\s*(\d+),\s*\[add,\s*(\d+),\s*_lllsz\]\]/g;
 
-function ceil32(value: number): number {
-  return Math.ceil(value / WORD_SIZE) * WORD_SIZE;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isAstNode(node: unknown): node is VyperAstNode {
-  return node !== null && typeof node === 'object';
-}
-
-function getImmutableTypeAnnotation(
-  node: VyperAstNode,
-): VyperAstNode | undefined {
-  const annotation = node.annotation;
-  if (!isAstNode(annotation)) {
-    return undefined;
-  }
-
-  const immutableCall =
-    annotation.ast_type === 'Call' && annotation.func?.id === 'immutable';
-
-  if (immutableCall && isAstNode(annotation.args?.[0])) {
-    return annotation.args[0];
-  }
-
-  if (node.is_immutable === true) {
-    return annotation;
-  }
-
-  return undefined;
-}
-
-function collectStructDefinitions(ast: VyperAstNode): VyperStructDefinitions {
-  const structs: VyperStructDefinitions = {};
-  for (const node of ast.body ?? []) {
-    if (
-      isAstNode(node) &&
-      node.ast_type === 'StructDef' &&
-      typeof node.name === 'string' &&
-      Array.isArray(node.body)
-    ) {
-      structs[node.name] = node.body.filter(isAstNode);
-    }
-  }
-  return structs;
-}
-
-function getAstIntegerValue(node: VyperAstNode): number | undefined {
-  const value = node.value ?? node.n;
-  if (Number.isSafeInteger(value)) {
-    return value;
-  }
-  return undefined;
-}
-
-function evaluateIntegerExpression(
-  node: unknown,
-  constants: VyperIntegerConstants,
-): number | undefined {
-  if (!isAstNode(node)) {
-    return undefined;
-  }
-
-  const integerValue = getAstIntegerValue(node);
-  if (integerValue !== undefined) {
-    return integerValue;
-  }
-
-  if (node.ast_type === 'Name' && typeof node.id === 'string') {
-    return constants[node.id];
-  }
-
-  if (node.ast_type === 'UnaryOp') {
-    const operand = evaluateIntegerExpression(node.operand, constants);
-    if (operand === undefined) {
-      return undefined;
-    }
-    if (node.op?.ast_type === 'USub') {
-      return -operand;
-    }
-    if (node.op?.ast_type === 'UAdd') {
-      return operand;
-    }
-    return undefined;
-  }
-
-  if (node.ast_type !== 'BinOp') {
-    return undefined;
-  }
-
-  const left = evaluateIntegerExpression(node.left, constants);
-  const right = evaluateIntegerExpression(node.right, constants);
-  if (left === undefined || right === undefined) {
-    return undefined;
-  }
-
-  let result: number | undefined;
-  switch (node.op?.ast_type) {
-    case 'Add':
-      result = left + right;
-      break;
-    case 'Sub':
-      result = left - right;
-      break;
-    case 'Mult':
-      result = left * right;
-      break;
-    case 'Pow':
-      result = left ** right;
-      break;
-    case 'Div':
-    case 'FloorDiv':
-      if (right === 0 || left % right !== 0) {
-        return undefined;
-      }
-      result = left / right;
-      break;
-    default:
-      return undefined;
-  }
-
-  if (Number.isSafeInteger(result)) {
-    return result;
-  }
-  return undefined;
-}
-
-function getConstantTypeAnnotation(
-  node: VyperAstNode,
-): VyperAstNode | undefined {
-  const annotation = node.annotation;
-  if (!isAstNode(annotation)) {
-    return undefined;
-  }
-
-  if (node.is_constant === true) {
-    return annotation;
-  }
-
-  const constantCall =
-    annotation.ast_type === 'Call' && annotation.func?.id === 'constant';
-  if (constantCall && isAstNode(annotation.args?.[0])) {
-    return annotation.args[0];
-  }
-
-  return undefined;
-}
-
-function collectIntegerConstantDefinitions(
-  ast: VyperAstNode,
-): VyperIntegerConstants {
-  const constants: VyperIntegerConstants = {};
-  let pendingConstants: VyperAstNode[] = ast.body
-    .filter(isAstNode)
-    .filter(
-      (node: VyperAstNode) =>
-        typeof node.target?.id === 'string' &&
-        getConstantTypeAnnotation(node) !== undefined &&
-        isAstNode(node.value),
-    );
-
-  while (pendingConstants.length > 0) {
-    const remainingConstants: VyperAstNode[] = [];
-    let madeProgress = false;
-
-    for (const node of pendingConstants) {
-      const value = evaluateIntegerExpression(node.value, constants);
-      if (value === undefined) {
-        remainingConstants.push(node);
-        continue;
-      }
-
-      constants[node.target.id] = value;
-      madeProgress = true;
-    }
-
-    if (!madeProgress) {
-      break;
-    }
-    pendingConstants = remainingConstants;
-  }
-
-  return constants;
-}
-
-function getSubscriptLength(
-  node: VyperAstNode,
-  constants: VyperIntegerConstants,
-): number | undefined {
-  const value = node.slice?.value;
-  if (typeof value?.value === 'number') {
-    return value.value;
-  }
-  if (typeof value?.n === 'number') {
-    return value.n;
-  }
-  return evaluateIntegerExpression(value, constants);
-}
-
-function getTypeByteLength(
-  annotation: VyperAstNode,
-  structs: VyperStructDefinitions,
-  constants: VyperIntegerConstants,
-): number | undefined {
-  if (annotation.ast_type === 'Name' && typeof annotation.id === 'string') {
-    const structMembers = structs[annotation.id];
-    if (structMembers !== undefined) {
-      let structByteLength = 0;
-      for (const member of structMembers) {
-        const memberByteLength = getTypeByteLength(
-          member.annotation,
-          structs,
-          constants,
-        );
-        if (memberByteLength === undefined) {
-          return undefined;
-        }
-        structByteLength += memberByteLength;
-      }
-      return structByteLength;
-    }
-
-    // Base types, enums, and interface types occupy one word in Vyper's
-    // legacy immutable section.
-    return WORD_SIZE;
-  }
-
-  if (annotation.ast_type !== 'Subscript' || !isAstNode(annotation.value)) {
-    return undefined;
-  }
-
-  const typeName = annotation.value.id;
-  if (typeName === 'DynArray') {
-    const elements = annotation.slice?.value?.elements;
-    const subtype = elements?.[0];
-    const maxLength = evaluateIntegerExpression(elements?.[1], constants);
-    if (!isAstNode(subtype) || typeof maxLength !== 'number') {
-      return undefined;
-    }
-
-    const subtypeByteLength = getTypeByteLength(subtype, structs, constants);
-    if (subtypeByteLength === undefined) {
-      return undefined;
-    }
-    return (
-      DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE + maxLength * subtypeByteLength
-    );
-  }
-
-  const length = getSubscriptLength(annotation, constants);
-  if (length === undefined) {
-    return undefined;
-  }
-
-  if (typeName === 'Bytes' || typeName === 'String') {
-    return ceil32(length) + DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE;
-  }
-
-  const subtypeByteLength = getTypeByteLength(
-    annotation.value,
-    structs,
-    constants,
+function isValidImmutableLength(length: unknown): length is number {
+  return (
+    typeof length === 'number' &&
+    Number.isSafeInteger(length) &&
+    length > 0 &&
+    length % WORD_SIZE === 0
   );
-  if (subtypeByteLength === undefined) {
+}
+
+function collectStructuredIrImmutableLengths(
+  node: unknown,
+  lengths: number[] = [],
+): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      collectStructuredIrImmutableLengths(child, lengths);
+    }
+    return lengths;
+  }
+
+  if (!isRecord(node)) {
+    return lengths;
+  }
+
+  const deployNode = node.deploy;
+  if (Array.isArray(deployNode) && isValidImmutableLength(deployNode[2])) {
+    lengths.push(deployNode[2]);
+  }
+
+  for (const child of Object.values(node)) {
+    collectStructuredIrImmutableLengths(child, lengths);
+  }
+  return lengths;
+}
+
+function extractTextIrImmutableLengths(ir: string): number[] {
+  const lengths: number[] = [];
+  for (const match of ir.matchAll(LEGACY_VYPER_TEXT_IR_IMMUTABLE_RETURN)) {
+    const length = Number(match[2]);
+    if (isValidImmutableLength(length)) {
+      lengths.push(length);
+    }
+  }
+  return lengths;
+}
+
+function getLegacyVyperImmutableLengthFromIr(ir: unknown): number | undefined {
+  const lengths =
+    typeof ir === 'string'
+      ? extractTextIrImmutableLengths(ir)
+      : collectStructuredIrImmutableLengths(ir);
+
+  if (lengths.length !== 1) {
     return undefined;
   }
-  return length * subtypeByteLength;
+  return lengths[0];
 }
 
 export function returnLegacyVyperImmutableReferences(
   compilerOutput: VyperOutput | undefined,
-  compilationTargetPath: string,
+  compilationTarget: CompilationTarget,
   runtimeBytecode: string,
 ): ImmutableReferences {
-  if (!compilerOutput?.sources) {
+  const compilationTargetContract =
+    compilerOutput?.contracts?.[compilationTarget.path]?.[
+      compilationTarget.name
+    ];
+  const immutableLength = getLegacyVyperImmutableLengthFromIr(
+    compilationTargetContract?.ir,
+  );
+  if (immutableLength === undefined) {
     return {};
   }
 
-  const ast = compilerOutput.sources[compilationTargetPath]?.ast;
-  if (!isAstNode(ast) || !Array.isArray(ast.body)) {
-    return {};
-  }
-
-  const structs = collectStructDefinitions(ast);
-  const constants = collectIntegerConstantDefinitions(ast);
   const runtimeByteLength = runtimeBytecode.substring(2).length / 2;
-  let immutableOffset = 0;
-
-  for (const node of ast.body.filter(isAstNode)) {
-    const annotation = getImmutableTypeAnnotation(node);
-    if (annotation === undefined) {
-      continue;
-    }
-
-    const immutableByteLength = getTypeByteLength(
-      annotation,
-      structs,
-      constants,
-    );
-    if (
-      immutableByteLength === undefined ||
-      immutableByteLength <= 0 ||
-      typeof node.target?.id !== 'string'
-    ) {
-      return {};
-    }
-
-    immutableOffset += immutableByteLength;
-  }
-
-  if (immutableOffset === 0) {
-    return {};
-  }
 
   return {
     '0': [
       {
-        length: immutableOffset,
+        length: immutableLength,
         start: runtimeByteLength,
       },
     ],
