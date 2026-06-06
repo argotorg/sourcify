@@ -74,38 +74,170 @@ export function returnAuxdataStyle(
   return AuxdataStyle.VYPER;
 }
 
-function astContainsImmutableVariable(node: unknown): boolean {
-  if (!node || typeof node !== 'object') {
-    return false;
-  }
+type VyperAstNode = Record<string, any>;
+type VyperStructDefinitions = Record<string, VyperAstNode[]>;
 
-  const objectNode = node as Record<string, unknown>;
-  if (
-    objectNode.ast_type === 'VariableDecl' &&
-    objectNode.is_immutable === true
-  ) {
-    return true;
-  }
+const WORD_SIZE = 32;
+const DYNAMIC_ARRAY_OVERHEAD_WORDS = 1;
 
-  return Object.values(objectNode).some((value) => {
-    if (Array.isArray(value)) {
-      return value.some(astContainsImmutableVariable);
-    }
-    return astContainsImmutableVariable(value);
-  });
+function ceil32(value: number): number {
+  return Math.ceil(value / WORD_SIZE) * WORD_SIZE;
 }
 
-export function compilerOutputContainsImmutableVariables(
-  compilerOutput: VyperOutput | undefined,
-  compilationTargetPath: string,
-): boolean {
-  if (!compilerOutput?.sources) {
-    return false;
+function isAstNode(node: unknown): node is VyperAstNode {
+  return node !== null && typeof node === 'object';
+}
+
+function getImmutableTypeAnnotation(node: VyperAstNode): VyperAstNode | undefined {
+  const annotation = node.annotation;
+  if (!isAstNode(annotation)) {
+    return undefined;
   }
 
-  return astContainsImmutableVariable(
-    compilerOutput.sources[compilationTargetPath]?.ast,
-  );
+  const immutableCall =
+    annotation.ast_type === 'Call' && annotation.func?.id === 'immutable';
+
+  if (immutableCall && isAstNode(annotation.args?.[0])) {
+    return annotation.args[0];
+  }
+
+  if (node.is_immutable === true) {
+    return annotation;
+  }
+
+  return undefined;
+}
+
+function collectStructDefinitions(ast: VyperAstNode): VyperStructDefinitions {
+  const structs: VyperStructDefinitions = {};
+  for (const node of ast.body ?? []) {
+    if (
+      isAstNode(node) &&
+      node.ast_type === 'StructDef' &&
+      typeof node.name === 'string' &&
+      Array.isArray(node.body)
+    ) {
+      structs[node.name] = node.body.filter(isAstNode);
+    }
+  }
+  return structs;
+}
+
+function getSubscriptLength(node: VyperAstNode): number | undefined {
+  const value = node.slice?.value;
+  if (typeof value?.value === 'number') {
+    return value.value;
+  }
+  if (typeof value?.n === 'number') {
+    return value.n;
+  }
+  return undefined;
+}
+
+function getTypeByteLength(
+  annotation: VyperAstNode,
+  structs: VyperStructDefinitions,
+): number | undefined {
+  if (annotation.ast_type === 'Name' && typeof annotation.id === 'string') {
+    const structMembers = structs[annotation.id];
+    if (structMembers !== undefined) {
+      let structByteLength = 0;
+      for (const member of structMembers) {
+        const memberByteLength = getTypeByteLength(member.annotation, structs);
+        if (memberByteLength === undefined) {
+          return undefined;
+        }
+        structByteLength += memberByteLength;
+      }
+      return structByteLength;
+    }
+
+    // Base types, enums, and interface types occupy one word in Vyper's
+    // legacy immutable section.
+    return WORD_SIZE;
+  }
+
+  if (annotation.ast_type !== 'Subscript' || !isAstNode(annotation.value)) {
+    return undefined;
+  }
+
+  const typeName = annotation.value.id;
+  if (typeName === 'DynArray') {
+    const elements = annotation.slice?.value?.elements;
+    const subtype = elements?.[0];
+    const maxLength = elements?.[1]?.value ?? elements?.[1]?.n;
+    if (!isAstNode(subtype) || typeof maxLength !== 'number') {
+      return undefined;
+    }
+
+    const subtypeByteLength = getTypeByteLength(subtype, structs);
+    if (subtypeByteLength === undefined) {
+      return undefined;
+    }
+    return DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE + maxLength * subtypeByteLength;
+  }
+
+  const length = getSubscriptLength(annotation);
+  if (length === undefined) {
+    return undefined;
+  }
+
+  if (typeName === 'Bytes' || typeName === 'String') {
+    return ceil32(length) + DYNAMIC_ARRAY_OVERHEAD_WORDS * WORD_SIZE;
+  }
+
+  const subtypeByteLength = getTypeByteLength(annotation.value, structs);
+  if (subtypeByteLength === undefined) {
+    return undefined;
+  }
+  return length * subtypeByteLength;
+}
+
+export function returnLegacyVyperImmutableReferences(
+  compilerOutput: VyperOutput | undefined,
+  compilationTargetPath: string,
+  runtimeBytecode: string,
+): ImmutableReferences {
+  if (!compilerOutput?.sources) {
+    return {};
+  }
+
+  const ast = compilerOutput.sources[compilationTargetPath]?.ast;
+  if (!isAstNode(ast) || !Array.isArray(ast.body)) {
+    return {};
+  }
+
+  const structs = collectStructDefinitions(ast);
+  const runtimeByteLength = runtimeBytecode.substring(2).length / 2;
+  const immutableReferences: ImmutableReferences = {};
+  let immutableOffset = 0;
+
+  for (const node of ast.body.filter(isAstNode)) {
+    const annotation = getImmutableTypeAnnotation(node);
+    if (annotation === undefined) {
+      continue;
+    }
+
+    const immutableByteLength = getTypeByteLength(annotation, structs);
+    const immutableName = node.target?.id;
+    if (
+      immutableByteLength === undefined ||
+      immutableByteLength <= 0 ||
+      typeof immutableName !== 'string'
+    ) {
+      return {};
+    }
+
+    immutableReferences[immutableName] = [
+      {
+        length: immutableByteLength,
+        start: runtimeByteLength + immutableOffset,
+      },
+    ];
+    immutableOffset += immutableByteLength;
+  }
+
+  return immutableReferences;
 }
 
 export function returnImmutableReferences(

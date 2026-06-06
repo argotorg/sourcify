@@ -43,7 +43,7 @@ import type {
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
-import { compilerOutputContainsImmutableVariables } from '../Compilation/VyperCompilation';
+import { returnLegacyVyperImmutableReferences } from '../Compilation/VyperCompilation';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
 
 function auxdataLacksMetadataOrIntegrityHash(
@@ -519,22 +519,27 @@ export class Verification {
         this.onchainRuntimeBytecode,
       );
 
+    const legacyVyperImmutableReferences =
+      this.compilation.language === 'Vyper'
+        ? returnLegacyVyperImmutableReferences(
+            this.compilation.compilerOutput as VyperOutput | undefined,
+            this.compilation.compilationTarget.path,
+            callProtectionTransformationResult.populatedRecompiledBytecode,
+          )
+        : {};
+
     // Handle immutable references
     const immutablesTransformationResult = extractImmutablesTransformation(
       callProtectionTransformationResult.populatedRecompiledBytecode,
       this.onchainRuntimeBytecode,
       this.compilation.immutableReferences,
       this.compilation.auxdataStyle,
+      legacyVyperImmutableReferences,
       this.compilation.language === 'Vyper'
         ? ((this.compilation as VyperCompilation)
             .compilerVersionCompatibleWithSemver ??
             this.compilation.compilerVersion)
         : this.compilation.compilerVersion,
-      this.compilation.language === 'Vyper' &&
-        compilerOutputContainsImmutableVariables(
-          this.compilation.compilerOutput as VyperOutput | undefined,
-          this.compilation.compilationTarget.path,
-        ),
     );
 
     const matchBytecodesResult = await this.matchBytecodes(

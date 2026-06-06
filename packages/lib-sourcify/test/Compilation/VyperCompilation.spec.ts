@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
 import {
-  compilerOutputContainsImmutableVariables,
+  returnLegacyVyperImmutableReferences,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
 import { vyperCompiler } from '../utils';
@@ -770,46 +770,109 @@ describe('VyperCompilation outputSelection version gating', () => {
   });
 });
 
-describe('compilerOutputContainsImmutableVariables', () => {
-  it('detects Vyper immutable declarations from compiler AST output', () => {
+describe('returnLegacyVyperImmutableReferences', () => {
+  it('derives references from unwrapped Vyper 0.3.7 immutable annotations', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
           id: 0,
-          ast: {
-            ast_type: 'Module',
-            body: [
-              {
-                ast_type: 'VariableDecl',
-                is_immutable: true,
-              },
-            ],
-          },
+          ast: moduleAst([
+            variableDecl('A', subscript(name('uint256'), 3)),
+            variableDecl('B', subscript(name('String'), 10)),
+          ]),
         },
       },
     };
 
     expect(
-      compilerOutputContainsImmutableVariables(compilerOutput as any, 'test.vy'),
-    ).to.equal(true);
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        'test.vy',
+        '0x6000',
+      ),
+    ).to.deep.equal({
+      A: [{ length: 96, start: 2 }],
+      B: [{ length: 64, start: 98 }],
+    });
   });
 
-  it('returns false when compiler AST output has no immutable declarations', () => {
+  it('derives references from wrapped Vyper 0.3.4-0.3.6 immutable annotations', () => {
     const compilerOutput = {
       sources: {
         'test.vy': {
           id: 0,
-          ast: {
-            ast_type: 'Module',
-            body: [{ ast_type: 'FunctionDef' }],
-          },
+          ast: moduleAst([
+            variableDecl('A', immutableCall(subscript(name('uint256'), 3))),
+            variableDecl('B', immutableCall(subscript(name('String'), 10))),
+          ]),
         },
       },
     };
 
     expect(
-      compilerOutputContainsImmutableVariables(compilerOutput as any, 'test.vy'),
-    ).to.equal(false);
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        'test.vy',
+        '0x6000',
+      ),
+    ).to.deep.equal({
+      A: [{ length: 96, start: 2 }],
+      B: [{ length: 64, start: 98 }],
+    });
+  });
+
+  it('derives references from old Vyper 0.3.1-0.3.3 AnnAssign immutables', () => {
+    const compilerOutput = {
+      sources: {
+        'test.vy': {
+          id: 0,
+          ast: moduleAst([
+            annAssign('A', immutableCall(subscript(name('uint256'), 3))),
+            annAssign('B', immutableCall(subscript(name('String'), 10))),
+          ]),
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        'test.vy',
+        '0x6000',
+      ),
+    ).to.deep.equal({
+      A: [{ length: 96, start: 2 }],
+      B: [{ length: 64, start: 98 }],
+    });
+  });
+
+  it('derives references for structs and dynamic arrays', () => {
+    const compilerOutput = {
+      sources: {
+        'test.vy': {
+          id: 0,
+          ast: moduleAst([
+            structDef('MyStruct', [
+              ['a', name('uint256')],
+              ['b', name('address')],
+            ]),
+            variableDecl('C', name('MyStruct')),
+            variableDecl('D', dynArray(name('uint256'), 3)),
+          ]),
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        'test.vy',
+        '0x60',
+      ),
+    ).to.deep.equal({
+      C: [{ length: 64, start: 1 }],
+      D: [{ length: 128, start: 65 }],
+    });
   });
 
   it('only checks the compilation target source for immutable declarations', () => {
@@ -824,30 +887,98 @@ describe('compilerOutputContainsImmutableVariables', () => {
         },
         'unused.vy': {
           id: 1,
-          ast: {
-            ast_type: 'Module',
-            body: [
-              {
-                ast_type: 'VariableDecl',
-                is_immutable: true,
-              },
-            ],
-          },
+          ast: moduleAst([variableDecl('A', name('uint256'))]),
         },
       },
     };
 
     expect(
-      compilerOutputContainsImmutableVariables(
+      returnLegacyVyperImmutableReferences(
         compilerOutput as any,
         'target.vy',
+        '0x6000',
       ),
-    ).to.equal(false);
+    ).to.deep.equal({});
     expect(
-      compilerOutputContainsImmutableVariables(
+      returnLegacyVyperImmutableReferences(
         compilerOutput as any,
         'unused.vy',
+        '0x6000',
       ),
-    ).to.equal(true);
+    ).to.deep.equal({
+      A: [{ length: 32, start: 2 }],
+    });
   });
 });
+
+function moduleAst(body: any[]) {
+  return { ast_type: 'Module', body };
+}
+
+function name(id: string) {
+  return { ast_type: 'Name', id };
+}
+
+function int(value: number) {
+  return { ast_type: 'Int', value };
+}
+
+function subscript(value: any, length: number) {
+  return {
+    ast_type: 'Subscript',
+    value,
+    slice: {
+      ast_type: 'Index',
+      value: int(length),
+    },
+  };
+}
+
+function dynArray(subtype: any, maxLength: number) {
+  return {
+    ast_type: 'Subscript',
+    value: name('DynArray'),
+    slice: {
+      ast_type: 'Index',
+      value: {
+        ast_type: 'Tuple',
+        elements: [subtype, int(maxLength)],
+      },
+    },
+  };
+}
+
+function immutableCall(annotation: any) {
+  return {
+    ast_type: 'Call',
+    func: name('immutable'),
+    args: [annotation],
+  };
+}
+
+function variableDecl(variableName: string, annotation: any) {
+  return {
+    ast_type: 'VariableDecl',
+    is_immutable: true,
+    target: name(variableName),
+    annotation,
+  };
+}
+
+function annAssign(variableName: string, annotation: any) {
+  return {
+    ast_type: 'AnnAssign',
+    target: name(variableName),
+    annotation,
+  };
+}
+
+function structDef(structName: string, members: Array<[string, any]>) {
+  return {
+    ast_type: 'StructDef',
+    name: structName,
+    body: members.map(([memberName, annotation]) =>
+      annAssign(memberName, annotation),
+    ),
+  };
+}

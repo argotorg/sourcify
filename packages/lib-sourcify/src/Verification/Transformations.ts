@@ -13,7 +13,6 @@ import { logError } from '../logger';
 import semver from 'semver';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
-const LEGACY_VYPER_IMMUTABLE_BYTE_LENGTH = 32;
 
 export type Transformation = {
   type: 'insert' | 'replace' | 'delete';
@@ -140,11 +139,11 @@ export function inferLegacyVyperImmutableReferences(
   populatedRecompiledBytecodeWith0x: string,
   onchainRuntimeBytecodeWith0x: string,
   auxdataStyle: AuxdataStyle,
+  legacyImmutableReferences: ImmutableReferences,
   compilerVersion?: string,
-  hasImmutableVariables = false,
 ): ImmutableReferences {
   if (
-    !hasImmutableVariables ||
+    Object.keys(legacyImmutableReferences).length === 0 ||
     compilerVersion === undefined ||
     !isLegacyVyperImmutableAuxdataStyle(auxdataStyle) ||
     !semver.gte(compilerVersion, '0.3.1') ||
@@ -156,9 +155,10 @@ export function inferLegacyVyperImmutableReferences(
   const populatedRecompiledBytecode =
     populatedRecompiledBytecodeWith0x.slice(2);
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
+  const runtimeByteLength = populatedRecompiledBytecode.length / 2;
 
   // Legacy Vyper metadata does not encode immutable size. Keep this fallback
-  // limited to prefix-identical runtimes with the observed single-word tail.
+  // limited to prefix-identical runtimes with the AST-derived immutable layout.
   if (
     onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
     !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)
@@ -168,18 +168,37 @@ export function inferLegacyVyperImmutableReferences(
 
   const immutableLength =
     (onchainRuntimeBytecode.length - populatedRecompiledBytecode.length) / 2;
-  if (immutableLength !== LEGACY_VYPER_IMMUTABLE_BYTE_LENGTH) {
+  const expectedImmutableLength = getImmutableReferencesByteLength(
+    legacyImmutableReferences,
+    runtimeByteLength,
+  );
+  if (
+    expectedImmutableLength === undefined ||
+    immutableLength !== expectedImmutableLength
+  ) {
     return {};
   }
 
-  return {
-    '0': [
-      {
-        length: immutableLength,
-        start: populatedRecompiledBytecode.length / 2,
-      },
-    ],
-  };
+  return legacyImmutableReferences;
+}
+
+function getImmutableReferencesByteLength(
+  immutableReferences: ImmutableReferences,
+  runtimeByteLength: number,
+): number | undefined {
+  const references = Object.values(immutableReferences)
+    .flat()
+    .sort((a, b) => a.start - b.start);
+
+  let nextStart = runtimeByteLength;
+  for (const reference of references) {
+    if (reference.length <= 0 || reference.start !== nextStart) {
+      return undefined;
+    }
+    nextStart += reference.length;
+  }
+
+  return nextStart - runtimeByteLength;
 }
 
 // returns the full bytecode with the call protection replaced with the real address
@@ -225,8 +244,8 @@ export function extractImmutablesTransformation(
   onchainRuntimeBytecodeWith0x: string,
   immutableReferences: ImmutableReferences,
   auxdataStyle: AuxdataStyle,
+  legacyImmutableReferences: ImmutableReferences = {},
   compilerVersion?: string,
-  hasImmutableVariables = false,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
@@ -240,47 +259,50 @@ export function extractImmutablesTransformation(
           populatedRecompiledBytecodeWith0x,
           onchainRuntimeBytecodeWith0x,
           auxdataStyle,
+          legacyImmutableReferences,
           compilerVersion,
-          hasImmutableVariables,
         );
 
-  Object.keys(effectiveImmutableReferences).forEach((astId) => {
-    effectiveImmutableReferences[astId].forEach((reference) => {
-      const { start, length } = reference;
+  const immutableReferenceEntries = Object.entries(effectiveImmutableReferences)
+    .flatMap(([astId, references]) =>
+      references.map((reference) => ({ astId, reference })),
+    )
+    .sort((a, b) => a.reference.start - b.reference.start);
 
-      // Save the transformation
-      transformations.push(
-        ImmutablesTransformation(
-          start,
-          astId,
-          auxdataStyle === AuxdataStyle.SOLIDITY ? 'replace' : 'insert',
-        ),
-      );
+  immutableReferenceEntries.forEach(({ astId, reference }) => {
+    const { start, length } = reference;
 
-      // Extract the immutable value from the onchain bytecode.
-      const immutableValue = onchainRuntimeBytecode.slice(
-        start * 2,
-        start * 2 + length * 2,
-      );
+    // Save the transformation
+    transformations.push(
+      ImmutablesTransformation(
+        start,
+        astId,
+        auxdataStyle === AuxdataStyle.SOLIDITY ? 'replace' : 'insert',
+      ),
+    );
 
-      // Save the transformation value
-      if (transformationValues.immutables === undefined) {
-        transformationValues.immutables = {};
-      }
-      transformationValues.immutables[astId] = `0x${immutableValue}`;
+    // Extract the immutable value from the onchain bytecode.
+    const immutableValue = onchainRuntimeBytecode.slice(
+      start * 2,
+      start * 2 + length * 2,
+    );
 
-      if (auxdataStyle === AuxdataStyle.SOLIDITY) {
-        // Replace the placeholder in the recompiled bytecode with the onchain immutable value.
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode.slice(0, start * 2) +
-          immutableValue +
-          populatedRecompiledBytecode.slice(start * 2 + length * 2);
-      } else if (isVyperImmutableAuxdataStyle(auxdataStyle)) {
-        // For Vyper, insert the immutable value.
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode + immutableValue;
-      }
-    });
+    // Save the transformation value
+    if (transformationValues.immutables === undefined) {
+      transformationValues.immutables = {};
+    }
+    transformationValues.immutables[astId] = `0x${immutableValue}`;
+
+    if (auxdataStyle === AuxdataStyle.SOLIDITY) {
+      // Replace the placeholder in the recompiled bytecode with the onchain immutable value.
+      populatedRecompiledBytecode =
+        populatedRecompiledBytecode.slice(0, start * 2) +
+        immutableValue +
+        populatedRecompiledBytecode.slice(start * 2 + length * 2);
+    } else if (isVyperImmutableAuxdataStyle(auxdataStyle)) {
+      // For Vyper, insert the immutable value.
+      populatedRecompiledBytecode = populatedRecompiledBytecode + immutableValue;
+    }
   });
   return {
     populatedRecompiledBytecode: '0x' + populatedRecompiledBytecode,

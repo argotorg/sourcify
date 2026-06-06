@@ -68,19 +68,20 @@ describe('Transformations', () => {
       '0x000000000000000000000000216ce6e49e2e713e41383ba4c5d84a0d36189640';
     const onchainRuntime = recompiledRuntime + immutableValue.slice(2);
     const immutableOffset = 15;
+    const legacyImmutableReferences = {
+      VALUE: [{ length: 32, start: immutableOffset }],
+    };
 
     it('infers a synthetic immutable reference for an append-only legacy Vyper tail', () => {
       const immutableReferences = inferLegacyVyperImmutableReferences(
         recompiledRuntime,
         onchainRuntime,
         AuxdataStyle.VYPER_LT_0_3_10,
+        legacyImmutableReferences,
         compilerVersion,
-        true,
       );
 
-      expect(immutableReferences).to.deep.equal({
-        '0': [{ length: 32, start: immutableOffset }],
-      });
+      expect(immutableReferences).to.deep.equal(legacyImmutableReferences);
     });
 
     it('appends the observed immutable value for legacy Vyper runtimes', () => {
@@ -89,8 +90,8 @@ describe('Transformations', () => {
         onchainRuntime,
         {},
         AuxdataStyle.VYPER_LT_0_3_10,
+        legacyImmutableReferences,
         compilerVersion,
-        true,
       );
 
       expect(result.populatedRecompiledBytecode).to.equal(onchainRuntime);
@@ -99,23 +100,67 @@ describe('Transformations', () => {
           type: 'insert',
           reason: 'immutable',
           offset: immutableOffset,
-          id: '0',
+          id: 'VALUE',
         },
       ]);
       expect(result.transformationValues).to.deep.equal({
         immutables: {
-          '0': immutableValue,
+          VALUE: immutableValue,
         },
       });
     });
 
-    it('does not infer a legacy Vyper immutable without an AST immutable declaration', () => {
+    it('appends multiword legacy Vyper immutable values using the derived layout', () => {
+      const firstImmutableValue = '11'.repeat(32);
+      const secondImmutableValue = '22'.repeat(64);
+      const multiwordOnchainRuntime =
+        recompiledRuntime + firstImmutableValue + secondImmutableValue;
+      const multiwordImmutableReferences = {
+        A: [{ length: 32, start: immutableOffset }],
+        B: [{ length: 64, start: immutableOffset + 32 }],
+      };
+
+      const result = extractImmutablesTransformation(
+        recompiledRuntime,
+        multiwordOnchainRuntime,
+        {},
+        AuxdataStyle.VYPER_LT_0_3_10,
+        multiwordImmutableReferences,
+        compilerVersion,
+      );
+
+      expect(result.populatedRecompiledBytecode).to.equal(
+        multiwordOnchainRuntime,
+      );
+      expect(result.transformations).to.deep.equal([
+        {
+          type: 'insert',
+          reason: 'immutable',
+          offset: immutableOffset,
+          id: 'A',
+        },
+        {
+          type: 'insert',
+          reason: 'immutable',
+          offset: immutableOffset + 32,
+          id: 'B',
+        },
+      ]);
+      expect(result.transformationValues).to.deep.equal({
+        immutables: {
+          A: `0x${firstImmutableValue}`,
+          B: `0x${secondImmutableValue}`,
+        },
+      });
+    });
+
+    it('does not infer a legacy Vyper immutable without derived references', () => {
       const immutableReferences = inferLegacyVyperImmutableReferences(
         recompiledRuntime,
         onchainRuntime,
         AuxdataStyle.VYPER_LT_0_3_10,
+        {},
         compilerVersion,
-        false,
       );
 
       expect(immutableReferences).to.deep.equal({});
@@ -126,8 +171,8 @@ describe('Transformations', () => {
         recompiledRuntime,
         onchainRuntime,
         AuxdataStyle.VYPER,
+        legacyImmutableReferences,
         '0.3.10+commit.91361694',
-        true,
       );
 
       expect(immutableReferences).to.deep.equal({});
@@ -141,8 +186,8 @@ describe('Transformations', () => {
         recompiledRuntime,
         onchainRuntimeWithOversizedTail,
         AuxdataStyle.VYPER_LT_0_3_10,
+        legacyImmutableReferences,
         compilerVersion,
-        true,
       );
 
       expect(immutableReferences).to.deep.equal({});
@@ -167,13 +212,11 @@ describe('Transformations', () => {
           recompiledRuntime,
           onchainRuntime,
           auxdataStyle,
+          legacyImmutableReferences,
           compilerVersion,
-          true,
         );
 
-        expect(immutableReferences).to.deep.equal({
-          '0': [{ length: 32, start: immutableOffset }],
-        });
+        expect(immutableReferences).to.deep.equal(legacyImmutableReferences);
       });
     });
 
@@ -192,8 +235,8 @@ describe('Transformations', () => {
           recompiledRuntime,
           onchainRuntime,
           auxdataStyle,
+          legacyImmutableReferences,
           compilerVersion,
-          true,
         );
 
         expect(immutableReferences).to.deep.equal({});
