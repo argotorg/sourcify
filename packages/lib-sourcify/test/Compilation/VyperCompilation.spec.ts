@@ -825,6 +825,79 @@ describe('returnLegacyVyperImmutableReferences', () => {
     });
   });
 
+  it('derives a synthetic tail reference from real Vyper 0.3.7 mixed public and non-public immutable ASTs', async () => {
+    const contractFileName = 'test.vy';
+    const contractContent = `# @version 0.3.7
+
+TARGET: public(immutable(address))
+SALT: immutable(bytes32)
+
+
+@external
+def __init__(_target: address, _salt: bytes32):
+    TARGET = _target
+    SALT = _salt
+
+
+@external
+@view
+def salt() -> bytes32:
+    return SALT
+`;
+    const compilation = new VyperCompilation(
+      vyperCompiler,
+      '0.3.7+commit.6020b8bb',
+      {
+        language: 'Vyper',
+        sources: {
+          [contractFileName]: {
+            content: contractContent,
+          },
+        },
+        settings: {
+          evmVersion: 'istanbul',
+          outputSelection: {
+            '*': ['evm.bytecode'],
+          },
+        },
+      },
+      {
+        name: contractFileName.split('.')[0],
+        path: contractFileName,
+      },
+    );
+
+    await compilation.compile();
+
+    const ast = compilation.compilerOutput?.sources?.[contractFileName]?.ast;
+    const declarations = ast?.body.filter(
+      (node: any) => node.ast_type === 'VariableDecl',
+    );
+    const targetDecl = declarations?.find(
+      (node: any) => node.target?.id === 'TARGET',
+    );
+    const saltDecl = declarations?.find(
+      (node: any) => node.target?.id === 'SALT',
+    );
+    expect(targetDecl?.target?.id).to.equal('TARGET');
+    expect(targetDecl?.is_public).to.equal(true);
+    expect(targetDecl?.is_immutable).to.equal(true);
+    expect(targetDecl?.annotation?.id).to.equal('address');
+    expect(saltDecl?.target?.id).to.equal('SALT');
+    expect(saltDecl?.is_public).to.equal(false);
+    expect(saltDecl?.is_immutable).to.equal(true);
+    expect(saltDecl?.annotation?.id).to.equal('bytes32');
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilation.compilerOutput,
+        contractFileName,
+        compilation.runtimeBytecode,
+      ),
+    ).to.deep.equal({
+      '0': [{ length: 64, start: compilation.runtimeBytecode.length / 2 - 1 }],
+    });
+  });
+
   it('derives a synthetic tail reference from unwrapped Vyper 0.3.7 immutable annotations', () => {
     const compilerOutput = {
       sources: {
