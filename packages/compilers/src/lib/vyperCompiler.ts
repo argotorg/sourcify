@@ -14,7 +14,9 @@ const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
 export function stringifyVyperJsonInput(
   vyperJsonInput: VyperJsonInput,
 ): string {
+  // Keep stdin ASCII-only for locale-sensitive Vyper release binaries.
   return JSON.stringify(vyperJsonInput).replace(
+    // Escape non-ASCII UTF-16 code units, including surrogate pairs.
     /[\u0080-\uFFFF]/g,
     (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
   );
