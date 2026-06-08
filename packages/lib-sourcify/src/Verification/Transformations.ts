@@ -10,7 +10,6 @@ import type {
 import type { InterfaceAbi } from 'ethers';
 import { AbiCoder, id as keccak256Str, Interface } from 'ethers';
 import { logError } from '../logger';
-import semver from 'semver';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
 
@@ -125,31 +124,17 @@ function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
   );
 }
 
-function isLegacyVyperImmutableAuxdataStyle(
-  auxdataStyle: AuxdataStyle,
-): boolean {
-  return (
-    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_10 ||
-    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5 ||
-    auxdataStyle === AuxdataStyle.VYPER_LT_0_3_4
-  );
-}
-
-export function inferLegacyVyperImmutableReferences(
+function getValidatedVyperImmutableReferences(
   populatedRecompiledBytecodeWith0x: string,
   onchainRuntimeBytecodeWith0x: string,
   auxdataStyle: AuxdataStyle,
-  legacyImmutableReferences: ImmutableReferences,
-  compilerVersion?: string,
+  immutableReferences: ImmutableReferences,
 ): ImmutableReferences {
   if (
-    Object.keys(legacyImmutableReferences).length === 0 ||
-    compilerVersion === undefined ||
-    !isLegacyVyperImmutableAuxdataStyle(auxdataStyle) ||
-    !semver.gte(compilerVersion, '0.3.1') ||
-    !semver.lt(compilerVersion, '0.3.10')
+    Object.keys(immutableReferences).length === 0 ||
+    !isVyperImmutableAuxdataStyle(auxdataStyle)
   ) {
-    return {};
+    return immutableReferences;
   }
 
   const populatedRecompiledBytecode =
@@ -157,9 +142,9 @@ export function inferLegacyVyperImmutableReferences(
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
   const runtimeByteLength = populatedRecompiledBytecode.length / 2;
 
-  // Legacy Vyper metadata does not encode immutable size. Keep this fallback
-  // limited to prefix-identical runtimes with the compiler-derived immutable
-  // tail length.
+  // Vyper appends immutable values as a tail after the compiler runtime.
+  // Only record/apply the transformation when the observed onchain tail length
+  // exactly matches the compiler-derived references.
   if (
     onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
     !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)
@@ -170,7 +155,7 @@ export function inferLegacyVyperImmutableReferences(
   const immutableLength =
     (onchainRuntimeBytecode.length - populatedRecompiledBytecode.length) / 2;
   const expectedImmutableLength = getImmutableReferencesByteLength(
-    legacyImmutableReferences,
+    immutableReferences,
     runtimeByteLength,
   );
   if (
@@ -180,7 +165,7 @@ export function inferLegacyVyperImmutableReferences(
     return {};
   }
 
-  return legacyImmutableReferences;
+  return immutableReferences;
 }
 
 function getImmutableReferencesByteLength(
@@ -249,24 +234,18 @@ export function extractImmutablesTransformation(
   onchainRuntimeBytecodeWith0x: string,
   immutableReferences: ImmutableReferences,
   auxdataStyle: AuxdataStyle,
-  legacyImmutableReferences: ImmutableReferences = {},
-  compilerVersion?: string,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
   // Remove "0x" from the beginning of both bytecodes.
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
   let populatedRecompiledBytecode = populatedRecompiledBytecodeWith0x.slice(2);
-  const effectiveImmutableReferences =
-    Object.keys(immutableReferences).length > 0
-      ? immutableReferences
-      : inferLegacyVyperImmutableReferences(
-          populatedRecompiledBytecodeWith0x,
-          onchainRuntimeBytecodeWith0x,
-          auxdataStyle,
-          legacyImmutableReferences,
-          compilerVersion,
-        );
+  const effectiveImmutableReferences = getValidatedVyperImmutableReferences(
+    populatedRecompiledBytecodeWith0x,
+    onchainRuntimeBytecodeWith0x,
+    auxdataStyle,
+    immutableReferences,
+  );
 
   const immutableReferenceEntries: Array<{
     astId: string;

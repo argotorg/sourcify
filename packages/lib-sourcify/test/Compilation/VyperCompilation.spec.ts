@@ -3,7 +3,9 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
+import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import {
+  returnImmutableReferences,
   returnLegacyVyperImmutableReferences,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
@@ -809,13 +811,7 @@ describe('returnLegacyVyperImmutableReferences', () => {
 
     await compilation.compile();
 
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilation.compilerOutput,
-        compilation.compilationTarget,
-        compilation.runtimeBytecode,
-      ),
-    ).to.deep.equal({
+    expect(compilation.immutableReferences).to.deep.equal({
       '0': [{ length: 32, start: 88 }],
     });
   });
@@ -876,13 +872,7 @@ def salt() -> bytes32:
 
     await compilation.compile();
 
-    expect(
-      returnLegacyVyperImmutableReferences(
-        compilation.compilerOutput,
-        compilation.compilationTarget,
-        compilation.runtimeBytecode,
-      ),
-    ).to.deep.equal({
+    expect(compilation.immutableReferences).to.deep.equal({
       '0': [{ length: 256, start: compilation.runtimeBytecode.length / 2 - 1 }],
     });
   });
@@ -905,14 +895,40 @@ def salt() -> bytes32:
     };
 
     expect(
-      returnLegacyVyperImmutableReferences(
+      returnImmutableReferences(
+        '0.3.1',
+        '0x',
+        '0x600102',
+        AuxdataStyle.VYPER_LT_0_3_4,
         compilerOutput as any,
         { name: 'test', path: 'test.vy' },
-        '0x600102',
       ),
     ).to.deep.equal({
       '0': [{ length: 64, start: 3 }],
     });
+  });
+
+  it('does not derive a legacy immutable reference before Vyper 0.3.1', () => {
+    const compilerOutput = {
+      contracts: {
+        'test.vy': {
+          test: {
+            ir: '[return, 320, [add, 64, _lllsz]]',
+          },
+        },
+      },
+    };
+
+    expect(
+      returnImmutableReferences(
+        '0.3.0',
+        '0x',
+        '0x600102',
+        AuxdataStyle.VYPER_LT_0_3_4,
+        compilerOutput as any,
+        { name: 'test', path: 'test.vy' },
+      ),
+    ).to.deep.equal({});
   });
 
   it('ignores ambiguous Vyper 0.3.1 text IR immutable lengths', () => {
@@ -945,6 +961,28 @@ def salt() -> bytes32:
           test: {
             ir: {
               deploy: [256, { runtime: [] }, 31],
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        { name: 'test', path: 'test.vy' },
+        '0x6000',
+      ),
+    ).to.deep.equal({});
+  });
+
+  it('ignores zero structured IR immutable length', () => {
+    const compilerOutput = {
+      contracts: {
+        'test.vy': {
+          test: {
+            ir: {
+              deploy: [256, { runtime: [] }, 0],
             },
           },
         },

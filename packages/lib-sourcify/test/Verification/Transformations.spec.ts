@@ -3,7 +3,6 @@ import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import {
   AuxdataTransformation,
   extractImmutablesTransformation,
-  inferLegacyVyperImmutableReferences,
 } from '../../src/Verification/Transformations';
 
 describe('Transformations', () => {
@@ -61,8 +60,7 @@ describe('Transformations', () => {
     });
   });
 
-  describe('legacy Vyper immutable transformations', () => {
-    const compilerVersion = '0.3.7+commit.6020b8bb';
+  describe('Vyper immutable transformations', () => {
     const recompiledRuntime = '0x6000a165767970657283000307000b';
     const immutableValue =
       '0x000000000000000000000000216ce6e49e2e713e41383ba4c5d84a0d36189640';
@@ -72,26 +70,12 @@ describe('Transformations', () => {
       '0': [{ length: 32, start: immutableOffset }],
     };
 
-    it('infers the synthetic immutable reference for an append-only legacy Vyper tail', () => {
-      const immutableReferences = inferLegacyVyperImmutableReferences(
-        recompiledRuntime,
-        onchainRuntime,
-        AuxdataStyle.VYPER_LT_0_3_10,
-        legacyImmutableReferences,
-        compilerVersion,
-      );
-
-      expect(immutableReferences).to.deep.equal(legacyImmutableReferences);
-    });
-
     it('appends the observed immutable value for legacy Vyper runtimes', () => {
       const result = extractImmutablesTransformation(
         recompiledRuntime,
         onchainRuntime,
-        {},
-        AuxdataStyle.VYPER_LT_0_3_10,
         legacyImmutableReferences,
-        compilerVersion,
+        AuxdataStyle.VYPER_LT_0_3_10,
       );
 
       expect(result.populatedRecompiledBytecode).to.equal(onchainRuntime);
@@ -110,7 +94,31 @@ describe('Transformations', () => {
       });
     });
 
-    it('appends a multiword legacy Vyper immutable tail using the derived length', () => {
+    it('appends the observed immutable value for Vyper 0.3.10+ runtimes', () => {
+      const result = extractImmutablesTransformation(
+        recompiledRuntime,
+        onchainRuntime,
+        legacyImmutableReferences,
+        AuxdataStyle.VYPER,
+      );
+
+      expect(result.populatedRecompiledBytecode).to.equal(onchainRuntime);
+      expect(result.transformations).to.deep.equal([
+        {
+          type: 'insert',
+          reason: 'immutable',
+          offset: immutableOffset,
+          id: '0',
+        },
+      ]);
+      expect(result.transformationValues).to.deep.equal({
+        immutables: {
+          '0': immutableValue,
+        },
+      });
+    });
+
+    it('appends a multiword Vyper immutable tail using the derived length', () => {
       const firstImmutableValue = '11'.repeat(32);
       const secondImmutableValue = '22'.repeat(64);
       const multiwordOnchainRuntime =
@@ -122,10 +130,8 @@ describe('Transformations', () => {
       const result = extractImmutablesTransformation(
         recompiledRuntime,
         multiwordOnchainRuntime,
-        {},
-        AuxdataStyle.VYPER_LT_0_3_10,
         multiwordImmutableReferences,
-        compilerVersion,
+        AuxdataStyle.VYPER_LT_0_3_10,
       );
 
       expect(result.populatedRecompiledBytecode).to.equal(
@@ -146,92 +152,88 @@ describe('Transformations', () => {
       });
     });
 
-    it('does not infer a legacy Vyper immutable without derived references', () => {
-      const immutableReferences = inferLegacyVyperImmutableReferences(
+    it('does not record a phantom Vyper immutable when the bytecodes already match', () => {
+      const result = extractImmutablesTransformation(
         recompiledRuntime,
-        onchainRuntime,
-        AuxdataStyle.VYPER_LT_0_3_10,
-        {},
-        compilerVersion,
-      );
-
-      expect(immutableReferences).to.deep.equal({});
-    });
-
-    it('does not infer a legacy Vyper immutable for the 0.3.10+ auxdata layout', () => {
-      const immutableReferences = inferLegacyVyperImmutableReferences(
         recompiledRuntime,
-        onchainRuntime,
-        AuxdataStyle.VYPER,
         legacyImmutableReferences,
-        '0.3.10+commit.91361694',
+        AuxdataStyle.VYPER_LT_0_3_10,
       );
 
-      expect(immutableReferences).to.deep.equal({});
+      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
+      expect(result.transformations).to.deep.equal([]);
+      expect(result.transformationValues).to.deep.equal({});
     });
 
-    it('does not infer a legacy Vyper immutable for an oversized tail', () => {
+    it('does not append a Vyper immutable for an oversized tail', () => {
       const onchainRuntimeWithOversizedTail = onchainRuntime + '00'.repeat(32);
 
-      const immutableReferences = inferLegacyVyperImmutableReferences(
+      const result = extractImmutablesTransformation(
         recompiledRuntime,
         onchainRuntimeWithOversizedTail,
-        AuxdataStyle.VYPER_LT_0_3_10,
         legacyImmutableReferences,
-        compilerVersion,
+        AuxdataStyle.VYPER_LT_0_3_10,
       );
 
-      expect(immutableReferences).to.deep.equal({});
+      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
+      expect(result.transformations).to.deep.equal([]);
+      expect(result.transformationValues).to.deep.equal({});
+    });
+
+    it('does not append a Vyper immutable when the runtime prefix differs', () => {
+      const onchainRuntimeWithPrefixDifference =
+        '0x6100' + recompiledRuntime.slice(6) + immutableValue.slice(2);
+
+      const result = extractImmutablesTransformation(
+        recompiledRuntime,
+        onchainRuntimeWithPrefixDifference,
+        legacyImmutableReferences,
+        AuxdataStyle.VYPER_LT_0_3_10,
+      );
+
+      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
+      expect(result.transformations).to.deep.equal([]);
+      expect(result.transformationValues).to.deep.equal({});
     });
 
     [
-      {
-        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_4,
-        compilerVersion: '0.3.1+commit.b6b9fb7b',
-      },
-      {
-        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_5,
-        compilerVersion: '0.3.4+commit.f31f0ec4',
-      },
-      {
-        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_10,
-        compilerVersion: '0.3.9+commit.66b96705',
-      },
-    ].forEach(({ auxdataStyle, compilerVersion }) => {
-      it(`infers a legacy Vyper immutable for ${compilerVersion}`, () => {
-        const immutableReferences = inferLegacyVyperImmutableReferences(
+      AuxdataStyle.VYPER_LT_0_3_4,
+      AuxdataStyle.VYPER_LT_0_3_5,
+      AuxdataStyle.VYPER_LT_0_3_10,
+      AuxdataStyle.VYPER,
+    ].forEach((auxdataStyle) => {
+      it(`validates and appends a Vyper immutable for ${auxdataStyle}`, () => {
+        const result = extractImmutablesTransformation(
           recompiledRuntime,
           onchainRuntime,
-          auxdataStyle,
           legacyImmutableReferences,
-          compilerVersion,
+          auxdataStyle,
         );
 
-        expect(immutableReferences).to.deep.equal(legacyImmutableReferences);
+        expect(result.populatedRecompiledBytecode).to.equal(onchainRuntime);
+        expect(result.transformations).to.have.length(1);
       });
     });
 
-    [
-      {
-        auxdataStyle: AuxdataStyle.VYPER_LT_0_3_4,
-        compilerVersion: '0.3.0+commit.8d3d8f8b',
-      },
-      {
-        auxdataStyle: AuxdataStyle.VYPER,
-        compilerVersion: '0.3.10+commit.91361694',
-      },
-    ].forEach(({ auxdataStyle, compilerVersion }) => {
-      it(`does not infer a legacy Vyper immutable for ${compilerVersion}`, () => {
-        const immutableReferences = inferLegacyVyperImmutableReferences(
-          recompiledRuntime,
-          onchainRuntime,
-          auxdataStyle,
-          legacyImmutableReferences,
-          compilerVersion,
-        );
+    it('keeps Solidity immutable replacement behavior unchanged', () => {
+      const solidityRecompiledRuntime =
+        '0x6000' + '00'.repeat(32) + 'a165627a7a72305820';
+      const solidityOnchainRuntime =
+        '0x6000' + immutableValue.slice(2) + 'a165627a7a72305820';
+      const solidityImmutableReferences = {
+        '1': [{ length: 32, start: 2 }],
+      };
 
-        expect(immutableReferences).to.deep.equal({});
-      });
+      const result = extractImmutablesTransformation(
+        solidityRecompiledRuntime,
+        solidityOnchainRuntime,
+        solidityImmutableReferences,
+        AuxdataStyle.SOLIDITY,
+      );
+
+      expect(result.populatedRecompiledBytecode).to.equal(
+        solidityOnchainRuntime,
+      );
     });
   });
 });
