@@ -4,12 +4,14 @@ import {
   AuxdataStyle,
   decode,
   splitAuxdata,
+  type VyperDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
 import semver, { gte, gt, lt } from 'semver';
 import type {
   VyperJsonInput,
   VyperOutput,
   VyperOutputContract,
+  VyperIROutput,
   ImmutableReferences,
   LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
@@ -78,11 +80,13 @@ const WORD_SIZE = 32;
 const LEGACY_VYPER_TEXT_IR_IMMUTABLE_RETURN =
   /\[return,\s*(\d+),\s*\[add,\s*(\d+),\s*_lllsz\]\]/g;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(
+  value: VyperIROutput,
+): value is { [key: string]: VyperIROutput } {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isValidImmutableLength(length: unknown): length is number {
+function isValidImmutableLength(length: VyperIROutput): length is number {
   return (
     typeof length === 'number' &&
     Number.isSafeInteger(length) &&
@@ -92,7 +96,7 @@ function isValidImmutableLength(length: unknown): length is number {
 }
 
 function collectStructuredIrImmutableLengths(
-  node: unknown,
+  node: VyperIROutput,
   lengths: number[] = [],
 ): number[] {
   if (Array.isArray(node)) {
@@ -128,7 +132,12 @@ function extractTextIrImmutableLengths(ir: string): number[] {
   return lengths;
 }
 
-function getLegacyVyperImmutableLengthFromIr(ir: unknown): number | undefined {
+function getLegacyVyperImmutableLengthFromIr(
+  ir: VyperIROutput | undefined,
+): number | undefined {
+  if (ir === undefined) {
+    return undefined;
+  }
   const lengths =
     typeof ir === 'string'
       ? extractTextIrImmutableLengths(ir)
@@ -179,8 +188,14 @@ export function returnImmutableReferences(
   let immutableReferences: ImmutableReferences = {};
   if (gte(compilerVersion, '0.3.10')) {
     try {
-      const { immutableSize } = decode(creationBytecode, auxdataStyle);
-      if (isValidImmutableLength(immutableSize)) {
+      const { immutableSize } = decode(
+        creationBytecode,
+        auxdataStyle,
+      ) as VyperDecodedObject;
+      if (
+        immutableSize !== undefined &&
+        isValidImmutableLength(immutableSize)
+      ) {
         immutableReferences = {
           '0': [
             {

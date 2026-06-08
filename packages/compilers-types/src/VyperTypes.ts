@@ -80,11 +80,26 @@ export interface VyperStorageLayout {
   [variableName: string]: { type: string; slot: number; n_slots: number };
 }
 
+/**
+ * Vyper's `ir` output. Version 0.3.1 emits text LLL as a string; 0.3.2 and
+ * later (including 0.3.10+ and 0.4.x) emit a structured IR tree where each
+ * node is `{ <opcode>: [ ...args ] }` with number/string leaves. Modelled as
+ * a recursive JSON value (only string/number/array/object are emitted in
+ * practice) so consumers must narrow before reading into it.
+ */
+export type VyperIROutput =
+  | string
+  | number
+  | boolean
+  | null
+  | VyperIROutput[]
+  | { [key: string]: VyperIROutput };
+
 export interface VyperOutputContract {
   abi: JsonFragment[];
   userdoc: Userdoc;
   devdoc: Devdoc;
-  ir: string;
+  ir: VyperIROutput;
   layout?: {
     storage_layout: VyperStorageLayout;
   };
