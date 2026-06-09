@@ -6,9 +6,9 @@ import fs from 'fs';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import {
   returnImmutableReferences,
-  returnLegacyVyperImmutableReferences,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
+import { returnLegacyVyperImmutableReferences } from '../../src/Compilation/legacyVyperImmutablesHelpers';
 import { vyperCompiler } from '../utils';
 
 chai.use(chaiAsPromised);
