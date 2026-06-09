@@ -497,6 +497,15 @@ type proxyResolutionSubfields = keyof Partial<
   VerifiedContractApiObject["proxyResolution"]
 >;
 
+// Top-level standard JSON input fields (besides language/sources/settings) that the
+// database can store in the `compiled_contracts.additional_input` column. The API
+// rejects any other top-level field for better UX, while the DB CHECK constraint
+// `validate_additional_input` remains the authoritative backstop. Keep this list in
+// sync with that constraint (services/database/database-specs/migrations).
+export const SUPPORTED_ADDITIONAL_INPUT_FIELDS = [
+  "storage_layout_overrides",
+] as const;
+
 // used for API v2 GET contract endpoint
 export const FIELDS_TO_STORED_PROPERTIES: Record<
   keyof Omit<
@@ -888,13 +897,8 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
-      additional_input: verification.compilation.jsonInput
-        .storageLayoutOverrides
-        ? {
-            storage_layout_overrides:
-              verification.compilation.jsonInput.storageLayoutOverrides,
-          }
-        : null,
+      additional_input:
+        verification.compilation.jsonInput.additionalInput ?? null,
     },
     sourcesInformation,
     verifiedContract: {

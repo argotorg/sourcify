@@ -387,6 +387,8 @@ components:
                   Full [standard JSON object](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) to pass to the compiler. 
 
                   Must include the `language` field inside the stdJsonInput object. Currently supports Solidity, Vyper, and Fe.
+
+                  Only top-level fields that Sourcify stores are accepted: `language`, `sources`, `settings`, and `storage_layout_overrides` (Vyper).
               compilerVersion:
                 $ref: "#/components/schemas/CompilerVersion"
               contractIdentifier:

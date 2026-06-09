@@ -1626,9 +1626,9 @@ describe('Verification Class Tests', () => {
       });
 
       const exported = verification.export();
-      expect(
-        exported.compilation.jsonInput.storageLayoutOverrides,
-      ).to.deep.equal(storageLayoutOverrides);
+      expect(exported.compilation.jsonInput.additionalInput).to.deep.equal({
+        storage_layout_overrides: storageLayoutOverrides,
+      });
     });
 
     it('should export Vyper storage layout and sourceMaps', async () => {
