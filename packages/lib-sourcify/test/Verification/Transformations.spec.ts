@@ -152,20 +152,21 @@ describe('Transformations', () => {
       });
     });
 
-    it('does not record a phantom Vyper immutable when the bytecodes already match', () => {
-      const result = extractImmutablesTransformation(
-        recompiledRuntime,
-        recompiledRuntime,
-        legacyImmutableReferences,
-        AuxdataStyle.VYPER_LT_0_3_10,
-      );
-
-      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
-      expect(result.transformations).to.deep.equal([]);
-      expect(result.transformationValues).to.deep.equal({});
+    it('throws when the onchain bytecode lacks the inferred Vyper immutable tail', () => {
+      expect(() =>
+        extractImmutablesTransformation(
+          recompiledRuntime,
+          recompiledRuntime,
+          legacyImmutableReferences,
+          AuxdataStyle.VYPER_LT_0_3_10,
+        ),
+      ).to.throw('Vyper immutable length mismatch');
     });
 
-    it('does not append a Vyper immutable for an oversized tail', () => {
+    it('does not reconstruct an oversized onchain runtime', () => {
+      // The immutable tail is appended, but the populated bytecode does not
+      // equal the longer onchain runtime, so the matchBytecodes comparison
+      // rejects it (no false match).
       const onchainRuntimeWithOversizedTail = onchainRuntime + '00'.repeat(32);
 
       const result = extractImmutablesTransformation(
@@ -175,12 +176,15 @@ describe('Transformations', () => {
         AuxdataStyle.VYPER_LT_0_3_10,
       );
 
-      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
-      expect(result.transformations).to.deep.equal([]);
-      expect(result.transformationValues).to.deep.equal({});
+      expect(result.populatedRecompiledBytecode).to.not.equal(
+        onchainRuntimeWithOversizedTail,
+      );
     });
 
-    it('does not append a Vyper immutable when the runtime prefix differs', () => {
+    it('does not reconstruct a runtime whose prefix differs', () => {
+      // The immutable tail is appended, but since the runtime prefix differs the
+      // populated bytecode does not equal the onchain runtime, so matchBytecodes
+      // rejects it (no false match).
       const onchainRuntimeWithPrefixDifference =
         '0x6100' + recompiledRuntime.slice(6) + immutableValue.slice(2);
 
@@ -191,9 +195,9 @@ describe('Transformations', () => {
         AuxdataStyle.VYPER_LT_0_3_10,
       );
 
-      expect(result.populatedRecompiledBytecode).to.equal(recompiledRuntime);
-      expect(result.transformations).to.deep.equal([]);
-      expect(result.transformationValues).to.deep.equal({});
+      expect(result.populatedRecompiledBytecode).to.not.equal(
+        onchainRuntimeWithPrefixDifference,
+      );
     });
 
     [

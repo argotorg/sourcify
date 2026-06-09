@@ -124,73 +124,6 @@ function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
   );
 }
 
-function getValidatedVyperImmutableReferences(
-  populatedRecompiledBytecodeWith0x: string,
-  onchainRuntimeBytecodeWith0x: string,
-  auxdataStyle: AuxdataStyle,
-  immutableReferences: ImmutableReferences,
-): ImmutableReferences {
-  if (
-    Object.keys(immutableReferences).length === 0 ||
-    !isVyperImmutableAuxdataStyle(auxdataStyle)
-  ) {
-    return immutableReferences;
-  }
-
-  const populatedRecompiledBytecode =
-    populatedRecompiledBytecodeWith0x.slice(2);
-  const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
-  const runtimeByteLength = populatedRecompiledBytecode.length / 2;
-
-  // Vyper appends immutable values as a tail after the compiler runtime.
-  // Only record/apply the transformation when the observed onchain tail length
-  // exactly matches the compiler-derived references.
-  if (
-    onchainRuntimeBytecode.length <= populatedRecompiledBytecode.length ||
-    !onchainRuntimeBytecode.startsWith(populatedRecompiledBytecode)
-  ) {
-    return {};
-  }
-
-  const immutableLength =
-    (onchainRuntimeBytecode.length - populatedRecompiledBytecode.length) / 2;
-  const expectedImmutableLength = getImmutableReferencesByteLength(
-    immutableReferences,
-    runtimeByteLength,
-  );
-  if (
-    expectedImmutableLength === undefined ||
-    immutableLength !== expectedImmutableLength
-  ) {
-    return {};
-  }
-
-  return immutableReferences;
-}
-
-function getImmutableReferencesByteLength(
-  immutableReferences: ImmutableReferences,
-  runtimeByteLength: number,
-): number | undefined {
-  const references: Array<{ length: number; start: number }> = [];
-
-  for (const refs of Object.values(immutableReferences)) {
-    references.push(...refs);
-  }
-
-  references.sort((a, b) => a.start - b.start);
-
-  let nextStart = runtimeByteLength;
-  for (const reference of references) {
-    if (reference.length <= 0 || reference.start !== nextStart) {
-      return undefined;
-    }
-    nextStart += reference.length;
-  }
-
-  return nextStart - runtimeByteLength;
-}
-
 // returns the full bytecode with the call protection replaced with the real address
 export function extractCallProtectionTransformation(
   populatedRecompiledBytecode: string,
@@ -240,21 +173,13 @@ export function extractImmutablesTransformation(
   // Remove "0x" from the beginning of both bytecodes.
   const onchainRuntimeBytecode = onchainRuntimeBytecodeWith0x.slice(2);
   let populatedRecompiledBytecode = populatedRecompiledBytecodeWith0x.slice(2);
-  const effectiveImmutableReferences = getValidatedVyperImmutableReferences(
-    populatedRecompiledBytecodeWith0x,
-    onchainRuntimeBytecodeWith0x,
-    auxdataStyle,
-    immutableReferences,
-  );
 
   const immutableReferenceEntries: Array<{
     astId: string;
     reference: { length: number; start: number };
   }> = [];
 
-  for (const [astId, references] of Object.entries(
-    effectiveImmutableReferences,
-  )) {
+  for (const [astId, references] of Object.entries(immutableReferences)) {
     for (const reference of references) {
       immutableReferenceEntries.push({ astId, reference });
     }
@@ -267,6 +192,24 @@ export function extractImmutablesTransformation(
   immutableReferenceEntries.forEach(({ astId, reference }) => {
     const { start, length } = reference;
 
+    // Extract the immutable value from the onchain bytecode.
+    const immutableValue = onchainRuntimeBytecode.slice(
+      start * 2,
+      start * 2 + length * 2,
+    );
+
+    // Safeguard against the IR heuristic: slice() can read past the end of the
+    // onchain bytecode and silently return a shorter value, so throw if the
+    // extracted immutable isn't the expected length.
+    if (
+      isVyperImmutableAuxdataStyle(auxdataStyle) &&
+      immutableValue.length !== length * 2
+    ) {
+      throw new Error(
+        `Vyper immutable length mismatch: expected ${length} bytes at offset ${start}, got ${immutableValue.length / 2}`,
+      );
+    }
+
     // Save the transformation
     transformations.push(
       ImmutablesTransformation(
@@ -274,12 +217,6 @@ export function extractImmutablesTransformation(
         astId,
         auxdataStyle === AuxdataStyle.SOLIDITY ? 'replace' : 'insert',
       ),
-    );
-
-    // Extract the immutable value from the onchain bytecode.
-    const immutableValue = onchainRuntimeBytecode.slice(
-      start * 2,
-      start * 2 + length * 2,
     );
 
     // Save the transformation value
