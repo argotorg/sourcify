@@ -465,10 +465,10 @@ describe("POST /v2/verify/:chainId/:address", function () {
     const jsonInput = JSON.parse(
       JSON.stringify(chainFixture.defaultContractJsonInput),
     );
-    // `interfaces` is a Vyper top-level field that Sourcify does not store. Such fields
-    // can change the compiler output and would make the contract impossible to recompile
-    // from stored data, so they must be rejected at the API.
-    jsonInput.interfaces = { "IFoo.json": { abi: [] } };
+    // Any top-level field Sourcify does not store can change the compiler output and would
+    // make the contract impossible to recompile from stored data, so it must be rejected at
+    // the API.
+    jsonInput.someUnsupportedField = { foo: "bar" };
 
     const verifyRes = await chai
       .request(serverFixture.server.app)
@@ -487,7 +487,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
 
     chai.expect(verifyRes.status).to.equal(400);
     chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
-    chai.expect(verifyRes.body.message).to.include("interfaces");
+    chai.expect(verifyRes.body.message).to.include("someUnsupportedField");
     chai.expect(verifyRes.body).to.have.property("errorId");
     chai.expect(verifyRes.body).to.have.property("message");
   });

@@ -781,12 +781,8 @@ export class Verification {
         creationBytecodeCborAuxdata,
         immutableReferences: immutableReferences,
         metadata,
-        jsonInput: {
-          settings,
-          ...(Object.keys(additionalInput).length > 0
-            ? { additionalInput }
-            : {}),
-        },
+        jsonInput: { settings },
+        ...(Object.keys(additionalInput).length > 0 ? { additionalInput } : {}),
         compilationTime: this.compilation.compilationTime,
       },
     };

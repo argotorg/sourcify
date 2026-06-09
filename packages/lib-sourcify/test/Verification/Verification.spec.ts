@@ -1626,7 +1626,7 @@ describe('Verification Class Tests', () => {
       });
 
       const exported = verification.export();
-      expect(exported.compilation.jsonInput.additionalInput).to.deep.equal({
+      expect(exported.compilation.additionalInput).to.deep.equal({
         storage_layout_overrides: storageLayoutOverrides,
       });
     });

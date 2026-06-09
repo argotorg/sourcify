@@ -900,8 +900,7 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
-      additional_input:
-        verification.compilation.jsonInput.additionalInput ?? null,
+      additional_input: verification.compilation.additionalInput ?? null,
     },
     sourcesInformation,
     verifiedContract: {

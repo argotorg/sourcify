@@ -134,10 +134,9 @@ export interface VerificationExport {
     metadata?: Metadata;
     jsonInput: {
       settings: SoliditySettings | VyperSettings | FeSettings;
-      // Top-level standard JSON input fields used for compilation other than language/sources/settings.
-      additionalInput?: {
-        storage_layout_overrides?: VyperJsonInput['storage_layout_overrides'];
-      };
+    };
+    additionalInput?: {
+      storage_layout_overrides?: VyperJsonInput['storage_layout_overrides'];
     };
     compilationTime?: number;
   };
