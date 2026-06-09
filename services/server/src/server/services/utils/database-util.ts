@@ -46,6 +46,18 @@ import { keccak256 } from "ethers";
 import { SignatureType } from "./signature-util";
 import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
+// Top-level standard JSON input fields (besides language/sources/settings) that the
+// database can store in the `compiled_contracts.additional_input` column. The API
+// rejects any other top-level field for better UX, while the DB CHECK constraint
+// `validate_additional_input` remains the authoritative backstop. Keep this list in
+// sync with that constraint (services/database/database-specs/migrations).
+export const SUPPORTED_ADDITIONAL_INPUT_FIELDS = [
+  "storage_layout_overrides",
+] as const;
+
+type SupportedAdditionalInputField =
+  (typeof SUPPORTED_ADDITIONAL_INPUT_FIELDS)[number];
+
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -103,9 +115,9 @@ export namespace Tables {
       immutableReferences: Nullable<ImmutableReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
-    additional_input: Nullable<{
-      storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
-    }>;
+    additional_input: Nullable<
+      Partial<Pick<VyperJsonInput, SupportedAdditionalInputField>>
+    >;
   }
 
   export interface VerifiedContract {
