@@ -9,6 +9,7 @@ import type {
   SolidityOutputContract,
   VyperJsonInput,
   VyperOutput,
+  VyperOutputContract,
   FeJsonInput,
   FeOutput,
 } from '@ethereum-sourcify/compilers-types';
@@ -95,11 +96,24 @@ export class PreRunCompilation extends AbstractCompilation {
         return compilationTarget.evm.deployedBytecode.immutableReferences || {};
       }
       case 'Vyper': {
+        const compilationTarget = this
+          .contractCompilerOutput as VyperOutputContract;
+        const storedImmutableReferences =
+          compilationTarget.evm.deployedBytecode.immutableReferences;
+        if (
+          storedImmutableReferences !== undefined &&
+          Object.keys(storedImmutableReferences).length > 0
+        ) {
+          return storedImmutableReferences;
+        }
+
         return returnImmutableReferences(
           this.compilerVersionCompatibleWithSemver!,
           this.creationBytecode,
           this.runtimeBytecode,
           this.auxdataStyle,
+          this.compilerOutput as VyperOutput,
+          this.compilationTarget,
         );
       }
       case 'Fe':

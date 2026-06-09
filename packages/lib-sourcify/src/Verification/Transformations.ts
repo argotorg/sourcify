@@ -232,7 +232,9 @@ export function extractImmutablesTransformation(
         immutableValue +
         populatedRecompiledBytecode.slice(start * 2 + length * 2);
     } else if (isVyperImmutableAuxdataStyle(auxdataStyle)) {
-      // For Vyper, insert the immutable value.
+      // For Vyper, append the immutable tail before auxdata normalization.
+      // Any prefix difference remains in populatedRecompiledBytecode and is
+      // rejected by the final bytecode comparison.
       populatedRecompiledBytecode =
         populatedRecompiledBytecode + immutableValue;
     }

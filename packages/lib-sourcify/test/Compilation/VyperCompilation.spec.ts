@@ -8,6 +8,7 @@ import {
   returnImmutableReferences,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
+import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
 import { returnLegacyVyperImmutableReferences } from '../../src/Compilation/legacyVyperImmutablesHelpers';
 import { vyperCompiler } from '../utils';
 
@@ -773,6 +774,88 @@ describe('VyperCompilation outputSelection version gating', () => {
 });
 
 describe('returnLegacyVyperImmutableReferences', () => {
+  async function compileLegacyImmutable(
+    compilerVersion: string,
+    sourceVersion: string,
+  ): Promise<VyperCompilation> {
+    const contractFileName = 'test.vy';
+    const contractContent = `# @version ${sourceVersion}
+
+TARGET: immutable(address)
+
+
+@external
+def __init__(_target: address):
+    TARGET = _target
+
+
+@external
+@view
+def target() -> address:
+    return TARGET
+`;
+    const compilation = new VyperCompilation(
+      vyperCompiler,
+      compilerVersion,
+      {
+        language: 'Vyper',
+        sources: {
+          [contractFileName]: {
+            content: contractContent,
+          },
+        },
+        settings: {
+          evmVersion: 'istanbul',
+          outputSelection: {
+            '*': ['evm.bytecode'],
+          },
+        },
+      },
+      {
+        name: contractFileName.split('.')[0],
+        path: contractFileName,
+      },
+    );
+
+    await compilation.compile();
+    return compilation;
+  }
+
+  function expectSingleTailReference(
+    compilation: VyperCompilation,
+    length: number,
+  ) {
+    expect(compilation.immutableReferences).to.deep.equal({
+      '0': [
+        {
+          length,
+          start: compilation.runtimeBytecode.length / 2 - 1,
+        },
+      ],
+    });
+  }
+
+  it('derives a synthetic tail reference from real Vyper 0.3.1 text IR', async () => {
+    const compilation = await compileLegacyImmutable('0.3.1', '0.3.1');
+
+    expectSingleTailReference(compilation, 32);
+    expect(typeof (compilation.contractCompilerOutput as any).ir).to.equal(
+      'string',
+    );
+  });
+
+  it('derives a synthetic tail reference from real Vyper 0.3.2 structured IR', async () => {
+    const compilation = await compileLegacyImmutable(
+      '0.3.2+commit.3b6a4117',
+      '0.3.2',
+    );
+
+    expectSingleTailReference(compilation, 32);
+    expect(typeof (compilation.contractCompilerOutput as any).ir).to.equal(
+      'object',
+    );
+  });
+
   it('derives a synthetic tail reference from real Vyper 0.3.7 structured IR', async () => {
     const contractPath = path.join(
       __dirname,
@@ -976,6 +1059,31 @@ def salt() -> bytes32:
     ).to.deep.equal({});
   });
 
+  it('ignores ambiguous structured IR immutable lengths', () => {
+    const compilerOutput = {
+      contracts: {
+        'test.vy': {
+          test: {
+            ir: {
+              seq: [
+                { deploy: [256, { runtime: [] }, 32] },
+                { deploy: [320, { runtime: [] }, 64] },
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    expect(
+      returnLegacyVyperImmutableReferences(
+        compilerOutput as any,
+        { name: 'test', path: 'test.vy' },
+        '0x6000',
+      ),
+    ).to.deep.equal({});
+  });
+
   it('ignores zero structured IR immutable length', () => {
     const compilerOutput = {
       contracts: {
@@ -1030,5 +1138,72 @@ def salt() -> bytes32:
     ).to.deep.equal({
       '0': [{ length: 32, start: 2 }],
     });
+  });
+
+  it('uses stored Vyper immutable references for pre-run compiler outputs without IR', () => {
+    const immutableReferences = {
+      '0': [{ length: 32, start: 3 }],
+    };
+    const preRunCompilation = new PreRunCompilation(
+      vyperCompiler,
+      '0.3.7+commit.6020b8bb',
+      {
+        language: 'Vyper',
+        sources: {
+          'test.vy': {
+            content: '',
+          },
+        },
+        settings: {
+          outputSelection: {
+            '*': [],
+          },
+        },
+      },
+      {
+        compiler: '0.3.7+commit.6020b8bb',
+        contracts: {
+          'test.vy': {
+            test: {
+              abi: [],
+              userdoc: {
+                kind: 'user',
+                methods: {},
+              },
+              devdoc: {
+                kind: 'dev',
+                methods: {},
+              },
+              evm: {
+                bytecode: {
+                  object: '600102',
+                  opcodes: '',
+                },
+                deployedBytecode: {
+                  object: '600102',
+                  opcodes: '',
+                  sourceMap: '',
+                  immutableReferences,
+                },
+                methodIdentifiers: {},
+              },
+            },
+          },
+        },
+        sources: {
+          'test.vy': {
+            id: 0,
+            ast: {},
+          },
+        },
+      } as any,
+      { name: 'test', path: 'test.vy' },
+      {},
+      {},
+    );
+
+    expect(preRunCompilation.immutableReferences).to.deep.equal(
+      immutableReferences,
+    );
   });
 });

@@ -1,6 +1,7 @@
 import type { JsonFragment } from "ethers";
 import type { Devdoc } from "./CompilationTypes";
 import type { Userdoc } from "./CompilationTypes";
+import type { ImmutableReferences } from "./SolidityTypes";
 
 export interface VyperSettings {
   /** EVM version to compile for */
@@ -113,6 +114,7 @@ export interface VyperOutputContract {
       object: string;
       opcodes: string;
       sourceMap: string | VyperSourceMap;
+      immutableReferences?: ImmutableReferences;
     };
     methodIdentifiers: {
       [methodName: string]: string;

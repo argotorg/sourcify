@@ -793,10 +793,18 @@ export async function getDatabaseColumnsFromVerification(
     cborAuxdata: verification.compilation.creationBytecodeCborAuxdata || null,
   };
 
-  let immutableReferences = null;
-  // immutableReferences for Vyper are not a compiler output and should not be stored
+  let immutableReferences: ImmutableReferences | null = null;
   if (verification.compilation.language === "Solidity") {
     immutableReferences = verification.compilation.immutableReferences || null;
+  } else if (verification.compilation.language === "Vyper") {
+    const vyperImmutableReferences =
+      verification.compilation.immutableReferences;
+    if (
+      vyperImmutableReferences &&
+      Object.keys(vyperImmutableReferences).length > 0
+    ) {
+      immutableReferences = vyperImmutableReferences;
+    }
   }
   const runtimeCodeArtifacts = {
     sourceMap: compilerOutput?.evm.deployedBytecode?.sourceMap || null,

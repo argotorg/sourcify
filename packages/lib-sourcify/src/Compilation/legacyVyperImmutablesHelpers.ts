@@ -75,8 +75,8 @@ function getLegacyVyperImmutableLengthFromIr(
   }
   const lengths =
     typeof ir === 'string'
-      ? extractTextIrImmutableLengths(ir) // ← 0.3.1: text LLL
-      : collectStructuredIrImmutableLengths(ir); // ← 0.3.2–0.3.9: structured IR tree
+      ? extractTextIrImmutableLengths(ir) // 0.3.1: text LLL
+      : collectStructuredIrImmutableLengths(ir); // 0.3.2-0.3.9: structured IR tree
 
   if (lengths.length !== 1) {
     return undefined;
