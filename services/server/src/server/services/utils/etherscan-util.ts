@@ -75,12 +75,18 @@ export const fetchFromEtherscanOrThrowError = async (
         : new BadRequestError(errorMessage);
     }
 
-    // Derive API key precedence: user -> chain-specific env -> global -> ''
-    const apiKey =
-      userApiKey ||
-      process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""] ||
-      process.env.ETHERSCAN_API_KEY ||
-      "";
+    // Derive API key precedence: user -> chain-specific env -> global -> ''.
+    // The global ETHERSCAN_API_KEY is only used for canonical etherscan.io
+    // chains. For custom Etherscan-compatible explorers (those with a `url`),
+    // we never fall back to it — that would leak our etherscan.io key to a
+    // third-party server. Such explorers only get a key explicitly configured
+    // for them via their own apiKeyEnvName.
+    const chainSpecificKey =
+      process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""];
+    const globalKey = sourcifyChain.etherscanApi.url
+      ? undefined
+      : process.env.ETHERSCAN_API_KEY;
+    const apiKey = userApiKey || chainSpecificKey || globalKey || "";
 
     return await EtherscanUtils.fetchFromEtherscan(
       sourcifyChain.chainId,

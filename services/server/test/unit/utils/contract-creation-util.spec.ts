@@ -134,6 +134,66 @@ describe("contract creation util", function () {
       );
   });
 
+  describe("Etherscan API key handling for getCreatorTx", function () {
+    const ADDRESS = "0x0000000000000000000000000000000000000001";
+    const GLOBAL_KEY = "SECRET_GLOBAL_ETHERSCAN_KEY";
+    let prevGlobalKey: string | undefined;
+    let fetchStub: sinon.SinonStub;
+
+    beforeEach(function () {
+      prevGlobalKey = process.env.ETHERSCAN_API_KEY;
+      process.env.ETHERSCAN_API_KEY = GLOBAL_KEY;
+      fetchStub = sinon.stub(global, "fetch" as any).resolves({
+        status: 200,
+        json: async () => ({ result: [{ txHash: "0xabc" }] }),
+      } as any);
+    });
+
+    afterEach(function () {
+      fetchStub.restore();
+      if (prevGlobalKey === undefined) delete process.env.ETHERSCAN_API_KEY;
+      else process.env.ETHERSCAN_API_KEY = prevGlobalKey;
+    });
+
+    it("should NOT send the global ETHERSCAN_API_KEY to a custom Etherscan-compatible explorer (with url)", async function () {
+      const chain = new SourcifyChain({
+        name: "Custom Explorer Chain",
+        chainId: 999999,
+        supported: true,
+        rpcs: [{ rpc: "http://localhost/" }],
+        fetchContractCreationTxUsing: { etherscanApi: true },
+        etherscanApi: {
+          supported: true,
+          url: "https://block-explorer-api.testnet.battlechain.com",
+        },
+      });
+
+      await getCreatorTx(chain, ADDRESS);
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      const calledUrl = fetchStub.firstCall.args[0] as string;
+      chai.expect(calledUrl).to.not.include(GLOBAL_KEY);
+      chai.expect(calledUrl.endsWith("&apikey=")).to.equal(true);
+    });
+
+    it("should send the global ETHERSCAN_API_KEY to a canonical Etherscan chain (no url)", async function () {
+      const chain = new SourcifyChain({
+        name: "Canonical Etherscan Chain",
+        chainId: 1,
+        supported: true,
+        rpcs: [{ rpc: "http://localhost/" }],
+        fetchContractCreationTxUsing: { etherscanApi: true },
+        etherscanApi: { supported: true },
+      });
+
+      await getCreatorTx(chain, ADDRESS);
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      const calledUrl = fetchStub.firstCall.args[0] as string;
+      chai.expect(calledUrl).to.include(GLOBAL_KEY);
+    });
+  });
+
   // Test each fetchContractCreationTxUsing method
   // We can use the Mainnet to test all below as all support Mainnet
   const testCases: {
