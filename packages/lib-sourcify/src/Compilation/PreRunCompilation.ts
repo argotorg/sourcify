@@ -107,6 +107,9 @@ export class PreRunCompilation extends AbstractCompilation {
           return storedImmutableReferences;
         }
 
+        // Pre-run Vyper output reconstructed from the DB does not include `ir`.
+        // This fallback can still recover >=0.3.10 immutable references from
+        // CBOR, but legacy <0.3.10 references must already be stored.
         return returnImmutableReferences(
           this.compilerVersionCompatibleWithSemver!,
           this.creationBytecode,
