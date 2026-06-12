@@ -77,6 +77,10 @@ router.get("/chains", (_req, res) => {
           .filter((r) => r !== null),
         supported,
         etherscanAPI: etherscanApi?.supported ?? false, // Needed in the UI
+        // Custom Etherscan-compatible explorer API URL, if the chain uses one
+        // instead of the canonical api.etherscan.io. The UI needs this to
+        // import contracts from the right explorer.
+        etherscanApiUrl: etherscanApi?.url,
       };
     },
   );
