@@ -13,9 +13,10 @@ yarn add @ethereum-sourcify/bytecode-utils
 ### Solidity Contracts
 
 ```ts
-import { decode, AuxdataStyle } from "@ethereum-sourcify/bytecode-utils";
+import { decode, AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 
-const bytecodeRaw = "0x60806040526004361061003f5760003560e01...7265206c656e677468a2646970667358221220dceca8706b29e917dacf25fceef95acac8d90d765ac926663ce4096195952b6164736f6c634300060b0033"
+const bytecodeRaw =
+  '0x60806040526004361061003f5760003560e01...7265206c656e677468a2646970667358221220dceca8706b29e917dacf25fceef95acac8d90d765ac926663ce4096195952b6164736f6c634300060b0033';
 
 // For Solidity contracts
 decode(bytecodeRaw, AuxdataStyle.SOLIDITY);
@@ -36,12 +37,11 @@ decode(bytecodeRaw, AuxdataStyle.SOLIDITY);
 ### Vyper Contracts
 
 ```ts
-import { decode, AuxdataStyle } from "@ethereum-sourcify/bytecode-utils";
+import { decode, getAuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 
-const vyperBytecodeRaw = "0x..."; // Your Vyper contract bytecode
+const vyperBytecodeRaw = '0x...'; // Your Vyper contract bytecode
 
-// For Vyper contracts
-decode(vyperBytecodeRaw, AuxdataStyle.VYPER);
+decode(vyperBytecodeRaw, getAuxdataStyle('Vyper', '0.4.1'));
 ```
 
 **Result example**
@@ -60,7 +60,8 @@ decode(vyperBytecodeRaw, AuxdataStyle.VYPER);
 
 Different Vyper compiler versions use different auxdata formats:
 
-- **Before v0.3.5**: Auxdata only contains version information in cbor, without length data after it
-- **v0.3.5 to v0.3.9**: Auxdata includes version and length information in cbor
-- **v0.3.10 to v0.4.0**: Auxdata is stored as a cbor array with version object as last element
-- **v0.4.1 and later**: Auxdata cbor array includes integrity check as first element
+- `<0.3.4`: no CBOR auxdata
+- `0.3.4`: CBOR map `{"vyper": [0, 3, 4]}` with no length footer
+- `0.3.5-0.3.9`: CBOR map `{"vyper": [...]}` plus length footer
+- `0.3.10-0.4.0`: CBOR array `[runtimeSize, dataSizes, immutableSize, {"vyper": [...]}]`
+- `>=0.4.1`: CBOR array `[integrity, runtimeSize, dataSizes, immutableSize, {"vyper": [...]}]`

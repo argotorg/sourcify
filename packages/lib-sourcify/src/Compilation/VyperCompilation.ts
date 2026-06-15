@@ -3,6 +3,7 @@ import { AbstractCompilation } from './AbstractCompilation';
 import {
   AuxdataStyle,
   decode,
+  getVyperAuxdataStyle,
   splitAuxdata,
   type VyperDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
@@ -65,18 +66,7 @@ export function returnAuxdataStyle(
   | AuxdataStyle.VYPER_LT_0_3_5
   | AuxdataStyle.VYPER_LT_0_3_10
   | AuxdataStyle.VYPER {
-  // Vyper versions < 0.3.4 emit no CBOR auxdata at all
-  if (semver.lt(compilerVersion, '0.3.4')) {
-    return AuxdataStyle.VYPER_LT_0_3_4;
-  }
-  // Only 0.3.4 uses the fixed-length 22-byte CBOR format
-  if (semver.lt(compilerVersion, '0.3.5')) {
-    return AuxdataStyle.VYPER_LT_0_3_5;
-  }
-  if (semver.lt(compilerVersion, '0.3.10')) {
-    return AuxdataStyle.VYPER_LT_0_3_10;
-  }
-  return AuxdataStyle.VYPER;
+  return getVyperAuxdataStyle(compilerVersion);
 }
 
 export function returnImmutableReferences(

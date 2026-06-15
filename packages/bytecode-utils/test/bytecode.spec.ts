@@ -2,7 +2,13 @@ import chai from 'chai';
 import { readFileSync } from 'fs';
 import path from 'path';
 
-import { AuxdataStyle, decode, splitAuxdata } from '../src/lib/bytecode';
+import {
+  AuxdataStyle,
+  decode,
+  getAuxdataStyle,
+  getVyperAuxdataStyle,
+  splitAuxdata,
+} from '../src/lib/bytecode';
 
 type Error = {
   message: string;
@@ -144,6 +150,31 @@ describe('bytecode utils', function () {
       .to.deep.equal({
         vyperVersion: '0.3.4',
       });
+  });
+
+  it('selects Vyper auxdata style from compiler version history', () => {
+    chai
+      .expect(getVyperAuxdataStyle('0.3.3'))
+      .to.equal(AuxdataStyle.VYPER_LT_0_3_4);
+    chai
+      .expect(getVyperAuxdataStyle('0.3.4'))
+      .to.equal(AuxdataStyle.VYPER_LT_0_3_5);
+    chai
+      .expect(getVyperAuxdataStyle('0.3.8+commit.036f1536'))
+      .to.equal(AuxdataStyle.VYPER_LT_0_3_10);
+    chai
+      .expect(getVyperAuxdataStyle('vyper:0.3.10'))
+      .to.equal(AuxdataStyle.VYPER);
+    chai.expect(getVyperAuxdataStyle('v0.4.1rc1')).to.equal(AuxdataStyle.VYPER);
+  });
+
+  it('selects auxdata style from language and compiler version', () => {
+    chai.expect(getAuxdataStyle('Solidity')).to.equal(AuxdataStyle.SOLIDITY);
+    chai.expect(getAuxdataStyle('Yul')).to.equal(AuxdataStyle.SOLIDITY);
+    chai.expect(getAuxdataStyle('Fe')).to.equal(AuxdataStyle.FE);
+    chai
+      .expect(getAuxdataStyle('Vyper', '0.3.4'))
+      .to.equal(AuxdataStyle.VYPER_LT_0_3_5);
   });
 
   it('split Vyper bytecode (>= 0.4.1) into execution bytecode and auxdata', () => {

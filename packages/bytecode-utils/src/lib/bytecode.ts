@@ -36,6 +36,55 @@ export enum AuxdataStyle {
   FE = 'fe',
 }
 
+export const getVyperAuxdataStyle = (
+  compilerVersion: string,
+):
+  | AuxdataStyle.VYPER_LT_0_3_4
+  | AuxdataStyle.VYPER_LT_0_3_5
+  | AuxdataStyle.VYPER_LT_0_3_10
+  | AuxdataStyle.VYPER => {
+  const coercedVersion = semver.coerce(compilerVersion);
+  if (!coercedVersion) {
+    throw Error(`Invalid Vyper compiler version: ${compilerVersion}`);
+  }
+
+  const version = coercedVersion.version;
+  // Vyper versions < 0.3.4 emit no CBOR auxdata at all.
+  if (semver.lt(version, '0.3.4')) {
+    return AuxdataStyle.VYPER_LT_0_3_4;
+  }
+  // Only 0.3.4 uses the fixed-length 22-byte CBOR format.
+  if (semver.lt(version, '0.3.5')) {
+    return AuxdataStyle.VYPER_LT_0_3_5;
+  }
+  if (semver.lt(version, '0.3.10')) {
+    return AuxdataStyle.VYPER_LT_0_3_10;
+  }
+  return AuxdataStyle.VYPER;
+};
+
+export const getAuxdataStyle = (
+  language: string,
+  compilerVersion?: string,
+): AuxdataStyle => {
+  switch (language.toLowerCase()) {
+    case 'solidity':
+    case 'yul':
+      return AuxdataStyle.SOLIDITY;
+    case 'vyper':
+      if (!compilerVersion) {
+        throw Error(
+          'Vyper compiler version is required to determine auxdata style',
+        );
+      }
+      return getVyperAuxdataStyle(compilerVersion);
+    case 'fe':
+      return AuxdataStyle.FE;
+    default:
+      throw Error(`Unsupported language for auxdata style: ${language}`);
+  }
+};
+
 /**
  * Decode contract's bytecode
  * @param bytecode - hex of the bytecode with 0x prefix
