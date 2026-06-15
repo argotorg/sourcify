@@ -13,10 +13,9 @@ yarn add @ethereum-sourcify/bytecode-utils
 ### Solidity Contracts
 
 ```ts
-import { decode, AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import { decode, AuxdataStyle } from "@ethereum-sourcify/bytecode-utils";
 
-const bytecodeRaw =
-  '0x60806040526004361061003f5760003560e01...7265206c656e677468a2646970667358221220dceca8706b29e917dacf25fceef95acac8d90d765ac926663ce4096195952b6164736f6c634300060b0033';
+const bytecodeRaw = "0x60806040526004361061003f5760003560e01...7265206c656e677468a2646970667358221220dceca8706b29e917dacf25fceef95acac8d90d765ac926663ce4096195952b6164736f6c634300060b0033"
 
 // For Solidity contracts
 decode(bytecodeRaw, AuxdataStyle.SOLIDITY);
@@ -37,11 +36,12 @@ decode(bytecodeRaw, AuxdataStyle.SOLIDITY);
 ### Vyper Contracts
 
 ```ts
-import { decode, getAuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import { decode, getAuxdataStyle } from "@ethereum-sourcify/bytecode-utils";
 
-const vyperBytecodeRaw = '0x...'; // Your Vyper contract bytecode
+const vyperBytecodeRaw = "0x..."; // Your Vyper contract bytecode
 
-decode(vyperBytecodeRaw, getAuxdataStyle('Vyper', '0.4.1'));
+// For Vyper contracts
+decode(vyperBytecodeRaw, getAuxdataStyle("Vyper", "0.4.1"));
 ```
 
 **Result example**
