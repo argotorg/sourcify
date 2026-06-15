@@ -24,7 +24,6 @@ import type {
 import {
   returnAuxdataStyle,
   returnFixedVyperVersion,
-  returnImmutableReferences,
 } from './VyperCompilation';
 
 export type Nullable<T> = T | null;
@@ -98,24 +97,7 @@ export class PreRunCompilation extends AbstractCompilation {
       case 'Vyper': {
         const compilationTarget = this
           .contractCompilerOutput as VyperOutputContract;
-        const storedImmutableReferences =
-          compilationTarget.evm.deployedBytecode.immutableReferences;
-        if (
-          storedImmutableReferences !== undefined &&
-          Object.keys(storedImmutableReferences).length > 0
-        ) {
-          return storedImmutableReferences;
-        }
-
-        // Pre-run Vyper output reconstructed from the DB does not include `ir`,
-        // so legacy <0.3.10 references must already be stored. Keep the old
-        // >=0.3.10 CBOR fallback for rows that have not been backfilled yet.
-        return returnImmutableReferences(
-          this.compilerVersionCompatibleWithSemver!,
-          this.creationBytecode,
-          this.runtimeBytecode,
-          this.auxdataStyle,
-        );
+        return compilationTarget.evm.deployedBytecode.immutableReferences || {};
       }
       case 'Fe':
         return {};

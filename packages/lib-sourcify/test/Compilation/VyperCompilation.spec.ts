@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import type { ImmutableReferences } from '@ethereum-sourcify/compilers-types';
 import {
   returnImmutableReferences,
   VyperCompilation,
@@ -1140,11 +1141,10 @@ def salt() -> bytes32:
     });
   });
 
-  it('uses stored Vyper immutable references for pre-run compiler outputs without IR', () => {
-    const immutableReferences = {
-      '0': [{ length: 32, start: 3 }],
-    };
-    const preRunCompilation = new PreRunCompilation(
+  function createPreRunVyperCompilation(
+    immutableReferences?: ImmutableReferences,
+  ) {
+    return new PreRunCompilation(
       vyperCompiler,
       '0.3.7+commit.6020b8bb',
       {
@@ -1183,7 +1183,9 @@ def salt() -> bytes32:
                   object: '600102',
                   opcodes: '',
                   sourceMap: '',
-                  immutableReferences,
+                  ...(immutableReferences !== undefined
+                    ? { immutableReferences }
+                    : {}),
                 },
                 methodIdentifiers: {},
               },
@@ -1201,9 +1203,22 @@ def salt() -> bytes32:
       {},
       {},
     );
+  }
+
+  it('uses stored Vyper immutable references for pre-run compiler outputs without IR', () => {
+    const immutableReferences = {
+      '0': [{ length: 32, start: 3 }],
+    };
+    const preRunCompilation = createPreRunVyperCompilation(immutableReferences);
 
     expect(preRunCompilation.immutableReferences).to.deep.equal(
       immutableReferences,
     );
+  });
+
+  it('does not infer missing Vyper immutable references for pre-run compiler outputs', () => {
+    const preRunCompilation = createPreRunVyperCompilation();
+
+    expect(preRunCompilation.immutableReferences).to.deep.equal({});
   });
 });
