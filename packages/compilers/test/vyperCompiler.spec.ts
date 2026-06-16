@@ -1,9 +1,34 @@
 import { expect } from 'chai';
-import { useVyperCompiler } from '../src/lib/vyperCompiler';
+import {
+  stringifyVyperJsonInput,
+  useVyperCompiler,
+} from '../src/lib/vyperCompiler';
 import path from 'path';
 
 describe('Verify Vyper Compiler', () => {
   const vyperRepoPath = path.join('/tmp', 'compilers-vyper-repo');
+
+  it('Should escape non-ASCII characters in standard-json stdin', function () {
+    const vyperJsonInput = {
+      language: 'Vyper' as const,
+      sources: {
+        'test.vy': {
+          content: '# ∫(rate * balance / totalSupply dt)\n',
+        },
+      },
+      settings: {
+        outputSelection: {
+          '*': ['*'],
+        },
+      },
+    };
+
+    const inputStringified = stringifyVyperJsonInput(vyperJsonInput);
+
+    expect(inputStringified).to.include('\\u222b');
+    expect(inputStringified).to.not.include('∫');
+    expect(JSON.parse(inputStringified)).to.deep.equal(vyperJsonInput);
+  });
 
   it('Should compile with vyper', async function () {
     const compiledJSON = await useVyperCompiler(

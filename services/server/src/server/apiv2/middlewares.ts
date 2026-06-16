@@ -9,7 +9,10 @@ import {
   InvalidParametersError,
 } from "./errors";
 import { getAddress } from "ethers";
-import { FIELDS_TO_STORED_PROPERTIES } from "../services/utils/database-util";
+import {
+  FIELDS_TO_STORED_PROPERTIES,
+  SUPPORTED_ADDITIONAL_INPUT_FIELDS,
+} from "../services/utils/database-util";
 import { reduceAccessorStringToProperty } from "../services/utils/util";
 import type { Services } from "../services/services";
 import type {
@@ -165,6 +168,31 @@ export function validateStandardJsonInput(
   if (Object.values(stdJsonInput.sources).some((source) => !source.content)) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a content field for each source.",
+    );
+  }
+
+  // Reject any top-level field we don't store in the database. Fields we don't persist
+  // can still change the compiler output (e.g. Vyper's `interfaces`), which would make
+  // the contract impossible to recompile from stored data. We only accept the core
+  // fields plus the additional input fields the DB can store. This mirrors the DB
+  // `validate_additional_input` CHECK constraint and surfaces a clear 400 instead of a
+  // generic 500 from the constraint.
+  const allowedTopLevelFields = [
+    "language",
+    "sources",
+    "settings",
+    ...SUPPORTED_ADDITIONAL_INPUT_FIELDS,
+  ];
+  const unsupportedFields = Object.keys(stdJsonInput).filter(
+    (field) => !allowedTopLevelFields.includes(field),
+  );
+  if (unsupportedFields.length > 0) {
+    throw new InvalidParametersError(
+      `Standard JSON input contains unsupported top-level field(s): ${unsupportedFields.join(
+        ", ",
+      )}. Only the following top-level fields are supported: ${allowedTopLevelFields.join(
+        ", ",
+      )}.`,
     );
   }
 

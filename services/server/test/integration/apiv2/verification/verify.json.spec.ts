@@ -461,6 +461,37 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.have.property("message");
   });
 
+  it("should return a 400 if the standard json input contains an unsupported top-level field", async () => {
+    const jsonInput = JSON.parse(
+      JSON.stringify(chainFixture.defaultContractJsonInput),
+    );
+    // Any top-level field Sourcify does not store can change the compiler output and would
+    // make the contract impossible to recompile from stored data, so it must be rejected at
+    // the API.
+    jsonInput.someUnsupportedField = { foo: "bar" };
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: jsonInput,
+        compilerVersion:
+          chainFixture.defaultContractMetadataObject.compiler.version,
+        contractIdentifier: Object.entries(
+          chainFixture.defaultContractMetadataObject.settings.compilationTarget,
+        )[0].join(":"),
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    chai.expect(verifyRes.status).to.equal(400);
+    chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    chai.expect(verifyRes.body.message).to.include("someUnsupportedField");
+    chai.expect(verifyRes.body).to.have.property("errorId");
+    chai.expect(verifyRes.body).to.have.property("message");
+  });
+
   it("should return 400 when contract identifier is missing", async () => {
     const verifyRes = await chai
       .request(serverFixture.server.app)

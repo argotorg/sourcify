@@ -37,7 +37,7 @@
   },
   "homepage": "https://sourcify.dev",
   "devDependencies": {
-    "@google-cloud/bigquery": "8.3.0",
+    "@google-cloud/bigquery": "8.3.1",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
     "eslint": "8.57.1",
@@ -58,7 +58,7 @@
     "fsevents": "2.3.3"
   },
   "overrides": {
-    "axios": "1.16.0",
+    "axios": "1.16.1",
     "yaml": "2.9.0",
     "brace-expansion": "5.0.6",
     "follow-redirects": "1.16.0"

@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.13.2 - 2026-06-16
+
+- Update dependencies
+
 ## sourcify-database@2.13.1 - 2026-05-27
 
 - Fix hanging contracts endpoint (#2807)

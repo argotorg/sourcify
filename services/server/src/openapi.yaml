@@ -144,6 +144,10 @@ paths:
                       type: boolean
                       description: Whether Etherscan API is available for this chain
                       example: true
+                    etherscanApiUrl:
+                      type: string
+                      description: Custom Etherscan-compatible explorer API URL, if the chain uses one instead of the canonical api.etherscan.io. Omitted for canonical Etherscan chains.
+                      example: "https://block-explorer-api.testnet.battlechain.com"
                   required:
                     - name
                     - chainId

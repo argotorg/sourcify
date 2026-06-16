@@ -15,6 +15,15 @@ describe("Verify server status endpoint", function () {
   it("should check server's chains", async function () {
     const res = await chai.request(serverFixture.server.app).get("/chains");
     chai.expect(res.body.length).greaterThan(0);
+    // Every chain exposes etherscanAPI as a boolean, and when a chain uses a
+    // custom Etherscan-compatible explorer it exposes that explorer's API URL
+    // as a non-empty string (omitted for canonical etherscan.io chains).
+    for (const chain of res.body) {
+      chai.expect(chain.etherscanAPI).to.be.a("boolean");
+      if (chain.etherscanApiUrl !== undefined) {
+        chai.expect(chain.etherscanApiUrl).to.be.a("string").and.not.empty;
+      }
+    }
   });
 
   it("should return version information", async function () {

@@ -134,7 +134,9 @@ export interface VerificationExport {
     metadata?: Metadata;
     jsonInput: {
       settings: SoliditySettings | VyperSettings | FeSettings;
-      storageLayoutOverrides?: VyperJsonInput['storage_layout_overrides'];
+    };
+    additionalInput?: {
+      storage_layout_overrides?: VyperJsonInput['storage_layout_overrides'];
     };
     compilationTime?: number;
   };

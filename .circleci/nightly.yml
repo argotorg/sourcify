@@ -50,11 +50,6 @@ workflows:
       - monitor-e2e-hoodi
       - verification-e2e-sepolia
       - verification-e2e-hoodi
-  # s3-backup-check:
-  #   when:
-  #     equal: [ master, << pipeline.git.branch >> ]
-  #   jobs:
-  #     - check-s3-backup
 
 jobs:
   monitor-e2e-sepolia:
@@ -77,15 +72,3 @@ jobs:
     environment:
       CHAIN_ID: "560048"
       CHAIN_NAME: hoodi
-  check-s3-backup:
-    working_directory: ~/sourcify
-    steps:
-      - checkout
-      - run:
-          name: install dependencies
-          command: npm install @aws-sdk/client-s3
-      - run:
-          name: backup test
-          command: node --experimental-fetch ./scripts/check-s3-backup.mjs
-    docker:
-      - image: cimg/node:22.22.0

@@ -3,7 +3,9 @@ import { AbstractCompilation } from './AbstractCompilation';
 import {
   AuxdataStyle,
   decode,
+  getVyperAuxdataStyle,
   splitAuxdata,
+  type VyperDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
 import semver, { gte, gt, lt } from 'semver';
 import type {
@@ -20,6 +22,10 @@ import type {
   IVyperCompiler,
 } from './CompilationTypes';
 import { CompilationError } from './CompilationTypes';
+import {
+  isValidImmutableLength,
+  returnLegacyVyperImmutableReferences,
+} from './legacyVyperImmutablesHelpers';
 
 export function returnFixedVyperVersion(compilerVersion: string): string {
   if (semver.valid(compilerVersion)) {
@@ -60,18 +66,7 @@ export function returnAuxdataStyle(
   | AuxdataStyle.VYPER_LT_0_3_5
   | AuxdataStyle.VYPER_LT_0_3_10
   | AuxdataStyle.VYPER {
-  // Vyper versions < 0.3.4 emit no CBOR auxdata at all
-  if (semver.lt(compilerVersion, '0.3.4')) {
-    return AuxdataStyle.VYPER_LT_0_3_4;
-  }
-  // Only 0.3.4 uses the fixed-length 22-byte CBOR format
-  if (semver.lt(compilerVersion, '0.3.5')) {
-    return AuxdataStyle.VYPER_LT_0_3_5;
-  }
-  if (semver.lt(compilerVersion, '0.3.10')) {
-    return AuxdataStyle.VYPER_LT_0_3_10;
-  }
-  return AuxdataStyle.VYPER;
+  return getVyperAuxdataStyle(compilerVersion);
 }
 
 export function returnImmutableReferences(
@@ -79,12 +74,20 @@ export function returnImmutableReferences(
   creationBytecode: string,
   runtimeBytecode: string,
   auxdataStyle: AuxdataStyle,
+  compilerOutput?: VyperOutput,
+  compilationTarget?: CompilationTarget,
 ): ImmutableReferences {
-  let immutableReferences = {};
+  let immutableReferences: ImmutableReferences = {};
   if (gte(compilerVersion, '0.3.10')) {
     try {
-      const { immutableSize } = decode(creationBytecode, auxdataStyle);
-      if (immutableSize) {
+      const { immutableSize } = decode(
+        creationBytecode,
+        auxdataStyle,
+      ) as VyperDecodedObject;
+      if (
+        immutableSize !== undefined &&
+        isValidImmutableLength(immutableSize)
+      ) {
         immutableReferences = {
           '0': [
             {
@@ -99,6 +102,12 @@ export function returnImmutableReferences(
         creationBytecode: creationBytecode,
       });
     }
+  } else if (gte(compilerVersion, '0.3.1') && compilationTarget !== undefined) {
+    immutableReferences = returnLegacyVyperImmutableReferences(
+      compilerOutput,
+      compilationTarget,
+      runtimeBytecode,
+    );
   }
   return immutableReferences;
 }
@@ -192,6 +201,8 @@ export class VyperCompilation extends AbstractCompilation {
       this.creationBytecode,
       this.runtimeBytecode,
       this.auxdataStyle,
+      this.compilerOutput,
+      this.compilationTarget,
     );
   }
 

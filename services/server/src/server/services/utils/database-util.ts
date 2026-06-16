@@ -46,6 +46,18 @@ import { keccak256 } from "ethers";
 import { SignatureType } from "./signature-util";
 import type { EtherscanVerifyApiIdentifiers } from "../storageServices/EtherscanVerifyApiService";
 
+// Top-level standard JSON input fields (besides language/sources/settings) that the
+// database can store in the `compiled_contracts.additional_input` column. The API
+// rejects any other top-level field for better UX, while the DB CHECK constraint
+// `validate_additional_input` remains the authoritative backstop. Keep this list in
+// sync with that constraint (services/database/database-specs/migrations).
+export const SUPPORTED_ADDITIONAL_INPUT_FIELDS = [
+  "storage_layout_overrides",
+] as const;
+
+type SupportedAdditionalInputField =
+  (typeof SUPPORTED_ADDITIONAL_INPUT_FIELDS)[number];
+
 export type JobErrorData = Omit<SourcifyLibErrorData, "chainId" | "address">;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -103,9 +115,9 @@ export namespace Tables {
       immutableReferences: Nullable<ImmutableReferences>;
       cborAuxdata: Nullable<CompiledContractCborAuxdata>;
     };
-    additional_input: Nullable<{
-      storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
-    }>;
+    additional_input: Nullable<
+      Partial<Pick<VyperJsonInput, SupportedAdditionalInputField>>
+    >;
   }
 
   export interface VerifiedContract {
@@ -793,10 +805,18 @@ export async function getDatabaseColumnsFromVerification(
     cborAuxdata: verification.compilation.creationBytecodeCborAuxdata || null,
   };
 
-  let immutableReferences = null;
-  // immutableReferences for Vyper are not a compiler output and should not be stored
+  let immutableReferences: ImmutableReferences | null = null;
   if (verification.compilation.language === "Solidity") {
     immutableReferences = verification.compilation.immutableReferences || null;
+  } else if (verification.compilation.language === "Vyper") {
+    const vyperImmutableReferences =
+      verification.compilation.immutableReferences;
+    if (
+      vyperImmutableReferences &&
+      Object.keys(vyperImmutableReferences).length > 0
+    ) {
+      immutableReferences = vyperImmutableReferences;
+    }
   }
   const runtimeCodeArtifacts = {
     sourceMap: compilerOutput?.evm.deployedBytecode?.sourceMap || null,
@@ -888,13 +908,7 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
-      additional_input: verification.compilation.jsonInput
-        .storageLayoutOverrides
-        ? {
-            storage_layout_overrides:
-              verification.compilation.jsonInput.storageLayoutOverrides,
-          }
-        : null,
+      additional_input: verification.compilation.additionalInput ?? null,
     },
     sourcesInformation,
     verifiedContract: {
