@@ -2,11 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## @ethereum-sourcify/lib-sourcify@3.6.0 - 2026-06-16
-
-- fix(lib-sourcify): support legacy Vyper immutable tails (#2817)
-- Reduce standard JSON input to the fields we store (#2823)
-
 ## @ethereum-sourcify/lib-sourcify@3.5.3 - 2026-05-27
 
 - clear deployer and blockNumber when creationTransactionHash validation fails (#2803)

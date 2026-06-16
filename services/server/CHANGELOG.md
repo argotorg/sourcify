@@ -2,12 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## sourcify-server@3.17.0 - 2026-06-16
-
-- fix(server): don't send global ETHERSCAN_API_KEY to custom Etherscan explorers (#2824)
-- Reduce standard JSON input to the fields we store (#2823)
-- Update dependencies
-
 ## sourcify-server@3.16.1 - 2026-05-27
 
 - Fix hanging contracts endpoint (#2807)
