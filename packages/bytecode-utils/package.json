@@ -42,7 +42,7 @@
     "base-x": "4.0.1",
     "bs58": "5.0.0",
     "cbor-x": "1.6.4",
-    "semver": "7.8.0"
+    "semver": "7.8.1"
   },
   "devDependencies": {
     "@types/chai": "4.3.20",
