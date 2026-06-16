@@ -1,6 +1,7 @@
 import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { StatusCodes } from "http-status-codes";
 import logger from "../../../common/logger";
+import { deriveEtherscanApiKey } from "./etherscan-util";
 
 const ETHERSCAN_API =
   "https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}&apikey=";
@@ -271,15 +272,7 @@ export const getCreatorTx = async (
     sourcifyChain.fetchContractCreationTxUsing?.etherscanApi &&
     sourcifyChain?.etherscanApi?.supported
   ) {
-    // Only fall back to the global ETHERSCAN_API_KEY for canonical etherscan.io
-    // chains. Custom Etherscan-compatible explorers (those with a `url`) must
-    // not receive it — that would leak our etherscan.io key to a third party.
-    const chainSpecificKey =
-      process.env[sourcifyChain.etherscanApi.apiKeyEnvName || ""];
-    const globalKey = sourcifyChain.etherscanApi.url
-      ? undefined
-      : process.env.ETHERSCAN_API_KEY;
-    const apiKey = chainSpecificKey || globalKey || "";
+    const apiKey = deriveEtherscanApiKey(sourcifyChain);
     const fetcher = getEtherscanApiContractCreatorFetcher(
       apiKey,
       sourcifyChain.chainId,
