@@ -267,8 +267,14 @@ describe("Monitor", function () {
       [],
     ).then(() => {
       let sourcifyMockTimesCalled = 0;
-      nock(MOCK_SOURCIFY_SERVER_RETURNING_ERRORS)
-        .post("/")
+      const { origin, pathname } = new URL(
+        MOCK_SOURCIFY_SERVER_RETURNING_ERRORS,
+      );
+      const verifyPathRegex = new RegExp(
+        `^${pathname.replace(/\/+$/, "")}/v2/verify/metadata/`,
+      );
+      nock(origin)
+        .post(verifyPathRegex)
         .times(maxRetries)
         .reply(function () {
           sourcifyMockTimesCalled++;
@@ -276,6 +282,62 @@ describe("Monitor", function () {
             done();
           }
           return [500];
+        });
+      monitor.start();
+    });
+  });
+
+  it("should not retry when the contract is already verified (409)", (done) => {
+    const maxRetries = 3;
+    const retryDelay = 500;
+    monitor = new Monitor([localChain], {
+      sourcifyServerURLs: [MOCK_SOURCIFY_SERVER],
+      sourcifyRequestOptions: {
+        maxRetries,
+        retryDelay,
+      },
+      chainConfigs: {
+        [localChain.chainId]: {
+          startBlock: 0,
+          blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
+        },
+      },
+    });
+
+    deployFromAbiAndBytecode(
+      signer,
+      storageContractArtifact.abi,
+      storageContractArtifact.bytecode,
+      [],
+    ).then(() => {
+      let sourcifyMockTimesCalled = 0;
+      const { origin, pathname } = new URL(MOCK_SOURCIFY_SERVER);
+      const verifyPathRegex = new RegExp(
+        `^${pathname.replace(/\/+$/, "")}/v2/verify/metadata/`,
+      );
+      nock(origin)
+        .persist()
+        .post(verifyPathRegex)
+        .reply(() => {
+          sourcifyMockTimesCalled++;
+          if (sourcifyMockTimesCalled === 1) {
+            // A 409 (already verified) is a terminal state and must not be
+            // retried. Wait past the retry window, then assert the server was
+            // only called once.
+            setTimeout(
+              () => {
+                nock.cleanAll();
+                try {
+                  expect(sourcifyMockTimesCalled).to.equal(1);
+                  done();
+                } catch (err) {
+                  done(err);
+                }
+              },
+              retryDelay * (maxRetries + 1),
+            );
+          }
+          return [409, { customCode: "already_verified" }];
         });
       monitor.start();
     });
