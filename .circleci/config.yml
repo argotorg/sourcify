@@ -222,6 +222,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Upgrade npm for OIDC trusted publishing
+          command: |
+            npm install -g npm@^11.5.1
+      - run:
           name: install dependencies
           command: npm install
       - run:
