@@ -5,7 +5,7 @@ import path from "path";
 import { expect } from "chai";
 import { findSolcPlatform } from "@ethereum-sourcify/compilers";
 import config from "config";
-import rimraf from "rimraf";
+import { rimrafSync } from "rimraf";
 import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import sinon from "sinon";
@@ -20,7 +20,7 @@ describe("VerificationService", function () {
   beforeEach(function () {
     // Clear any previously nocked interceptors
     nock.cleanAll();
-    rimraf.sync(path.join(testS3Path, testS3Bucket));
+    rimrafSync(path.join(testS3Path, testS3Bucket));
   });
 
   afterEach(async function () {
@@ -34,7 +34,7 @@ describe("VerificationService", function () {
   });
 
   after(() => {
-    rimraf.sync(path.join(testS3Path, testS3Bucket));
+    rimrafSync(path.join(testS3Path, testS3Bucket));
   });
 
   function createMockStorageService(testVerificationId: string) {
@@ -63,8 +63,8 @@ describe("VerificationService", function () {
   }
 
   it("should initialize compilers", async function () {
-    rimraf.sync(config.get("solcRepo"));
-    rimraf.sync(config.get("solJsonRepo"));
+    rimrafSync(config.get("solcRepo"));
+    rimrafSync(config.get("solJsonRepo"));
 
     const platform = findSolcPlatform() || "bin";
     const HOST_SOLC_REPO = "https://binaries.soliditylang.org";
