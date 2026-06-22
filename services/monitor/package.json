@@ -40,7 +40,7 @@
     "@ethereum-sourcify/bytecode-utils": "^1.6.0",
     "@ethereum-sourcify/lib-sourcify": "^3.6.0",
     "chalk": "4.1.2",
-    "commander": "12.1.0",
+    "commander": "14.0.3",
     "dotenv": "16.6.1",
     "ethers": "6.16.0",
     "winston": "3.19.0"

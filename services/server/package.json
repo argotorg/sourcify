@@ -95,7 +95,7 @@
     "chai": "4.5.0",
     "chai-as-promised": "7.1.2",
     "chai-http": "4.4.0",
-    "commander": "12.1.0",
+    "commander": "14.0.3",
     "copyfiles": "2.4.1",
     "mocha": "10.8.2",
     "nock": "14.0.15",
