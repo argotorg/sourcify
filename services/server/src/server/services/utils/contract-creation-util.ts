@@ -21,12 +21,12 @@ interface ContractCreationFetcher {
   type: "api";
   url: string;
   maskedUrl?: string;
-  responseParser?: Function;
+  responseParser?: (response: any) => any;
 }
 
 function getApiContractCreationFetcher(
   url: string,
-  responseParser: Function,
+  responseParser: (response: any) => any,
   maskedUrl?: string,
 ): ContractCreationFetcher {
   return {

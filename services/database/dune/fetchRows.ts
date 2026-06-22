@@ -1,8 +1,7 @@
-/* eslint-disable indent */
 // conflict between prettier and eslint
 import dotenv from "dotenv";
 import pg from "pg";
-import {
+import type {
   PgCode,
   PgCompiledContract,
   PgCompiledContractsSource,

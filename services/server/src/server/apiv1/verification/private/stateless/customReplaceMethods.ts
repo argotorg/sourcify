@@ -124,8 +124,7 @@ export const replaceCreationInformation: CustomReplaceMethod = async (
         databaseColumns.verifiedContract.creation_match,
         databaseColumns.verifiedContract.creation_values,
         databaseColumns.verifiedContract.creation_transformations
-          ? // eslint-disable-next-line indent
-            JSON.stringify(
+          ? JSON.stringify(
               databaseColumns.verifiedContract.creation_transformations,
             )
           : null,

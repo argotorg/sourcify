@@ -92,8 +92,8 @@ export namespace Tables {
     fully_qualified_name: string;
     compilation_artifacts: {
       abi: Nullable<JsonFragment[]>;
-      userdoc: Nullable<Userdoc> | {};
-      devdoc: Nullable<Devdoc> | {};
+      userdoc: Nullable<Userdoc> | Record<string, never>;
+      devdoc: Nullable<Devdoc> | Record<string, never>;
       storageLayout: Nullable<StorageLayout | VyperStorageLayout>;
       transientStorageLayout: Nullable<TransientStorageLayout>;
       sources: Nullable<CompilationArtifactsSources>;

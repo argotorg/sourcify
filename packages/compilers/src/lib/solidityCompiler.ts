@@ -12,7 +12,7 @@ import type {
   SolidityOutput,
 } from '@ethereum-sourcify/compilers-types';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const solc = require('solc');
 
 const HOST_SOLC_REPO = 'https://binaries.soliditylang.org/';

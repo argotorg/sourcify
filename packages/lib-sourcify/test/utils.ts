@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 import path from 'path';
 import { expect } from 'chai';
 import type { Signer } from 'ethers';
@@ -45,6 +44,7 @@ export async function deployFromAbiAndBytecode(
   contractFolderPath: string,
   constructorArgs?: any[],
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const artifact = require(path.join(contractFolderPath, 'artifact.json'));
   // Deploy contract
   const contractFactory = new ContractFactory(

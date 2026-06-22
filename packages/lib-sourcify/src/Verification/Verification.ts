@@ -481,14 +481,12 @@ export class Verification {
     result.populatedRecompiledBytecode =
       auxdataTransformationResult.populatedRecompiledBytecode;
 
-    /* eslint-disable indent */
     const doPopulatedBytecodesMatch = isCreation
       ? onchainBytecode.startsWith(
           auxdataTransformationResult.populatedRecompiledBytecode,
         )
       : auxdataTransformationResult.populatedRecompiledBytecode ===
         onchainBytecode;
-    /* eslint-enable indent */
 
     if (doPopulatedBytecodesMatch) {
       result.match = 'partial';

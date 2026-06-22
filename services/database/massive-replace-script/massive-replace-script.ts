@@ -95,7 +95,7 @@ if (!CONFIG_FILE_PATH) {
 
 function loadConfiguration(): ReplaceConfig {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const configModule = require(CONFIG_FILE_PATH);
     return configModule;
   } catch (error) {

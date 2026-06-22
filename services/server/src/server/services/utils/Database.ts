@@ -493,7 +493,7 @@ ${
     paginationSize: number,
     descending: boolean = false,
   ): Promise<QueryResult<{ address: string }>> {
-    let queryWhere = "";
+    let queryWhere: string;
     switch (match) {
       case "full_match": {
         queryWhere =
