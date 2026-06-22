@@ -35,8 +35,6 @@
   },
   "dependencies": {
     "@ethereum-sourcify/bytecode-utils": "^1.6.0",
-    "@ethersproject/bignumber": "5.8.0",
-    "@ethersproject/bytes": "5.8.0",
     "@fairdatasociety/bmt-js": "2.1.0",
     "bs58": "6.0.0",
     "ethers": "6.16.0",

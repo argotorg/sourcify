@@ -1,4 +1,4 @@
-import { arrayify, hexlify } from '@ethersproject/bytes';
+import { getBytes, hexlify } from 'ethers';
 import bs58 from 'bs58';
 import * as CBOR from 'cbor-x';
 import semver from 'semver';
@@ -113,7 +113,7 @@ export const decode = <T extends AuxdataStyle>(
   // See more here: https://github.com/vyperlang/vyper/pull/3010
   if (auxdataStyle === AuxdataStyle.VYPER) {
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
 
     // Starting with version 0.3.10, Vyper stores the auxdata as an array
     // after 0.3.10: [runtimesize, datasize,immutablesize,version_cbor_object]
@@ -149,13 +149,13 @@ export const decode = <T extends AuxdataStyle>(
     auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5
   ) {
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
     return {
       vyperVersion: cborDecodedObject.vyper.join('.'),
     } as any;
   } else if (auxdataStyle === AuxdataStyle.SOLIDITY) {
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
 
     const result: SolidityDecodedObject = {};
     // Decode all the parameters from the json
@@ -379,7 +379,7 @@ const extractExecutionBytecode = (
  */
 export const isCborEncoded = (auxdata: string): boolean => {
   try {
-    CBOR.decode(arrayify(`0x${auxdata}`));
+    CBOR.decode(getBytes(`0x${auxdata}`));
     return true;
   } catch {
     return false;
