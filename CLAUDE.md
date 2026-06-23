@@ -206,6 +206,34 @@ When reviewing PRs as an automated agent:
 - Flag any hardcoded secrets, credentials, or API keys
 - For verification flow changes, ensure both full and partial match paths are covered
 
+### Posting review comments as pending (not submitted)
+
+When reviewing a PR, always post findings as **unsubmitted comments** — i.e. GitHub _pending_ review comments, queued for the human to read/edit/submit. Only submit the review when the user explicitly tells you to; otherwise leave it pending. First look for an already-open pending review on the PR and append to it; if there is none, create a new pending review.
+
+The GitHub remote for `gh` commands is `argotorg/sourcify` (the local default branch is `staging`).
+
+Details for adding such inline comments:
+
+- Inline comments must anchor on a line that is **part of the PR diff** (an added line, or a context line within a hunk). Commenting on an unchanged line outside any hunk fails. Verify with `gh pr diff <n> --repo argotorg/sourcify`.
+- A user can have only **one pending review per PR**. `POST /repos/argotorg/sourcify/pulls/<n>/reviews` with no `event` field creates a pending review, but it returns `422 "User can only have one pending review per pull request"` if one already exists.
+- To **append** comments to an existing pending review (REST has no append endpoint), find the pending review's GraphQL node id and use the `addPullRequestReviewThread` mutation:
+
+  ```bash
+  # find the pending review node_id (state == PENDING)
+  gh api /repos/argotorg/sourcify/pulls/<n>/reviews --jq '.[] | select(.state=="PENDING") | .node_id'
+
+  # append one inline thread (single line: pass line + side; multi-line: add startLine + startSide)
+  gh api graphql -f query='
+  mutation($reviewId: ID!, $body: String!, $path: String!, $line: Int!) {
+    addPullRequestReviewThread(input: {
+      pullRequestReviewId: $reviewId, body: $body, path: $path, line: $line, side: RIGHT
+    }) { thread { id } }
+  }' -f reviewId="$REVIEW_ID" -f body="$BODY" -f path="<path>" -F line=<line>
+  ```
+
+- Do **not** submit the review (no `submitPullRequestReview` / no `event: APPROVE|REQUEST_CHANGES|COMMENT`) unless explicitly asked — leave it pending.
+- Before producing a findings list, fetch the existing pending comments and de-duplicate against them so you don't re-report what's already queued.
+
 ## Git Workflow Rules
 
 ### After a PR is merged, always create a fresh branch
