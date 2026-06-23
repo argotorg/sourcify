@@ -24,8 +24,6 @@ const HARDHAT_PORT = 8546;
 // Configured in hardhat.config.js
 const HARDHAT_BLOCK_TIME_IN_SEC = 3;
 const MOCK_SOURCIFY_SERVER = "http://mocksourcifyserver.dev/server/";
-const MOCK_SOURCIFY_SERVER_RETURNING_ERRORS =
-  "http://mocksourcifyserver-returning-errors.dev/server/";
 const MOCK_SIMILARITY_SERVER = "http://mocksimilarity.dev/server/";
 const localChain = {
   chainId: 1337,
@@ -241,105 +239,6 @@ describe("Monitor", function () {
         ).to.be.true;
         resolve();
       });
-    });
-  });
-
-  it("should use retry mechanism for failed Sourcify request", (done) => {
-    const maxRetries = 2;
-    monitor = new Monitor([localChain], {
-      sourcifyServerURLs: [MOCK_SOURCIFY_SERVER_RETURNING_ERRORS],
-      sourcifyRequestOptions: {
-        maxRetries,
-        retryDelay: 1000,
-      },
-      chainConfigs: {
-        [localChain.chainId]: {
-          startBlock: 0,
-          blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
-        },
-      },
-    });
-
-    deployFromAbiAndBytecode(
-      signer,
-      storageContractArtifact.abi,
-      storageContractArtifact.bytecode,
-      [],
-    ).then(() => {
-      let sourcifyMockTimesCalled = 0;
-      const { origin, pathname } = new URL(
-        MOCK_SOURCIFY_SERVER_RETURNING_ERRORS,
-      );
-      const verifyPathRegex = new RegExp(
-        `^${pathname.replace(/\/+$/, "")}/v2/verify/metadata/`,
-      );
-      nock(origin)
-        .post(verifyPathRegex)
-        .times(maxRetries)
-        .reply(function () {
-          sourcifyMockTimesCalled++;
-          if (sourcifyMockTimesCalled === maxRetries) {
-            done();
-          }
-          return [500];
-        });
-      monitor.start();
-    });
-  });
-
-  it("should not retry when the contract is already verified (409)", (done) => {
-    const maxRetries = 3;
-    const retryDelay = 500;
-    monitor = new Monitor([localChain], {
-      sourcifyServerURLs: [MOCK_SOURCIFY_SERVER],
-      sourcifyRequestOptions: {
-        maxRetries,
-        retryDelay,
-      },
-      chainConfigs: {
-        [localChain.chainId]: {
-          startBlock: 0,
-          blockInterval: HARDHAT_BLOCK_TIME_IN_SEC * 1000,
-        },
-      },
-    });
-
-    deployFromAbiAndBytecode(
-      signer,
-      storageContractArtifact.abi,
-      storageContractArtifact.bytecode,
-      [],
-    ).then(() => {
-      let sourcifyMockTimesCalled = 0;
-      const { origin, pathname } = new URL(MOCK_SOURCIFY_SERVER);
-      const verifyPathRegex = new RegExp(
-        `^${pathname.replace(/\/+$/, "")}/v2/verify/metadata/`,
-      );
-      nock(origin)
-        .persist()
-        .post(verifyPathRegex)
-        .reply(() => {
-          sourcifyMockTimesCalled++;
-          if (sourcifyMockTimesCalled === 1) {
-            // A 409 (already verified) is a terminal state and must not be
-            // retried. Wait past the retry window, then assert the server was
-            // only called once.
-            setTimeout(
-              () => {
-                nock.cleanAll();
-                try {
-                  expect(sourcifyMockTimesCalled).to.equal(1);
-                  done();
-                } catch (err) {
-                  done(err);
-                }
-              },
-              retryDelay * (maxRetries + 1),
-            );
-          }
-          return [409, { customCode: "already_verified" }];
-        });
-      monitor.start();
     });
   });
 

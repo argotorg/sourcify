@@ -165,7 +165,6 @@ export default class PendingContract {
       );
     }
 
-    // The contract is already verified on this server, nothing to do or retry.
     if (response.status === 409) {
       this.contractLogger.info(
         "[PendingContract.sendToSourcifyServer] Contract already verified",
