@@ -144,26 +144,21 @@ export default class PendingContract {
     const baseURL = sourcifyServerURL.replace(/\/+$/, "");
     const verifyURL = `${baseURL}/v2/verify/metadata/${this.chainId}/${this.address}`;
 
-    let response: Response;
-    try {
-      // Send to Sourcify server.
-      response = await fetch(verifyURL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "sourcify-monitor",
-        },
-        body: JSON.stringify({
-          sources: formattedSources,
-          metadata: this.metadata,
-          creationTransactionHash: creatorTxHash,
-        }),
-      });
-    } catch (error: any) {
-      throw new Error(
-        `Error sending contract ${this.address} to Sourcify server ${verifyURL} - network error: ${error.message}`,
-      );
-    }
+    // Send to Sourcify server. Let network errors (e.g. ECONNRESET) propagate
+    // as-is so their cause/code/stack are preserved when logged. The url and
+    // address context is logged alongside the error by the caller.
+    const response = await fetch(verifyURL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "sourcify-monitor",
+      },
+      body: JSON.stringify({
+        sources: formattedSources,
+        metadata: this.metadata,
+        creationTransactionHash: creatorTxHash,
+      }),
+    });
 
     if (response.status === 409) {
       this.contractLogger.info(
@@ -179,7 +174,7 @@ export default class PendingContract {
 
     if (!response.ok) {
       throw new Error(
-        `Error sending contract ${this.address} to Sourcify server ${verifyURL} - response status not ok: ${response.status} ${response.statusText} ${await response.text()}`,
+        `Sourcify server returned a non-ok status: ${response.status} ${response.statusText} ${await response.text()}`,
       );
     }
 
