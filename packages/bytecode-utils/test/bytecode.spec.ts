@@ -112,6 +112,18 @@ describe('bytecode utils', function () {
     chai.expect(execution).to.equal(ZKSYNC_ABSTRACT_1_5_7_TAIL);
   });
 
+  it('bytecode decode zkSync EraVM cbor through the leading zero padding', () => {
+    // The auxdata block carries leading zero word-alignment padding before the
+    // CBOR; decode must strip it and still recover the ipfs hash and the zksolc
+    // version string (zksolc encodes `solc` as a descriptive string, not bytes).
+    chai
+      .expect(decode(ZKSYNC_ABSTRACT_1_5_15_TAIL, AuxdataStyle.ZKSYNC))
+      .to.deep.equal({
+        ipfs: 'QmNrVTanh1MSVgK97knBi4XGyQUgu6cqQwcmMjbPepv5wv',
+        solcVersion: 'zksolc:1.5.15;solc:0.8.26;llvm:1.0.2',
+      });
+  });
+
   it('return the full bytecode with no auxdata for Vyper < 0.3.4 contracts', () => {
     // Vyper versions prior to 0.3.4 emit no CBOR auxdata at all
     const [execution, auxdata, length] = splitAuxdata(

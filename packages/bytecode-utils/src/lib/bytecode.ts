@@ -51,7 +51,7 @@ export enum AuxdataStyle {
 export const decode = <T extends AuxdataStyle>(
   bytecode: string,
   auxdataStyle: T,
-): T extends AuxdataStyle.SOLIDITY
+): T extends AuxdataStyle.SOLIDITY | AuxdataStyle.ZKSYNC
   ? SolidityDecodedObject
   : VyperDecodedObject => {
   if (bytecode.length === 0) {
@@ -110,9 +110,19 @@ export const decode = <T extends AuxdataStyle>(
     return {
       vyperVersion: cborDecodedObject.vyper.join('.'),
     } as any;
-  } else if (auxdataStyle === AuxdataStyle.SOLIDITY) {
+  } else if (
+    auxdataStyle === AuxdataStyle.SOLIDITY ||
+    auxdataStyle === AuxdataStyle.ZKSYNC
+  ) {
+    // zksolc (EraVM) prepends zero word-alignment padding before the CBOR block,
+    // and its CBOR map is otherwise structurally identical to Solidity's.
+    const cborHex =
+      auxdataStyle === AuxdataStyle.ZKSYNC
+        ? auxdata.replace(/^(?:00)+/, '')
+        : auxdata;
+
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(arrayify(`0x${cborHex}`));
 
     const result: SolidityDecodedObject = {};
     // Decode all the parameters from the json
@@ -178,6 +188,21 @@ export const splitAuxdata = (
     return splitEraVmAuxdata(bytecode);
   }
 
+  return splitCborAuxdata(bytecode, auxdataStyle);
+};
+
+/**
+ * Reads the trailing 2-byte CBOR length, extracts that many bytes as the auxdata,
+ * and verifies it is CBOR-encoded.
+ *
+ * @returns [executionBytecode, auxdata, cborLengthHex] on success, or [bytecode]
+ * when there is no valid CBOR auxdata at the tail. Shared by the Solidity/Vyper
+ * styles and reused by splitEraVmAuxdata for the zksolc CBOR block.
+ */
+const splitCborAuxdata = (
+  bytecode: string,
+  auxdataStyle: AuxdataStyle,
+): [string, string?, string?] => {
   const bytesLength = CBOR_LENGTH_HEX_BYTES;
   const cborBytesLength = getCborBytesLength(
     bytecode,
@@ -213,28 +238,23 @@ export const splitAuxdata = (
 };
 
 const splitEraVmAuxdata = (bytecode: string): [string, string?, string?] => {
-  const bytecodeWithoutPrefix = bytecode.slice(2);
-  const cborLengthHex = bytecodeWithoutPrefix.slice(-CBOR_LENGTH_HEX_BYTES);
-  const cborByteLength = parseInt(cborLengthHex, 16);
-
-  if (!Number.isFinite(cborByteLength) || cborByteLength <= 0) {
-    return [bytecode];
-  }
-
-  const cborHexLength = cborByteLength * 2;
-  const cborStart =
-    bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES - cborHexLength;
-  if (cborStart < 0) {
-    return [bytecode];
-  }
-
-  const cborPayload = bytecodeWithoutPrefix.substring(
-    cborStart,
-    bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES,
+  // The zksolc CBOR block uses the same [cbor][2-byte length] tail as Solidity,
+  // so reuse the shared extraction to locate and validate the CBOR. The only
+  // EraVM-specific step is absorbing the zero word-alignment padding that
+  // precedes the CBOR into the auxdata region. If no CBOR is found (e.g. a
+  // pre-1.5.13 bare keccak256 metadata hash), there is no auxdata to split.
+  const [, cbor, cborLengthHex] = splitCborAuxdata(
+    bytecode,
+    AuxdataStyle.SOLIDITY,
   );
-  if (!isCborEncoded(cborPayload)) {
+  if (!cbor || cborLengthHex === undefined) {
     return [bytecode];
   }
+
+  const bytecodeWithoutPrefix = bytecode.slice(2);
+  const cborByteLength = parseInt(cborLengthHex, 16);
+  const cborStart =
+    bytecodeWithoutPrefix.length - CBOR_LENGTH_HEX_BYTES - cbor.length;
 
   const logicalMetadataLengthBytes = cborByteLength + 2;
   const alignedMetadataLengthBytes =

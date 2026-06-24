@@ -345,6 +345,19 @@ export function extractLibrariesTransformation(
   };
 }
 
+// Checks whether an auxdata hex string contains a CBOR payload. zksolc EraVM
+// auxdata carries leading zero word-alignment padding before the CBOR block; a
+// CBOR map never starts with 0x00, so stripping leading zero bytes unambiguously
+// locates the payload (a no-op for Solidity/Vyper auxdata, which has no padding).
+// We try with and without the trailing 2-byte length, since some Vyper auxdata
+// does not include the length in the bytecode.
+function auxdataContainsCbor(auxdata: string): boolean {
+  const withoutPadding = auxdata.replace(/^(?:00)+/, '');
+  return (
+    isCborEncoded(withoutPadding.slice(0, -4)) || isCborEncoded(withoutPadding)
+  );
+}
+
 export function extractAuxdataTransformation(
   recompiledBytecodeWith0x: string,
   onchainBytecodeWith0x: string,
@@ -371,21 +384,19 @@ export function extractAuxdataTransformation(
 
       // Get the value from the onchain bytecode.
       const onchainAuxdata = onchainBytecode.slice(offsetStart, offsetEnd);
+      // Only CBOR-validate the onchain slice when the recompiled auxdata at this
+      // position is itself CBOR-encoded. Non-CBOR auxdata — e.g. zksolc <= 1.5.12
+      // keccak256 metadata hashes — is still masked for partial matches, but it
+      // cannot be CBOR-decoded, so validation is skipped for those positions.
+      const recompiledAuxdataIsCbor = auxdataContainsCbor(recompiledAuxdata);
       if (
         // We need to validate the onchain auxdata is actually a valid CBOR object
         // If the recompiled auxdata length is different from the onchain auxdata length,
         // then `onchainAuxdata` will contain bytes that are not part of the auxdata.
         validateCbor &&
+        recompiledAuxdataIsCbor &&
         onchainAuxdata.length > 0 &&
-        !(
-          // We first try to decode the auxdata removing the auxdata length bytes,
-          // if it fails we try to decode it as is, since some Vyper auxdata doesn't
-          // include the auxdata length in the bytecode.
-          (
-            isCborEncoded(onchainAuxdata.slice(0, -4)) ||
-            isCborEncoded(onchainAuxdata)
-          )
-        )
+        !auxdataContainsCbor(onchainAuxdata)
       ) {
         throw new Error(
           `Failed to decode onchain auxdata at offset ${offsetStart} with length ${onchainAuxdata.length}.`,

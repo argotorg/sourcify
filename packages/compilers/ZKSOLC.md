@@ -137,3 +137,140 @@ platform.
 
 **era-solc has no libc fallback.** The `era-solidity` repo publishes a single
 Linux build under `solc-linux-amd64-<version>` with no `-gnu`/`-musl` suffix.
+
+## Metadata / CBOR auxdata
+
+EraVM bytecode carries trailing metadata the same way EVM bytecode does, but the
+encoding changed across zksolc versions and the EraVM word model adds a wrinkle.
+This section documents how Sourcify splits, masks, and verifies that metadata.
+The `AuxdataStyle.ZKSYNC` enum in `bytecode-utils` selects this behavior.
+
+### Two encodings, split at zksolc 1.5.13
+
+zksolc switched its default metadata format at **1.5.13** (per the
+`era-compiler-solidity` release notes):
+
+| zksolc         | Metadata appended to bytecode                                                                           | Mask source                           |
+| -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **≤ 1.5.12**   | bare **keccak256 hash** of the metadata (32 bytes, no CBOR)                                             | `generateEraVmMetadataHashPosition`   |
+| **≥ 1.5.13**   | **CBOR** payload (IPFS hash + compiler versions) + 2-byte length                                        | `splitAuxdata` (ZKSYNC) → CBOR branch |
+| any, opted out | nothing (`--no-cbor-metadata` / `metadata.bytecodeHash: none` / `hashType: none` / `appendCBOR: false`) | `isEraVmMetadataDisabled` → `{}`      |
+
+1.5.13 added CBOR-encoded IPFS as the default, added `--no-cbor-metadata`, and
+deprecated the keccak256 hash type. The test fixtures use a 1.5.7 tail (keccak)
+and a 1.5.15 tail (CBOR) as representatives of the two eras — the meaningful
+boundary is **1.5.13**, not the exact fixture versions.
+
+### The ≥1.5.13 CBOR layout vs. standard solc
+
+The CBOR map is **structurally identical to solc's** — an `a2` map with `ipfs`
+(CIDv0, `5822 1220…`) and `solc` keys, followed by a 2-byte big-endian length:
+
+```
+a2 64 'ipfs' 5822 1220<32-byte hash> 64 'solc' 78 24 "zksolc:1.5.15;solc:0.8.26;llvm:1.0.2"
+```
+
+Two differences from solc:
+
+1. **The `solc` value is a descriptive string** (`zksolc:…;solc:…;llvm:…`) rather
+   than solc's 3 raw version bytes. `decode()` already handles string-encoded
+   `solc` (the nightly-build branch), so this needs no special casing.
+2. **Word-alignment zero padding is prepended** before the CBOR so the whole
+   metadata block fills EraVM 32-byte words. Standard solc has no padding.
+
+Everything else — the trailing 2-byte length convention and the CBOR map shape —
+is the same. So EraVM CBOR splitting is the **Solidity split plus leading zero
+padding**, not a fundamentally different format.
+
+### The EraVM word rule (why "exactly one" extra zero word)
+
+Valid EraVM bytecode must be a whole number of 32-byte words **and** an **odd**
+number of them — i.e. `length % 64 == 32` (plus a `2^16`-word ceiling). This is a
+deployment-format invariant tied to the versioned bytecode hash, not a quirk of
+the metadata. See the [ZKsync contract-deployment docs][zk-deploy] and Matter
+Labs' [EraVM binary-layout doc][zk-binary].
+
+The metadata block already pads `[cbor][length]` up to a word boundary (the
+`Math.ceil(… / 32) * 32` in `splitEraVmAuxdata`). But that alignment alone can
+leave the _total_ word count even; to flip it back to odd, zksolc may prepend
+**one** additional all-zero 32-byte word before the block. That is why the split
+absorbs exactly one preceding zero word (the `paddingWordStart` backtrack in
+`bytecode.ts`, mirrored in `ZkSolcCompilation.ts`) rather than greedily stripping
+an arbitrary run of zeros — only a single odd-parity word is ever added.
+
+[zk-deploy]: https://docs.zksync.io/zksync-protocol/era-vm/differences/contract-deployment
+[zk-binary]: https://matter-labs.github.io/era-compiler-solidity/latest/eravm/07-binary-layout.html
+
+### Detection is content-based, not version-based
+
+Unlike compiler _invocation_ (version-gated via `isZkSolcVersionAtLeastV15`),
+metadata _format_ detection is feature-detection on the bytecode: read the last
+2 bytes as a length, extract that many bytes, and try to CBOR-decode them. Decode
+succeeds → CBOR style; decode fails → fall back to the keccak hash region. The
+1.5.7 keccak fixture bails because its trailing bytes parse as an out-of-range
+length. (A version backstop would harden the two unlikely false-positive
+directions — a keccak hash that happens to decode as CBOR, or a modern contract
+wrongly treated as keccak — but the format itself is recovered from content.)
+
+### The padding is part of the auxdata region, and decoding strips it
+
+`splitAuxdata` (ZKSYNC) returns the **whole metadata block** as auxdata —
+`[zero padding][cbor]` plus the trailing 2-byte length — not just the CBOR. The
+padding lives inside the auxdata region on purpose: it is **metadata-induced** (it
+only exists to word-align the appended metadata; strip the metadata and that
+padding is gone), so it belongs to the region Sourcify masks, not to execution
+bytecode.
+
+Why it must be in the auxdata region: to verify a contract whose onchain bytecode
+has metadata **absent** against a recompilation that has it **present** (or vice
+versa), the _entire_ difference — padding included — has to be one maskable /
+deletable unit. If the padding were left in execution bytecode, deleting the
+auxdata would leave `[exec][padding]`, whose length can never reconcile with a
+bare `[exec]`, foreclosing that match. Keeping the padding in auxdata keeps that
+door open. (The current delete path still assumes a Solidity `fe` separator, so
+fully wiring present-vs-absent for EraVM needs additional work — but the padding
+placement is the precondition.)
+
+The cost is that the auxdata is no longer decodable front-to-back: CBOR is read
+**from byte 0**, and the leading `0x00…` padding makes `cbor-x` throw
+`Data read, but end of buffer not reached`. So **decoding strips the padding
+first.** A CBOR map always starts with a major-type-5 byte (`0xa1`/`0xa2`/…), never
+`0x00`, so removing leading zero bytes unambiguously locates the payload:
+
+- `decode(bytecode, AuxdataStyle.ZKSYNC)` reuses the Solidity decode branch after
+  `auxdata.replace(/^(?:00)+/, '')`; the CBOR map is otherwise identical to
+  Solidity's (the `solc` value is a descriptive `zksolc:…;solc:…;llvm:…` string,
+  already handled by the nightly-build branch).
+- `extractAuxdataTransformation` uses a padding-tolerant `auxdataContainsCbor`
+  helper (same leading-zero strip) wherever it validates a slice is CBOR.
+
+This strip is a no-op for Solidity/Vyper auxdata (no leading padding), so the
+shared paths stay correct. External consumers of the stored `cbor_auxdata` value
+must apply the same strip to decode it — the one compatibility wrinkle of keeping
+the padding in the value.
+
+### Keccak (≤1.5.12) is still auxdata, so partial matches work
+
+The bare keccak hash is the hash of the metadata: it differs between
+recompilation and onchain whenever the metadata differs, so it **must be masked**
+for a partial match — exactly like a CBOR metadata hash. `generateEraVmMetadataHashPosition`
+registers the 32-byte hash (plus an optional preceding zero word for the EraVM
+word rule above) as cborAuxdata position `'1'`, so it is masked, not compared. A keccak
+hash is **not** CBOR, though, so the auxdata-replacement transform must not try to
+CBOR-validate it.
+
+### `validateCbor` is per-position, not per-style
+
+`extractAuxdataTransformation` validates that each onchain auxdata slice is a real
+CBOR object before masking it. Whether to validate is decided **per auxdata
+position** by whether the _recompiled_ auxdata at that position is itself CBOR
+(via the padding-tolerant `auxdataContainsCbor`):
+
+- ≥1.5.13 CBOR positions → recompiled value is CBOR → the onchain slice is
+  validated, same as Solidity.
+- ≤1.5.12 keccak positions → recompiled value is a raw hash, not CBOR →
+  validation is skipped for that position (it is still masked).
+
+This replaced the earlier blanket `validateCbor: false` for all of ZKSYNC, which
+masked the keccak case correctly but also silently disabled validation for the
+CBOR case where it should run.

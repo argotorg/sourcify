@@ -529,11 +529,14 @@ export class Verification {
       return result;
     }
 
+    // CBOR validation is now decided per auxdata position by whether the
+    // recompiled auxdata is itself CBOR-encoded (see extractAuxdataTransformation),
+    // so ZKSYNC no longer needs a blanket opt-out: its CBOR metadata is validated
+    // like Solidity's, while keccak256 metadata-hash positions skip validation.
     const auxdataTransformationResult = extractAuxdataTransformation(
       populatedRecompiledBytecode,
       onchainBytecode,
       cborAuxdata,
-      { validateCbor: this.compilation.auxdataStyle !== AuxdataStyle.ZKSYNC },
     );
 
     result.populatedRecompiledBytecode =
