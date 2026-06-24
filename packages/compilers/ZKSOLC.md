@@ -3,16 +3,55 @@
 Reviewer-oriented notes on how zksolc / EraVM verification resolves and runs
 compilers. Companion to the "Solc Compiler Internals" section in `CLAUDE.md`.
 
+Authoritative upstream reference: the [ZKsync Solidity Compiler Toolchain
+docs](https://matter-labs.github.io/era-compiler-solidity/latest/) (Matter
+Labs). See it for the canonical toolchain model (zksolc → era-solidity fork →
+era-compiler-llvm backend) and the era-solc version/edition scheme.
+
 ![zkSync EraVM compiler toolchain](./zksync-compiler-toolchain.png)
 
 _zkSync's compiler toolchain: a high-level frontend (zksolc) drives a Solidity
 frontend, which feeds a shared LLVM-based backend that emits EraVM bytecode._
 
+## When does the zksolc path apply? Two kinds of contracts on ZKsync
+
+ZKsync Era does **not** execute EVM bytecode natively — it runs **EraVM**, a
+different VM. That splits contracts on ZKsync chains into two distinct kinds,
+verified by two different Sourcify paths:
+
+| Path                           | Contract is…                                             | Compiled with             | On-chain bytecode                       | Verified by                                           |
+| ------------------------------ | -------------------------------------------------------- | ------------------------- | --------------------------------------- | ----------------------------------------------------- |
+| **1. EraVM-native** (this doc) | a real ZKsync contract                                   | **zksolc** → solc backend | EraVM bytecode (EraVM metadata trailer) | the zksolc/EraVM flow                                 |
+| **2. EVM-emulated**            | standard EVM bytecode run under ZKsync's EVM interpreter | plain upstream `solc`     | ordinary EVM bytecode                   | the **normal Solidity flow** — zksolc is not involved |
+
+Vanilla `solc` output **cannot be deployed as a native ZKsync contract**; it only
+runs on ZKsync via the EVM emulator (Path 2), where it is just EVM bytecode and
+needs no special handling. Everything in this document is about **Path 1**: native
+EraVM contracts, which can only be produced by zksolc.
+
+### Within Path 1: which `--solc` backend, and when
+
+Using zksolc does not by itself fix the Solidity backend. zksolc shells out to a
+`solc` binary via `--solc <path>`, and the legal choices depend on the **zksolc
+version**:
+
+| zksolc version | upstream/canonical solc (`v0.8.26+commit…`)          | era-solc fork (`0.8.26-1.0.x`) |
+| -------------- | ---------------------------------------------------- | ------------------------------ |
+| **< 1.5.8**    | ✅ allowed (frontend only; zksolc still emits EraVM) | ✅ allowed                     |
+| **≥ 1.5.8**    | ❌ **prohibited by zksolc**                          | ✅ **required**                |
+
+So the two backends are **not interchangeable** for modern zksolc. The era-solc
+fork carries fixes for lowering EVM assembly to LLVM IR that upstream solc lacks,
+which is why Matter Labs eventually made it mandatory. Upstream solc remains in the
+candidate logic only to (a) support old zksolc, and (b) recover the base solc
+version when a block-explorer submission gives us the commit-bearing upstream
+string instead of the era edition (see the candidate-expansion section).
+
 ## Three compilers, three roles
 
 zksolc verification involves three distinct compiler binaries. zksolc is the
-orchestrator; the other two are interchangeable backends it shells out to via
-`--solc <path>`.
+orchestrator; the other two are alternative backends (gated by zksolc version —
+see above) it shells out to via `--solc <path>`.
 
 | Compiler          | Role                                                                                     | Repo                                                                            | Filename pattern                     | Version examples                                                           |
 | ----------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
