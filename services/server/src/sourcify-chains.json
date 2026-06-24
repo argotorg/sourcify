@@ -1,0 +1,17 @@
+{
+  "1874": {
+    "sourcifyName": "Whitechain Sepolia Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://explorer.testnet.whitechain.io/"
+      }
+    },
+    "rpc": [
+      {
+        "type": "BaseRPC",
+        "url": "https://rpc.testnet.whitechain.io"
+      }
+    ]
+  }
+}
