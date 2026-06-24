@@ -8,13 +8,13 @@ paths:
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description), [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description), or Fe JSON input (a Sourcify-defined format — Fe has no official compiler JSON interface).
 
-        Solidity standard JSON requests with `zksolcVersion` are verified as ZKsync EraVM/zksolc compilations. In that case `compilerVersion` is the underlying era-solc/solc version, for example `v0.8.26+commit.8a97fa7a`.
-
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
 
         **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated.
+
+        Solidity standard JSON requests with `zksolcVersion` are verified as ZKsync EraVM/zksolc compilations. In that case `compilerVersion` is the underlying era-solc/solc version, for example `v0.8.26+commit.8a97fa7a` and the `zksolcVersion` as `v1.5.16`.
       operationId: verify
       parameters:
         - $ref: "#/components/parameters/chainId"
