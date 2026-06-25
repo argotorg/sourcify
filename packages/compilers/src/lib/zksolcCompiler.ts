@@ -306,6 +306,10 @@ export async function getZkSolcExecutable(
       );
     } catch (error) {
       lastError = error;
+      // The download succeeded but the binary isn't usable here (e.g. a gnu
+      // binary on a musl host). Remove it so it isn't left cached in the repo
+      // dir before falling through to the next candidate.
+      fs.rmSync(zksolcPath, { force: true });
       logDebug('Failed to resolve zksolc candidate', {
         fileName,
         version: normalizedVersion,
