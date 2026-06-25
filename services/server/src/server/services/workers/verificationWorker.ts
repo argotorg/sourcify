@@ -13,7 +13,6 @@ import {
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
   EtherscanUtils,
-  isZkSolcCompilerVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -120,46 +119,6 @@ async function _verifyFromJsonInput({
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
-  // A zksolc verification is identified by the combined `zksolc:<v>;solc:<v>`
-  // compilerVersion. zksolc-specific stdJsonInput settings without such a
-  // compilerVersion are rejected as an inconsistent request.
-  const compilerVersionIsZkSolc = isZkSolcCompilerVersion(compilerVersion);
-  const isZkSolcVerification =
-    compilerVersionIsZkSolc || hasZkSolcInputFlags(jsonInput);
-
-  if (isZkSolcVerification) {
-    if (jsonInput.language !== "Solidity") {
-      return {
-        errorExport: createInvalidParameterErrorExport(
-          "ZkSolc verification only supports Solidity standard JSON input.",
-        ),
-      };
-    }
-
-    if (!compilerVersionIsZkSolc) {
-      return {
-        errorExport: createInvalidParameterErrorExport(
-          'zksolc-specific settings require a zksolc compilerVersion of the form "zksolc:<zksolcVersion>;solc:<solcVersion>".',
-        ),
-      };
-    }
-
-    if (!zksolc) {
-      return {
-        errorExport: createInvalidParameterErrorExport(
-          "ZkSolc verification is not enabled on this server.",
-        ),
-      };
-    }
-
-    if (!sourcifyChain?.zksolc?.supported) {
-      return {
-        errorExport: createInvalidParameterErrorExport(
-          `ZkSolc verification is not supported on chain ${chainId}.`,
-        ),
-      };
-    }
-  }
 
   let compilation: AnyCompilation;
   try {
@@ -442,31 +401,6 @@ async function _verifySimilarity({
       customCode: "no_similar_match_found",
       errorId: uuidv4(),
       errorData: undefined,
-    },
-  };
-}
-
-function hasZkSolcInputFlags(jsonInput: VerifyFromJsonInput["jsonInput"]) {
-  const settings = (jsonInput as { settings?: Record<string, unknown> })
-    .settings;
-  if (!settings) {
-    return false;
-  }
-
-  return (
-    "enableEraVMExtensions" in settings ||
-    "forceEVMLA" in settings ||
-    "isSystem" in settings ||
-    "forceEvmla" in settings
-  );
-}
-
-function createInvalidParameterErrorExport(message: string): VerifyErrorExport {
-  return {
-    customCode: "invalid_parameter",
-    errorId: uuidv4(),
-    errorData: {
-      apiErrorMessage: message,
     },
   };
 }

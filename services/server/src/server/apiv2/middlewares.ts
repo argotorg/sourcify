@@ -18,6 +18,69 @@ import type {
   VyperJsonInput,
   FeJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
+import { isZkSolcCompilerVersion } from "@ethereum-sourcify/lib-sourcify";
+
+function hasZkSolcInputFlags(jsonInput: unknown): boolean {
+  const settings = (jsonInput as { settings?: Record<string, unknown> })
+    ?.settings;
+  if (!settings) {
+    return false;
+  }
+  return (
+    "enableEraVMExtensions" in settings ||
+    "forceEVMLA" in settings ||
+    "isSystem" in settings ||
+    "forceEvmla" in settings
+  );
+}
+
+// Rejects unservable zksolc requests with a 400 before a job is enqueued. A
+// zksolc verification is identified by the combined `zksolc:<v>;solc:<v>`
+// compilerVersion.
+export function validateZkSolcRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const compilerVersion: string = req.body.compilerVersion ?? "";
+  const stdJsonInput = req.body.stdJsonInput;
+  const compilerVersionIsZkSolc = isZkSolcCompilerVersion(compilerVersion);
+  const isZkSolcVerification =
+    compilerVersionIsZkSolc || hasZkSolcInputFlags(stdJsonInput);
+
+  if (!isZkSolcVerification) {
+    return next();
+  }
+
+  if (stdJsonInput?.language !== "Solidity") {
+    throw new InvalidParametersError(
+      "ZkSolc verification only supports Solidity standard JSON input.",
+    );
+  }
+
+  if (!compilerVersionIsZkSolc) {
+    throw new InvalidParametersError(
+      'zksolc-specific settings require a zksolc compilerVersion of the form "zksolc:<zksolcVersion>;solc:<solcVersion>".',
+    );
+  }
+
+  const services = req.app.get("services") as Services;
+  if (!services.verification.isZkSolcEnabled) {
+    throw new InvalidParametersError(
+      "ZkSolc verification is not enabled on this server.",
+    );
+  }
+
+  const chainRepository = req.app.get("chainRepository") as ChainRepository;
+  const sourcifyChain = chainRepository.sourcifyChainMap[req.params.chainId];
+  if (!sourcifyChain?.zksolc?.supported) {
+    throw new InvalidParametersError(
+      `ZkSolc verification is not supported on chain ${req.params.chainId}.`,
+    );
+  }
+
+  next();
+}
 
 export function validateChainId(
   req: Request,

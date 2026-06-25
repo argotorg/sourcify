@@ -79,6 +79,11 @@ export class VerificationService {
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
 
+  // zksolc is only available when its compiler repo paths are configured.
+  get isZkSolcEnabled(): boolean {
+    return Boolean(this.zksolcRepoPath && this.eraSolcRepoPath);
+  }
+
   constructor(
     options: VerificationServiceOptions,
     storageService: StorageService,

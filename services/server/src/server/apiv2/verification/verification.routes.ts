@@ -7,6 +7,7 @@ import {
   checkIfJobIsAlreadyRunning,
   validateStandardJsonInput,
   validateAndNormalizeFeInput,
+  validateZkSolcRequest,
 } from "../middlewares";
 import {
   verifyFromJsonInputEndpoint,
@@ -26,6 +27,7 @@ router
     validateStandardJsonInput,
     validateAndNormalizeFeInput,
     validateContractIdentifier,
+    validateZkSolcRequest,
     checkIfAlreadyVerified,
     checkIfJobIsAlreadyRunning,
     verifyFromJsonInputEndpoint,

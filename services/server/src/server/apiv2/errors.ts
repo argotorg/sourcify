@@ -269,16 +269,11 @@ export type VerificationErrorCode =
   | "internal_error"
   | "no_similar_match_found";
 
-type ApiErrorMessageParameters = Pick<
-  Extract<SourcifyLibErrorParameters, { code: "etherscan_api_error" }>,
-  "apiErrorMessage"
->;
-
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
-  | ({
+  | {
       code: VerificationErrorCode;
-    } & Partial<ApiErrorMessageParameters>);
+    };
 
 export function getVerificationErrorMessage(
   params: VerificationErrorParameters,
@@ -289,7 +284,7 @@ export function getVerificationErrorMessage(
     case "already_verified":
       return "The contract is already verified and the job didn't yield a better match.";
     case "invalid_parameter":
-      return params.apiErrorMessage || "Invalid parameter.";
+      return "Invalid parameter.";
     case "internal_error":
       return "The server encountered an unexpected error.";
     case "no_similar_match_found":
