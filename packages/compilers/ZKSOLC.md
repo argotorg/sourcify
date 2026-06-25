@@ -35,10 +35,19 @@ Using zksolc does not by itself fix the Solidity backend. zksolc shells out to a
 `solc` binary via `--solc <path>`, and the legal choices depend on the **zksolc
 version**:
 
-| zksolc version | upstream/canonical solc (`v0.8.26+commit…`)          | era-solc fork (`0.8.26-1.0.x`) |
-| -------------- | ---------------------------------------------------- | ------------------------------ |
-| **< 1.5.8**    | ✅ allowed (frontend only; zksolc still emits EraVM) | ✅ allowed                     |
-| **≥ 1.5.8**    | ❌ **prohibited by zksolc**                          | ✅ **required**                |
+| zksolc version       | upstream/canonical solc (`v0.8.26+commit…`)          | era-solc fork (`0.8.26-1.0.x`) |
+| -------------------- | ---------------------------------------------------- | ------------------------------ |
+| **< 1.3.19**         | ✅ only option                                       | ❌ not supported yet           |
+| **1.3.19 – < 1.5.8** | ✅ allowed (frontend only; zksolc still emits EraVM) | ✅ allowed                     |
+| **≥ 1.5.8**          | ❌ **prohibited by zksolc**                          | ✅ **required**                |
+
+These two boundaries are from the
+[`era-compiler-solidity` CHANGELOG](https://github.com/matter-labs/era-compiler-solidity/blob/main/CHANGELOG.md):
+`[1.3.19] - 2023-12-16` added _"support for the EraVM-friendly edition of solc"_,
+and `[1.5.8] - 2024-12-10` _"Prohibited the usage of the upstream `solc`
+compiler"_ (moving the client to a separate `era-solc` crate). (Tooling floors
+differ and are **not** the protocol truth: Hardhat treats `1.3.22` as its
+era-solc minimum, Foundry uses `1.5.13` as its edition boundary.)
 
 So the two backends are **not interchangeable** for modern zksolc. The era-solc
 fork carries fixes for lowering EVM assembly to LLVM IR that upstream solc lacks,
@@ -59,9 +68,44 @@ see above) it shells out to via `--solc <path>`.
 | **era-solc**      | Matter Labs' fork of solc with EraVM patches; invoked by zksolc as the `--solc` backend  | `matter-labs/era-solidity`                                                      | `solc-<platform>-<version>[.exe]`    | `0.8.30-1.0.2`, `0.8.26-1.0.1`, `0.7.6-1.0.1` (sometimes `zkVM-`-prefixed) |
 | **upstream solc** | Plain Ethereum solc; also usable as zksolc's `--solc` backend                            | `binaries.soliditylang.org/bin/` (reused via the existing solc downloader)      | (existing solc convention)           | `v0.8.26+commit.8a97fa7a`, `0.8.26`                                        |
 
-The era-solc version format is `<solc-semver>-<era-edition>`. Editions: `1.0.0`,
-`1.0.1`, `1.0.2`. Edition `1.0.0` only covers solc ≤ 0.8.25; edition `1.0.2`
-requires zksolc ≥ 1.5.
+The era-solc version format is `<solc-semver>-<era-edition>`. Which
+`<solc>-<edition>` binaries actually exist (from the `era-solidity` GitHub
+releases, which the ZKsync explorer's `solc_versions` list mirrors exactly):
+
+| edition (`llvm`) | Solidity range          | count |
+| ---------------- | ----------------------- | ----- |
+| `1.0.0`          | `0.4.12` – **`0.8.25`** | 79    |
+| `1.0.1`          | `0.4.12` – `0.8.30`     | 84    |
+| `1.0.2`          | `0.4.12` – `0.8.30`     | 84    |
+
+So edition `1.0.0` is the only one capped at `0.8.25` (matching Sourcify's
+`MAX_ERA_SOLC_1_0_0_SOLIDITY_VERSION`), while `1.0.1` and `1.0.2` cover the
+identical full range. **The edition is therefore not inferable from the Solidity
+version** — multiple editions exist for the same solc, and which one a contract
+used depends on the building tool, not the language version (the `llvm:` CBOR
+field is the only on-chain tell).
+
+The editions are versioned by the `era-solidity` fork itself, documented in its
+[`Changelog.md`](https://github.com/matter-labs/era-solidity/blob/main/Changelog.md)
+as _"ZKsync Legacy Edition"_ releases. No source states an edition→zksolc
+compatibility rule, but the **release dates** pin which edition a given zksolc
+could have used:
+
+| era-solc edition | released   | zksolc milestone         | released   |
+| ---------------- | ---------- | ------------------------ | ---------- |
+| `1.0.0`          | 2024-01-16 | —                        | —          |
+| `1.0.1`          | 2024-05-31 | `1.5.0`                  | 2024-06-10 |
+| `1.0.2`          | 2025-04-01 | `1.5.13` (CBOR metadata) | 2025-04-07 |
+
+Edition `1.0.2` shipped **6 days before** zksolc `1.5.13` — which is why Foundry
+pairs `zksolc ≥ 1.5.13 → 1.0.2` (`ZKSOLC_FIRST_VERSION_SUPPORTS_CBOR`). Sourcify
+currently gates `1.0.2` at zksolc `≥ 1.5.0`, but `1.5.0` (2024-06-10) predates
+edition `1.0.2` by ~10 months, so for the `1.5.0`–`1.5.12` line that edition did
+not yet exist. **The `1.5.13` boundary is the date-grounded one**; Sourcify's
+`≥ 1.5.0` (an incidental reuse of the `isZkSolcVersionAtLeastV15` API-split
+helper) is too loose and should be tightened to `1.5.13`. Only three editions
+exist (2024-01 → 2025-04) and the fork is archived, so the set is frozen at
+`{1.0.0, 1.0.1, 1.0.2}`.
 
 Upstream solc is used because block-explorer submissions usually only know the
 commit-bearing solc version, not the era-solc edition. `ZkSolcCompilation` tries
