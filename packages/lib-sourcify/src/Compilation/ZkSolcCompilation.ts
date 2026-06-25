@@ -260,7 +260,6 @@ export function formatZkSolcCompilerVersion(
  */
 export class ZkSolcCompilation extends AbstractCompilation {
   public language: CompilationLanguage = 'Solidity';
-  public readonly targetVM = 'eravm';
 
   // Use declare to override AbstractCompilation's types to target Solidity types
   declare jsonInput: SolidityJsonInput;
