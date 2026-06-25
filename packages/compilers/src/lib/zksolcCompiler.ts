@@ -353,7 +353,9 @@ function getZkSolcFileNameCandidates(
   normalizedVersion: string,
 ): string[] {
   const primary = getZkSolcFileName(platform, normalizedVersion);
-  if (platform.endsWith('-gnu')) {
+  // Only Linux has a -musl variant. Windows is also published as `-gnu` (MinGW)
+  // but has no `-musl` build, so gate on the platform, not the `-gnu` suffix.
+  if (platform.startsWith('linux-')) {
     const musl = getZkSolcFileName(
       platform.replace(/-gnu$/, '-musl'),
       normalizedVersion,
