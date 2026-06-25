@@ -206,7 +206,7 @@ describe("VerificationService", function () {
     expect(setJobErrorArgs[2].errorId).to.be.a("string");
   });
 
-  it("should enqueue zksolc json input verification with both compiler versions", async function () {
+  it("should enqueue zksolc json input verification with the combined compiler version", async function () {
     const verificationId = "test-zksolc-verification-id";
     const mockStorageService = createMockStorageService(verificationId);
 
@@ -250,13 +250,12 @@ describe("VerificationService", function () {
         },
         settings: {},
       },
-      "v0.8.26+commit.8a97fa7a",
+      "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
       {
         path: "contracts/Storage.sol",
         name: "Storage",
       },
       undefined,
-      "1.5.10",
     );
 
     expect(workerPoolStub.calledOnce).to.equal(true);
@@ -266,8 +265,7 @@ describe("VerificationService", function () {
     expect(workerPoolStub.firstCall.args[0]).to.deep.include({
       chainId: "324",
       address: "0x1234567890123456789012345678901234567890",
-      zksolcVersion: "1.5.10",
-      compilerVersion: "v0.8.26+commit.8a97fa7a",
+      compilerVersion: "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
     });
   });
 

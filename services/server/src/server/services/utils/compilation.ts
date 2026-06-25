@@ -13,6 +13,7 @@ import {
   VyperCompilation,
   YulCompilation,
   FeCompilation,
+  isZkSolcCompilerVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   AnyJsonInput,
@@ -31,18 +32,18 @@ export function createCompilationFromJsonInput(
   compilerVersion: string,
   jsonInput: AnyJsonInput,
   compilationTarget: CompilationTarget,
-  zksolcVersion?: string,
 ): AnyCompilation {
   switch (jsonInput?.language) {
     case "Solidity": {
-      if (zksolcVersion) {
+      // A zksolc compilation is detected purely from the combined
+      // `zksolc:<v>;solc:<v>` compilerVersion string (see isZkSolcCompilerVersion).
+      if (isZkSolcCompilerVersion(compilerVersion)) {
         if (!compilers.zksolc) {
           throw new CompilationError({ code: "invalid_language" });
         }
 
         return new ZkSolcCompilation(
           compilers.zksolc,
-          zksolcVersion,
           compilerVersion,
           jsonInput as SolidityJsonInput,
           compilationTarget,

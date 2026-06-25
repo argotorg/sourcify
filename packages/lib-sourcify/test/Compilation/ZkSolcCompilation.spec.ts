@@ -3,6 +3,9 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
   getZkSolcCompilerVersionCandidates,
+  formatZkSolcCompilerVersion,
+  parseZkSolcCompilerVersion,
+  isZkSolcCompilerVersion,
   ZkSolcCompilation,
 } from '../../src/Compilation/ZkSolcCompilation';
 import { Verification } from '../../src/Verification/Verification';
@@ -169,7 +172,70 @@ function makeCompilerBySolcVersion(
   };
 }
 
+// ZkSolcCompilation now takes the single combined `zksolc:<v>;solc:<v>` string.
+// This helper keeps the tests expressed in terms of the two versions.
+function makeZkSolcCompilation(
+  compiler: IZkSolcCompiler,
+  zksolcVersion: string,
+  solcCompilerVersion: string,
+  jsonInput: SolidityJsonInput,
+  target: CompilationTarget,
+): ZkSolcCompilation {
+  return new ZkSolcCompilation(
+    compiler,
+    formatZkSolcCompilerVersion(zksolcVersion, solcCompilerVersion),
+    jsonInput,
+    target,
+  );
+}
+
 describe('ZkSolcCompilation', () => {
+  it('parses, formats, and detects the combined compiler version string', () => {
+    expect(formatZkSolcCompilerVersion('1.5.16', '0.8.26-1.0.2')).to.equal(
+      'zksolc:1.5.16;solc:0.8.26-1.0.2',
+    );
+    expect(
+      parseZkSolcCompilerVersion('zksolc:1.5.16;solc:0.8.26-1.0.2'),
+    ).to.deep.equal({
+      zksolcVersion: '1.5.16',
+      solcCompilerVersion: '0.8.26-1.0.2',
+    });
+    // round-trips an upstream solc backend too
+    expect(
+      parseZkSolcCompilerVersion('zksolc:1.4.0;solc:0.8.20+commit.a4f2e591'),
+    ).to.deep.equal({
+      zksolcVersion: '1.4.0',
+      solcCompilerVersion: '0.8.20+commit.a4f2e591',
+    });
+    expect(isZkSolcCompilerVersion('zksolc:1.5.16;solc:0.8.26-1.0.2')).to.equal(
+      true,
+    );
+    expect(isZkSolcCompilerVersion('0.8.26+commit.8a97fa7a')).to.equal(false);
+    expect(() => parseZkSolcCompilerVersion('zksolc:1.5.16')).to.throw(
+      CompilationError,
+    );
+  });
+
+  it('keeps compilerVersion as the plain zksolc semver but exports the combined string', () => {
+    const compilation = makeZkSolcCompilation(
+      makeCompiler(makeContract()),
+      '1.5.16',
+      '0.8.26-1.0.2',
+      makeJsonInput(),
+      compilationTarget,
+    );
+    // The inherited compilerVersion stays a plain semver (the Solidity
+    // heuristics in Verification parse it), while the resolved/exported value is
+    // the combined toolchain string stored in the DB.
+    expect(compilation.compilerVersion).to.equal('1.5.16');
+    expect(compilation.resolvedCompilerVersion).to.equal(
+      'zksolc:1.5.16;solc:0.8.26-1.0.2',
+    );
+    expect(compilation.compilationExportMetadata.compilerVersion).to.equal(
+      'zksolc:1.5.16;solc:0.8.26-1.0.2',
+    );
+  });
+
   it('should compile with zksolc and solc versions', async () => {
     const solcVersion = '0.8.24-1.0.1';
     const compiler = makeCompiler(
@@ -177,7 +243,7 @@ describe('ZkSolcCompilation', () => {
         metadata: makeMetadata(solcVersion),
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       'v1.5.3',
       solcVersion,
@@ -196,6 +262,7 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.auxdataStyle).to.equal(AuxdataStyle.ZKSYNC);
     expect(compilation.compilationExportMetadata).to.deep.equal({
       compiler: 'zksolc',
+      compilerVersion: `zksolc:v1.5.3;solc:${solcVersion}`,
       zksolc: {
         solcCompilerVersion: solcVersion,
       },
@@ -204,7 +271,7 @@ describe('ZkSolcCompilation', () => {
 
   it('should preserve non-semver zksolc versions for the compiler', async () => {
     const compiler = makeCompiler(makeContract());
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       'vm-1.5.0-a167aa3',
       '0.8.24-1.0.1',
@@ -225,7 +292,7 @@ describe('ZkSolcCompilation', () => {
         metadata: makeMetadata(solcVersion),
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.10',
       solcVersion,
@@ -248,7 +315,7 @@ describe('ZkSolcCompilation', () => {
         metadata,
       } as any),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.7',
       '0.8.26-1.0.2',
@@ -270,7 +337,7 @@ describe('ZkSolcCompilation', () => {
         metadata: makeMetadata('0.8.26-1.0.1'),
       }),
     });
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.7',
       solcVersion,
@@ -326,7 +393,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     });
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.7',
       solcVersion,
@@ -355,7 +422,7 @@ describe('ZkSolcCompilation', () => {
     expect(verification.status.runtimeMatch).to.equal('partial');
     expect(verification.export().compilation).to.include({
       compiler: 'zksolc',
-      compilerVersion: '1.5.7',
+      compilerVersion: 'zksolc:1.5.7;solc:0.8.26-1.0.1',
     });
     expect(verification.export().compilation.zksolc).to.deep.equal({
       solcCompilerVersion: '0.8.26-1.0.1',
@@ -372,7 +439,7 @@ describe('ZkSolcCompilation', () => {
           metadata: makeMetadata(solcVersion),
         }),
       );
-      const compilation = new ZkSolcCompilation(
+      const compilation = makeZkSolcCompilation(
         compiler,
         zksolcVersion,
         solcVersion,
@@ -411,7 +478,7 @@ describe('ZkSolcCompilation', () => {
 
   it('should force only older supported output selections for zksolc 1.3.5', () => {
     const compiler = makeCompiler(makeContract());
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.3.5',
       '0.6.12-1.0.1',
@@ -432,7 +499,7 @@ describe('ZkSolcCompilation', () => {
 
   it('should omit aggregate evm output selection for pre-1.5 zksolc', () => {
     const compiler = makeCompiler(makeContract());
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.3.19',
       '0.6.12-1.0.1',
@@ -463,7 +530,7 @@ describe('ZkSolcCompilation', () => {
 
   it('should preserve existing output selection and add zksolc outputs', () => {
     const compiler = makeCompiler(makeContract());
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',
@@ -507,7 +574,7 @@ describe('ZkSolcCompilation', () => {
 
   it('should repair unusable output selection entries', () => {
     const compiler = makeCompiler(makeContract());
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',
@@ -548,7 +615,7 @@ describe('ZkSolcCompilation', () => {
         } as any,
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',
@@ -586,7 +653,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',
@@ -665,7 +732,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.15',
       '0.8.26-1.0.2',
@@ -719,7 +786,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',
@@ -752,7 +819,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.15',
       '0.8.26-1.0.2',
@@ -808,7 +875,7 @@ describe('ZkSolcCompilation', () => {
           },
         }),
       );
-      const compilation = new ZkSolcCompilation(
+      const compilation = makeZkSolcCompilation(
         compiler,
         sample.zksolcVersion,
         sample.solcVersion,
@@ -856,7 +923,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.3.19',
       'v0.6.12+commit.27d51765',
@@ -893,7 +960,7 @@ describe('ZkSolcCompilation', () => {
       bytecodeHash: 'none',
       appendCBOR: false,
     };
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.7',
       '0.8.26-1.0.1',
@@ -925,7 +992,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.15',
       '0.8.26-1.0.2',
@@ -974,7 +1041,7 @@ describe('ZkSolcCompilation', () => {
         },
       }),
     );
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.3.19',
       'v0.6.12+commit.27d51765',
@@ -1013,7 +1080,7 @@ describe('ZkSolcCompilation', () => {
         };
       },
     };
-    const compilation = new ZkSolcCompilation(
+    const compilation = makeZkSolcCompilation(
       compiler,
       '1.5.3',
       '0.8.24',

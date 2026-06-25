@@ -217,6 +217,44 @@ export function getZkSolcCompilerVersionCandidates(
   return eraSolcCandidates;
 }
 
+// A zksolc compilation is identified by a single combined compiler-version string
+// of the form `zksolc:<zksolcVersion>;solc:<solcVersion>`, where the `solc` half is
+// either an era-solc release (`0.8.26-1.0.2`) or an upstream solc (`0.8.26` /
+// `v0.8.26+commit.<hash>`). This one string is the canonical representation used
+// across the verification API, lib-sourcify, and the database `version` column, so
+// the `zksolc:` prefix is also what distinguishes a zksolc compilation from a plain
+// Solidity one.
+const ZKSOLC_COMPILER_VERSION_STRING_REGEX = /^zksolc:([^;]+);solc:(.+)$/;
+
+export function isZkSolcCompilerVersion(compilerVersion: string): boolean {
+  return compilerVersion.trim().startsWith('zksolc:');
+}
+
+export function parseZkSolcCompilerVersion(compilerVersion: string): {
+  zksolcVersion: string;
+  solcCompilerVersion: string;
+} {
+  // Expected form: "zksolc:<zksolcVersion>;solc:<solcVersion>",
+  // e.g. "zksolc:1.5.16;solc:0.8.26-1.0.2".
+  const match = compilerVersion
+    .trim()
+    .match(ZKSOLC_COMPILER_VERSION_STRING_REGEX);
+  if (!match) {
+    throw new CompilationError({ code: 'invalid_compiler_version' });
+  }
+  return {
+    zksolcVersion: match[1].trim(),
+    solcCompilerVersion: match[2].trim(),
+  };
+}
+
+export function formatZkSolcCompilerVersion(
+  zksolcVersion: string,
+  solcCompilerVersion: string,
+): string {
+  return `zksolc:${zksolcVersion};solc:${solcCompilerVersion}`;
+}
+
 /**
  * Abstraction of a zksolc Solidity compilation that targets zkSync EraVM.
  */
@@ -232,16 +270,23 @@ export class ZkSolcCompilation extends AbstractCompilation {
 
   public readonly zksolcVersion: string;
   public readonly requestedSolcCompilerVersion: string;
+  public solcCompilerVersion: string;
   private readonly solcCompilerVersionCandidates: string[];
   private solcCompilerVersionCandidateIndex = 0;
 
+  /**
+   * @param compilerVersion the combined `zksolc:<zksolcVersion>;solc:<solcVersion>`
+   *   string (see {@link parseZkSolcCompilerVersion}). The `solc` half may be an
+   *   exact era-solc release or an upstream solc version to resolve via candidates.
+   */
   public constructor(
     public compiler: IZkSolcCompiler,
-    zksolcVersion: string,
-    public solcCompilerVersion: string,
+    compilerVersion: string,
     jsonInput: SolidityJsonInput,
     public compilationTarget: CompilationTarget,
   ) {
+    const { zksolcVersion, solcCompilerVersion } =
+      parseZkSolcCompilerVersion(compilerVersion);
     super(zksolcVersion, jsonInput);
     this.zksolcVersion = zksolcVersion;
     this.requestedSolcCompilerVersion = solcCompilerVersion;
@@ -252,6 +297,17 @@ export class ZkSolcCompilation extends AbstractCompilation {
     this.solcCompilerVersion =
       this.solcCompilerVersionCandidates[0] || solcCompilerVersion;
     this.initZkSolcJsonInput();
+  }
+
+  // The combined `zksolc:<v>;solc:<v>` string for the currently-resolved
+  // toolchain. This (not the inherited `compilerVersion`, which stays the plain
+  // zksolc semver so the Solidity heuristics in Verification can still parse it)
+  // is what gets exported and stored as the contract's compiler version.
+  public get resolvedCompilerVersion(): string {
+    return formatZkSolcCompilerVersion(
+      this.zksolcVersion,
+      this.solcCompilerVersion,
+    );
   }
 
   initZkSolcJsonInput() {
@@ -290,6 +346,9 @@ export class ZkSolcCompilation extends AbstractCompilation {
   public get compilationExportMetadata() {
     return {
       compiler: 'zksolc',
+      // Override the exported compiler version with the combined toolchain string
+      // so the verified contract is stored/returned as `zksolc:<v>;solc:<v>`.
+      compilerVersion: this.resolvedCompilerVersion,
       zksolc: {
         solcCompilerVersion: this.solcCompilerVersion,
       },

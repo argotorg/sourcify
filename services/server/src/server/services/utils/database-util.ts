@@ -105,7 +105,6 @@ export namespace Tables {
     };
     additional_input: Nullable<{
       storage_layout_overrides?: VyperJsonInput["storage_layout_overrides"];
-      era_solc_version?: string;
     }>;
   }
 
@@ -715,11 +714,6 @@ function getAdditionalInputFromVerification(
   if (verification.compilation.jsonInput.storageLayoutOverrides) {
     additionalInput.storage_layout_overrides =
       verification.compilation.jsonInput.storageLayoutOverrides;
-  }
-
-  if (verification.compilation.zksolc) {
-    additionalInput.era_solc_version =
-      verification.compilation.zksolc.solcCompilerVersion;
   }
 
   return Object.keys(additionalInput).length > 0 ? additionalInput : null;

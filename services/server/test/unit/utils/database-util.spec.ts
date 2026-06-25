@@ -4,7 +4,7 @@ import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
 
 describe("database-util", function () {
   describe("getDatabaseColumnsFromVerification", function () {
-    it("should store zksolc compiler identity, era-solc version, and generic artifacts", async function () {
+    it("should store the zksolc combined compiler version and generic artifacts", async function () {
       const userdoc = { kind: "user", methods: {}, version: 1 };
       const devdoc = { kind: "dev", methods: {}, version: 1 };
       const storageLayout = {
@@ -59,7 +59,7 @@ describe("database-util", function () {
         compilation: {
           language: "Solidity",
           compiler: "zksolc",
-          compilerVersion: "1.5.7",
+          compilerVersion: "zksolc:1.5.7;solc:0.8.26-1.0.1",
           zksolc: {
             solcCompilerVersion: "0.8.26-1.0.1",
           },
@@ -103,10 +103,12 @@ describe("database-util", function () {
       const columns = await getDatabaseColumnsFromVerification(verification);
 
       expect(columns.compiledContract.compiler).to.equal("zksolc");
-      expect(columns.compiledContract.version).to.equal("1.5.7");
-      expect(columns.compiledContract.additional_input).to.deep.equal({
-        era_solc_version: "0.8.26-1.0.1",
-      });
+      expect(columns.compiledContract.version).to.equal(
+        "zksolc:1.5.7;solc:0.8.26-1.0.1",
+      );
+      // The zksolc toolchain is stored entirely in `version`; nothing goes into
+      // additional_input (no storage_layout_overrides here either).
+      expect(columns.compiledContract.additional_input).to.equal(null);
       expect(columns.compiledContract.compilation_artifacts.userdoc).to.equal(
         userdoc,
       );

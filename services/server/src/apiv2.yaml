@@ -14,7 +14,7 @@ paths:
 
         **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated.
 
-        Solidity standard JSON requests with `zksolcVersion` are verified as ZKsync EraVM/zksolc compilations. In that case `compilerVersion` is the underlying era-solc/solc version, for example `v0.8.26+commit.8a97fa7a` and the `zksolcVersion` as `v1.5.16`.
+        ZKsync EraVM/zksolc compilations are selected by passing the combined toolchain string as `compilerVersion`, in the form `zksolc:<zksolcVersion>;solc:<solcVersion>` (e.g. `zksolc:1.5.10;solc:0.8.26-1.0.2`). The `zksolc:` prefix is what routes the request to zksolc verification; the `solc` part may be an exact era-solc release (`0.8.26-1.0.2`) or an upstream solc version (`0.8.26+commit.8a97fa7a`).
       operationId: verify
       parameters:
         - $ref: "#/components/parameters/chainId"
@@ -390,11 +390,12 @@ components:
 
                   Must include the `language` field inside the stdJsonInput object. Currently supports Solidity, Vyper, and Fe.
               compilerVersion:
-                $ref: "#/components/schemas/CompilerVersion"
-              zksolcVersion:
                 allOf:
-                  - $ref: "#/components/schemas/ZkSolcVersion"
-                  - description: Optional. If present, this request is verified as a ZKsync EraVM/zksolc compilation.
+                  - $ref: "#/components/schemas/CompilerVersion"
+                  - description: |
+                      For ordinary Solidity/Vyper/Fe compilations this is the plain compiler version (e.g. `0.8.26+commit.8a97fa7a`).
+
+                      For ZKsync EraVM/zksolc compilations, pass the combined toolchain string `zksolc:<zksolcVersion>;solc:<solcVersion>`, e.g. `zksolc:1.5.10;solc:0.8.26-1.0.2`. The `solc` part may be an exact era-solc release (`0.8.26-1.0.2`) or an upstream solc version (`0.8.26+commit.8a97fa7a`). The `zksolc:` prefix is what selects the zksolc verification path.
               contractIdentifier:
                 type: string
                 description: The fully qualified file path and contract name to indicate which contract to verify, in the format `path/to/file:ContractName`.
@@ -461,8 +462,7 @@ components:
                     optimizer:
                       enabled: true
                       runs: 200
-                compilerVersion: "v0.8.26+commit.8a97fa7a"
-                zksolcVersion: "1.5.10"
+                compilerVersion: "zksolc:1.5.10;solc:0.8.26-1.0.2"
                 contractIdentifier: "contracts/Storage.sol:Storage"
                 creationTransactionHash: "0xb6ee9d528b336942dd70d3b41e2811be10a473776352009fd73f85604f5ed206"
             Vyper Contract:
@@ -802,7 +802,7 @@ components:
                       compilerVersion:
                         allOf:
                           - $ref: "#/components/schemas/CompilerVersion"
-                          - description: "The server accepts v prefixed but should only respond without the v prefix"
+                          - description: "The server accepts v prefixed but should only respond without the v prefix. For ZKsync EraVM/zksolc contracts this is the combined toolchain string `zksolc:<zksolcVersion>;solc:<solcVersion>` (e.g. `zksolc:1.5.10;solc:0.8.26-1.0.2`)."
                       compilerSettings:
                         type: object
                       name:
@@ -854,10 +854,6 @@ components:
                                 type: integer
                               n_slots:
                                 type: integer
-                      era_solc_version:
-                        type: string
-                        description: EraVM solc version used by zksolc.
-                        example: "0.8.26-1.0.1"
                   stdJsonInput:
                     type: object
                     description: The input fields conforming the compiler standard-JSON format.
@@ -1410,9 +1406,16 @@ components:
           message: The chain with chainId 9429413 is not supported
           errorId: 1ac6b91a-0605-4459-93dc-18f210a70192
     CompilerVersion:
-      type: string
       title: CompilerVersion
-      # Pattern accepts both Solidity and Vyper version formats:
+      # A compiler version is either a plain Solidity/Vyper version or the zksolc
+      # combined-toolchain string.
+      oneOf:
+        - $ref: "#/components/schemas/SolcVyperCompilerVersion"
+        - $ref: "#/components/schemas/ZkSolcVersion"
+      example: "0.8.7+commit.e28d00a7"
+    SolcVyperCompilerVersion:
+      type: string
+      title: SolcVyperCompilerVersion
       # We need to be permissive here because Vyper versions are named inconsistently.
       # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
@@ -1421,8 +1424,11 @@ components:
     ZkSolcVersion:
       type: string
       title: ZkSolcVersion
-      pattern: '^(v?\d+\.\d+\.\d+.*|vm-.+)$'
-      example: "1.5.10"
+      # zksolc combined-toolchain string: zksolc:<zksolcVersion>;solc:<solcVersion>
+      # The solc part may be an era-solc release (0.8.26-1.0.2) or an upstream solc
+      # (0.8.26+commit...). Detailed validation happens in lib-sourcify.
+      pattern: "^zksolc:.+;solc:.+$"
+      example: "zksolc:1.5.10;solc:0.8.26-1.0.2"
     Keccak256:
       type: string
       title: Keccak256

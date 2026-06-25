@@ -90,8 +90,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
       )
       .send({
         stdJsonInput: chainFixture.defaultContractJsonInput,
-        zksolcVersion: "1.5.10",
-        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        compilerVersion: "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
         contractIdentifier,
         creationTransactionHash: chainFixture.defaultContractCreatorTx,
       });
@@ -106,13 +105,12 @@ describe("POST /v2/verify/:chainId/:address", function () {
       chainFixture.chainId,
       chainFixture.defaultContractAddress,
       chainFixture.defaultContractJsonInput,
-      "v0.8.26+commit.8a97fa7a",
+      "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
       {
         path: contractPath,
         name: contractName,
       },
       chainFixture.defaultContractCreatorTx,
-      "1.5.10",
     ]);
   });
 
@@ -129,8 +127,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
       )
       .send({
         stdJsonInput: chainFixture.defaultContractJsonInput,
-        zksolcVersion: "1.5.10",
-        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        compilerVersion: "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
         contractIdentifier,
         creationTransactionHash: chainFixture.defaultContractCreatorTx,
       });
@@ -155,7 +152,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
       );
   });
 
-  it("should reject non-Solidity standard input JSON when zksolcVersion is provided", async () => {
+  it("should reject non-Solidity standard input JSON when a zksolc compilerVersion is provided", async () => {
     const { resolveWorkers } = makeWorkersWait();
     const verifyRes = await chai
       .request(serverFixture.server.app)
@@ -171,8 +168,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
             },
           },
         },
-        zksolcVersion: "1.5.10",
-        compilerVersion: "v0.8.26+commit.8a97fa7a",
+        compilerVersion: "zksolc:1.5.10;solc:v0.8.26+commit.8a97fa7a",
         contractIdentifier: "test.vy:test",
       });
 
@@ -196,7 +192,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
       );
   });
 
-  it("should reject zksolc-specific settings without zksolcVersion", async () => {
+  it("should reject zksolc-specific settings without a zksolc compilerVersion", async () => {
     const { resolveWorkers } = makeWorkersWait();
     const contractIdentifier = Object.entries(
       chainFixture.defaultContractMetadataObject.settings.compilationTarget,
@@ -236,7 +232,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai
       .expect(jobRes.body.error.message)
       .to.equal(
-        "zksolcVersion is required when zksolc-specific settings are provided.",
+        'zksolc-specific settings require a zksolc compilerVersion of the form "zksolc:<zksolcVersion>;solc:<solcVersion>".',
       );
   });
 

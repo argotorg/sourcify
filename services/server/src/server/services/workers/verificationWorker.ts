@@ -13,6 +13,7 @@ import {
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
   EtherscanUtils,
+  isZkSolcCompilerVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
@@ -115,13 +116,16 @@ async function _verifyFromJsonInput({
   address,
   jsonInput,
   compilerVersion,
-  zksolcVersion,
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
   const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+  // A zksolc verification is identified by the combined `zksolc:<v>;solc:<v>`
+  // compilerVersion. zksolc-specific stdJsonInput settings without such a
+  // compilerVersion are rejected as an inconsistent request.
+  const compilerVersionIsZkSolc = isZkSolcCompilerVersion(compilerVersion);
   const isZkSolcVerification =
-    Boolean(zksolcVersion) || hasZkSolcInputFlags(jsonInput);
+    compilerVersionIsZkSolc || hasZkSolcInputFlags(jsonInput);
 
   if (isZkSolcVerification) {
     if (jsonInput.language !== "Solidity") {
@@ -132,10 +136,18 @@ async function _verifyFromJsonInput({
       };
     }
 
-    if (!zksolcVersion) {
+    if (!compilerVersionIsZkSolc) {
       return {
         errorExport: createInvalidParameterErrorExport(
-          "zksolcVersion is required when zksolc-specific settings are provided.",
+          'zksolc-specific settings require a zksolc compilerVersion of the form "zksolc:<zksolcVersion>;solc:<solcVersion>".',
+        ),
+      };
+    }
+
+    if (!zksolc) {
+      return {
+        errorExport: createInvalidParameterErrorExport(
+          "ZkSolc verification is not enabled on this server.",
         ),
       };
     }
@@ -156,7 +168,6 @@ async function _verifyFromJsonInput({
       compilerVersion,
       jsonInput,
       compilationTarget,
-      zksolcVersion,
     );
   } catch (error: any) {
     return {

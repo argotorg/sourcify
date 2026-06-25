@@ -271,7 +271,6 @@ export class VerificationService {
     compilerVersion: string,
     compilationTarget: CompilationTarget,
     creationTransactionHash?: string,
-    zksolcVersion?: string,
   ): Promise<VerificationJobId> {
     const verificationId = await this.storageService.performServiceOperation(
       "storeVerificationJob",
@@ -282,7 +281,6 @@ export class VerificationService {
       chainId,
       address,
       jsonInput,
-      zksolcVersion,
       compilerVersion,
       compilationTarget,
       creationTransactionHash,

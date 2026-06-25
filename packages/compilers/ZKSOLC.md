@@ -112,6 +112,23 @@ commit-bearing solc version, not the era-solc edition. `ZkSolcCompilation` tries
 upstream solc first (when given a commit-bearing version), then falls back
 through era-solc candidates.
 
+## The combined compiler-version string (API & storage)
+
+A zksolc compilation needs two versions (zksolc + its solc backend), but Sourcify
+represents them as a **single string** so there is one canonical form across the
+verification API, lib-sourcify, and the database:
+
+```
+zksolc:<zksolcVersion>;solc:<solcVersion>
+```
+
+- The `zksolc:` prefix is the version of the zksolc compiler e.g. `1.5.13`. A standard Solidity compilation sends a
+  bare version (`0.8.26+commit…`) vs. a zksolc compile sends the prefixed string in the `compilerVersion` field `zksolc:<zksolcVersion>;solc:<solcVersion>`.
+- `solc` is the era-solc release (`0.8.26-1.0.2`, edition included) or an upstream
+  solc (`0.8.26` / `v0.8.26+commit.<hash>`). The era-solc forks have editions `1.0.0`, `1.0.1`, and `1.0.2` (see above).
+  If there's the commit hash, it is an upstream solc; if there's a `-<edition>` suffix, it is an era-solc fork.
+- If the `solc` half is missing the `-1.0.0` edition suffix , the actual era edition is found by iterating over the candidates: 0.8.26-1.0.2, 0.8.26-1.0.1, 0.8.26-1.0.0... the first one that exists is used.
+
 ## How Sourcify drives zksolc, and how zksolc drives solc
 
 zksolc does not compile Solidity itself — it is a **wrapper around solc**. It

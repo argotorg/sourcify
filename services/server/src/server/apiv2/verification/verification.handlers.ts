@@ -27,7 +27,6 @@ interface VerifyFromJsonInputRequest extends Request {
       | FeJsonInput
       | ZkSolcJsonInput;
     compilerVersion: string;
-    zksolcVersion?: string;
     contractIdentifier: string;
     creationTransactionHash?: string;
   };
@@ -45,7 +44,6 @@ export async function verifyFromJsonInputEndpoint(
     chainId: req.params.chainId,
     address: req.params.address,
     compilerVersion: req.body.compilerVersion,
-    zksolcVersion: req.body.zksolcVersion,
     contractIdentifier: req.body.contractIdentifier,
     creationTransactionHash: req.body.creationTransactionHash,
   });
@@ -70,7 +68,6 @@ export async function verifyFromJsonInputEndpoint(
       req.body.compilerVersion,
       compilationTarget,
       req.body.creationTransactionHash,
-      req.body.zksolcVersion,
     );
 
   res.status(StatusCodes.ACCEPTED).json({ verificationId });

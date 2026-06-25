@@ -233,7 +233,7 @@ BEGIN
         validate_json_object_keys(
             obj,
             array []::text[],
-            array ['storage_layout_overrides', 'era_solc_version']
+            array ['storage_layout_overrides']
         )
     );
 END;
@@ -2208,7 +2208,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260225083159'),
     ('20260302082853'),
     ('20260309080000'),
-    ('20260512160000'),
     ('20260527081526'),
     ('20260527085036'),
     ('20260527085037');
