@@ -9,11 +9,13 @@ import {
   ZkSolcCompilation,
 } from '../../src/Compilation/ZkSolcCompilation';
 import { Verification } from '../../src/Verification/Verification';
+import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
 import {
   CompilationError,
   type CompilationTarget,
   type IZkSolcCompiler,
 } from '../../src/Compilation/CompilationTypes';
+import { solc } from '../utils';
 import type {
   LinkReferences,
   SolidityJsonInput,
@@ -1146,5 +1148,87 @@ describe('ZkSolcCompilerVersionCandidates', () => {
     expect(
       getZkSolcCompilerVersionCandidates('0.8.4-1.0.2', '1.4.1'),
     ).to.deep.equal([]);
+  });
+});
+
+describe('PreRunCompilation (zksolc)', () => {
+  const zkSolcVersion = 'zksolc:1.5.7;solc:0.8.26-1.0.1';
+
+  // Builds a PreRunCompilation the way createPreRunCompilationFromStoredCandidate
+  // does for a stored zksolc contract: language is "Solidity" and the version is
+  // the combined `zksolc:<v>;solc:<v>` string. zksolc only emits evm.bytecode
+  // (EraVM has no deployedBytecode split). The compiler instance is never used
+  // since PreRunCompilation does not recompile.
+  function createPreRunZkSolcCompilation(
+    evmOverrides: Record<string, unknown> = {},
+  ) {
+    return new PreRunCompilation(
+      solc,
+      zkSolcVersion,
+      makeJsonInput(),
+      {
+        contracts: {
+          [compilationTarget.path]: {
+            [compilationTarget.name]: {
+              abi: [],
+              evm: {
+                bytecode: {
+                  object: '600102',
+                },
+                ...evmOverrides,
+              },
+            },
+          },
+        },
+      } as unknown as SolidityOutput,
+      compilationTarget,
+      {},
+      {},
+    );
+  }
+
+  it('detects zksolc and uses the ZKSYNC auxdata style', () => {
+    const compilation = createPreRunZkSolcCompilation();
+    expect(compilation.isZkSolc).to.equal(true);
+    expect(compilation.language).to.equal('Solidity');
+    expect(compilation.auxdataStyle).to.equal(AuxdataStyle.ZKSYNC);
+  });
+
+  it('reads runtime bytecode from evm.bytecode (no deployedBytecode split)', () => {
+    const compilation = createPreRunZkSolcCompilation();
+    expect(compilation.runtimeBytecode).to.equal('0x600102');
+    expect(compilation.creationBytecode).to.equal('0x600102');
+  });
+
+  it('reads immutable and link references from evm.bytecode', () => {
+    const immutableReferences = { '0': [{ length: 32, start: 3 }] };
+    const linkReferences: LinkReferences = {
+      'contracts/Lib.sol': { Lib: [{ start: 8, length: 20 }] },
+    };
+    const compilation = createPreRunZkSolcCompilation({
+      bytecode: {
+        object: '600102',
+        linkReferences,
+        immutableReferences,
+      },
+    });
+    expect(compilation.immutableReferences).to.deep.equal(immutableReferences);
+    expect(compilation.runtimeLinkReferences).to.deep.equal(linkReferences);
+    expect(compilation.creationLinkReferences).to.deep.equal(linkReferences);
+  });
+
+  it('falls back to empty references when none are stored', () => {
+    const compilation = createPreRunZkSolcCompilation();
+    expect(compilation.immutableReferences).to.deep.equal({});
+    expect(compilation.runtimeLinkReferences).to.deep.equal({});
+  });
+
+  it('exports zksolc compilation metadata with the combined version', () => {
+    const compilation = createPreRunZkSolcCompilation();
+    expect(compilation.compilationExportMetadata).to.deep.equal({
+      compiler: 'zksolc',
+      compilerVersion: zkSolcVersion,
+      zksolc: { solcCompilerVersion: '0.8.26-1.0.1' },
+    });
   });
 });

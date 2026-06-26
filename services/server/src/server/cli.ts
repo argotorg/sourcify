@@ -75,16 +75,18 @@ const selectedSolidityCompiler = new SolcLocal(solcRepoPath, solJsonRepoPath);
 
 export const solc = selectedSolidityCompiler;
 
-logger.info("Using local zksolc compiler");
-const zksolcRepoPath =
-  (config.get("zksolcRepo") as string) || path.join("/tmp", "zksolc-repo");
-const eraSolcRepoPath =
-  (config.get("eraSolcRepo") as string) || path.join("/tmp", "era-solc-repo");
-export const zksolc = new ZkSolcLocal(
-  zksolcRepoPath,
-  eraSolcRepoPath,
-  solcRepoPath,
-);
+// zksolc (zksync EraVM) is optional
+const zksolcRepoPath = config.has("zksolcRepo")
+  ? (config.get("zksolcRepo") as string)
+  : "";
+const eraSolcRepoPath = config.has("eraSolcRepo")
+  ? (config.get("eraSolcRepo") as string)
+  : "";
+let zksolc: ZkSolcLocal | undefined;
+if (zksolcRepoPath && eraSolcRepoPath) {
+  logger.info("Using local zksolc compiler");
+  zksolc = new ZkSolcLocal(zksolcRepoPath, eraSolcRepoPath, solcRepoPath);
+}
 
 logger.info("Using local vyper compiler");
 const vyperRepoPath =
@@ -120,6 +122,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solc,
       vyper,
       fe,
+      zksolc,
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),

@@ -25,6 +25,11 @@ import {
   returnAuxdataStyle,
   returnFixedVyperVersion,
 } from './VyperCompilation';
+import {
+  isZkSolcCompilerVersion,
+  parseZkSolcCompilerVersion,
+} from './ZkSolcCompilation';
+import type { CompilationExportMetadata } from './AbstractCompilation';
 
 export type Nullable<T> = T | null;
 
@@ -33,6 +38,12 @@ export class PreRunCompilation extends AbstractCompilation {
   // Vyper version is not semver compliant, so we need to handle it differently
   public compilerVersionCompatibleWithSemver?: string;
   public language: CompilationLanguage;
+  // zksolc compiles with language "Solidity" but targets EraVM, which needs
+  // ZKSYNC auxdata/bytecode handling instead of the standard Solidity path.
+  public readonly isZkSolc: boolean;
+  // Raw combined `zksolc:<v>;solc:<v>` version. Kept because the base
+  // constructor strips the `zksolc:` prefix from `compilerVersion`.
+  private readonly _zkSolcCompilerVersion?: string;
 
   public constructor(
     public compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler,
@@ -46,8 +57,21 @@ export class PreRunCompilation extends AbstractCompilation {
     super(compilerVersion, jsonInput);
     this.compilerOutput = jsonOutput;
     this.language = jsonInput.language as CompilationLanguage;
+    // zksolc keeps the language as "Solidity"; detect it from the combined
+    // `zksolc:<v>;solc:<v>` compiler version string.
+    this.isZkSolc = isZkSolcCompilerVersion(compilerVersion);
+    if (this.isZkSolc) {
+      this._zkSolcCompilerVersion = compilerVersion;
+    }
     switch (this.language) {
       case 'Solidity': {
+        if (this.isZkSolc) {
+          // EraVM auxdata layout. zksolc metadata is not a standard solc
+          // metadata JSON, so it is restored via setMetadata() from the stored
+          // candidate instead of parsing it here.
+          this.auxdataStyle = AuxdataStyle.ZKSYNC;
+          break;
+        }
         this.auxdataStyle = AuxdataStyle.SOLIDITY;
         const contractOutput = jsonOutput.contracts[
           this.compilationTarget.path
@@ -78,6 +102,34 @@ export class PreRunCompilation extends AbstractCompilation {
     }
   }
 
+  get runtimeBytecode() {
+    if (this.isZkSolc) {
+      // EraVM exposes a single bytecode artifact; there is no deployedBytecode
+      // split, so the runtime bytecode is read from evm.bytecode.
+      return `0x${
+        (this.contractCompilerOutput as SolidityOutputContract).evm.bytecode
+          .object
+      }`;
+    }
+    return super.runtimeBytecode;
+  }
+
+  public get compilationExportMetadata(): CompilationExportMetadata {
+    if (this.isZkSolc && this._zkSolcCompilerVersion) {
+      // Mirror ZkSolcCompilation so a re-verified zksolc contract keeps its
+      // `compiler: "zksolc"` identity and combined `zksolc:<v>;solc:<v>` version.
+      const { solcCompilerVersion } = parseZkSolcCompilerVersion(
+        this._zkSolcCompilerVersion,
+      );
+      return {
+        compiler: 'zksolc',
+        compilerVersion: this._zkSolcCompilerVersion,
+        zksolc: { solcCompilerVersion },
+      };
+    }
+    return {};
+  }
+
   public async generateCborAuxdataPositions() {
     return;
   }
@@ -98,6 +150,15 @@ export class PreRunCompilation extends AbstractCompilation {
       case 'Solidity': {
         const compilationTarget = this
           .contractCompilerOutput as SolidityOutputContract;
+        if (this.isZkSolc) {
+          // EraVM may not emit a deployedBytecode; fall back to bytecode.
+          const evm = compilationTarget.evm as any;
+          return (
+            evm.deployedBytecode?.immutableReferences ||
+            evm.bytecode.immutableReferences ||
+            {}
+          );
+        }
         return compilationTarget.evm.deployedBytecode.immutableReferences || {};
       }
       case 'Vyper': {
@@ -116,6 +177,10 @@ export class PreRunCompilation extends AbstractCompilation {
       case 'Solidity': {
         const compilationTarget = this
           .contractCompilerOutput as SolidityOutputContract;
+        if (this.isZkSolc) {
+          // EraVM link references live on bytecode, not deployedBytecode.
+          return compilationTarget.evm.bytecode.linkReferences || {};
+        }
         return compilationTarget.evm.deployedBytecode.linkReferences || {};
       }
       case 'Vyper':
