@@ -74,14 +74,6 @@ export function validateZkSolcRequest(
     );
   }
 
-  const chainRepository = req.app.get("chainRepository") as ChainRepository;
-  const sourcifyChain = chainRepository.sourcifyChainMap[req.params.chainId];
-  if (!sourcifyChain?.zksolc?.supported) {
-    throw new InvalidParametersError(
-      `ZkSolc verification is not supported on chain ${req.params.chainId}.`,
-    );
-  }
-
   next();
 }
 

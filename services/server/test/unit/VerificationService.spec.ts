@@ -215,13 +215,11 @@ describe("VerificationService", function () {
         initCompilers: false,
         sourcifyChainMap: {
           "324": {
-            zksolc: { supported: true },
             getSourcifyChainObj: () => ({
               name: "ZKsync Era",
               chainId: 324,
               rpcs: [],
               supported: true,
-              zksolc: { supported: true },
             }),
           },
         } as any,

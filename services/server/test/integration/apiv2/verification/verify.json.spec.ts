@@ -72,16 +72,6 @@ describe("POST /v2/verify/:chainId/:address", function () {
   });
 
   it("should enqueue a zksolc Solidity standard input JSON verification through the standard endpoint", async () => {
-    // The request layer (validateZkSolcRequest) requires the chain to support
-    // zksolc before enqueuing.
-    sandbox
-      .stub(
-        serverFixture.server.chainRepository.sourcifyChainMap[
-          chainFixture.chainId
-        ],
-        "zksolc",
-      )
-      .value({ supported: true });
     const verificationId = "550e8400-e29b-41d4-a716-446655440000";
     const verifyFromJsonInputViaWorkerStub = sandbox
       .stub(
@@ -124,7 +114,11 @@ describe("POST /v2/verify/:chainId/:address", function () {
     ]);
   });
 
-  it("should reject zksolc verification on chains without zksolc support", async () => {
+  it("should reject zksolc verification when zksolc is not enabled on the server", async () => {
+    sandbox
+      .stub(serverFixture.server.services.verification, "isZkSolcEnabled")
+      .get(() => false);
+
     const contractIdentifier = Object.entries(
       chainFixture.defaultContractMetadataObject.settings.compilationTarget,
     )[0].join(":");
@@ -145,9 +139,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
     chai
       .expect(verifyRes.body.message)
-      .to.equal(
-        `ZkSolc verification is not supported on chain ${chainFixture.chainId}.`,
-      );
+      .to.equal("ZkSolc verification is not enabled on this server.");
   });
 
   it("should reject non-Solidity standard input JSON when a zksolc compilerVersion is provided", async () => {
