@@ -38,6 +38,7 @@ export const MockVerificationExport: VerificationExport = {
       path: "project:/contracts/Storage.sol",
       name: "Storage",
     },
+    compiler: "solc",
     compilerVersion: "0.8.4+commit.c7e474f2",
     sources: {
       "project:/contracts/Storage.sol":

@@ -797,9 +797,6 @@ export class Verification {
         // pass
       }
     }
-    const compilationExportMetadata =
-      this.compilation.compilationExportMetadata;
-
     // Surface every top-level standard JSON input field used for compilation other than
     // language/sources/settings (e.g. Vyper's `storage_layout_overrides`) so consumers can
     // persist them.
@@ -819,8 +816,8 @@ export class Verification {
       compilation: {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
-        compilerVersion: this.compilation.compilerVersion,
-        ...compilationExportMetadata,
+        compiler: this.compilation.compilerName,
+        compilerVersion: this.compilation.resolvedCompilerVersion,
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {

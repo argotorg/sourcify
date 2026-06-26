@@ -26,7 +26,19 @@ import type {
 } from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
-export type CompilationExportMetadata = Record<string, unknown>;
+export function getCompilerNameFromLanguage(language: string): string {
+  switch (language.toLocaleLowerCase()) {
+    case 'yul':
+    case 'solidity':
+      return 'solc';
+    case 'vyper':
+      return 'vyper';
+    case 'fe':
+      return 'fe';
+    default:
+      throw new Error('Language not supported');
+  }
+}
 
 function cleanCompilerVersion(version: string): string {
   // Remove non-numerical characters from the beginning of the version string
@@ -74,8 +86,17 @@ export abstract class AbstractCompilation {
     return false;
   }
 
-  public get compilationExportMetadata(): CompilationExportMetadata {
-    return {};
+  // The compiler name stored/exported for this compilation. Each compilation
+  // maps 1:1 to a compiler, so it is declared per class rather than inferred
+  // from the language (which is ambiguous, e.g. Solidity → solc or zksolc).
+  public abstract get compilerName(): string;
+
+  // The compiler version string stored/exported for this compilation. Defaults
+  // to compilerVersion; zksolc-based compilations override this with the
+  // combined `zksolc:<v>;solc:<v>` toolchain string while keeping
+  // compilerVersion as the plain zksolc semver for Solidity heuristics.
+  public get resolvedCompilerVersion(): string {
+    return this.compilerVersion;
   }
 
   constructor(

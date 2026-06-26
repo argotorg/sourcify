@@ -1,5 +1,8 @@
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import { AbstractCompilation } from './AbstractCompilation';
+import {
+  AbstractCompilation,
+  getCompilerNameFromLanguage,
+} from './AbstractCompilation';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -25,11 +28,7 @@ import {
   returnAuxdataStyle,
   returnFixedVyperVersion,
 } from './VyperCompilation';
-import {
-  isZkSolcCompilerVersion,
-  parseZkSolcCompilerVersion,
-} from './ZkSolcCompilation';
-import type { CompilationExportMetadata } from './AbstractCompilation';
+import { isZkSolcCompilerVersion } from './ZkSolcCompilation';
 
 export type Nullable<T> = T | null;
 
@@ -114,20 +113,19 @@ export class PreRunCompilation extends AbstractCompilation {
     return super.runtimeBytecode;
   }
 
-  public get compilationExportMetadata(): CompilationExportMetadata {
-    if (this.isZkSolc && this._zkSolcCompilerVersion) {
-      // Mirror ZkSolcCompilation so a re-verified zksolc contract keeps its
-      // `compiler: "zksolc"` identity and combined `zksolc:<v>;solc:<v>` version.
-      const { solcCompilerVersion } = parseZkSolcCompilerVersion(
-        this._zkSolcCompilerVersion,
-      );
-      return {
-        compiler: 'zksolc',
-        compilerVersion: this._zkSolcCompilerVersion,
-        zksolc: { solcCompilerVersion },
-      };
-    }
-    return {};
+  // PreRunCompilation reconstructs any language from stored data, so unlike the
+  // single-compiler compilations it maps the language to a compiler name (and
+  // reports zksolc when the stored version is a zksolc toolchain string).
+  public get compilerName(): string {
+    return this.isZkSolc
+      ? 'zksolc'
+      : getCompilerNameFromLanguage(this.language);
+  }
+
+  public get resolvedCompilerVersion(): string {
+    return this.isZkSolc && this._zkSolcCompilerVersion
+      ? this._zkSolcCompilerVersion
+      : super.resolvedCompilerVersion;
   }
 
   public async generateCborAuxdataPositions() {

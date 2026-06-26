@@ -1,17 +1,17 @@
 import chai from "chai";
 import { keccak256 } from "ethers";
 import type { ServerFixture } from "../../helpers/ServerFixture";
-import {
-  bytesFromString,
-  getCompilerNameFromLanguage,
-} from "../../../src/server/services/utils/database-util";
+import { bytesFromString } from "../../../src/server/services/utils/database-util";
 import { extractSignaturesFromAbi } from "../../../src/server/services/utils/signature-util";
 import crypto from "crypto";
 import type {
   Bytes,
   SignatureRepresentations,
 } from "../../../src/server/types";
-import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
+import {
+  getCompilerNameFromLanguage,
+  splitFullyQualifiedName,
+} from "@ethereum-sourcify/lib-sourcify";
 import {
   getTotalMatchLevel,
   toVerificationStatus,

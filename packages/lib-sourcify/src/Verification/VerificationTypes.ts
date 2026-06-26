@@ -101,11 +101,8 @@ export interface VerificationExport {
   compilation: {
     language: CompilationLanguage;
     compilationTarget: CompilationTarget;
-    compiler?: string;
+    compiler: string;
     compilerVersion: string;
-    zksolc?: {
-      solcCompilerVersion: string;
-    };
     sources: StringMap;
     compilerOutput: {
       // The export should not include the AST object to reduce the size

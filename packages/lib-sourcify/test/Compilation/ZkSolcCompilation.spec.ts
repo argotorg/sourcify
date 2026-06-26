@@ -233,9 +233,7 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.resolvedCompilerVersion).to.equal(
       'zksolc:1.5.16;solc:0.8.26-1.0.2',
     );
-    expect(compilation.compilationExportMetadata.compilerVersion).to.equal(
-      'zksolc:1.5.16;solc:0.8.26-1.0.2',
-    );
+    expect(compilation.compilerName).to.equal('zksolc');
   });
 
   it('should compile with zksolc and solc versions', async () => {
@@ -262,13 +260,11 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.runtimeBytecode).to.equal('0x010203');
     expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
     expect(compilation.auxdataStyle).to.equal(AuxdataStyle.ZKSYNC);
-    expect(compilation.compilationExportMetadata).to.deep.equal({
-      compiler: 'zksolc',
-      compilerVersion: `zksolc:v1.5.3;solc:${solcVersion}`,
-      zksolc: {
-        solcCompilerVersion: solcVersion,
-      },
-    });
+    expect(compilation.compilerName).to.equal('zksolc');
+    expect(compilation.resolvedCompilerVersion).to.equal(
+      `zksolc:v1.5.3;solc:${solcVersion}`,
+    );
+    expect(compilation.solcCompilerVersion).to.equal(solcVersion);
   });
 
   it('should preserve non-semver zksolc versions for the compiler', async () => {
@@ -425,9 +421,6 @@ describe('ZkSolcCompilation', () => {
     expect(verification.export().compilation).to.include({
       compiler: 'zksolc',
       compilerVersion: 'zksolc:1.5.7;solc:0.8.26-1.0.1',
-    });
-    expect(verification.export().compilation.zksolc).to.deep.equal({
-      solcCompilerVersion: '0.8.26-1.0.1',
     });
   });
 
@@ -1223,12 +1216,9 @@ describe('PreRunCompilation (zksolc)', () => {
     expect(compilation.runtimeLinkReferences).to.deep.equal({});
   });
 
-  it('exports zksolc compilation metadata with the combined version', () => {
+  it('reports the zksolc compiler name and combined export version', () => {
     const compilation = createPreRunZkSolcCompilation();
-    expect(compilation.compilationExportMetadata).to.deep.equal({
-      compiler: 'zksolc',
-      compilerVersion: zkSolcVersion,
-      zksolc: { solcCompilerVersion: '0.8.26-1.0.1' },
-    });
+    expect(compilation.compilerName).to.equal('zksolc');
+    expect(compilation.resolvedCompilerVersion).to.equal(zkSolcVersion);
   });
 });

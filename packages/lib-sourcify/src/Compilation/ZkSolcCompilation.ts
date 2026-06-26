@@ -342,16 +342,8 @@ export class ZkSolcCompilation extends AbstractCompilation {
     return this.useNextSolcCompilerVersionCandidate();
   }
 
-  public get compilationExportMetadata() {
-    return {
-      compiler: 'zksolc',
-      // Override the exported compiler version with the combined toolchain string
-      // so the verified contract is stored/returned as `zksolc:<v>;solc:<v>`.
-      compilerVersion: this.resolvedCompilerVersion,
-      zksolc: {
-        solcCompilerVersion: this.solcCompilerVersion,
-      },
-    };
+  public get compilerName(): string {
+    return 'zksolc';
   }
 
   protected async runCompiler(): Promise<SolidityOutput> {

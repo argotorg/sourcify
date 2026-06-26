@@ -117,6 +117,10 @@ export function returnImmutableReferences(
  */
 export class VyperCompilation extends AbstractCompilation {
   public language: CompilationLanguage = 'Vyper';
+
+  public get compilerName(): string {
+    return 'vyper';
+  }
   // Use declare to override AbstractCompilation's types to target Vyper types
   declare jsonInput: VyperJsonInput;
   declare compilerOutput?: VyperOutput;

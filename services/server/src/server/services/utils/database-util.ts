@@ -702,20 +702,6 @@ function getKeccak256Bytecodes(
   };
 }
 
-export function getCompilerNameFromLanguage(language: string): string {
-  switch (language.toLocaleLowerCase()) {
-    case "yul":
-    case "solidity":
-      return "solc";
-    case "vyper":
-      return "vyper";
-    case "fe":
-      return "fe";
-    default:
-      throw new Error("Language not supported");
-  }
-}
-
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
@@ -900,9 +886,7 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler:
-        verification.compilation.compiler ||
-        getCompilerNameFromLanguage(verification.compilation.language),
+      compiler: verification.compilation.compiler,
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,

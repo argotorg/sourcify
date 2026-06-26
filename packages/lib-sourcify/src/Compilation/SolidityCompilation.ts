@@ -47,6 +47,10 @@ export const DEFAULT_OUTPUT_SELECTION = {
  */
 export class SolidityCompilation extends AbstractCompilation {
   public language: CompilationLanguage = 'Solidity';
+
+  public get compilerName(): string {
+    return 'solc';
+  }
   // Use declare to override AbstractCompilation's types to target Solidity types
   declare jsonInput: SolidityJsonInput;
   declare compilerOutput?: SolidityOutput;
