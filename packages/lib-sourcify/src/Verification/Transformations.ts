@@ -179,18 +179,6 @@ export function extractImmutablesTransformation(
     reference: { length: number; start: number };
   }> = [];
 
-<<<<<<< HEAD
-      // Save the transformation
-      transformations.push(
-        ImmutablesTransformation(
-          start,
-          astId,
-          auxdataStyle === AuxdataStyle.SOLIDITY ||
-            auxdataStyle === AuxdataStyle.ZKSYNC
-            ? 'replace'
-            : 'insert',
-        ),
-=======
   for (const [astId, references] of Object.entries(immutableReferences)) {
     for (const reference of references) {
       immutableReferenceEntries.push({ astId, reference });
@@ -219,7 +207,6 @@ export function extractImmutablesTransformation(
     ) {
       throw new Error(
         `Vyper immutable length mismatch: expected ${length} bytes at offset ${start}, got ${immutableValue.length / 2}`,
->>>>>>> origin/staging
       );
     }
 
@@ -228,7 +215,10 @@ export function extractImmutablesTransformation(
       ImmutablesTransformation(
         start,
         astId,
-        auxdataStyle === AuxdataStyle.SOLIDITY ? 'replace' : 'insert',
+        auxdataStyle === AuxdataStyle.SOLIDITY ||
+          auxdataStyle === AuxdataStyle.ZKSYNC
+          ? 'replace'
+          : 'insert',
       ),
     );
 
@@ -238,24 +228,10 @@ export function extractImmutablesTransformation(
     }
     transformationValues.immutables[astId] = `0x${immutableValue}`;
 
-<<<<<<< HEAD
-      if (
-        auxdataStyle === AuxdataStyle.SOLIDITY ||
-        auxdataStyle === AuxdataStyle.ZKSYNC
-      ) {
-        // Replace the placeholder in the recompiled bytecode with the onchain immutable value.
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode.slice(0, start * 2) +
-          immutableValue +
-          populatedRecompiledBytecode.slice(start * 2 + length * 2);
-      } else if (auxdataStyle === AuxdataStyle.VYPER) {
-        // For Vyper, insert the immutable value.
-        populatedRecompiledBytecode =
-          populatedRecompiledBytecode + immutableValue;
-      }
-    });
-=======
-    if (auxdataStyle === AuxdataStyle.SOLIDITY) {
+    if (
+      auxdataStyle === AuxdataStyle.SOLIDITY ||
+      auxdataStyle === AuxdataStyle.ZKSYNC
+    ) {
       // Replace the placeholder in the recompiled bytecode with the onchain immutable value.
       populatedRecompiledBytecode =
         populatedRecompiledBytecode.slice(0, start * 2) +
@@ -268,7 +244,6 @@ export function extractImmutablesTransformation(
       populatedRecompiledBytecode =
         populatedRecompiledBytecode + immutableValue;
     }
->>>>>>> origin/staging
   });
   return {
     populatedRecompiledBytecode: '0x' + populatedRecompiledBytecode,

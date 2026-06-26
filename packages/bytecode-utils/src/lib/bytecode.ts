@@ -171,11 +171,7 @@ export const decode = <T extends AuxdataStyle>(
         : auxdata;
 
     // cbor decode the object and get a json
-<<<<<<< HEAD
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${cborHex}`));
-=======
-    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
->>>>>>> origin/staging
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${cborHex}`));
 
     const result: SolidityDecodedObject = {};
     // Decode all the parameters from the json

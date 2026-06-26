@@ -716,21 +716,6 @@ export function getCompilerNameFromLanguage(language: string): string {
   }
 }
 
-function getAdditionalInputFromVerification(
-  verification: VerificationExport,
-): Tables.CompiledContract["additional_input"] {
-  const additionalInput: NonNullable<
-    Tables.CompiledContract["additional_input"]
-  > = {};
-
-  if (verification.compilation.jsonInput.storageLayoutOverrides) {
-    additionalInput.storage_layout_overrides =
-      verification.compilation.jsonInput.storageLayoutOverrides;
-  }
-
-  return Object.keys(additionalInput).length > 0 ? additionalInput : null;
-}
-
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
@@ -925,11 +910,7 @@ export async function getDatabaseColumnsFromVerification(
       compilation_artifacts: compilationArtifacts,
       creation_code_artifacts: creationCodeArtifacts,
       runtime_code_artifacts: runtimeCodeArtifacts,
-<<<<<<< HEAD
-      additional_input: getAdditionalInputFromVerification(verification),
-=======
       additional_input: verification.compilation.additionalInput ?? null,
->>>>>>> origin/staging
     },
     sourcesInformation,
     verifiedContract: {

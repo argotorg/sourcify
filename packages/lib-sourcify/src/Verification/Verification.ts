@@ -782,7 +782,6 @@ export class Verification {
       // pass
     }
 
-<<<<<<< HEAD
     let creationLinkReferencesFallback: LinkReferences | undefined;
     let runtimeLinkReferencesFallback: LinkReferences | undefined;
     if (this.compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
@@ -800,14 +799,13 @@ export class Verification {
     }
     const compilationExportMetadata =
       this.compilation.compilationExportMetadata;
-=======
+
     // Surface every top-level standard JSON input field used for compilation other than
     // language/sources/settings (e.g. Vyper's `storage_layout_overrides`) so consumers can
     // persist them.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { language, sources, settings, ...additionalInput } =
       this.compilation.jsonInput;
->>>>>>> origin/staging
 
     return {
       address: this.address,
