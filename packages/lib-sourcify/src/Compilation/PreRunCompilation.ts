@@ -9,6 +9,7 @@ import type {
   SolidityOutputContract,
   VyperJsonInput,
   VyperOutput,
+  VyperOutputContract,
   FeJsonInput,
   FeOutput,
 } from '@ethereum-sourcify/compilers-types';
@@ -23,7 +24,6 @@ import type {
 import {
   returnAuxdataStyle,
   returnFixedVyperVersion,
-  returnImmutableReferences,
 } from './VyperCompilation';
 
 export type Nullable<T> = T | null;
@@ -101,12 +101,9 @@ export class PreRunCompilation extends AbstractCompilation {
         return compilationTarget.evm.deployedBytecode.immutableReferences || {};
       }
       case 'Vyper': {
-        return returnImmutableReferences(
-          this.compilerVersionCompatibleWithSemver!,
-          this.creationBytecode,
-          this.runtimeBytecode,
-          this.auxdataStyle,
-        );
+        const compilationTarget = this
+          .contractCompilerOutput as VyperOutputContract;
+        return compilationTarget.evm.deployedBytecode.immutableReferences || {};
       }
       case 'Fe':
         return {};

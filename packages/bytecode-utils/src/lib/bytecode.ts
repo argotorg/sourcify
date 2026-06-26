@@ -1,4 +1,4 @@
-import { arrayify, hexlify } from '@ethersproject/bytes';
+import { getBytes, hexlify } from 'ethers';
 import bs58 from 'bs58';
 import * as CBOR from 'cbor-x';
 import semver from 'semver';
@@ -42,6 +42,55 @@ export enum AuxdataStyle {
   ZKSYNC = 'zksync',
 }
 
+export const getVyperAuxdataStyle = (
+  compilerVersion: string,
+):
+  | AuxdataStyle.VYPER_LT_0_3_4
+  | AuxdataStyle.VYPER_LT_0_3_5
+  | AuxdataStyle.VYPER_LT_0_3_10
+  | AuxdataStyle.VYPER => {
+  const coercedVersion = semver.coerce(compilerVersion);
+  if (!coercedVersion) {
+    throw Error(`Invalid Vyper compiler version: ${compilerVersion}`);
+  }
+
+  const version = coercedVersion.version;
+  // Vyper versions < 0.3.4 emit no CBOR auxdata at all.
+  if (semver.lt(version, '0.3.4')) {
+    return AuxdataStyle.VYPER_LT_0_3_4;
+  }
+  // Only 0.3.4 uses the fixed-length 22-byte CBOR format.
+  if (semver.lt(version, '0.3.5')) {
+    return AuxdataStyle.VYPER_LT_0_3_5;
+  }
+  if (semver.lt(version, '0.3.10')) {
+    return AuxdataStyle.VYPER_LT_0_3_10;
+  }
+  return AuxdataStyle.VYPER;
+};
+
+export const getAuxdataStyle = (
+  language: string,
+  compilerVersion?: string,
+): AuxdataStyle => {
+  switch (language.toLowerCase()) {
+    case 'solidity':
+    case 'yul':
+      return AuxdataStyle.SOLIDITY;
+    case 'vyper':
+      if (!compilerVersion) {
+        throw Error(
+          'Vyper compiler version is required to determine auxdata style',
+        );
+      }
+      return getVyperAuxdataStyle(compilerVersion);
+    case 'fe':
+      return AuxdataStyle.FE;
+    default:
+      throw Error(`Unsupported language for auxdata style: ${language}`);
+  }
+};
+
 /**
  * Decode contract's bytecode
  * @param bytecode - hex of the bytecode with 0x prefix
@@ -70,7 +119,7 @@ export const decode = <T extends AuxdataStyle>(
   // See more here: https://github.com/vyperlang/vyper/pull/3010
   if (auxdataStyle === AuxdataStyle.VYPER) {
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
 
     // Starting with version 0.3.10, Vyper stores the auxdata as an array
     // after 0.3.10: [runtimesize, datasize,immutablesize,version_cbor_object]
@@ -106,7 +155,7 @@ export const decode = <T extends AuxdataStyle>(
     auxdataStyle === AuxdataStyle.VYPER_LT_0_3_5
   ) {
     // cbor decode the object and get a json
-    const cborDecodedObject = CBOR.decode(arrayify(`0x${auxdata}`));
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
     return {
       vyperVersion: cborDecodedObject.vyper.join('.'),
     } as any;
@@ -122,7 +171,11 @@ export const decode = <T extends AuxdataStyle>(
         : auxdata;
 
     // cbor decode the object and get a json
+<<<<<<< HEAD
     const cborDecodedObject = CBOR.decode(arrayify(`0x${cborHex}`));
+=======
+    const cborDecodedObject = CBOR.decode(getBytes(`0x${auxdata}`));
+>>>>>>> origin/staging
 
     const result: SolidityDecodedObject = {};
     // Decode all the parameters from the json
@@ -424,7 +477,7 @@ const extractExecutionBytecode = (
  */
 export const isCborEncoded = (auxdata: string): boolean => {
   try {
-    CBOR.decode(arrayify(`0x${auxdata}`));
+    CBOR.decode(getBytes(`0x${auxdata}`));
     return true;
   } catch {
     return false;

@@ -41,15 +41,9 @@ export type DefatultChainMonitorConfig = {
   traceDelay: number;
 };
 
-export type SourcifyRequestOptions = {
-  maxRetries: number;
-  retryDelay: number;
-};
-
 export type MonitorConfig = {
   decentralizedStorages: DecentralizedStorageConfigMap;
   sourcifyServerURLs: string[];
-  sourcifyRequestOptions: SourcifyRequestOptions;
   defaultChainConfig: DefatultChainMonitorConfig;
   similarityVerification: SimilarityVerificationConfig;
   monitorFactories?: boolean; // gets overwritten by .env if set

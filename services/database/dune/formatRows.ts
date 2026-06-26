@@ -2,7 +2,7 @@
  * Utility functions to format the rows from Postgres (and from the pg client) to the format Dune expects
  */
 
-import {
+import type {
   PgCode,
   PgCompiledContractsSource,
   PgContract,
@@ -10,8 +10,8 @@ import {
   PgSourcifyMatch,
   PgVerifiedContract,
 } from "../pg-types";
-import { PgCompiledContract, PgContractDeployment } from "../pg-types";
-import { InsertData } from "./DuneDataClient";
+import type { PgCompiledContract, PgContractDeployment } from "../pg-types";
+import type { InsertData } from "./DuneDataClient";
 
 // Dune's "varbinary" type MUST be prefixed with 0x otherwise the value will be incorrect
 function bufferToHex(buffer: Buffer): string {

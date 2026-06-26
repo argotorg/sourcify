@@ -6,7 +6,7 @@ import * as OpenApiValidator from "express-openapi-validator";
 import yamljs from "yamljs";
 import { resolveRefs } from "json-refs";
 import bodyParser from "body-parser";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fileUpload = require("express-fileupload");
 import { v4 as uuidv4 } from "uuid";
 import { asyncLocalStorage } from "../common/async-context";

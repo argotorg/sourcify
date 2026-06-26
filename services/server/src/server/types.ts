@@ -91,7 +91,7 @@ export interface VerifiedContract extends VerifiedContractMinimal {
     language: CompilationLanguage;
     compiler: string;
     compilerVersion: string;
-    compilerSettings: Object;
+    compilerSettings: object;
     name: string;
     fullyQualifiedName: string;
   };

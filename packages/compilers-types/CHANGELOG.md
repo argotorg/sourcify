@@ -1,4 +1,6 @@
+## @ethereum-sourcify/compilers-types@1.3.0 - 2026-06-16
 
+- fix(lib-sourcify): support legacy Vyper immutable tails (#2817)
 
 ## @ethereum-sourcify/compilers-types@1.2.0 - 2026-04-14
 

@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# Set npm auth token
-npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
-
 # Helper Functions
 # ----------------
 
@@ -31,6 +28,7 @@ publish_if_new_version() {
     echo "$2:"
     echo "Latest npm version is equal to current package version. Up the version to publish to npm."
   else
+    export NPM_ID_TOKEN=$(circleci run oidc get --claims '{"aud": "npm:registry.npmjs.org"}')
     npm publish -w "$2" --verbose --access=public
   fi
 }

@@ -33,7 +33,6 @@ import type {
 } from './VerificationTypes';
 import { SolidityBugType, VerificationError } from './VerificationTypes';
 import type {
-  VyperJsonInput,
   VyperOutputContract,
   ImmutableReferences,
   SolidityOutputContract,
@@ -542,14 +541,12 @@ export class Verification {
     result.populatedRecompiledBytecode =
       auxdataTransformationResult.populatedRecompiledBytecode;
 
-    /* eslint-disable indent */
     const doPopulatedBytecodesMatch = isCreation
       ? onchainBytecode.startsWith(
           auxdataTransformationResult.populatedRecompiledBytecode,
         )
       : auxdataTransformationResult.populatedRecompiledBytecode ===
         onchainBytecode;
-    /* eslint-enable indent */
 
     if (doPopulatedBytecodesMatch) {
       result.match = 'partial';
@@ -785,6 +782,7 @@ export class Verification {
       // pass
     }
 
+<<<<<<< HEAD
     let creationLinkReferencesFallback: LinkReferences | undefined;
     let runtimeLinkReferencesFallback: LinkReferences | undefined;
     if (this.compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
@@ -802,6 +800,14 @@ export class Verification {
     }
     const compilationExportMetadata =
       this.compilation.compilationExportMetadata;
+=======
+    // Surface every top-level standard JSON input field used for compilation other than
+    // language/sources/settings (e.g. Vyper's `storage_layout_overrides`) so consumers can
+    // persist them.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { language, sources, settings, ...additionalInput } =
+      this.compilation.jsonInput;
+>>>>>>> origin/staging
 
     return {
       address: this.address,
@@ -857,17 +863,8 @@ export class Verification {
         creationBytecodeCborAuxdata,
         immutableReferences: immutableReferences,
         metadata,
-        jsonInput: {
-          settings: this.compilation.jsonInput.settings,
-          ...((this.compilation.jsonInput as VyperJsonInput)
-            .storage_layout_overrides
-            ? {
-                storageLayoutOverrides: (
-                  this.compilation.jsonInput as VyperJsonInput
-                ).storage_layout_overrides,
-              }
-            : {}),
-        },
+        jsonInput: { settings },
+        ...(Object.keys(additionalInput).length > 0 ? { additionalInput } : {}),
         compilationTime: this.compilation.compilationTime,
       },
     };

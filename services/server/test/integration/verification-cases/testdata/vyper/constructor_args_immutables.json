@@ -245,7 +245,9 @@
         },
         "pc_ast_map_item_keys": ["source_id", "node_id"]
       },
-      "immutableReferences": null,
+      "immutableReferences": {
+        "0": [{ "length": 96, "start": 167 }]
+      },
       "linkReferences": null,
       "cborAuxdata": {}
     },

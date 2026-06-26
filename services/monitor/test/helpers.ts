@@ -22,23 +22,24 @@ export async function deployFromAbiAndBytecode(
 /**
  * Returns a nock scope that later can be checked with isDone() if it was called.
  *
- * I.e. check if a request to serverUrl was made with the expected chainId and address.
+ * I.e. check if a request to serverUrl was made with the expected chainId and
+ * address, and a body containing `sources` and `metadata`.
  */
 export function nockInterceptorForVerification(
   serverUrl: string,
   expectedChainId: number,
   expectedAddress: string,
 ) {
-  return nock(serverUrl)
-    .post("/")
-    .reply(function (uri, requestBody) {
-      const body = requestBody as {
-        address: string;
-        chainId: string;
-      };
-      expect(body.chainId).to.equal(expectedChainId.toString());
-      expect(body.address).to.equal(expectedAddress);
-      const { address, chainId } = body;
-      return [200, { address, chainId, status: "perfect" }];
+  const { origin, pathname } = new URL(serverUrl);
+  const basePath = pathname.replace(/\/+$/, "");
+  const verifyPath = `${basePath}/v2/verify/metadata/${expectedChainId}/${expectedAddress}`;
+  return nock(origin)
+    .post(verifyPath, (body) => {
+      expect(body).to.have.property("sources");
+      expect(body).to.have.property("metadata");
+      return true;
+    })
+    .reply(202, {
+      verificationId: "00000000-0000-0000-0000-000000000000",
     });
 }
