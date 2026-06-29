@@ -205,6 +205,13 @@ paths:
                       useful for correcting incomplete or missing creation data on contracts that were 
                       previously verified only against runtime bytecode.
                     - "replace-metadata": Updates only the metadata of an existing verified contract.
+                    - "replace-vyper-immutable-references": Recomputes a Vyper contract's
+                      `immutableReferences` from a fresh compile and backfills them into the
+                      existing `compiled_contracts.runtime_code_artifacts` (only the
+                      `immutableReferences` key is updated). Intended to backfill Vyper contracts
+                      whose `immutableReferences` were never persisted; use with
+                      `forceCompilation: true`. Only Vyper is supported (throws otherwise);
+                      contracts without immutables are left untouched.
                   example: "replace-creation-information"
       responses:
         "200":

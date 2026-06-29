@@ -208,6 +208,135 @@ describe("/private/replace-contract", function () {
       .expect(restoredMatchResult.rows[0].creation_values)
       .to.deep.equal(originalMatchResult.rows[0].creation_values);
   });
+
+  it("should backfill missing Vyper immutableReferences with the replace-vyper-immutable-references method", async () => {
+    // Load Vyper-with-immutables test contract artifacts and source
+    const vyperArtifact = (
+      await import("../../../sources/vyper/withImmutables/artifact.json")
+    ).default;
+    const vyperSourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "sources",
+      "vyper",
+      "withImmutables",
+      "test.vy",
+    );
+    const vyperSource = fs.readFileSync(vyperSourcePath, "utf8");
+
+    const compilerVersion = "0.4.0+commit.e9db8d9f";
+    const compilerSettings = {
+      evmVersion: "london",
+      optimize: "codesize",
+      outputSelection: { "*": ["evm.bytecode"] },
+    };
+
+    // Deploy the Vyper contract (constructor sets an immutable uint256 value)
+    const { contractAddress, txHash } =
+      await deployFromAbiAndBytecodeForCreatorTxHash(
+        chainFixture.localSigner,
+        vyperArtifact.abi,
+        vyperArtifact.bytecode,
+        [5],
+      );
+
+    // Verify the contract. With the #2817 fix this persists immutableReferences.
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/verify/vyper")
+      .send({
+        address: contractAddress,
+        chain: chainFixture.chainId,
+        creatorTxHash: txHash,
+        files: { "test.vy": vyperSource },
+        contractPath: "test.vy",
+        contractName: "test",
+        compilerVersion,
+        compilerSettings,
+      });
+
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      contractAddress,
+      chainFixture.chainId,
+      "partial",
+      false,
+    );
+
+    // Capture the freshly stored runtime_code_artifacts (with immutableReferences)
+    const originalArtifactsResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT fully_qualified_name, runtime_code_artifacts FROM compiled_contracts",
+    );
+    const compiledContract = originalArtifactsResult.rows[0];
+    const originalArtifacts = compiledContract.runtime_code_artifacts;
+
+    // Sanity check: the fix stores non-empty immutableReferences for this contract
+    chai.expect(originalArtifacts.immutableReferences).to.not.be.null;
+    chai
+      .expect(Object.keys(originalArtifacts.immutableReferences))
+      .to.have.lengthOf.greaterThan(0);
+
+    // Simulate the legacy bug state: immutableReferences was never persisted
+    await serverFixture.sourcifyDatabase.query(
+      `UPDATE compiled_contracts
+         SET runtime_code_artifacts = jsonb_set(
+           runtime_code_artifacts, '{immutableReferences}', 'null'::jsonb)`,
+    );
+
+    // Verify the simulated corruption
+    const corruptedResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT runtime_code_artifacts FROM compiled_contracts",
+    );
+    chai.expect(
+      corruptedResult.rows[0].runtime_code_artifacts.immutableReferences,
+    ).to.be.null;
+
+    // Call replace-contract with the new replace-vyper-immutable-references method
+    const replaceRes = await chai
+      .request(serverFixture.server.app)
+      .post("/private/replace-contract")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: contractAddress,
+        chainId: chainFixture.chainId,
+        forceCompilation: true,
+        jsonInput: {
+          language: "Vyper",
+          sources: { "test.vy": { content: vyperSource } },
+          settings: compilerSettings,
+        },
+        compilerVersion,
+        compilationTarget: compiledContract.fully_qualified_name,
+        forceRPCRequest: false,
+        customReplaceMethod: "replace-vyper-immutable-references",
+      });
+
+    chai.expect(replaceRes.status).to.equal(StatusCodes.OK);
+    chai.expect(replaceRes.body.replaced).to.be.true;
+
+    // immutableReferences restored; the other artifacts must be untouched
+    const restoredResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT runtime_code_artifacts FROM compiled_contracts",
+    );
+    const restoredArtifacts = restoredResult.rows[0].runtime_code_artifacts;
+    chai
+      .expect(restoredArtifacts.immutableReferences)
+      .to.deep.equal(originalArtifacts.immutableReferences);
+    chai
+      .expect(restoredArtifacts.sourceMap)
+      .to.deep.equal(originalArtifacts.sourceMap);
+    chai
+      .expect(restoredArtifacts.cborAuxdata)
+      .to.deep.equal(originalArtifacts.cborAuxdata);
+    chai
+      .expect(restoredArtifacts.linkReferences)
+      .to.deep.equal(originalArtifacts.linkReferences);
+  });
 });
 
 describe("/private/verify-deprecated", function () {

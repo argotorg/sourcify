@@ -1,4 +1,7 @@
-import type { VerificationExport } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  ImmutableReferences,
+  VerificationExport,
+} from "@ethereum-sourcify/lib-sourcify";
 import {
   bytesFromString,
   getDatabaseColumnsFromVerification,
@@ -170,7 +173,84 @@ export const replaceMetadata: CustomReplaceMethod = async (
   );
 };
 
+/**
+ * Backfills the `immutableReferences` of an already-verified Vyper contract by
+ * writing the references recomputed during this re-verification into the
+ * existing `compiled_contracts.runtime_code_artifacts` JSONB.
+ *
+ * Vyper `immutableReferences` were historically never persisted (always stored
+ * as `null`), even for contracts that genuinely have immutables. This method is
+ * used together with `forceCompilation: true` so the references are recovered
+ * from a fresh compile (required for legacy `< 0.3.10` contracts whose immutable
+ * size is derived from the compiler IR). See issue #2827.
+ *
+ * Solidity is intentionally not supported: its `immutableReferences` have always
+ * been persisted, so this method throws for any non-Vyper contract.
+ *
+ * Only writes when there are references to write; contracts without immutables
+ * are left untouched (stays `null`), matching how new verifications store them.
+ */
+export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
+  sourcifyDatabaseService: SourcifyDatabaseService,
+  verification: VerificationExport,
+) => {
+  if (verification.compilation.language !== "Vyper") {
+    throw new BadRequestError(
+      `replace-vyper-immutable-references only supports Vyper contracts, got ${verification.compilation.language}`,
+    );
+  }
+
+  // Extract immutableReferences from the recompiled contract. The getter can
+  // throw, so it is wrapped in try/catch.
+  let immutableReferences: ImmutableReferences | null = null;
+  try {
+    immutableReferences = verification.compilation.immutableReferences || null;
+  } catch {
+    // The immutableReferences getter can throw; leave it null in that case.
+  }
+
+  // Nothing to backfill (no immutables): keep the row as-is.
+  if (!immutableReferences || Object.keys(immutableReferences).length === 0) {
+    return;
+  }
+
+  // Find the compiled_contracts row backing this verified contract.
+  const existingVerifiedContractQuery = `
+        SELECT vc.compilation_id
+        FROM verified_contracts vc
+        JOIN contract_deployments cd ON cd.id = vc.deployment_id
+        INNER JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id
+        WHERE cd.chain_id = $1 AND cd.address = $2
+        LIMIT 1
+      `;
+  const existingResult = await sourcifyDatabaseService.database.pool.query(
+    existingVerifiedContractQuery,
+    [verification.chainId.toString(), bytesFromString(verification.address)],
+  );
+
+  if (existingResult.rows.length === 0) {
+    throw new Error(
+      `No existing verified contract found for address ${verification.address} on chain ${verification.chainId}`,
+    );
+  }
+
+  const compilationId = existingResult.rows[0].compilation_id;
+
+  // Update only the immutableReferences key to avoid clobbering the other
+  // runtime_code_artifacts (sourceMap, linkReferences, cborAuxdata). Updating
+  // the shared compiled_contracts row backfills every verified contract that
+  // reuses this compilation.
+  await sourcifyDatabaseService.database.pool.query(
+    `UPDATE compiled_contracts
+       SET runtime_code_artifacts = jsonb_set(
+         runtime_code_artifacts, '{immutableReferences}', $2::jsonb, true)
+       WHERE id = $1`,
+    [compilationId, JSON.stringify(immutableReferences)],
+  );
+};
+
 export const REPLACE_METHODS: Record<string, CustomReplaceMethod> = {
   "replace-creation-information": replaceCreationInformation,
   "replace-metadata": replaceMetadata,
+  "replace-vyper-immutable-references": replaceVyperImmutableReferences,
 };
