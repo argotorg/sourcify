@@ -223,6 +223,10 @@ paths:
                 properties:
                   replaced:
                     type: boolean
+                    description: Whether the replacement was applied. False when the replace method intentionally skipped it (see replacedReason).
+                  replacedReason:
+                    type: string
+                    description: Optional reason describing the outcome reported by the replace method, e.g. why a replacement was skipped (the Vyper contract has no immutableReferences to backfill). Absent when the replacement was applied with nothing to report.
                   address:
                     type: string
                   chainId:

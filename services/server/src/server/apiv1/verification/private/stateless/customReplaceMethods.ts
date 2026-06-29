@@ -8,11 +8,19 @@ import {
 } from "../../../../services/utils/database-util";
 import type { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import { BadRequestError } from "../../../../../common/errors";
+import logger from "../../../../../common/logger";
+
+/**
+ * Result of a custom replace method:
+ * - `undefined` when the replacement was applied
+ * - `{ reason, replaced }` to report an explicit outcome with a reason
+ */
+export type CustomReplaceResult = void | { reason: string; replaced: boolean };
 
 export type CustomReplaceMethod = (
   sourcifyDatabaseService: SourcifyDatabaseService,
   verification: VerificationExport,
-) => Promise<void>;
+) => Promise<CustomReplaceResult>;
 
 export const replaceCreationInformation: CustomReplaceMethod = async (
   sourcifyDatabaseService: SourcifyDatabaseService,
@@ -189,6 +197,9 @@ export const replaceMetadata: CustomReplaceMethod = async (
  *
  * Only writes when there are references to write; contracts without immutables
  * are left untouched (stays `null`), matching how new verifications store them.
+ *
+ * Returns `undefined` when the references were written, or
+ * `{ reason, replaced: true/false }` otherwise.
  */
 export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
   sourcifyDatabaseService: SourcifyDatabaseService,
@@ -211,7 +222,12 @@ export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
 
   // Nothing to backfill (no immutables): keep the row as-is.
   if (!immutableReferences || Object.keys(immutableReferences).length === 0) {
-    return;
+    const reason = "Contract has no immutableReferences to backfill";
+    logger.info(reason, {
+      chainId: verification.chainId,
+      address: verification.address,
+    });
+    return { reason, replaced: false };
   }
 
   // Find the compiled_contracts row backing this verified contract.
@@ -221,7 +237,6 @@ export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
         JOIN contract_deployments cd ON cd.id = vc.deployment_id
         INNER JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id
         WHERE cd.chain_id = $1 AND cd.address = $2
-        LIMIT 1
       `;
   const existingResult = await sourcifyDatabaseService.database.pool.query(
     existingVerifiedContractQuery,
@@ -231,6 +246,14 @@ export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
   if (existingResult.rows.length === 0) {
     throw new Error(
       `No existing verified contract found for address ${verification.address} on chain ${verification.chainId}`,
+    );
+  }
+
+  // If multiple verified contracts point to the same deployment we can't tell
+  // which compilation to backfill, so refuse rather than guess.
+  if (existingResult.rows.length > 1) {
+    throw new Error(
+      `Multiple verified contracts found for address ${verification.address} on chain ${verification.chainId}; cannot safely backfill immutableReferences`,
     );
   }
 

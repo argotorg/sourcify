@@ -337,6 +337,207 @@ describe("/private/replace-contract", function () {
       .expect(restoredArtifacts.linkReferences)
       .to.deep.equal(originalArtifacts.linkReferences);
   });
+
+  it("should skip (replaced=false) when a Vyper contract has no immutables", async () => {
+    // The testcontract has no immutables, so the method must be a no-op
+    const vyperArtifact = (
+      await import("../../../sources/vyper/testcontract/artifact.json")
+    ).default;
+    const vyperSourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "sources",
+      "vyper",
+      "testcontract",
+      "test.vy",
+    );
+    const vyperSource = fs.readFileSync(vyperSourcePath, "utf8");
+
+    const compilerVersion = "0.3.10+commit.91361694";
+    const compilerSettings = {
+      evmVersion: "istanbul",
+      outputSelection: { "*": ["evm.bytecode"] },
+    };
+
+    const { contractAddress, txHash } =
+      await deployFromAbiAndBytecodeForCreatorTxHash(
+        chainFixture.localSigner,
+        vyperArtifact.abi,
+        vyperArtifact.bytecode,
+      );
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/verify/vyper")
+      .send({
+        address: contractAddress,
+        chain: chainFixture.chainId,
+        creatorTxHash: txHash,
+        files: { "test.vy": vyperSource },
+        contractPath: "test.vy",
+        contractName: "test",
+        compilerVersion,
+        compilerSettings,
+      });
+
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      contractAddress,
+      chainFixture.chainId,
+      "partial",
+      false,
+    );
+
+    const replaceRes = await chai
+      .request(serverFixture.server.app)
+      .post("/private/replace-contract")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: contractAddress,
+        chainId: chainFixture.chainId,
+        forceCompilation: true,
+        jsonInput: {
+          language: "Vyper",
+          sources: { "test.vy": { content: vyperSource } },
+          settings: compilerSettings,
+        },
+        compilerVersion,
+        compilationTarget: "test.vy:test",
+        forceRPCRequest: false,
+        customReplaceMethod: "replace-vyper-immutable-references",
+      });
+
+    chai.expect(replaceRes.status).to.equal(StatusCodes.OK);
+    chai.expect(replaceRes.body.replaced).to.be.false;
+    chai.expect(replaceRes.body.replacedReason).to.be.a("string");
+
+    // immutableReferences stays null
+    const result = await serverFixture.sourcifyDatabase.query(
+      "SELECT runtime_code_artifacts FROM compiled_contracts",
+    );
+    chai.expect(result.rows[0].runtime_code_artifacts.immutableReferences).to.be
+      .null;
+  });
+
+  it("should throw when multiple verified contracts exist for the same chain and address", async () => {
+    // Use the with-immutables contract so the method gets past the no-immutables
+    // skip and reaches the duplicate check.
+    const vyperArtifact = (
+      await import("../../../sources/vyper/withImmutables/artifact.json")
+    ).default;
+    const vyperSourcePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "sources",
+      "vyper",
+      "withImmutables",
+      "test.vy",
+    );
+    const vyperSource = fs.readFileSync(vyperSourcePath, "utf8");
+
+    const compilerVersion = "0.4.0+commit.e9db8d9f";
+    const compilerSettings = {
+      evmVersion: "london",
+      optimize: "codesize",
+      outputSelection: { "*": ["evm.bytecode"] },
+    };
+
+    const { contractAddress, txHash } =
+      await deployFromAbiAndBytecodeForCreatorTxHash(
+        chainFixture.localSigner,
+        vyperArtifact.abi,
+        vyperArtifact.bytecode,
+        [5],
+      );
+
+    const res = await chai
+      .request(serverFixture.server.app)
+      .post("/verify/vyper")
+      .send({
+        address: contractAddress,
+        chain: chainFixture.chainId,
+        creatorTxHash: txHash,
+        files: { "test.vy": vyperSource },
+        contractPath: "test.vy",
+        contractName: "test",
+        compilerVersion,
+        compilerSettings,
+      });
+
+    await assertVerification(
+      serverFixture,
+      null,
+      res,
+      null,
+      contractAddress,
+      chainFixture.chainId,
+      "partial",
+      false,
+    );
+
+    // Create a second verified_contract (+ deployment + sourcify_match) for the
+    // same chain/address. The deployment is cloned with a different
+    // transaction_hash so it satisfies the (chain_id, address, transaction_hash,
+    // contract_id) unique constraint, and the verified_contract reuses the same
+    // compilation_id with the new deployment_id.
+    await serverFixture.sourcifyDatabase.query(`
+      WITH new_dep AS (
+        INSERT INTO contract_deployments (chain_id, address, transaction_hash, block_number, transaction_index, deployer, contract_id)
+        SELECT chain_id, address, decode(repeat('ab', 32), 'hex'), block_number, transaction_index, deployer, contract_id
+        FROM contract_deployments
+        LIMIT 1
+        RETURNING id
+      ),
+      new_vc AS (
+        INSERT INTO verified_contracts (deployment_id, compilation_id, creation_match, creation_values, creation_transformations, creation_metadata_match, runtime_match, runtime_values, runtime_transformations, runtime_metadata_match)
+        SELECT new_dep.id, v.compilation_id, v.creation_match, v.creation_values, v.creation_transformations, v.creation_metadata_match, v.runtime_match, v.runtime_values, v.runtime_transformations, v.runtime_metadata_match
+        FROM verified_contracts v CROSS JOIN new_dep
+        LIMIT 1
+        RETURNING id
+      )
+      INSERT INTO sourcify_matches (verified_contract_id, creation_match, runtime_match, chain_id)
+      SELECT new_vc.id, sm.creation_match, sm.runtime_match, sm.chain_id
+      FROM sourcify_matches sm CROSS JOIN new_vc
+      LIMIT 1
+    `);
+
+    // Sanity: two verified contracts now exist for this chain/address
+    const countResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT count(*)::int AS n FROM verified_contracts",
+    );
+    chai.expect(countResult.rows[0].n).to.equal(2);
+
+    const replaceRes = await chai
+      .request(serverFixture.server.app)
+      .post("/private/replace-contract")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: contractAddress,
+        chainId: chainFixture.chainId,
+        forceCompilation: true,
+        jsonInput: {
+          language: "Vyper",
+          sources: { "test.vy": { content: vyperSource } },
+          settings: compilerSettings,
+        },
+        compilerVersion,
+        compilationTarget: "test.vy:test",
+        forceRPCRequest: false,
+        customReplaceMethod: "replace-vyper-immutable-references",
+      });
+
+    chai.expect(replaceRes.status).to.equal(StatusCodes.INTERNAL_SERVER_ERROR);
+    chai
+      .expect(replaceRes.body.error)
+      .to.contain("Multiple verified contracts");
+  });
 });
 
 describe("/private/verify-deprecated", function () {
