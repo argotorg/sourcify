@@ -11,6 +11,6 @@
     "tree-kill": "1.2.2"
   },
   "devDependencies": {
-    "@types/node": "20.19.42"
+    "@types/node": "20.19.43"
   }
 }
