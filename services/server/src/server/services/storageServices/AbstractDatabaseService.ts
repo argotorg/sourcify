@@ -111,10 +111,7 @@ export default abstract class AbstractDatabaseService {
 
       const compiledContractId = compiledContractsInsertResult.rows[0].id;
 
-      // Only insert sources when this is a newly created compilation. On a
-      // dedup conflict the existing row already carries its own sources, and
-      // appending this contract's (differently-pathed) sources would build up
-      // a superset of unrelated files on the shared row (issue #2858).
+      // Only insert sources when this is a newly created compilation
       if (isNewCompilation) {
         await this.database.insertCompiledContractsSources(client, {
           sourcesInformation: databaseColumns.sourcesInformation,
@@ -211,10 +208,7 @@ export default abstract class AbstractDatabaseService {
 
       const compiledContractId = compiledContractsInsertResult.rows[0].id;
 
-      // Only insert sources when this is a newly created compilation. On a
-      // dedup conflict the existing row already carries its own sources, and
-      // appending this contract's (differently-pathed) sources would build up
-      // a superset of unrelated files on the shared row (issue #2858).
+      // Only insert sources when this is a newly created compilation
       if (isNewCompilation) {
         await this.database.insertCompiledContractsSources(client, {
           sourcesInformation: databaseColumns.sourcesInformation,

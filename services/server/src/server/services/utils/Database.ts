@@ -700,11 +700,6 @@ ${
       ],
     );
 
-    // When the INSERT returns no rows, an existing row matched the dedup
-    // constraint (different contracts can compile to identical bytecode). In
-    // that case we fall back to selecting the existing row and signal that this
-    // is not a new compilation, so callers can avoid appending unrelated
-    // sources to the shared `compiled_contracts` row (see issue #2858).
     const isNewCompilation = compiledContractsInsertResult.rows.length > 0;
     if (!isNewCompilation) {
       compiledContractsInsertResult = await poolClient.query(
