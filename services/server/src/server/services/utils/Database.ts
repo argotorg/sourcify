@@ -660,7 +660,10 @@ ${
       runtime_code_artifacts,
       additional_input,
     }: Omit<Tables.CompiledContract, "id">,
-  ): Promise<QueryResult<Pick<Tables.CompiledContract, "id">>> {
+  ): Promise<{
+    result: QueryResult<Pick<Tables.CompiledContract, "id">>;
+    isNewCompilation: boolean;
+  }> {
     let compiledContractsInsertResult = await poolClient.query(
       `
       INSERT INTO ${this.schema}.compiled_contracts (
@@ -697,7 +700,8 @@ ${
       ],
     );
 
-    if (compiledContractsInsertResult.rows.length === 0) {
+    const isNewCompilation = compiledContractsInsertResult.rows.length > 0;
+    if (!isNewCompilation) {
       compiledContractsInsertResult = await poolClient.query(
         `
         SELECT
@@ -713,7 +717,7 @@ ${
         [compiler, version, language, creation_code_hash, runtime_code_hash],
       );
     }
-    return compiledContractsInsertResult;
+    return { result: compiledContractsInsertResult, isNewCompilation };
   }
 
   async insertCompiledContractsSources(

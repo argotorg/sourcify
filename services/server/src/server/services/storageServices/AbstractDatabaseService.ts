@@ -100,7 +100,7 @@ export default abstract class AbstractDatabaseService {
         });
 
       // insert new recompiled contract
-      const compiledContractsInsertResult =
+      const { result: compiledContractsInsertResult, isNewCompilation } =
         await this.database.insertCompiledContract(client, {
           ...databaseColumns.compiledContract,
           creation_code_hash:
@@ -111,10 +111,13 @@ export default abstract class AbstractDatabaseService {
 
       const compiledContractId = compiledContractsInsertResult.rows[0].id;
 
-      await this.database.insertCompiledContractsSources(client, {
-        sourcesInformation: databaseColumns.sourcesInformation,
-        compilation_id: compiledContractId,
-      });
+      // Only insert sources when this is a newly created compilation
+      if (isNewCompilation) {
+        await this.database.insertCompiledContractsSources(client, {
+          sourcesInformation: databaseColumns.sourcesInformation,
+          compilation_id: compiledContractId,
+        });
+      }
 
       // insert new recompiled contract with newly added contract and compiledContract
       const verifiedContractInsertResult =
@@ -194,7 +197,7 @@ export default abstract class AbstractDatabaseService {
       );
 
       // insert new recompiled contract
-      const compiledContractsInsertResult =
+      const { result: compiledContractsInsertResult, isNewCompilation } =
         await this.database.insertCompiledContract(client, {
           ...databaseColumns.compiledContract,
           creation_code_hash:
@@ -205,10 +208,13 @@ export default abstract class AbstractDatabaseService {
 
       const compiledContractId = compiledContractsInsertResult.rows[0].id;
 
-      await this.database.insertCompiledContractsSources(client, {
-        sourcesInformation: databaseColumns.sourcesInformation,
-        compilation_id: compiledContractId,
-      });
+      // Only insert sources when this is a newly created compilation
+      if (isNewCompilation) {
+        await this.database.insertCompiledContractsSources(client, {
+          sourcesInformation: databaseColumns.sourcesInformation,
+          compilation_id: compiledContractId,
+        });
+      }
 
       // update verified contract with the newly added recompiled contract
       const verifiedContractInsertResult =
