@@ -170,6 +170,8 @@ workflows:
           requires: [build-and-lint]
       - test-4byte:
           requires: [build-and-lint]
+      - test-mcp:
+          requires: [build-and-lint]
       # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
@@ -232,6 +234,8 @@ workflows:
       - test-server:
           requires: [build-and-lint]
       - test-4byte:
+          requires: [build-and-lint]
+      - test-mcp:
           requires: [build-and-lint]
   database-schema-validation:
     when: << pipeline.parameters.run-validate-database-schema >>
@@ -343,6 +347,7 @@ jobs:
             - services/server/dist
             - services/monitor/dist
             - services/4byte/dist
+            - services/mcp/dist
             - services/database
             - .git/modules
   test-bytecode-utils:
@@ -408,6 +413,22 @@ jobs:
       - run:
           name: create lcov report
           command: npx lerna run cov:lcov --scope=sourcify-monitor
+      - codecov/upload
+  test-mcp:
+    docker:
+      - image: cimg/node:22.22.0
+    resource_class: medium
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test
+          command: npx lerna run test --scope=sourcify-mcp --stream
+      - run:
+          name: create lcov report
+          command: npx lerna run cov:lcov --scope=sourcify-mcp
       - codecov/upload
   test-server:
     docker:

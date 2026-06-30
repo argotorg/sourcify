@@ -8,10 +8,11 @@
     "services/*"
   ],
   "scripts": {
-    "build:clean": "echo '#######\nWarning: this script is executed without Socket DEV cli. Please manually run npm install after this to check for vulnerabilities.\n#######\n' && rm -rf node_modules services/monitor/node_modules services/database/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
+    "build:clean": "echo '#######\nWarning: this script is executed without Socket DEV cli. Please manually run npm install after this to check for vulnerabilities.\n#######\n' && rm -rf node_modules services/monitor/node_modules services/mcp/node_modules services/database/node_modules services/server/node_modules packages/bytecode-utils/node_modules/ packages/compilers/node_modules/ packages/lib-sourcify/node_modules/ && npm install && npx lerna run build",
     "build:lerna": "lerna run build",
     "server:start": "cd services/server && node ./dist/server/cli.js",
     "monitor:start": "node ./services/monitor/dist/index.js",
+    "mcp:start": "node ./services/mcp/dist/index.js",
     "4byte:start": "node ./services/4byte/dist/cli.js",
     "lerna-test": "lerna run test --stream",
     "lerna-lint": "lerna run check",

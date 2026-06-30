@@ -8,6 +8,7 @@ Sourcify is an open-source smart contract verification service for Ethereum and 
 
 - **services/server**: HTTP API server for contract verification with PostgreSQL database backend
 - **services/monitor**: Chain monitoring service that automatically detects new contracts and submits them for verification
+- **services/mcp**: Model Context Protocol (MCP) server exposing verified-contract data (ABI, metadata, sources, status) to AI agents; a thin read-only consumer of the public v2 API (no DB/lib-sourcify dependency)
 - **services/database**: PostgreSQL database schema, migrations, and related scripts using dbmate
 - **packages/lib-sourcify**: Core verification library for contract validation, compilation, and verification
 - **packages/bytecode-utils**: Library for extracting metadata from bytecode
