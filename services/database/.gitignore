@@ -1,3 +1,8 @@
 migrations-temp*
 massive-replace-script/CURRENT_VERIFIED_CONTRACT
 massive-replace-script/FAILED_CONTRACTS
+
+# Vyper immutableReferences backfill runtime artifacts
+massive-replace-*.log
+keyerror-extra-sources.tsv
+delete-keyerror-sources.sql

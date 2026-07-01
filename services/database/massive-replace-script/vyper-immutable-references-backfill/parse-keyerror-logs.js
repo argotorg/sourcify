@@ -1,0 +1,199 @@
+/**
+ * Parses massive-replace backfill logs for Vyper `KeyError` failures and emits the exact
+ * (chain, contract, extra_source) triples to remove from compiled_contracts_sources.
+ *
+ * Why this is safe: the compiler's `KeyError` names the precise source file it refused to
+ * use (a dedup-appended contaminant). We delete only that file for only that contract — no
+ * heuristic, no guessing. After deletion, re-running the backfill rebuilds the jsonInput
+ * without the file, so the contract compiles. (One pass surfaces one KeyError per contract;
+ * if a contract has several contaminants, re-run the backfill and parse again to get the
+ * next one.)
+ *
+ * Inputs: one or more log files as args, or — if none given — every `massive-replace-*.log`
+ * in the current directory. It understands both the console format
+ *   `❌ Failed to process contract 0x… at chain 1: … "type":"KeyError" … "file":"X.vy" …`
+ * and the FAILED_CONTRACTS JSON-lines format (when run with STORE_FAILED_CONTRACT_IDS=true).
+ *
+ * Outputs (written to the current directory):
+ *   - keyerror-extra-sources.tsv   chain_id <tab> address <tab> file   (for review)
+ *   - delete-keyerror-sources.sql  a preview SELECT + a commented-out DELETE
+ *
+ * Usage:
+ *   node parse-keyerror-logs.js                       # globs ./massive-replace-*.log
+ *   node parse-keyerror-logs.js run1.log run2.log     # explicit files
+ */
+
+const fs = require("fs");
+const path = require("path");
+
+const args = process.argv.slice(2);
+let files = args;
+if (files.length === 0) {
+  files = fs
+    .readdirSync(process.cwd())
+    .filter((f) => /^massive-replace-after-fix-.*\.log$/.test(f))
+    .map((f) => path.join(process.cwd(), f));
+}
+if (files.length === 0) {
+  console.error(
+    "No log files. Pass them as args, or run from a dir containing massive-replace-*.log",
+  );
+  process.exit(1);
+}
+
+const FAIL_RE =
+  /Failed to process contract (0x[0-9a-fA-F]{40}) at chain (\d+):/;
+
+// Pull the KeyError filename out of one log line, trying the structured JSON first.
+function extractKeyErrorFile(text) {
+  // The nested compiler-error array is the most reliable source.
+  const jsonMatch = text.match(/\{.*\}\s*$/);
+  if (jsonMatch) {
+    try {
+      const outer = JSON.parse(jsonMatch[0]);
+      const errStr = outer.error || outer.message || "";
+      const arr = errStr.match(/\[.*\]/);
+      if (arr) {
+        for (const e of JSON.parse(arr[0])) {
+          if (e.type === "KeyError") {
+            return (
+              (e.sourceLocation && e.sourceLocation.file) ||
+              (e.message || "").replace(/^'|'$/g, "")
+            );
+          }
+        }
+      }
+    } catch {
+      /* fall through to regex */
+    }
+  }
+  // Fallback: a single-quoted .vy/.vyi filename, only on a KeyError line.
+  if (/KeyError/.test(text)) {
+    const m = text.match(/'([^']+\.vyi?)'/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+const seen = new Set();
+const rows = [];
+
+function add(chainId, address, file) {
+  if (!file) return;
+  const addr = address.toLowerCase().replace(/^0x/, "");
+  const key = `${chainId}|${addr}|${file}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  rows.push({ chainId: String(chainId), address: addr, file });
+}
+
+for (const file of files) {
+  const text = fs.readFileSync(file, "utf8");
+  for (const line of text.split("\n")) {
+    // FAILED_CONTRACTS JSON-lines format
+    const trimmed = line.trim();
+    if (trimmed.startsWith("{") && trimmed.includes('"chainId"')) {
+      try {
+        const obj = JSON.parse(trimmed);
+        if (obj.address && obj.error && /KeyError/.test(obj.error)) {
+          add(obj.chainId, obj.address, extractKeyErrorFile(obj.error));
+          continue;
+        }
+      } catch {
+        /* not a JSON line, fall through */
+      }
+    }
+    // Console "❌ Failed to process contract …" format
+    const fm = line.match(FAIL_RE);
+    if (fm && /KeyError/.test(line)) {
+      add(fm[2], fm[1], extractKeyErrorFile(line));
+    }
+  }
+}
+
+if (rows.length === 0) {
+  console.log("No Vyper KeyError failures found in the provided logs.");
+  process.exit(0);
+}
+
+// --- report ---
+rows.sort(
+  (a, b) =>
+    a.file.localeCompare(b.file) ||
+    Number(a.chainId) - Number(b.chainId) ||
+    a.address.localeCompare(b.address),
+);
+const byFile = {};
+for (const r of rows) byFile[r.file] = (byFile[r.file] || 0) + 1;
+console.log(`Found ${rows.length} (chain, contract, file) triples to delete:`);
+for (const [f, n] of Object.entries(byFile).sort((a, b) => b[1] - a[1])) {
+  console.log(`  ${n.toString().padStart(5)}  ${f}`);
+}
+
+// --- TSV ---
+const tsvPath = path.join(process.cwd(), "keyerror-extra-sources.tsv");
+fs.writeFileSync(
+  tsvPath,
+  "chain_id\taddress\tfile\n" +
+    rows.map((r) => `${r.chainId}\t0x${r.address}\t${r.file}`).join("\n") +
+    "\n",
+  "utf8",
+);
+
+// --- SQL ---
+const sqlStr = (s) => `'${String(s).replace(/'/g, "''")}'`;
+const values = rows
+  .map((r) => `    (${r.chainId}, ${sqlStr(r.address)}, ${sqlStr(r.file)})`)
+  .join(",\n");
+
+const sql = `-- Generated by parse-keyerror-logs.js
+-- Deletes the exact extra sources that triggered Vyper KeyError during the backfill.
+-- Maps (chain_id, address) -> contract_deployments -> verified_contracts -> compilation,
+-- then removes the named source row from compiled_contracts_sources for that compilation.
+-- The "never the target" guard ensures we can never delete a contract's own main source.
+--
+-- 1) Run the PREVIEW SELECT and eyeball the rows. 2) Then run the DELETE (uncomment).
+
+WITH targets (chain_id, address_hex, path) AS (
+  VALUES
+${values}
+)
+-- PREVIEW: the rows that would be deleted
+SELECT cd.chain_id, '0x' || encode(cd.address, 'hex') AS address, ccs.path, ccs.compilation_id
+FROM targets t
+JOIN contract_deployments cd
+  ON cd.chain_id = t.chain_id::numeric
+ AND cd.address = decode(t.address_hex, 'hex')
+JOIN verified_contracts vc ON vc.deployment_id = cd.id
+JOIN compiled_contracts cc ON cc.id = vc.compilation_id
+JOIN compiled_contracts_sources ccs
+  ON ccs.compilation_id = vc.compilation_id
+ AND ccs.path = t.path
+WHERE ccs.path <> regexp_replace(cc.fully_qualified_name, ':[^:]*$', '')
+ORDER BY ccs.path, cd.chain_id;
+
+/*  -- DELETE: uncomment to apply, after reviewing the preview above.
+WITH targets (chain_id, address_hex, path) AS (
+  VALUES
+${values}
+)
+DELETE FROM compiled_contracts_sources ccs
+USING targets t
+JOIN contract_deployments cd
+  ON cd.chain_id = t.chain_id::numeric
+ AND cd.address = decode(t.address_hex, 'hex')
+JOIN verified_contracts vc ON vc.deployment_id = cd.id
+JOIN compiled_contracts cc ON cc.id = vc.compilation_id
+WHERE ccs.compilation_id = vc.compilation_id
+  AND ccs.path = t.path
+  AND ccs.path <> regexp_replace(cc.fully_qualified_name, ':[^:]*$', '')
+RETURNING cd.chain_id, '0x' || encode(cd.address, 'hex') AS address, ccs.path;
+*/
+`;
+const sqlPath = path.join(process.cwd(), "delete-keyerror-sources.sql");
+fs.writeFileSync(sqlPath, sql, "utf8");
+
+console.log(`\nWrote:\n  ${tsvPath}\n  ${sqlPath}`);
+console.log(
+  "\nReview the preview SELECT in the .sql, then uncomment the DELETE to apply.",
+);
