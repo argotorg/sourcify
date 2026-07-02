@@ -285,15 +285,17 @@ export async function initializeSourcifyChains(opts: {
 
     const chainId = parseInt(chainIdStr);
     const rpcs = buildCustomRpcs(extension.rpc || []);
-    if (rpcs.length === 0 && extension.supported) {
-      throw new Error(
-        `Supported chain ${chainId} (${extension.sourcifyName}) has no usable RPCs configured`,
+    let supported = extension.supported;
+    if (rpcs.length === 0 && supported) {
+      logger.error(
+        `Supported chain ${chainId} (${extension.sourcifyName}) has no usable RPCs configured, disabling it`,
       );
+      supported = false;
     }
     sourcifyChainsMap[chainIdStr] = new SourcifyChain({
       name: extension.sourcifyName,
       chainId,
-      supported: extension.supported,
+      supported,
       hidden: extension.hidden ?? false,
       rpcs,
       etherscanApi: extension.etherscanApi,
