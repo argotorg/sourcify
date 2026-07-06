@@ -298,9 +298,20 @@ export async function replaceContract(
       // This is imported to fix contracts that were added via verifyDeprecated, because they will never have a match.
     }
 
+    let replaced = true;
+    let replacedReason: string | undefined;
     try {
       const verificationExport = verification.export();
-      await customReplaceMethod(sourcifyDatabaseService, verificationExport);
+      const replaceResult = await customReplaceMethod(
+        sourcifyDatabaseService,
+        verificationExport,
+      );
+      // A replace method returns `undefined` when it applied the replacement,
+      // or `{ reason, replaced }` to report an explicit outcome.
+      if (replaceResult !== undefined) {
+        replaced = replaceResult.replaced;
+        replacedReason = replaceResult.reason;
+      }
     } catch (error: any) {
       logger.error("Error replacing contract", {
         error: error,
@@ -319,7 +330,8 @@ export async function replaceContract(
     }
 
     res.send({
-      replaced: true,
+      replaced,
+      replacedReason,
       address: address,
       chainId: chainId,
       transactionHash: transactionHash,

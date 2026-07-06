@@ -1,0 +1,32 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "get_my_immutable",
+      "outputs": [{ "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "OWNER",
+      "outputs": [{ "name": "", "type": "address" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MY_IMMUTABLE",
+      "outputs": [{ "name": "", "type": "uint256" }],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "name": "val", "type": "uint256" }],
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    }
+  ],
+  "bytecode": "0x60e7515034610035573360a75260206100f560003960005160c75266eca7a2f8618d6f60e7526100a761003a6000396101076000f35b600080fd60003560e01c60026005820660011b61009d01601e39600051565b635f284cb3811861009257346100985760206100c760403960206040f35b63117803e3811861009257346100985760206100a760403960206040f35b633bc72e5e811861009257346100985760206100c760403960206040f35b635acb1ac8811861009257346100985760206100e760403960206040f35b60006000fd5b600080fd001a00920038005600748418a7810a1860a1657679706572830004000014"
+}

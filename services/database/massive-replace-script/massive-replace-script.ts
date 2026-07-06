@@ -66,7 +66,11 @@ function storeFailedContract(contract: any, error: any): void {
   }
 }
 
-const N = 5; // Number of contracts to process at a time
+// When PROCESS_ONLY_ONE is set, process a single contract and exit. Useful for
+// testing a config against one contract without running the full backfill.
+// The cursor file is still advanced, so repeated runs step through one at a time.
+const PROCESS_ONLY_ONE = process.env.PROCESS_ONLY_ONE === "true";
+const N = PROCESS_ONLY_ONE ? 1 : 5; // Number of contracts to process at a time
 
 const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA || "public";
 
@@ -236,6 +240,13 @@ async function processContract(
           }
         },
       );
+
+      if (PROCESS_ONLY_ONE) {
+        console.log(
+          `PROCESS_ONLY_ONE set — processed one contract (next cursor: ${CURRENT_VERIFIED_CONTRACT}). Exiting.`,
+        );
+        break;
+      }
 
       console.log(`waiting ${secondToWait} seconds`);
       await new Promise((resolve) => setTimeout(resolve, secondToWait * 1000));
