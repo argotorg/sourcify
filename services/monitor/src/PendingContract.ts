@@ -141,46 +141,54 @@ export default class PendingContract {
       formattedSources[sourceUnitName] = source.content;
     }
 
-    let response: Response;
-    try {
-      // Send to Sourcify server.
-      response = await fetch(sourcifyServerURL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "sourcify-monitor",
-        },
-        body: JSON.stringify({
-          chainId: this.chainId.toString(),
-          address: this.address,
-          files: {
-            ...formattedSources,
-            "metadata.json": JSON.stringify(this.metadata),
-          },
-          creatorTxHash,
-        }),
-      });
+    const baseURL = sourcifyServerURL.replace(/\/+$/, "");
+    const verifyURL = `${baseURL}/v2/verify/metadata/${this.chainId}/${this.address}`;
 
-      if (!response.ok) {
-        throw new Error(
-          `Error sending contract ${this.address} to Sourcify server ${sourcifyServerURL} - response status not ok: ${response.statusText} ${await response.text()}`,
-        );
-      }
-    } catch (error: any) {
+    // Send to Sourcify server. Let network errors (e.g. ECONNRESET) propagate
+    // as-is so their cause/code/stack are preserved when logged. The url and
+    // address context is logged alongside the error by the caller.
+    const response = await fetch(verifyURL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "sourcify-monitor",
+      },
+      body: JSON.stringify({
+        sources: formattedSources,
+        metadata: this.metadata,
+        creationTransactionHash: creatorTxHash,
+      }),
+    });
+
+    if (response.status === 409) {
+      this.contractLogger.info(
+        "[PendingContract.sendToSourcifyServer] Contract already verified",
+        {
+          address: this.address,
+          chainId: this.chainId,
+          sourcifyServerURL: baseURL,
+        },
+      );
+      return;
+    }
+
+    if (!response.ok) {
       throw new Error(
-        `Error sending contract ${this.address} to Sourcify server ${sourcifyServerURL} - network error: ${error.message}`,
+        `Sourcify server returned a non-ok status: ${response.status} ${response.statusText} ${await response.text()}`,
       );
     }
 
+    const responseBody = await response.json();
     this.contractLogger.info(
-      "[PendingContract.sendToSourcifyServer] Contract sent",
+      "[PendingContract.sendToSourcifyServer] Contract verification job submitted",
       {
         address: this.address,
         chainId: this.chainId,
-        sourcifyServerURL,
+        sourcifyServerURL: baseURL,
+        verificationId: responseBody?.verificationId,
       },
     );
-    return await response.json();
+    return responseBody;
   };
 
   private movePendingToFetchedSources = (sourceUnitName: string) => {

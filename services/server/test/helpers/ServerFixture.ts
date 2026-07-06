@@ -1,4 +1,4 @@
-import rimraf from "rimraf";
+import { rimrafSync } from "rimraf";
 import { resetDatabase } from "../helpers/helpers";
 import type { ServerOptions } from "../../src/server/server";
 import { Server } from "../../src/server/server";
@@ -173,9 +173,9 @@ export class ServerFixture {
     });
 
     beforeEach(async () => {
-      rimraf.sync(config.get("repositoryV1.path"));
-      rimraf.sync(config.get("repositoryV2.path"));
-      rimraf.sync(path.join(testS3Path, testS3Bucket, "contracts"));
+      rimrafSync(config.get("repositoryV1.path"));
+      rimrafSync(config.get("repositoryV2.path"));
+      rimrafSync(path.join(testS3Path, testS3Bucket, "contracts"));
       if (!fixtureOptions_?.skipDatabaseReset) {
         await resetDatabase(this.sourcifyDatabase);
         console.log("Resetting SourcifyDatabase");
@@ -185,9 +185,9 @@ export class ServerFixture {
 
     after(async () => {
       await this.server.shutdown();
-      rimraf.sync(config.get("repositoryV1.path"));
-      rimraf.sync(config.get("repositoryV2.path"));
-      rimraf.sync(path.join(testS3Path, testS3Bucket));
+      rimrafSync(config.get("repositoryV1.path"));
+      rimrafSync(config.get("repositoryV2.path"));
+      rimrafSync(path.join(testS3Path, testS3Bucket));
     });
   }
 

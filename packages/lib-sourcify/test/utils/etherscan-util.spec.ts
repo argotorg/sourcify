@@ -345,8 +345,7 @@ describe('etherscan util (lib)', function () {
             evmVersion:
               (VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
                 .EVMVersion !== 'Default'
-                ? // eslint-disable-next-line indent
-                  ((VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
+                ? ((VYPER_SINGLE_CONTRACT.etherscanResponse.result[0] as any)
                     .EVMVersion as any)
                 : undefined,
             search_paths: ['.'],

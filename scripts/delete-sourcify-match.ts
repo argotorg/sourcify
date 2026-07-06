@@ -11,6 +11,8 @@
  *
  * Configuration (in scripts/.env):
  *   DATABASE_TYPE=postgres or bigquery
+ *   SOURCIFY_POSTGRES_SCHEMA=public (PostgreSQL schema; for BigQuery this is the
+ *     CDC table-name prefix, e.g. tables named "<schema>_verified_contracts")
  *   DRY_RUN=true (to preview changes without committing) or false (to commit changes)
  *
  * This script will:
@@ -28,7 +30,8 @@
  * 12. Delete orphaned sources, signatures, and code entries
  */
 
-import { Pool, PoolClient } from "pg";
+import type { PoolClient } from "pg";
+import { Pool } from "pg";
 import { BigQuery } from "@google-cloud/bigquery";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -37,6 +40,16 @@ import * as path from "path";
 dotenv.config({ path: path.join(__dirname, ".env") });
 
 type DatabaseType = "postgres" | "bigquery";
+
+// Schema used for PostgreSQL queries (via search_path) and as the BigQuery
+// CDC table-name prefix. Validated to avoid identifier injection since it is
+// interpolated into search_path / table names rather than parameterized.
+const DATABASE_SCHEMA = process.env.SOURCIFY_POSTGRES_SCHEMA || "public";
+if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(DATABASE_SCHEMA)) {
+  throw new Error(
+    `Invalid SOURCIFY_POSTGRES_SCHEMA "${DATABASE_SCHEMA}": must be a valid SQL identifier`,
+  );
+}
 
 interface VerifiedContractInfo {
   verified_contract_id: string;
@@ -216,7 +229,10 @@ class BigQueryClient implements DatabaseClient {
       }
       // Match table names with word boundaries
       const regex = new RegExp(`\\b${table}\\b`, "g");
-      result = result.replace(regex, `\`${this.dataset}.public_${table}\``);
+      result = result.replace(
+        regex,
+        `\`${this.dataset}.${DATABASE_SCHEMA}_${table}\``,
+      );
     }
 
     return result;
@@ -250,6 +266,8 @@ async function createDatabaseClient(
       database: process.env.SOURCIFY_POSTGRES_DB || "sourcify",
       user: process.env.SOURCIFY_POSTGRES_USER || "sourcify",
       password: process.env.SOURCIFY_POSTGRES_PASSWORD,
+      // Resolve unqualified table names to the configured schema
+      options: `-c search_path=${DATABASE_SCHEMA}`,
     });
     const client = await pool.connect();
     return new PostgresClient(pool, client);
@@ -389,17 +407,17 @@ async function tableExists(
     const result = await client.query(
       `SELECT EXISTS (
         SELECT FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_name = $1
+        WHERE table_schema = $1
+        AND table_name = $2
       )`,
-      [tableName],
+      [DATABASE_SCHEMA, tableName],
     );
     return result[0].exists;
   } else {
     // BigQuery - check for public_ prefixed table name
     const dataset = process.env.BIGQUERY_DATASET || "sourcify";
     const projectId = process.env.BIGQUERY_PROJECT_ID;
-    const prefixedTableName = `public_${tableName}`;
+    const prefixedTableName = `${DATABASE_SCHEMA}_${tableName}`;
     try {
       const result = await client.query(
         `SELECT COUNT(*) > 0 as table_exists
@@ -819,6 +837,7 @@ async function main() {
   console.log("═══════════════════════════════════════════════════════");
   console.log("  Sourcify Match Deletion Script");
   console.log(`  Database: ${dbType.toUpperCase()}`);
+  console.log(`  Schema:   ${DATABASE_SCHEMA}`);
   console.log(
     `  Mode: ${isDryRun ? "DRY RUN (no changes will be committed)" : "LIVE (changes will be committed)"}`,
   );

@@ -170,6 +170,52 @@ describe("SourcifyDatabaseService", function () {
     expect(parseInt(signaturesResult.rows[0].count)).to.equal(2);
   });
 
+  it("should not insert sources when the compiled_contracts row is deduplicated", async () => {
+    // Store the original contract. This creates a fresh compiled_contracts row
+    // together with its single source.
+    await databaseService.storeVerification(MockVerificationExport);
+
+    // A byte-identical sibling: same compiler/version/language and same
+    // bytecodes (so it hits the compiled_contracts dedup constraint), but a
+    // different deployment and a different source file.
+    const siblingVerification = structuredClone(MockVerificationExport);
+    siblingVerification.address = "0x1111111111111111111111111111111111111111";
+    siblingVerification.deploymentInfo.txHash =
+      "0x1111111111111111111111111111111111111111111111111111111111111111";
+    siblingVerification.compilation.compilationTarget = {
+      path: "project:/contracts/Sibling.sol",
+      name: "Sibling",
+    };
+    siblingVerification.compilation.sources = {
+      "project:/contracts/Sibling.sol":
+        "// SPDX-License-Identifier: GPL-3.0\npragma solidity >=0.7.0 <0.9.0;\ncontract Sibling {}\n",
+    };
+
+    await databaseService.storeVerification(siblingVerification);
+
+    // The two verifications must share the single deduplicated compilation.
+    const compiledContractsResult = await databaseService.database.pool.query(
+      "SELECT COUNT(*) as count FROM compiled_contracts",
+    );
+    expect(parseInt(compiledContractsResult.rows[0].count)).to.equal(1);
+
+    const verifiedContractsResult = await databaseService.database.pool.query(
+      "SELECT COUNT(*) as count FROM verified_contracts",
+    );
+    expect(parseInt(verifiedContractsResult.rows[0].count)).to.equal(2);
+
+    // The sibling's source must NOT have been appended to the shared row: only
+    // the original contract's single source should be present.
+    const compiledContractsSourcesResult =
+      await databaseService.database.pool.query(
+        "SELECT path FROM compiled_contracts_sources",
+      );
+    expect(compiledContractsSourcesResult.rows).to.have.length(1);
+    expect(compiledContractsSourcesResult.rows[0].path).to.equal(
+      "project:/contracts/Storage.sol",
+    );
+  });
+
   it("should still store verification even if signature storage fails", async () => {
     sandbox
       .stub(signatureUtil, "extractSignaturesFromAbi")

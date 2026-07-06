@@ -37,16 +37,19 @@
   },
   "homepage": "https://sourcify.dev",
   "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
+    "@eslint/js": "10.0.1",
     "@google-cloud/bigquery": "8.3.1",
-    "@typescript-eslint/eslint-plugin": "7.18.0",
-    "@typescript-eslint/parser": "7.18.0",
-    "eslint": "8.57.1",
-    "eslint-config-prettier": "9.1.2",
+    "@typescript-eslint/eslint-plugin": "8.61.1",
+    "@typescript-eslint/parser": "8.61.1",
+    "eslint": "10.5.0",
+    "eslint-config-prettier": "10.1.8",
     "eslint-plugin-no-only-tests": "3.4.0",
+    "globals": "17.6.0",
     "husky": "9.1.7",
     "lerna": "9.0.7",
-    "lint-staged": "16.4.0",
-    "prettier": "3.8.3",
+    "lint-staged": "17.0.8",
+    "prettier": "3.8.4",
     "ts-node": "10.9.2",
     "typescript": "5.9.3"
   },
@@ -58,7 +61,7 @@
     "fsevents": "2.3.3"
   },
   "overrides": {
-    "axios": "1.16.1",
+    "axios": "1.18.0",
     "yaml": "2.9.0",
     "brace-expansion": "5.0.6",
     "follow-redirects": "1.16.0"

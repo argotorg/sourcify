@@ -1,3 +1,7 @@
+## @ethereum-sourcify/compilers@1.1.5 - 2026-07-06
+
+- update dependencies
+
 ## @ethereum-sourcify/compilers@1.1.4 - 2026-06-16
 
 - Escape non-ASCII Vyper standard-json stdin (#2816)

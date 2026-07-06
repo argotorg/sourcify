@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@3.17.1 - 2026-07-06
+
+- fix(server): don't insert sources on compiled_contracts dedup conflict (#2859)
+- feat(server): backfill missing Vyper immutableReferences (#2855)
+
 ## sourcify-server@3.17.0 - 2026-06-16
 
 - fix(server): don't send global ETHERSCAN_API_KEY to custom Etherscan explorers (#2824)
