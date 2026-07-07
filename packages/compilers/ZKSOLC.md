@@ -295,7 +295,7 @@ The metadata block already pads `[cbor][length]` up to a word boundary (the
 leave the _total_ word count even; to flip it back to odd, zksolc may prepend
 **one** additional all-zero 32-byte word before the block. That is why the split
 absorbs exactly one preceding zero word (the `paddingWordStart` backtrack in
-`bytecode.ts`, mirrored in `ZkSolcCompilation.ts`) rather than greedily stripping
+`eravm.ts`, mirrored in `ZkSolcCompilation.ts`) rather than greedily stripping
 an arbitrary run of zeros — only a single odd-parity word is ever added.
 
 [zk-deploy]: https://docs.zksync.io/zksync-protocol/era-vm/differences/contract-deployment
