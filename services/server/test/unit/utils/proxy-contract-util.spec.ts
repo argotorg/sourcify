@@ -28,6 +28,26 @@ describe("proxy contract util", function () {
     });
   });
 
+  it("should detect EIP1167Proxy with appended immutable args (clone-with-immutable-args)", async function () {
+    // "Clones with immutable args" (e.g. OpenZeppelin `Clones.cloneWithImmutableArgs`)
+    // append per-clone argument bytes *after* the 45-byte EIP-1167 stub, so the
+    // runtime does not *end* with the stub. Based on BSC (chain 56) contract
+    // 0xa301f4151baa004979dfb2a8e25a236ff2cf4fa5.
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.EIP1167ProxyWithImmutableArgs,
+      "0x1234567890123456789012345678901234567890",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "EIP1167Proxy",
+      implementations: [
+        { address: "0x19570da7f9f41d7b406eb5942db28c0e7221eec6" },
+      ],
+    });
+  });
+
   it("should detect DiamondProxy", async function () {
     mockSourcifyChain.call = sandbox
       .stub()
