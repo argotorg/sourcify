@@ -1,8 +1,5 @@
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import {
-  AbstractCompilation,
-  getCompilerNameFromLanguage,
-} from './AbstractCompilation';
+import { AbstractCompilation } from './AbstractCompilation';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -31,6 +28,23 @@ import {
 import { isZkSolcCompilerVersion } from './ZkSolcCompilation';
 
 export type Nullable<T> = T | null;
+
+// PreRunCompilation reconstructs any language from stored data, so it maps the
+// stored language back to the compiler name. Single-compiler compilations know
+// their compiler directly and don't need this.
+export function getCompilerNameFromLanguage(language: string): string {
+  switch (language.toLocaleLowerCase()) {
+    case 'yul':
+    case 'solidity':
+      return 'solc';
+    case 'vyper':
+      return 'vyper';
+    case 'fe':
+      return 'fe';
+    default:
+      throw new Error('Language not supported');
+  }
+}
 
 export class PreRunCompilation extends AbstractCompilation {
   public auxdataStyle: AuxdataStyle;
