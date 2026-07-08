@@ -93,13 +93,9 @@ export class SolidityCompilation extends AbstractCompilation {
     } = JSON.parse(JSON.stringify(compilerSettings));
     Object.values(newCompilerSettings.solcJsonInput.sources).forEach(
       (source) => {
-        // Intentionally change the source content to produce a different metadata hash.
         source.content += ' ';
-        // If the input carries a `keccak256` integrity hash for the source (e.g. a
-        // Standard-JSON input imported from Etherscan), solc validates the content
-        // against it and would reject the edited source with
-        // "Mismatch between content and supplied hash". Since we deliberately changed
-        // the content, drop the now-stale hash so the recompilation succeeds.
+        // Drop the now-stale keccak256 so solc doesn't reject the edited source.
+        // See https://github.com/argotorg/sourcify/pull/2876
         delete source.keccak256;
       },
     );
