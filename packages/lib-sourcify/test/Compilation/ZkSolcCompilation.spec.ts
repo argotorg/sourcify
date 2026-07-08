@@ -11,7 +11,7 @@ import {
 import { Verification } from '../../src/Verification/Verification';
 import {
   ZkSolcVerification,
-  normalizeDeployerCalldata,
+  decodeContractDeployerCalldata,
 } from '../../src/Verification/ZkSolcVerification';
 import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
 import {
@@ -1105,7 +1105,16 @@ function makeDeployerCalldata(bytecodeHash: string, encodedArgs = ''): string {
 describe('ZkSolcVerification', () => {
   const address = '0x2dae3b08e3daedf619e68c99f3e7f3c9608e0095';
 
-  function makeChain(runtime: string, creationBytecode: string) {
+  // ZKsync ContractDeployer system contract; a direct deploy sends the creation
+  // tx to this address.
+  const SYSTEM_CONTRACT_DEPLOYER_ADDRESS =
+    '0x0000000000000000000000000000000000008006';
+
+  function makeChain(
+    runtime: string,
+    creationBytecode: string,
+    creationTxTo: string = SYSTEM_CONTRACT_DEPLOYER_ADDRESS,
+  ) {
     return {
       chainId: 2741,
       async getBytecode() {
@@ -1115,6 +1124,7 @@ describe('ZkSolcVerification', () => {
         return {
           blockNumber: 1,
           from: '0x0000000000000000000000000000000000000001',
+          to: creationTxTo,
         };
       },
       async getContractCreationBytecodeAndReceipt() {
@@ -1180,19 +1190,42 @@ describe('ZkSolcVerification', () => {
     expect(verification.status.creationMatch).to.equal(null);
   });
 
-  describe('normalizeDeployerCalldata', () => {
-    it('extracts the bytecode hash and appends the ABI-encoded constructor args', () => {
+  it('does not match creation when the deploy tx does not target the ContractDeployer', async () => {
+    const runtime = 'aa'.repeat(32);
+    const compilation = makeRuntimeCompilation(runtime);
+    const calldata = makeDeployerCalldata(eraBytecodeHash(`0x${runtime}`));
+    const verification = new ZkSolcVerification(
+      compilation,
+      // Creation tx routed through a factory, not the ContractDeployer directly.
+      makeChain(
+        runtime,
+        calldata,
+        '0x00000000000000000000000000000000000f4c70',
+      ),
+      address,
+      '0xcreationtx',
+    );
+
+    await verification.verify();
+
+    expect(verification.status.runtimeMatch).to.equal('perfect');
+    expect(verification.status.creationMatch).to.equal(null);
+  });
+
+  describe('decodeContractDeployerCalldata', () => {
+    it('decodes the bytecode hash and the ABI-encoded constructor args', () => {
       const hashHex = '11'.repeat(32);
       const encodedAddress = `000000000000000000000000${'cd'.repeat(20)}`;
       const calldata = makeDeployerCalldata(`0x${hashHex}`, encodedAddress);
-      expect(normalizeDeployerCalldata(calldata)).to.equal(
-        `0x${hashHex}${encodedAddress}`,
-      );
+      expect(decodeContractDeployerCalldata(calldata)).to.deep.equal({
+        bytecodeHash: `0x${hashHex}`,
+        constructorArguments: `0x${encodedAddress}`,
+      });
     });
 
     it('returns null for calldata that is not a ContractDeployer deploy', () => {
       expect(
-        normalizeDeployerCalldata(`0xdeadbeef${'00'.repeat(64)}`),
+        decodeContractDeployerCalldata(`0xdeadbeef${'00'.repeat(64)}`),
       ).to.equal(null);
     });
   });

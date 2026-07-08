@@ -1,12 +1,12 @@
-import { eraBytecodeHash } from '@ethereum-sourcify/bytecode-utils';
+import { eraBytecodeHash as computeEraBytecodeHash } from '@ethereum-sourcify/bytecode-utils';
 import { AbiCoder } from 'ethers';
 import { Verification } from './Verification';
 import { extractConstructorArgumentsTransformation } from './Transformations';
 
-// ZKsync ContractDeployer functions used to deploy a contract. All of them take
-// `(bytes32 salt, bytes32 bytecodeHash, bytes input, ...)`, so the versioned
-// bytecode hash always sits at bytes 36..68 of the calldata and the ABI-encoded
-// constructor arguments are the `input` parameter.
+// ZKsync ContractDeployer deploy functions. All take
+// `(bytes32 salt, bytes32 bytecodeHash, bytes input, ...)`, so decoding the
+// calldata against these types yields the versioned bytecode hash (index 1) and
+// the ABI-encoded constructor arguments (`input`, index 2) directly.
 const CONTRACT_DEPLOYER_SELECTORS: Record<string, readonly string[]> = {
   '0x9c4d535b': ['bytes32', 'bytes32', 'bytes'], // create
   '0x3cda3351': ['bytes32', 'bytes32', 'bytes'], // create2
@@ -15,85 +15,87 @@ const CONTRACT_DEPLOYER_SELECTORS: Record<string, readonly string[]> = {
 };
 
 const SELECTOR_HEX_LENGTH = 10; // '0x' + 4 bytes
-const BYTECODE_HASH_HEX_START = 2 + 8 + 64; // 0x + selector + salt(32)
-const BYTECODE_HASH_HEX_END = BYTECODE_HASH_HEX_START + 64; // + bytecodeHash(32)
+
+// ZKsync ContractDeployer system contract
+const SYSTEM_CONTRACT_DEPLOYER_ADDRESS =
+  '0x0000000000000000000000000000000000008006';
+
+export interface ContractDeployerDeploy {
+  bytecodeHash: string;
+  constructorArguments: string;
+}
 
 /**
- * Rewrites on-chain ContractDeployer calldata into the
- * `0x[bytecodeHash][ABI-encoded constructor args]` shape so the canonical
- * creation-matching flow can be reused verbatim: the recompiled "creation
- * bytecode" is the versioned bytecode hash, and the constructor args are the
- * appended tail. Returns null when the calldata is not a recognized
- * ContractDeployer deploy (e.g. a factory/trace-sourced creation).
+ * Decodes ZKsync ContractDeployer deploy calldata into its structured fields.
+ * The deploy functions share the `(bytes32 salt, bytes32 bytecodeHash, bytes
+ * input, ...)` shape, so a single ABI decode gives the versioned bytecode hash
+ * and the constructor arguments (the `input` param) — no positional slicing.
+ * Returns null when the calldata is not a recognized ContractDeployer deploy
+ * (unknown selector) or fails to decode.
  */
-export function normalizeDeployerCalldata(calldata: string): string | null {
+export function decodeContractDeployerCalldata(
+  calldata: string,
+): ContractDeployerDeploy | null {
   const raw = calldata.startsWith('0x') ? calldata : `0x${calldata}`;
   const selector = raw.slice(0, SELECTOR_HEX_LENGTH);
   const argTypes = CONTRACT_DEPLOYER_SELECTORS[selector];
-  if (!argTypes || raw.length < BYTECODE_HASH_HEX_END) {
+  if (!argTypes) {
     return null;
   }
-  const bytecodeHash = raw.slice(
-    BYTECODE_HASH_HEX_START,
-    BYTECODE_HASH_HEX_END,
-  );
   try {
     const decoded = AbiCoder.defaultAbiCoder().decode(
       argTypes,
       `0x${raw.slice(SELECTOR_HEX_LENGTH)}`,
     );
-    const constructorArgs = (decoded[2] as string).replace(/^0x/, '');
-    return `0x${bytecodeHash}${constructorArgs}`;
+    return {
+      bytecodeHash: decoded[1] as string,
+      constructorArguments: decoded[2] as string,
+    };
   } catch {
     return null;
   }
 }
 
 /**
- * EraVM (zksolc) verification. Runtime matching is inherited unchanged — the
- * ZKSYNC auxdata handling is driven by the compilation's `auxdataStyle`, and the
- * solc-specific verification steps in the base class are gated on the compiler so
- * they already skip zksolc.
+ * EraVM (zksolc) verification. Runtime matching is inherited unchanged
  *
- * Only creation matching diverges: on EraVM the deploy transaction references a
- * *versioned bytecode hash* of the runtime bytecode (via the ContractDeployer),
- * not the runtime bytecode itself. So the recompiled runtime bytecode is hashed
- * and matched against the hash carried in the creation calldata.
+ * Only creation matching diverges: on EraVM the deploy transaction calls the
+ * ContractDeployer directly, and the deploy calldata carries a versioned *hash*
+ * of the runtime bytecode, not the bytecode itself. So the match is a structural
+ * check of the calldata: decode it and compare its bytecode-hash field against
+ * the hash of the recompiled runtime bytecode.
  */
 export class ZkSolcVerification extends Verification {
-  // Match creation against the normalized `[bytecodeHash][ctor args]` calldata so
-  // the shared startsWith + constructor-args logic in matchBytecodes applies. If
-  // the calldata isn't a recognized ContractDeployer deploy, fall back to the raw
-  // value (which won't start with the versioned hash, so creation won't match).
-  protected getOnchainCreationBytecodeForMatching(): string {
-    return (
-      normalizeDeployerCalldata(this.onchainCreationBytecode) ??
-      this.onchainCreationBytecode
-    );
-  }
-
   protected async matchWithCreationTx() {
-    // The recompiled "creation bytecode" is the versioned hash of the recompiled
-    // runtime bytecode — that is exactly what the on-chain ContractDeployer call
-    // references.
-    const recompiledCreationBytecode = eraBytecodeHash(
-      this.compilation.runtimeBytecode,
-    );
-
-    const matchBytecodesResult = await this.matchBytecodes(
-      true,
-      recompiledCreationBytecode,
-    );
-    if (matchBytecodesResult.match === null) {
-      // The recompiled hash isn't the one referenced by the creation calldata →
-      // this deploy did not produce our bytecode; leave creationMatch unset.
+    // Only a direct deploy carries the ContractDeployer calldata as the creation
+    // tx's top-level input. Anything else (factory / indirect deploy) is not a
+    // structure we can match here.
+    if (this.creationTxTo?.toLowerCase() !== SYSTEM_CONTRACT_DEPLOYER_ADDRESS) {
       return;
     }
 
+    const deploy = decodeContractDeployerCalldata(this.onchainCreationBytecode);
+    if (deploy === null) {
+      return;
+    }
+
+    // The versioned hash of the recompiled runtime bytecode must equal the hash
+    // the deploy calldata references. This is an equality check on a field, not
+    // a bytecode comparison — EraVM has no on-chain creation bytecode.
+    const eraBytecodeHash = computeEraBytecodeHash(
+      this.compilation.runtimeBytecode,
+    );
+    if (deploy.bytecodeHash.toLowerCase() !== eraBytecodeHash.toLowerCase()) {
+      return;
+    }
+
+    // Reuse the canonical constructor-args extraction (which also validates the
+    // args round-trip through the ABI) by presenting the decoded `input` as the
+    // tail after the hash prefix.
     const constructorTransformationResult =
       extractConstructorArgumentsTransformation(
-        matchBytecodesResult.populatedRecompiledBytecode,
-        this.getOnchainCreationBytecodeForMatching(),
+        eraBytecodeHash,
+        `${eraBytecodeHash}${deploy.constructorArguments.replace(/^0x/, '')}`,
         this.compilation.contractCompilerOutput?.abi || [],
       );
 
@@ -104,13 +106,10 @@ export class ZkSolcVerification extends Verification {
     // perfect runtime match).
     this.creationMatch = this.runtimeMatch;
     this.creationTransformations = [
-      ...matchBytecodesResult.transformations,
       ...constructorTransformationResult.transformations,
     ];
     this.creationTransformationValues = {
-      ...matchBytecodesResult.transformationValues,
       ...constructorTransformationResult.transformationValues,
     };
-    this.creationLibraryMap = matchBytecodesResult.libraryMap;
   }
 }

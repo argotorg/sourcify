@@ -97,10 +97,14 @@ export class Verification {
   protected runtimeMatch: VerificationStatus = null;
   protected creationMatch: VerificationStatus = null;
   private runtimeLibraryMap?: StringMap;
-  protected creationLibraryMap?: StringMap;
+  private creationLibraryMap?: StringMap;
   private blockNumber?: number;
   private txIndex?: number;
   private deployer?: string;
+  // Recipient of the creation transaction. Null for a direct EOA create;
+  // subclasses (e.g. EraVM) use it to detect deploys routed through a system
+  // contract. Only the fields we need are kept off the fetched creation tx.
+  protected creationTxTo?: string;
 
   constructor(
     public compilation: AbstractCompilation,
@@ -263,6 +267,7 @@ export class Verification {
         const creatorTx = await this.sourcifyChain.getTx(this.creatorTxHash);
         this.blockNumber = creatorTx.blockNumber || undefined;
         this.deployer = creatorTx.from;
+        this.creationTxTo = creatorTx.to ?? undefined;
 
         const { creationBytecode, txReceipt } =
           await this.sourcifyChain.getContractCreationBytecodeAndReceipt(
@@ -282,6 +287,7 @@ export class Verification {
         this.creatorTxHash = undefined;
         this.blockNumber = undefined;
         this.deployer = undefined;
+        this.creationTxTo = undefined;
       }
     }
 
@@ -414,20 +420,13 @@ export class Verification {
     return SolidityBugType.NONE;
   }
 
-  // The onchain creation bytecode used for creation matching. Overridable so
-  // EraVM can substitute the normalized ContractDeployer calldata (bytecode hash
-  // + constructor args) for the raw transaction input.
-  protected getOnchainCreationBytecodeForMatching(): string {
-    return this.onchainCreationBytecode;
-  }
-
-  protected async matchBytecodes(
+  private async matchBytecodes(
     isCreation: boolean,
     populatedRecompiledBytecode: string,
   ): Promise<BytecodeMatchingResult> {
     // Here we use bytecodes from the context because they are already processed
     const onchainBytecode = isCreation
-      ? this.getOnchainCreationBytecodeForMatching()
+      ? this.onchainCreationBytecode
       : this.onchainRuntimeBytecode;
 
     const cborAuxdata = isCreation
