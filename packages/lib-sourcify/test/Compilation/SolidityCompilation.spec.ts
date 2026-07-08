@@ -14,6 +14,7 @@ import type {
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import chaiAsPromised from 'chai-as-promised';
+import { keccak256, toUtf8Bytes } from 'ethers';
 
 use(chaiAsPromised);
 
@@ -184,6 +185,60 @@ describe('SolidityCompilation', () => {
           '0xa2646970667358221220eb4312065a8c0fb940ef11ef5853554a447a5325095ee0f8fbbbbfc43dbb1b7464736f6c63430008090033',
       },
     });
+  });
+
+  it('should generate auxdata positions when sources carry a keccak256 integrity hash', async () => {
+    // Regression test: a Standard-JSON input (e.g. imported from Etherscan) can carry a
+    // `keccak256` integrity hash for each source. Generating the cbor auxdata positions for
+    // a contract with multiple auxdatas recompiles an *edited* copy of the sources (a trailing
+    // space is appended to each) to diff the metadata hashes. The stale `keccak256` must be
+    // dropped for that recompilation, otherwise solc rejects the edited source with
+    // "Mismatch between content and supplied hash" and no positions can be generated.
+    const contractPath = path.join(
+      __dirname,
+      '..',
+      'sources',
+      'WithMultipleAuxdatas',
+    );
+    const metadata = JSON.parse(
+      fs.readFileSync(path.join(contractPath, 'metadata.json'), 'utf8'),
+    );
+
+    const sources: { [key: string]: { keccak256: string; content: string } } =
+      {};
+    for (const [sourcePath] of Object.entries(metadata.sources)) {
+      const content = fs.readFileSync(
+        path.join(contractPath, 'sources', path.basename(sourcePath)),
+        'utf8',
+      );
+      // Populate the keccak256 integrity hash the way an Etherscan Standard-JSON input does
+      sources[sourcePath] = {
+        keccak256: keccak256(toUtf8Bytes(content)),
+        content,
+      };
+    }
+
+    const compilation = new SolidityCompilation(
+      solc,
+      metadata.compiler.version,
+      {
+        language: 'Solidity',
+        sources,
+        settings: getSolcSettingsFromMetadata(metadata),
+      },
+      getCompilationTargetFromMetadata(metadata),
+    );
+
+    await compilation.compile();
+    // Before the fix this rejected with "Cannot generate cbor auxdata positions."
+    await compilation.generateCborAuxdataPositions();
+
+    expect(
+      Object.keys(compilation.runtimeBytecodeCborAuxdata),
+    ).to.have.lengthOf(3);
+    expect(
+      Object.keys(compilation.creationBytecodeCborAuxdata),
+    ).to.have.lengthOf(3);
   });
 
   it('should handle case with no auxdata when metadata is disabled', async () => {
