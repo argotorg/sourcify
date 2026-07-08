@@ -63,10 +63,6 @@ export abstract class AbstractCompilation {
   abstract generateCborAuxdataPositions(
     forceEmscripten?: boolean,
   ): Promise<void>;
-  protected abstract runCompiler(
-    version: string,
-    forceEmscripten: boolean,
-  ): Promise<SolidityOutput | VyperOutput | FeOutput>;
 
   public abstract get compilerName(): string;
 
@@ -100,7 +96,11 @@ export abstract class AbstractCompilation {
     });
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
     try {
-      this.compilerOutput = await this.runCompiler(version, forceEmscripten);
+      // ZkSolcCompilation overrides this method and calls its own compiler, so
+      // the base compile path only ever runs for solc/vyper/fe compilations.
+      this.compilerOutput = await (
+        this.compiler as ISolidityCompiler | IVyperCompiler | IFeCompiler
+      ).compile(version, this.jsonInput as any, forceEmscripten);
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

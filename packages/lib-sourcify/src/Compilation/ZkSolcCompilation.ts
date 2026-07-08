@@ -313,14 +313,6 @@ export class ZkSolcCompilation extends AbstractCompilation {
     return 'zksolc';
   }
 
-  protected async runCompiler(): Promise<SolidityOutput> {
-    return this.compiler.compile(
-      this.zksolcVersion,
-      this.solcCompilerVersion,
-      this.jsonInput,
-    );
-  }
-
   public async compileAndReturnCompilationTarget(): Promise<SolidityOutputContract> {
     const compilationStartTime = Date.now();
     logDebug('Compiling zkSync EraVM contract', {
@@ -332,7 +324,11 @@ export class ZkSolcCompilation extends AbstractCompilation {
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
 
     try {
-      this.compilerOutput = await this.runCompiler();
+      this.compilerOutput = await this.compiler.compile(
+        this.zksolcVersion,
+        this.solcCompilerVersion,
+        this.jsonInput,
+      );
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

@@ -44,10 +44,6 @@ export class FeCompilation extends AbstractCompilation {
     super(compilerVersion, jsonInput);
   }
 
-  protected async runCompiler(version: string) {
-    return this.compiler.compile(version, this.jsonInput);
-  }
-
   public async compile() {
     await this.compileAndReturnCompilationTarget(false);
   }

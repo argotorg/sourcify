@@ -199,10 +199,6 @@ export class VyperCompilation extends AbstractCompilation {
     this.initVyperJsonInput();
   }
 
-  protected async runCompiler(version: string) {
-    return this.compiler.compile(version, this.jsonInput);
-  }
-
   get immutableReferences(): ImmutableReferences {
     return returnImmutableReferences(
       this.compilerVersionCompatibleWithSemver,
