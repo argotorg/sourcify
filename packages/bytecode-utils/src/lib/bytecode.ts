@@ -15,6 +15,7 @@ import { decodeEraVmAuxdata, splitEraVmAuxdata } from './eravm';
 // Re-export the public CBOR API so it stays available from the package root.
 export { AuxdataStyle, isCborEncoded } from './cbor';
 export type { SolidityDecodedObject } from './cbor';
+export { eraBytecodeHash } from './eravm';
 
 type CBOR = {
   bytes: string;

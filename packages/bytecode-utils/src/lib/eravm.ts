@@ -1,3 +1,4 @@
+import { getBytes, sha256 } from 'ethers';
 import {
   AuxdataStyle,
   CBOR_LENGTH_HEX_BYTES,
@@ -10,7 +11,42 @@ const ERA_VM_WORD_SIZE_BYTES = 32;
 const ERA_VM_WORD_SIZE_HEX = ERA_VM_WORD_SIZE_BYTES * 2;
 const ERA_VM_ZERO_WORD_HEX = '00'.repeat(ERA_VM_WORD_SIZE_BYTES);
 
+// Version prefix of the ZKsync versioned bytecode hash (EraVM = 0x0100).
+const ERA_VM_BYTECODE_HASH_VERSION_HEX = '0100';
+
 const isZeroHex = (hex: string): boolean => /^0*$/.test(hex);
+
+/**
+ * Computes the ZKsync "versioned bytecode hash" for a piece of EraVM bytecode.
+ * This is the 32-byte value a deployment references (in the ContractDeployer
+ * `create`/`create2` calldata) instead of embedding the full bytecode. Layout:
+ *
+ *   bytes 0-1   version (0x0100 for EraVM)
+ *   bytes 2-3   bytecode length in 32-byte words (big-endian)
+ *   bytes 4-31  the last 28 bytes of sha256(bytecode)
+ *
+ * The input must be word-aligned (EraVM bytecode always is). See
+ * https://docs.zksync.io/zksync-protocol/era-vm/differences/contract-deployment
+ *
+ * @param bytecode - EraVM bytecode as a hex string (with or without 0x prefix)
+ * @returns the 32-byte versioned hash as a 0x-prefixed hex string
+ */
+export const eraBytecodeHash = (bytecode: string): string => {
+  const bytes = getBytes(
+    bytecode.startsWith('0x') ? bytecode : `0x${bytecode}`,
+  );
+  if (bytes.length % ERA_VM_WORD_SIZE_BYTES !== 0) {
+    throw Error(
+      `EraVM bytecode length must be a multiple of ${ERA_VM_WORD_SIZE_BYTES} bytes, got ${bytes.length}`,
+    );
+  }
+  const lengthInWords = bytes.length / ERA_VM_WORD_SIZE_BYTES;
+  const lengthHex = lengthInWords.toString(16).padStart(4, '0');
+  // sha256() returns a 0x-prefixed 32-byte (64 hex char) digest; keep the last
+  // 28 bytes (56 hex chars), i.e. drop the leading 4 bytes (8 hex chars).
+  const shaHex = sha256(bytes).slice(2);
+  return `0x${ERA_VM_BYTECODE_HASH_VERSION_HEX}${lengthHex}${shaHex.slice(8)}`;
+};
 
 /**
  * Splits EraVM (zksolc) bytecode into execution bytecode and auxdata.

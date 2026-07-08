@@ -1,6 +1,11 @@
 import chai from 'chai';
 
-import { AuxdataStyle, decode, splitAuxdata } from '../src/lib/bytecode';
+import {
+  AuxdataStyle,
+  decode,
+  eraBytecodeHash,
+  splitAuxdata,
+} from '../src/lib/bytecode';
 
 // zksolc 1.5.15 tail: CBOR metadata (IPFS + descriptive zksolc/solc/llvm version
 // string) preceded by zero word-alignment padding.
@@ -73,5 +78,43 @@ describe('eravm (zksolc) bytecode utils', function () {
         ipfs: 'QmNrVTanh1MSVgK97knBi4XGyQUgu6cqQwcmMjbPepv5wv',
         solcVersion: 'zksolc:1.5.15;solc:0.8.26;llvm:1.0.2',
       });
+  });
+
+  describe('eraBytecodeHash', () => {
+    it('computes the versioned hash of a single zero word', () => {
+      // version 0100 + length 0001 (1 word) + sha256(32 zero bytes)[-28:]
+      chai
+        .expect(eraBytecodeHash(`0x${'00'.repeat(32)}`))
+        .to.equal(
+          '0x01000001f862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925',
+        );
+    });
+
+    it('computes the versioned hash of a two-word bytecode', () => {
+      // version 0100 + length 0002 (2 words) + sha256(64 bytes of 0xab)[-28:]
+      chai
+        .expect(eraBytecodeHash(`0x${'ab'.repeat(64)}`))
+        .to.equal(
+          '0x010000028ecf95902413c40f7b9e6d4b0068885f5f324aba1f9ba1c8e14aea61',
+        );
+    });
+
+    it('encodes the bytecode length in 32-byte words (big-endian)', () => {
+      // 5984 bytes = 187 words = 0x00bb, matching the on-chain Abstract sample.
+      const hash = eraBytecodeHash(`0x${'cd'.repeat(5984)}`);
+      chai.expect(hash.slice(0, 10)).to.equal('0x010000bb');
+    });
+
+    it('accepts bytecode without a 0x prefix', () => {
+      chai
+        .expect(eraBytecodeHash('00'.repeat(32)))
+        .to.equal(eraBytecodeHash(`0x${'00'.repeat(32)}`));
+    });
+
+    it('throws when the bytecode is not word-aligned', () => {
+      chai
+        .expect(() => eraBytecodeHash(`0x${'00'.repeat(31)}`))
+        .to.throw('must be a multiple of 32 bytes');
+    });
   });
 });

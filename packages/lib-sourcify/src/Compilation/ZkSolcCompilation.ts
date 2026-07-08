@@ -268,15 +268,13 @@ export class ZkSolcCompilation extends AbstractCompilation {
   readonly auxdataStyle: AuxdataStyle.ZKSYNC = AuxdataStyle.ZKSYNC;
 
   public readonly zksolcVersion: string;
-  public readonly requestedSolcCompilerVersion: string;
-  public solcCompilerVersion: string;
-  private readonly solcCompilerVersionCandidates: string[];
-  private solcCompilerVersionCandidateIndex = 0;
+  public readonly solcCompilerVersion: string;
 
   /**
    * @param compilerVersion the combined `zksolc:<zksolcVersion>;solc:<solcVersion>`
-   *   string (see {@link parseZkSolcCompilerVersion}). The `solc` half may be an
-   *   exact era-solc release or an upstream solc version to resolve via candidates.
+   *   string (see {@link parseZkSolcCompilerVersion}). Both versions are used
+   *   exactly as given; the `solc` half must be a concrete era-solc release or
+   *   upstream solc version.
    */
   public constructor(
     public compiler: IZkSolcCompiler,
@@ -288,13 +286,7 @@ export class ZkSolcCompilation extends AbstractCompilation {
       parseZkSolcCompilerVersion(compilerVersion);
     super(zksolcVersion, jsonInput);
     this.zksolcVersion = zksolcVersion;
-    this.requestedSolcCompilerVersion = solcCompilerVersion;
-    this.solcCompilerVersionCandidates = getZkSolcCompilerVersionCandidates(
-      solcCompilerVersion,
-      zksolcVersion,
-    );
-    this.solcCompilerVersion =
-      this.solcCompilerVersionCandidates[0] || solcCompilerVersion;
+    this.solcCompilerVersion = solcCompilerVersion;
     this.initZkSolcJsonInput();
   }
 
@@ -317,31 +309,6 @@ export class ZkSolcCompilation extends AbstractCompilation {
     );
   }
 
-  public useNextSolcCompilerVersionCandidate(): boolean {
-    if (
-      this.solcCompilerVersionCandidateIndex + 1 >=
-      this.solcCompilerVersionCandidates.length
-    ) {
-      return false;
-    }
-
-    this.solcCompilerVersionCandidateIndex += 1;
-    this.solcCompilerVersion =
-      this.solcCompilerVersionCandidates[
-        this.solcCompilerVersionCandidateIndex
-      ]!;
-    this.compilerOutput = undefined;
-    this.compilationTime = undefined;
-    this._metadata = undefined;
-    this._creationBytecodeCborAuxdata = undefined;
-    this._runtimeBytecodeCborAuxdata = undefined;
-    return true;
-  }
-
-  public useNextCompilerVersionCandidate(): boolean {
-    return this.useNextSolcCompilerVersionCandidate();
-  }
-
   public get compilerName(): string {
     return 'zksolc';
   }
@@ -355,13 +322,6 @@ export class ZkSolcCompilation extends AbstractCompilation {
   }
 
   public async compileAndReturnCompilationTarget(): Promise<SolidityOutputContract> {
-    if (this.solcCompilerVersionCandidates.length === 0) {
-      throw new CompilationError({
-        code: 'compiler_error',
-        compilerErrorMessage: `Unsupported era-solc version combination: zksolc ${this.zksolcVersion} with solc ${this.requestedSolcCompilerVersion}`,
-      });
-    }
-
     const compilationStartTime = Date.now();
     logDebug('Compiling zkSync EraVM contract', {
       zksolcVersion: this.zksolcVersion,
@@ -407,28 +367,8 @@ export class ZkSolcCompilation extends AbstractCompilation {
   }
 
   public async compile() {
-    for (;;) {
-      try {
-        const contract = await this.compileAndReturnCompilationTarget();
-        this._metadata = parseContractMetadata(contract.metadata);
-        return;
-      } catch (error: any) {
-        if (
-          error instanceof CompilationError &&
-          error.code === 'compiler_error' &&
-          this.useNextSolcCompilerVersionCandidate()
-        ) {
-          logDebug('Retrying zksolc compilation with next era-solc candidate', {
-            zksolcVersion: this.zksolcVersion,
-            solcVersion: this.solcCompilerVersion,
-            requestedSolcVersion: this.requestedSolcCompilerVersion,
-          });
-          continue;
-        }
-
-        throw error;
-      }
-    }
+    const contract = await this.compileAndReturnCompilationTarget();
+    this._metadata = parseContractMetadata(contract.metadata);
   }
 
   public async generateCborAuxdataPositions() {

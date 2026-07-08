@@ -8,6 +8,7 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   Verification,
+  ZkSolcVerification,
   SourcifyLibError,
   SourcifyChain,
   SolidityMetadataContract,
@@ -148,12 +149,20 @@ async function _verifyFromJsonInput({
     (await getCreatorTx(sourcifyChain, address)) ||
     undefined;
 
-  const verification = new Verification(
-    compilation,
-    sourcifyChain,
-    address,
-    foundCreationTxHash,
-  );
+  const verification =
+    compilation.compilerName === "zksolc"
+      ? new ZkSolcVerification(
+          compilation,
+          sourcifyChain,
+          address,
+          foundCreationTxHash,
+        )
+      : new Verification(
+          compilation,
+          sourcifyChain,
+          address,
+          foundCreationTxHash,
+        );
 
   try {
     await verification.verify();
@@ -354,12 +363,20 @@ async function _verifySimilarity({
       continue;
     }
 
-    const verification = new Verification(
-      compilation,
-      mockChain,
-      address,
-      resolvedCreatorTxHash,
-    );
+    const verification =
+      compilation.compilerName === "zksolc"
+        ? new ZkSolcVerification(
+            compilation,
+            mockChain,
+            address,
+            resolvedCreatorTxHash,
+          )
+        : new Verification(
+            compilation,
+            mockChain,
+            address,
+            resolvedCreatorTxHash,
+          );
 
     try {
       await verification.verify();

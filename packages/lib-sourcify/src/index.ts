@@ -18,6 +18,7 @@ export * from './Compilation/CompilationTypes';
 
 // Verification exports
 export * from './Verification/Verification';
+export * from './Verification/ZkSolcVerification';
 export * from './Verification/VerificationTypes';
 
 // Etherscan utils exports

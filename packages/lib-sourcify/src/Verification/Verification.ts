@@ -89,15 +89,15 @@ export class Verification {
 
   // Transformations
   private runtimeTransformations: Transformation[] = [];
-  private creationTransformations: Transformation[] = [];
+  protected creationTransformations: Transformation[] = [];
   private runtimeTransformationValues: TransformationValues = {};
-  private creationTransformationValues: TransformationValues = {};
+  protected creationTransformationValues: TransformationValues = {};
 
   // Match status
-  private runtimeMatch: VerificationStatus = null;
-  private creationMatch: VerificationStatus = null;
+  protected runtimeMatch: VerificationStatus = null;
+  protected creationMatch: VerificationStatus = null;
   private runtimeLibraryMap?: StringMap;
-  private creationLibraryMap?: StringMap;
+  protected creationLibraryMap?: StringMap;
   private blockNumber?: number;
   private txIndex?: number;
   private deployer?: string;
@@ -109,22 +109,15 @@ export class Verification {
     private creatorTxHash?: string,
   ) {}
 
-  async verify({
-    forceEmscripten = false,
-  }: { forceEmscripten?: boolean } = {}): Promise<void> {
-    try {
-      await this.verifyOnce({ forceEmscripten });
-    } catch (error: any) {
-      if (this.retryWithNextCompilerVersionCandidate(error)) {
-        this.resetVerificationAttempt();
-        return await this.verify({ forceEmscripten });
-      }
-
-      throw error;
-    }
+  // Check if solc + Solidity to rule out Language:"Yul" or compiler:"zksolc"
+  protected get isSolidityViaSolc(): boolean {
+    return (
+      this.compilation.language === 'Solidity' &&
+      this.compilation.compilerName === 'solc'
+    );
   }
 
-  private async verifyOnce({
+  async verify({
     forceEmscripten = false,
   }: { forceEmscripten?: boolean } = {}): Promise<void> {
     logInfo('Verifying contract', {
@@ -182,7 +175,7 @@ export class Verification {
       });
     }
     if (
-      this.compilation.language === 'Solidity' &&
+      this.isSolidityViaSolc &&
       compiledRuntimeBytecode.length !== this.onchainRuntimeBytecode.length
     ) {
       // Before throwing the bytecode length mismatch error, check for Solidity extra file input bug
@@ -245,10 +238,7 @@ export class Verification {
       });
     }
 
-    if (
-      this.compilation.language === 'Solidity' &&
-      this.runtimeMatch === null
-    ) {
+    if (this.isSolidityViaSolc && this.runtimeMatch === null) {
       // Handle Solidity extra file input bug
       let solidityBugType = this.handleSolidityExtraFileInputBug();
       if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
@@ -329,42 +319,6 @@ export class Verification {
     });
   }
 
-  private retryWithNextCompilerVersionCandidate(error: any): boolean {
-    if (
-      !(error instanceof VerificationError) ||
-      (error.code !== 'no_match' && error.code !== 'bytecode_length_mismatch')
-    ) {
-      return false;
-    }
-
-    const shouldRetry = this.compilation.useNextCompilerVersionCandidate();
-    if (shouldRetry) {
-      logInfo('Retrying verification with next compiler version candidate', {
-        address: this.address,
-        chainId: this.sourcifyChain.chainId,
-        compilerVersion: this.compilation.compilerVersion,
-      });
-    }
-
-    return shouldRetry;
-  }
-
-  private resetVerificationAttempt() {
-    this._onchainRuntimeBytecode = undefined;
-    this._onchainCreationBytecode = undefined;
-    this.runtimeTransformations = [];
-    this.creationTransformations = [];
-    this.runtimeTransformationValues = {};
-    this.creationTransformationValues = {};
-    this.runtimeMatch = null;
-    this.creationMatch = null;
-    this.runtimeLibraryMap = undefined;
-    this.creationLibraryMap = undefined;
-    this.blockNumber = undefined;
-    this.txIndex = undefined;
-    this.deployer = undefined;
-  }
-
   private async checkForPerfectMetadata(forceEmscripten: boolean) {
     if (this.compilation.metadata === undefined) {
       return;
@@ -378,10 +332,7 @@ export class Verification {
         this.compilation.runtimeBytecode,
         AuxdataStyle.SOLIDITY,
       );
-      if (
-        this.compilation.language === 'Solidity' &&
-        onchainAuxdata !== recompiledAuxdata
-      ) {
+      if (this.isSolidityViaSolc && onchainAuxdata !== recompiledAuxdata) {
         const solidityMetadataContract = new SolidityMetadataContract(
           this.compilation.metadata,
           Object.keys(this.compilation.jsonInput.sources).map((source) => ({
@@ -463,13 +414,20 @@ export class Verification {
     return SolidityBugType.NONE;
   }
 
-  private async matchBytecodes(
+  // The onchain creation bytecode used for creation matching. Overridable so
+  // EraVM can substitute the normalized ContractDeployer calldata (bytecode hash
+  // + constructor args) for the raw transaction input.
+  protected getOnchainCreationBytecodeForMatching(): string {
+    return this.onchainCreationBytecode;
+  }
+
+  protected async matchBytecodes(
     isCreation: boolean,
     populatedRecompiledBytecode: string,
   ): Promise<BytecodeMatchingResult> {
     // Here we use bytecodes from the context because they are already processed
     const onchainBytecode = isCreation
-      ? this.onchainCreationBytecode
+      ? this.getOnchainCreationBytecodeForMatching()
       : this.onchainRuntimeBytecode;
 
     const cborAuxdata = isCreation
@@ -602,7 +560,7 @@ export class Verification {
     this.runtimeLibraryMap = matchBytecodesResult.libraryMap;
   }
 
-  private async matchWithCreationTx() {
+  protected async matchWithCreationTx() {
     const matchBytecodesResult = await this.matchBytecodes(
       true,
       this.compilation.creationBytecode,
@@ -709,7 +667,7 @@ export class Verification {
     let compilerOutputSources: Record<string, { id: number }> | undefined;
     if (this.compilation.compilerOutput?.sources) {
       if (
-        this.compilation.language === 'Solidity' &&
+        this.isSolidityViaSolc &&
         semver.lt(this.compilation.compilerVersion, '0.3.6')
       ) {
         // In Solidity versions < 0.3.6 there is no id in sources

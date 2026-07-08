@@ -9,6 +9,10 @@ import {
   ZkSolcCompilation,
 } from '../../src/Compilation/ZkSolcCompilation';
 import { Verification } from '../../src/Verification/Verification';
+import {
+  ZkSolcVerification,
+  normalizeDeployerCalldata,
+} from '../../src/Verification/ZkSolcVerification';
 import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
 import {
   CompilationError,
@@ -22,7 +26,10 @@ import type {
   SolidityOutput,
   SolidityOutputContract,
 } from '@ethereum-sourcify/compilers-types';
-import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import {
+  AuxdataStyle,
+  eraBytecodeHash,
+} from '@ethereum-sourcify/bytecode-utils';
 
 use(chaiAsPromised);
 
@@ -128,45 +135,6 @@ function makeCompiler(contract: SolidityOutputContract): IZkSolcCompiler & {
         contracts: {
           [compilationTarget.path]: {
             [compilationTarget.name]: contract,
-          },
-        },
-      };
-    },
-  };
-}
-
-function makeCompilerBySolcVersion(
-  contractsBySolcVersion: Record<string, SolidityOutputContract | Error>,
-): IZkSolcCompiler & {
-  calls: Array<{
-    zksolcVersion: string;
-    solcVersion: string;
-    solcJsonInput: SolidityJsonInput;
-  }>;
-} {
-  return {
-    calls: [],
-    async compile(
-      zksolcVersion: string,
-      solcVersion: string,
-      solcJsonInput: SolidityJsonInput,
-    ): Promise<SolidityOutput> {
-      this.calls.push({
-        zksolcVersion,
-        solcVersion,
-        solcJsonInput,
-      });
-      const contractOrError = contractsBySolcVersion[solcVersion];
-      if (contractOrError instanceof Error) {
-        throw contractOrError;
-      }
-      if (!contractOrError) {
-        throw new Error(`Unexpected solc version: ${solcVersion}`);
-      }
-      return {
-        contracts: {
-          [compilationTarget.path]: {
-            [compilationTarget.name]: contractOrError,
           },
         },
       };
@@ -283,7 +251,7 @@ describe('ZkSolcCompilation', () => {
     expect(compiler.calls[0].solcVersion).to.equal('0.8.24-1.0.1');
   });
 
-  it('should try exact solc release strings with v prefix and commit hash before era-solc candidates', async () => {
+  it('should compile with the exact upstream solc release string passed', async () => {
     const solcVersion = 'v0.8.26+commit.8a97fa7a';
     const compiler = makeCompiler(
       makeContract({
@@ -301,7 +269,6 @@ describe('ZkSolcCompilation', () => {
     await compilation.compile();
 
     expect(compiler.calls[0].solcVersion).to.equal(solcVersion);
-    expect(compilation.requestedSolcCompilerVersion).to.equal(solcVersion);
     expect(compilation.solcCompilerVersion).to.equal(solcVersion);
     expect(compilation.metadata?.compiler.version).to.equal(solcVersion);
   });
@@ -324,104 +291,6 @@ describe('ZkSolcCompilation', () => {
     await compilation.compile();
 
     expect(compilation.metadata).to.deep.equal(metadata);
-  });
-
-  it('should retry era-solc candidates when compilation fails', async () => {
-    const solcVersion = 'v0.8.26+commit.8a97fa7a';
-    const compiler = makeCompilerBySolcVersion({
-      [solcVersion]: new Error('unsupported upstream solc candidate'),
-      '0.8.26-1.0.2': new Error('unsupported era-solc candidate'),
-      '0.8.26-1.0.1': makeContract({
-        metadata: makeMetadata('0.8.26-1.0.1'),
-      }),
-    });
-    const compilation = makeZkSolcCompilation(
-      compiler,
-      '1.5.7',
-      solcVersion,
-      makeJsonInput(),
-      compilationTarget,
-    );
-
-    await compilation.compile();
-
-    expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
-      solcVersion,
-      '0.8.26-1.0.2',
-      '0.8.26-1.0.1',
-    ]);
-    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.1');
-    expect(compilation.metadata?.compiler.version).to.equal('0.8.26-1.0.1');
-  });
-
-  it('should retry era-solc candidates when bytecode matching fails', async () => {
-    const solcVersion = 'v0.8.26+commit.8a97fa7a';
-    const compiler = makeCompilerBySolcVersion({
-      [solcVersion]: makeContract({
-        metadata: makeMetadata(solcVersion),
-        evm: {
-          bytecode: {
-            object: '888888',
-          },
-          deployedBytecode: {
-            object: '',
-          },
-        },
-      }),
-      '0.8.26-1.0.2': makeContract({
-        metadata: makeMetadata('0.8.26-1.0.2'),
-        evm: {
-          bytecode: {
-            object: '999999',
-          },
-          deployedBytecode: {
-            object: '',
-          },
-        },
-      }),
-      '0.8.26-1.0.1': makeContract({
-        metadata: makeMetadata('0.8.26-1.0.1'),
-        evm: {
-          bytecode: {
-            object: '010203',
-          },
-          deployedBytecode: {
-            object: '',
-          },
-        },
-      }),
-    });
-    const compilation = makeZkSolcCompilation(
-      compiler,
-      '1.5.7',
-      solcVersion,
-      makeJsonInput(),
-      compilationTarget,
-    );
-    const verification = new Verification(
-      compilation,
-      {
-        chainId: 2741,
-        async getBytecode() {
-          return '0x010203';
-        },
-      } as any,
-      '0xbc176Ac2373614F9858A118917d83b139bcb3f8c',
-    );
-
-    await verification.verify();
-
-    expect(compiler.calls.map((call) => call.solcVersion)).to.deep.equal([
-      solcVersion,
-      '0.8.26-1.0.2',
-      '0.8.26-1.0.1',
-    ]);
-    expect(compilation.solcCompilerVersion).to.equal('0.8.26-1.0.1');
-    expect(verification.status.runtimeMatch).to.equal('partial');
-    expect(verification.export().compilation).to.include({
-      compiler: 'zksolc',
-      compilerVersion: 'zksolc:1.5.7;solc:0.8.26-1.0.1',
-    });
   });
 
   for (const { zksolcVersion, solcVersion } of [
@@ -1220,5 +1089,111 @@ describe('PreRunCompilation (zksolc)', () => {
     const compilation = createPreRunZkSolcCompilation();
     expect(compilation.compilerName).to.equal('zksolc');
     expect(compilation.resolvedCompilerVersion).to.equal(zkSolcVersion);
+  });
+});
+
+// Builds ContractDeployer `create(bytes32 salt, bytes32 bytecodeHash, bytes input)`
+// calldata around a versioned bytecode hash and (optionally) ABI-encoded args.
+function makeDeployerCalldata(bytecodeHash: string, encodedArgs = ''): string {
+  const salt = '00'.repeat(32);
+  const hashHex = bytecodeHash.replace(/^0x/, '');
+  const offsetHex = (96).toString(16).padStart(64, '0'); // input offset = 0x60
+  const lengthHex = (encodedArgs.length / 2).toString(16).padStart(64, '0');
+  return `0x9c4d535b${salt}${hashHex}${offsetHex}${lengthHex}${encodedArgs}`;
+}
+
+describe('ZkSolcVerification', () => {
+  const address = '0x2dae3b08e3daedf619e68c99f3e7f3c9608e0095';
+
+  function makeChain(runtime: string, creationBytecode: string) {
+    return {
+      chainId: 2741,
+      async getBytecode() {
+        return `0x${runtime}`;
+      },
+      async getTx() {
+        return {
+          blockNumber: 1,
+          from: '0x0000000000000000000000000000000000000001',
+        };
+      },
+      async getContractCreationBytecodeAndReceipt() {
+        return { creationBytecode, txReceipt: { index: 0 } };
+      },
+    } as any;
+  }
+
+  function makeRuntimeCompilation(runtime: string) {
+    const compiler = makeCompiler(
+      makeContract({
+        evm: {
+          bytecode: { object: runtime },
+          deployedBytecode: { object: '' },
+        },
+      }),
+    );
+    return makeZkSolcCompilation(
+      compiler,
+      '1.5.7',
+      '0.8.26-1.0.1',
+      makeJsonInput(),
+      compilationTarget,
+    );
+  }
+
+  it('matches creation via the versioned bytecode hash and inherits the runtime match type', async () => {
+    const runtime = 'aa'.repeat(32);
+    const compilation = makeRuntimeCompilation(runtime);
+    const calldata = makeDeployerCalldata(eraBytecodeHash(`0x${runtime}`));
+    const verification = new ZkSolcVerification(
+      compilation,
+      makeChain(runtime, calldata),
+      address,
+      '0xcreationtx',
+    );
+
+    await verification.verify();
+
+    // The recompiled hash matches the one in the creation calldata, so creation
+    // matches — and it inherits the runtime match type rather than being graded
+    // on its own.
+    expect(verification.status.runtimeMatch).to.equal('perfect');
+    expect(verification.status.creationMatch).to.equal('perfect');
+  });
+
+  it('does not match creation when the calldata references a different bytecode hash', async () => {
+    const runtime = 'aa'.repeat(32);
+    const compilation = makeRuntimeCompilation(runtime);
+    const calldata = makeDeployerCalldata(
+      eraBytecodeHash(`0x${'bb'.repeat(32)}`),
+    );
+    const verification = new ZkSolcVerification(
+      compilation,
+      makeChain(runtime, calldata),
+      address,
+      '0xcreationtx',
+    );
+
+    await verification.verify();
+
+    expect(verification.status.runtimeMatch).to.equal('perfect');
+    expect(verification.status.creationMatch).to.equal(null);
+  });
+
+  describe('normalizeDeployerCalldata', () => {
+    it('extracts the bytecode hash and appends the ABI-encoded constructor args', () => {
+      const hashHex = '11'.repeat(32);
+      const encodedAddress = `000000000000000000000000${'cd'.repeat(20)}`;
+      const calldata = makeDeployerCalldata(`0x${hashHex}`, encodedAddress);
+      expect(normalizeDeployerCalldata(calldata)).to.equal(
+        `0x${hashHex}${encodedAddress}`,
+      );
+    });
+
+    it('returns null for calldata that is not a ContractDeployer deploy', () => {
+      expect(
+        normalizeDeployerCalldata(`0xdeadbeef${'00'.repeat(64)}`),
+      ).to.equal(null);
+    });
   });
 });

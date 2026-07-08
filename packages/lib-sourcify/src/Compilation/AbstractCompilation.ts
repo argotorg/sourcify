@@ -82,10 +82,6 @@ export abstract class AbstractCompilation {
     forceEmscripten: boolean,
   ): Promise<SolidityOutput | VyperOutput | FeOutput>;
 
-  public useNextCompilerVersionCandidate(): boolean {
-    return false;
-  }
-
   // The compiler name stored/exported for this compilation. Each compilation
   // maps 1:1 to a compiler, so it is declared per class rather than inferred
   // from the language (which is ambiguous, e.g. Solidity → solc or zksolc).
