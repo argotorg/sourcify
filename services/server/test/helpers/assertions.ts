@@ -13,10 +13,8 @@ import type {
   VerificationStatus,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { ServerFixture } from "./ServerFixture";
-import {
-  getMatchStatus,
-  VERIFY_ENDPOINTS_DEPRECATION_WARNING,
-} from "../../src/server/apiv1/controllers.common";
+import { getMatchStatus } from "../../src/server/services/utils/util";
+import { VERIFY_ENDPOINTS_DEPRECATION_WARNING } from "../../src/server/apiPrivate/util";
 import type { MatchLevel } from "../../src/server/types";
 import { toVerificationStatus } from "../../src/server/services/utils/util";
 import chaiHttp from "chai-http";

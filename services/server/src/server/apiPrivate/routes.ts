@@ -1,11 +1,11 @@
 import { Router } from "express";
-import {
-  verifyDeprecated,
-  replaceContract,
-} from "./private.stateless.handlers";
-import { checkPerfectMatch } from "../../../controllers.common";
+import { verifyDeprecated, replaceContract } from "./handlers";
+import { checksumAddresses, checkPerfectMatch } from "./util";
 
 const router: Router = Router();
+
+// checksum addresses in every private request
+router.use(checksumAddresses);
 
 router.route("/private/verify-deprecated").post(
   // Middleware to check if verifyDeprecated is enabled

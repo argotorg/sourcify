@@ -22,7 +22,7 @@ import { getAddress } from "ethers";
 import type { RWStorageService } from "../StorageService";
 import { RWStorageIdentifiers } from "./identifiers";
 import { exists, readFile } from "../utils/util";
-import { getMatchStatus } from "../../apiv1/controllers.common";
+import { getMatchStatus } from "../utils/util";
 
 export interface RepositoryV1ServiceOptions {
   repositoryPath: string;

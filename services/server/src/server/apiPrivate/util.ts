@@ -2,8 +2,9 @@ import type { Request, Response, NextFunction } from "express";
 import { getAddress } from "ethers";
 import { BadRequestError, InternalServerError } from "../../common/errors";
 import logger from "../../common/logger";
-import { isContractAlreadyPerfect } from "./verification/verification.common";
 import type { Services } from "../services/services";
+import type { StorageService } from "../services/StorageService";
+import { getMatchStatus } from "../services/utils/util";
 import type {
   ImmutableReferences,
   StringMap,
@@ -14,15 +15,23 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import type { Match } from "../types";
 
-export const CHECK_ENDPOINTS_DEPRECATION_WARNING =
-  "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. " +
-  "Use GET /v2/contract/{chain}/{address} for each address+chain combination instead. " +
-  "Full API docs: https://sourcify.dev/server/api-docs/swagger.json";
-
 export const VERIFY_ENDPOINTS_DEPRECATION_WARNING =
   "DEPRECATED: This endpoint will be removed. Do not build new integrations against it. " +
   "Use POST /v2/verify instead. " +
   "Full API docs: https://sourcify.dev/server/api-docs/swagger.json";
+
+type PathBuffer = {
+  path: string;
+  buffer: Buffer;
+};
+
+export type LegacyVerifyRequest = Request & {
+  body: {
+    addresses: string[];
+    chain: string;
+    chosenContract: number;
+  };
+};
 
 export function checksumAddresses(
   req: Request,
@@ -42,27 +51,60 @@ export function checksumAddresses(
   next();
 }
 
-export function validateAddress(
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-) {
-  if (req.params.address) {
-    try {
-      // Checksum the address
-      req.params.address = getAddress(req.params.address);
-    } catch (err: any) {
-      logger.info("Invalid address in params", {
-        errorMessage: err.message,
-        errorStack: err.stack,
-        params: req.params,
-      });
-      return next(
-        new BadRequestError(`Invalid address: ${req.params.address}`),
-      );
-    }
+export const extractFiles = (req: Request, shouldThrow = false) => {
+  if (req.is("multipart/form-data") && (req.files as any)?.files) {
+    return extractFilesFromForm((req.files as any).files);
+  } else if (req.is("application/json") && req.body?.files) {
+    return extractFilesFromJSON(req.body.files);
   }
-  next();
+
+  if (shouldThrow) {
+    throw new BadRequestError("There should be files in the <files> field");
+  }
+  return undefined;
+};
+
+const extractFilesFromForm = (files: any): PathBuffer[] => {
+  if (!Array.isArray(files)) {
+    files = [files];
+  }
+  logger.debug("extractFilesFromForm", {
+    files: files.map((f: any) => f.name),
+  });
+  return files.map((f: any) => ({ path: f.name, buffer: f.data }));
+};
+
+const extractFilesFromJSON = (files: {
+  [key: string]: string;
+}): PathBuffer[] => {
+  logger.debug("extractFilesFromJSON", { files: Object.keys(files) });
+  const inputFiles: PathBuffer[] = [];
+  for (const name in files) {
+    const file = files[name];
+    const buffer = Buffer.isBuffer(file) ? file : Buffer.from(file);
+    inputFiles.push({ path: name, buffer });
+  }
+  return inputFiles;
+};
+
+export async function isContractAlreadyPerfect(
+  storageService: StorageService,
+  address: string,
+  chainId: string,
+): Promise<Match | false> {
+  const result = await storageService.performServiceOperation(
+    "checkByChainAndAddress",
+    [address, chainId],
+  );
+  if (
+    result.length != 0 &&
+    result[0].runtimeMatch === "perfect" &&
+    result[0].creationMatch === "perfect"
+  ) {
+    return result[0];
+  } else {
+    return false;
+  }
 }
 
 export async function checkPerfectMatch(
@@ -119,27 +161,6 @@ export interface ApiV1Response extends Omit<
   deployer?: string;
   status: VerificationStatus;
   warning?: string;
-}
-
-export function getMatchStatus(
-  verificationStatus: Verification["status"],
-): VerificationStatus {
-  if (
-    verificationStatus.runtimeMatch === "perfect" ||
-    verificationStatus.creationMatch === "perfect"
-  ) {
-    return "perfect";
-  }
-  if (
-    verificationStatus.runtimeMatch === "partial" ||
-    verificationStatus.creationMatch === "partial"
-  ) {
-    return "partial";
-  }
-  if (verificationStatus.runtimeMatch === "extra-file-input-bug") {
-    return "extra-file-input-bug";
-  }
-  return null;
 }
 
 export function getApiV1ResponseFromVerification(

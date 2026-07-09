@@ -4,6 +4,7 @@ import type { DeploymentInfo } from "../../../helpers/helpers";
 import {
   deployFromAbiAndBytecode,
   verifyContract,
+  waitForJob,
 } from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
@@ -568,16 +569,15 @@ describe("GET /v2/contract/:chainId/:address", function () {
     );
     let res = await chai
       .request(serverFixture.server.app)
-      .post("/")
-      .field("address", contractAddress)
-      .field("chain", chainFixture.chainId)
-      .attach(
-        "files",
-        Buffer.from(JSON.stringify(proxyMetadata)),
-        "metadata.json",
-      )
-      .attach("files", proxySource, "Proxy_flattened.sol");
-    chai.expect(res.status).to.equal(200);
+      .post(`/v2/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
+      .send({
+        sources: {
+          [Object.keys(proxyMetadata.sources)[0]]: proxySource.toString(),
+        },
+        metadata: proxyMetadata,
+      });
+    chai.expect(res.status).to.equal(202);
+    await waitForJob(serverFixture, res.body.verificationId);
 
     res = await chai
       .request(serverFixture.server.app)
@@ -627,17 +627,15 @@ describe("GET /v2/contract/:chainId/:address", function () {
 
     let res = await chai
       .request(serverFixture.server.app)
-      .post("/")
-      .field("address", contractAddress)
-      .field("chain", chainFixture.chainId)
-      .attach(
-        "files",
-        Buffer.from(JSON.stringify(proxyMetadata)),
-        "metadata.json",
-      )
-      .attach("files", proxySource, "Proxy_flattened.sol");
-
-    chai.expect(res.status).to.equal(200);
+      .post(`/v2/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
+      .send({
+        sources: {
+          [Object.keys(proxyMetadata.sources)[0]]: proxySource.toString(),
+        },
+        metadata: proxyMetadata,
+      });
+    chai.expect(res.status).to.equal(202);
+    await waitForJob(serverFixture, res.body.verificationId);
 
     res = await chai
       .request(serverFixture.server.app)

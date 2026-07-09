@@ -1,6 +1,6 @@
 import type { Response } from "express";
-import type { LegacyVerifyRequest } from "../../verification.common";
-import { extractFiles } from "../../verification.common";
+import type { LegacyVerifyRequest } from "./util";
+import { extractFiles, getApiV1ResponseFromVerification } from "./util";
 import type {
   ISolidityCompiler,
   SolidityMetadataContract,
@@ -22,18 +22,17 @@ import {
   BadRequestError,
   NotFoundError,
   InternalServerError,
-} from "../../../../../common/errors";
+} from "../../common/errors";
 import { StatusCodes } from "http-status-codes";
-import type { Services } from "../../../../services/services";
-import type { ChainRepository } from "../../../../../sourcify-chain-repository";
-import logger from "../../../../../common/logger";
-import { getApiV1ResponseFromVerification } from "../../../controllers.common";
-import type { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
-import SourcifyChainMock from "../../../../services/utils/SourcifyChainMock";
-import { getCreatorTx } from "../../../../services/utils/contract-creation-util";
+import type { Services } from "../services/services";
+import type { ChainRepository } from "../../sourcify-chain-repository";
+import logger from "../../common/logger";
+import type { SourcifyDatabaseService } from "../services/storageServices/SourcifyDatabaseService";
+import SourcifyChainMock from "../services/utils/SourcifyChainMock";
+import { getCreatorTx } from "../services/utils/contract-creation-util";
 import type { CustomReplaceMethod } from "./customReplaceMethods";
 import { REPLACE_METHODS } from "./customReplaceMethods";
-import { createCompilationFromJsonInput } from "../../../../services/utils/compilation";
+import { createCompilationFromJsonInput } from "../services/utils/compilation";
 
 export async function verifyDeprecated(
   req: LegacyVerifyRequest,

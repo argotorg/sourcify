@@ -116,10 +116,6 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       libSourcifyConfig,
       sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
       sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
-      brownoutV1: {
-        enabled: config.get("brownoutV1.enabled"),
-        windows: config.get("brownoutV1.windows"),
-      },
     },
     {
       initCompilers: config.get("initCompilers") || false,
@@ -230,6 +226,21 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
   const swaggerDocument = await server.loadSwagger(
     yamljs.load(path.join(__dirname, "..", "openapi.yaml")), // load the openapi file with the $refs resolved
   );
+  // Hide the private/internal endpoints from the public API docs (#2875).
+  // They remain served and request-validated (server.ts loads openapi.yaml
+  // independently for validation); we only strip them from the published spec.
+  if (swaggerDocument?.paths) {
+    for (const apiPath of Object.keys(swaggerDocument.paths)) {
+      if (apiPath.startsWith("/private/")) {
+        delete swaggerDocument.paths[apiPath];
+      }
+    }
+  }
+  if (Array.isArray(swaggerDocument?.tags)) {
+    swaggerDocument.tags = swaggerDocument.tags.filter(
+      (tag: { name?: string }) => tag?.name !== "Private",
+    );
+  }
   server.app.get("/api-docs/swagger.json", (req, res) => {
     res.json(swaggerDocument);
   });

@@ -1,17 +1,18 @@
 import chai from "chai";
 import path from "path";
 import fs from "fs";
-import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
-import { ServerFixture } from "../../../helpers/ServerFixture";
+import { LocalChainFixture } from "../../helpers/LocalChainFixture";
+import { ServerFixture } from "../../helpers/ServerFixture";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
   verifyContract,
-} from "../../../helpers/helpers";
-import { assertVerification } from "../../../helpers/assertions";
+  verifyVyperV2,
+} from "../../helpers/helpers";
+import { assertVerification } from "../../helpers/assertions";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
-import { LOCAL_CHAINS } from "../../../../src/sourcify-chains";
+import { LOCAL_CHAINS } from "../../../src/sourcify-chains";
 
 chai.use(chaiHttp);
 
@@ -90,11 +91,10 @@ describe("/private/replace-contract", function () {
   it("should replace a vyper match contract and remove old data", async () => {
     // Load Vyper test contract artifacts and source
     const vyperArtifact = (
-      await import("../../../sources/vyper/testcontract/artifact.json")
+      await import("../../sources/vyper/testcontract/artifact.json")
     ).default;
     const vyperSourcePath = path.join(
       __dirname,
-      "..",
       "..",
       "..",
       "sources",
@@ -112,37 +112,20 @@ describe("/private/replace-contract", function () {
         vyperArtifact.bytecode,
       );
 
-    // First, verify the Vyper contract normally to get a partial match
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/verify/vyper")
-      .send({
-        address: contractAddress,
-        chain: chainFixture.chainId,
-        creatorTxHash: txHash,
-        files: {
-          "test.vy": vyperSource,
-        },
-        contractPath: "test.vy",
-        contractName: "test",
-        compilerVersion: "0.3.10+commit.91361694",
-        compilerSettings: {
-          evmVersion: "istanbul",
-          outputSelection: {
-            "*": ["evm.bytecode"],
-          },
-        },
-      });
-
-    await assertVerification(
+    // First, verify the Vyper contract via API v2 to get a partial match
+    await verifyVyperV2(
       serverFixture,
-      null,
-      res,
-      null,
+      chainFixture,
       contractAddress,
-      chainFixture.chainId,
-      "partial",
-      false,
+      txHash,
+      vyperSource,
+      "0.3.10+commit.91361694",
+      {
+        evmVersion: "istanbul",
+        outputSelection: {
+          "*": ["evm.bytecode"],
+        },
+      },
     );
 
     // Store the original creation_match value
@@ -212,11 +195,10 @@ describe("/private/replace-contract", function () {
   it("should backfill missing Vyper immutableReferences with the replace-vyper-immutable-references method", async () => {
     // Load Vyper-with-immutables test contract artifacts and source
     const vyperArtifact = (
-      await import("../../../sources/vyper/withImmutables/artifact.json")
+      await import("../../sources/vyper/withImmutables/artifact.json")
     ).default;
     const vyperSourcePath = path.join(
       __dirname,
-      "..",
       "..",
       "..",
       "sources",
@@ -243,29 +225,14 @@ describe("/private/replace-contract", function () {
       );
 
     // Verify the contract. With the #2817 fix this persists immutableReferences.
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/verify/vyper")
-      .send({
-        address: contractAddress,
-        chain: chainFixture.chainId,
-        creatorTxHash: txHash,
-        files: { "test.vy": vyperSource },
-        contractPath: "test.vy",
-        contractName: "test",
-        compilerVersion,
-        compilerSettings,
-      });
-
-    await assertVerification(
+    await verifyVyperV2(
       serverFixture,
-      null,
-      res,
-      null,
+      chainFixture,
       contractAddress,
-      chainFixture.chainId,
-      "partial",
-      false,
+      txHash,
+      vyperSource,
+      compilerVersion,
+      compilerSettings,
     );
 
     // Capture the freshly stored runtime_code_artifacts (with immutableReferences)
@@ -341,11 +308,10 @@ describe("/private/replace-contract", function () {
   it("should skip (replaced=false) when a Vyper contract has no immutables", async () => {
     // The testcontract has no immutables, so the method must be a no-op
     const vyperArtifact = (
-      await import("../../../sources/vyper/testcontract/artifact.json")
+      await import("../../sources/vyper/testcontract/artifact.json")
     ).default;
     const vyperSourcePath = path.join(
       __dirname,
-      "..",
       "..",
       "..",
       "sources",
@@ -368,29 +334,14 @@ describe("/private/replace-contract", function () {
         vyperArtifact.bytecode,
       );
 
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/verify/vyper")
-      .send({
-        address: contractAddress,
-        chain: chainFixture.chainId,
-        creatorTxHash: txHash,
-        files: { "test.vy": vyperSource },
-        contractPath: "test.vy",
-        contractName: "test",
-        compilerVersion,
-        compilerSettings,
-      });
-
-    await assertVerification(
+    await verifyVyperV2(
       serverFixture,
-      null,
-      res,
-      null,
+      chainFixture,
       contractAddress,
-      chainFixture.chainId,
-      "partial",
-      false,
+      txHash,
+      vyperSource,
+      compilerVersion,
+      compilerSettings,
     );
 
     const replaceRes = await chai
@@ -428,11 +379,10 @@ describe("/private/replace-contract", function () {
     // Use the with-immutables contract so the method gets past the no-immutables
     // skip and reaches the duplicate check.
     const vyperArtifact = (
-      await import("../../../sources/vyper/withImmutables/artifact.json")
+      await import("../../sources/vyper/withImmutables/artifact.json")
     ).default;
     const vyperSourcePath = path.join(
       __dirname,
-      "..",
       "..",
       "..",
       "sources",
@@ -457,29 +407,14 @@ describe("/private/replace-contract", function () {
         [5],
       );
 
-    const res = await chai
-      .request(serverFixture.server.app)
-      .post("/verify/vyper")
-      .send({
-        address: contractAddress,
-        chain: chainFixture.chainId,
-        creatorTxHash: txHash,
-        files: { "test.vy": vyperSource },
-        contractPath: "test.vy",
-        contractName: "test",
-        compilerVersion,
-        compilerSettings,
-      });
-
-    await assertVerification(
+    await verifyVyperV2(
       serverFixture,
-      null,
-      res,
-      null,
+      chainFixture,
       contractAddress,
-      chainFixture.chainId,
-      "partial",
-      false,
+      txHash,
+      vyperSource,
+      compilerVersion,
+      compilerSettings,
     );
 
     // Create a second verified_contract (+ deployment + sourcify_match) for the

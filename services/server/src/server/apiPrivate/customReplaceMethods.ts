@@ -5,10 +5,10 @@ import type {
 import {
   bytesFromString,
   getDatabaseColumnsFromVerification,
-} from "../../../../services/utils/database-util";
-import type { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
-import { BadRequestError } from "../../../../../common/errors";
-import logger from "../../../../../common/logger";
+} from "../services/utils/database-util";
+import type { SourcifyDatabaseService } from "../services/storageServices/SourcifyDatabaseService";
+import { BadRequestError } from "../../common/errors";
+import logger from "../../common/logger";
 
 /**
  * Result of a custom replace method:

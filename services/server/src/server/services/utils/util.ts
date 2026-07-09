@@ -10,7 +10,29 @@ import { getAddress } from "ethers";
 import type {
   VerificationStatus,
   VerificationExport,
+  Verification,
 } from "@ethereum-sourcify/lib-sourcify";
+
+export function getMatchStatus(
+  verificationStatus: Verification["status"],
+): VerificationStatus {
+  if (
+    verificationStatus.runtimeMatch === "perfect" ||
+    verificationStatus.creationMatch === "perfect"
+  ) {
+    return "perfect";
+  }
+  if (
+    verificationStatus.runtimeMatch === "partial" ||
+    verificationStatus.creationMatch === "partial"
+  ) {
+    return "partial";
+  }
+  if (verificationStatus.runtimeMatch === "extra-file-input-bug") {
+    return "extra-file-input-bug";
+  }
+  return null;
+}
 
 export const getFileRelativePath = (
   chainId: string,

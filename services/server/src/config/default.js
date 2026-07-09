@@ -51,8 +51,4 @@ module.exports = {
     remoteUrl:
       "https://storage.googleapis.com/sourcifyeth-chains/sourcify-chains-default.json",
   },
-  brownoutV1: {
-    enabled: false,
-    windows: [],
-  },
 };

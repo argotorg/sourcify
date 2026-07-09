@@ -7,17 +7,14 @@ import type {
 import { ContractFactory, Wallet, Contract, getAddress } from "ethers";
 import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
 import { MockVerificationExport } from "./mocks";
-import { assertVerification } from "./assertions";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
 import path from "path";
 import { promises as fs } from "fs";
 import type { ServerFixture } from "./ServerFixture";
-import type { Done } from "mocha";
 import type { LocalChainFixture } from "./LocalChainFixture";
 import type { Pool } from "pg";
 import sinon from "sinon";
-import type { VerificationStatus } from "@ethereum-sourcify/lib-sourcify";
 
 chai.use(chaiHttp);
 
@@ -124,6 +121,30 @@ export async function deployFromBytecodeForCreatorTxHash(
   };
 }
 
+// Polls a verification job until it completes, then returns the final job body.
+export async function waitForJob(
+  serverFixture: ServerFixture,
+  verificationId: string,
+  timeoutMs: number = 30000,
+) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verificationId}`);
+    if (jobRes.body?.isJobCompleted) {
+      return jobRes.body;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(
+    `Verification job ${verificationId} did not complete within ${timeoutMs}ms`,
+  );
+}
+
+// Seeds a verified contract via the API v2 metadata verification endpoint and
+// waits for the async job to finish. Kept as a shared helper for tests that just
+// need an already-verified contract in the database.
 export async function verifyContract(
   serverFixture: ServerFixture,
   chainFixture: LocalChainFixture,
@@ -131,39 +152,82 @@ export async function verifyContract(
   creatorTxHash?: string,
   partial: boolean = false,
 ) {
-  const res = await chai
+  const address = contractAddress || chainFixture.defaultContractAddress;
+  const metadata = partial
+    ? JSON.parse(chainFixture.defaultContractModifiedMetadata.toString())
+    : chainFixture.defaultContractMetadataObject;
+  const source = partial
+    ? chainFixture.defaultContractModifiedSource
+    : chainFixture.defaultContractSource;
+  const sourcePath = Object.keys(metadata.sources)[0];
+
+  const verifyRes = await chai
     .request(serverFixture.server.app)
-    .post("/")
-    .field("address", contractAddress || chainFixture.defaultContractAddress)
-    .field("chain", chainFixture.chainId)
-    .field(
-      "creatorTxHash",
-      creatorTxHash || chainFixture.defaultContractCreatorTx,
-    )
-    .attach(
-      "files",
-      partial
-        ? chainFixture.defaultContractModifiedMetadata
-        : chainFixture.defaultContractMetadata,
-      "metadata.json",
-    )
-    .attach(
-      "files",
-      partial
-        ? chainFixture.defaultContractModifiedSource
-        : chainFixture.defaultContractSource,
-    );
+    .post(`/v2/verify/metadata/${chainFixture.chainId}/${address}`)
+    .send({
+      sources: {
+        [sourcePath]: source.toString(),
+      },
+      metadata,
+      creationTransactionHash:
+        creatorTxHash || chainFixture.defaultContractCreatorTx,
+    });
+
   expect(
-    res.status,
-    `Verification failed for ${contractAddress} on chain ${chainFixture.chainId}`,
-  ).to.equal(200);
-  expect(res.body.result.length).to.equal(1);
-  expect(res.body.result[0].status).to.equal(partial ? "partial" : "perfect");
-  expect(res.body.result[0].chainId).to.equal(chainFixture.chainId);
-  if (contractAddress) {
-    expect(res.body.result[0].address).to.equal(contractAddress);
-  }
-  return res;
+    verifyRes.status,
+    `Verification request failed for ${address} on chain ${chainFixture.chainId}: ${JSON.stringify(
+      verifyRes.body,
+    )}`,
+  ).to.equal(202);
+  const { verificationId } = verifyRes.body;
+  expect(verificationId, "No verificationId returned").to.be.a("string");
+
+  const job = await waitForJob(serverFixture, verificationId);
+  expect(
+    job.error,
+    `Verification job errored for ${address}: ${JSON.stringify(job.error)}`,
+  ).to.equal(undefined);
+  expect(job.contract?.match).to.equal(partial ? "match" : "exact_match");
+  return verifyRes;
+}
+
+// Seeds a Vyper contract via the API v2 standard-JSON verification endpoint and
+// waits for the job to finish. Returns the final job body.
+export async function verifyVyperV2(
+  serverFixture: ServerFixture,
+  chainFixture: LocalChainFixture,
+  contractAddress: string,
+  txHash: string,
+  vyperSource: string,
+  compilerVersion: string,
+  compilerSettings: Record<string, unknown>,
+  sourceFileName: string = "test.vy",
+  contractName: string = "test",
+) {
+  const verifyRes = await chai
+    .request(serverFixture.server.app)
+    .post(`/v2/verify/${chainFixture.chainId}/${contractAddress}`)
+    .send({
+      stdJsonInput: {
+        language: "Vyper",
+        sources: { [sourceFileName]: { content: vyperSource } },
+        settings: compilerSettings,
+      },
+      compilerVersion,
+      contractIdentifier: `${sourceFileName}:${contractName}`,
+      creationTransactionHash: txHash,
+    });
+  expect(
+    verifyRes.status,
+    `Vyper verification request failed: ${JSON.stringify(verifyRes.body)}`,
+  ).to.equal(202);
+  const job = await waitForJob(serverFixture, verifyRes.body.verificationId);
+  expect(
+    job.error,
+    `Vyper verification job errored: ${JSON.stringify(job.error)}`,
+  ).to.equal(undefined);
+  expect(job.contract?.match).to.equal("match");
+  return job;
 }
 
 export async function deployAndVerifyContract(
@@ -244,33 +308,6 @@ export async function callContractMethodWithTx(
   const txResponse = await contract[methodName].send(...args);
   const txReceipt = await txResponse.wait();
   return txReceipt;
-}
-
-export function verifyAndAssertEtherscanViaApiV1(
-  serverFixture: ServerFixture,
-  chainId: string,
-  address: string,
-  expectedStatus: VerificationStatus,
-  done: Done,
-  metadataExpected: boolean = true,
-) {
-  const request = chai
-    .request(serverFixture.server.app)
-    .post("/verify/etherscan")
-    .field("address", address)
-    .field("chain", chainId);
-  request.end(async (err, res) => {
-    await assertVerification(
-      serverFixture,
-      err,
-      res,
-      done,
-      address,
-      chainId,
-      expectedStatus,
-      metadataExpected,
-    );
-  });
 }
 
 export async function readFilesFromDirectory(dirPath: string) {
