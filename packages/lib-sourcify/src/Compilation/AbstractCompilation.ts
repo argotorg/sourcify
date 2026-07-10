@@ -66,14 +66,6 @@ export abstract class AbstractCompilation {
 
   public abstract get compilerName(): string;
 
-  // The compiler version string stored/exported for this compilation. Defaults
-  // to compilerVersion; zksolc-based compilations override this with the
-  // combined `zksolc:<v>;solc:<v>` toolchain string while keeping
-  // compilerVersion as the plain zksolc semver for Solidity heuristics.
-  public get resolvedCompilerVersion(): string {
-    return this.compilerVersion;
-  }
-
   constructor(
     compilerVersion: string,
     jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
@@ -96,8 +88,7 @@ export abstract class AbstractCompilation {
     });
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
     try {
-      // ZkSolcCompilation overrides this method and calls its own compiler, so
-      // the base compile path only ever runs for solc/vyper/fe compilations.
+      // ZkSolcCompilation overrides this method, so this path is never zksolc.
       this.compilerOutput = await (
         this.compiler as ISolidityCompiler | IVyperCompiler | IFeCompiler
       ).compile(version, this.jsonInput as any, forceEmscripten);

@@ -54,9 +54,6 @@ export class PreRunCompilation extends AbstractCompilation {
   // zksolc compiles with language "Solidity" but targets EraVM, which needs
   // ZKSYNC auxdata/bytecode handling instead of the standard Solidity path.
   public readonly isZkSolc: boolean;
-  // Raw combined `zksolc:<v>;solc:<v>` version. Kept because the base
-  // constructor strips the `zksolc:` prefix from `compilerVersion`.
-  private readonly _zkSolcCompilerVersion?: string;
 
   public constructor(
     public compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler,
@@ -74,7 +71,7 @@ export class PreRunCompilation extends AbstractCompilation {
     // `zksolc:<v>;solc:<v>` compiler version string.
     this.isZkSolc = isZkSolcCompilerVersion(compilerVersion);
     if (this.isZkSolc) {
-      this._zkSolcCompilerVersion = compilerVersion;
+      this.compilerVersion = compilerVersion;
     }
     switch (this.language) {
       case 'Solidity': {
@@ -134,12 +131,6 @@ export class PreRunCompilation extends AbstractCompilation {
     return this.isZkSolc
       ? 'zksolc'
       : getCompilerNameFromLanguage(this.language);
-  }
-
-  public get resolvedCompilerVersion(): string {
-    return this.isZkSolc && this._zkSolcCompilerVersion
-      ? this._zkSolcCompilerVersion
-      : super.resolvedCompilerVersion;
   }
 
   public async generateCborAuxdataPositions() {

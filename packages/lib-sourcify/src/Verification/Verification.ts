@@ -101,9 +101,8 @@ export class Verification {
   private blockNumber?: number;
   private txIndex?: number;
   private deployer?: string;
-  // Recipient of the creation transaction. Null for a direct EOA create;
-  // subclasses (e.g. EraVM) use it to detect deploys routed through a system
-  // contract. Only the fields we need are kept off the fetched creation tx.
+  // Recipient of the creation tx; subclasses (EraVM) use it to detect deploys
+  // routed through a system contract.
   protected creationTxTo?: string;
 
   constructor(
@@ -774,7 +773,7 @@ export class Verification {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
         compiler: this.compilation.compilerName,
-        compilerVersion: this.compilation.resolvedCompilerVersion,
+        compilerVersion: this.compilation.compilerVersion,
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {

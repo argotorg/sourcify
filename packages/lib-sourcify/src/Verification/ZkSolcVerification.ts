@@ -67,9 +67,8 @@ export function decodeContractDeployerCalldata(
  */
 export class ZkSolcVerification extends Verification {
   protected async matchWithCreationTx() {
-    // Only a direct deploy carries the ContractDeployer calldata as the creation
-    // tx's top-level input. Anything else (factory / indirect deploy) is not a
-    // structure we can match here.
+    // Only a direct deploy carries the ContractDeployer calldata as the tx's
+    // top-level input; factory/indirect deploys don't.
     if (this.creationTxTo?.toLowerCase() !== SYSTEM_CONTRACT_DEPLOYER_ADDRESS) {
       return;
     }
@@ -79,9 +78,8 @@ export class ZkSolcVerification extends Verification {
       return;
     }
 
-    // The versioned hash of the recompiled runtime bytecode must equal the hash
-    // the deploy calldata references. This is an equality check on a field, not
-    // a bytecode comparison — EraVM has no on-chain creation bytecode.
+    // Equality check on the hash of the bytecode — EraVM has no Solidity compiled on-chain creation
+    // bytecode to match against.
     const eraBytecodeHash = computeEraBytecodeHash(
       this.compilation.runtimeBytecode,
     );
@@ -89,9 +87,6 @@ export class ZkSolcVerification extends Verification {
       return;
     }
 
-    // Reuse the canonical constructor-args extraction (which also validates the
-    // args round-trip through the ABI) by presenting the decoded `input` as the
-    // tail after the hash prefix.
     const constructorTransformationResult =
       extractConstructorArgumentsTransformation(
         eraBytecodeHash,

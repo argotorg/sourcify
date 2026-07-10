@@ -284,21 +284,12 @@ export class ZkSolcCompilation extends AbstractCompilation {
   ) {
     const { zksolcVersion, solcCompilerVersion } =
       parseZkSolcCompilerVersion(compilerVersion);
-    super(zksolcVersion, jsonInput);
+    super(compilerVersion, jsonInput);
+    // Base ctor strips the `zksolc:` prefix; keep the composite string as-is.
+    this.compilerVersion = compilerVersion;
     this.zksolcVersion = zksolcVersion;
     this.solcCompilerVersion = solcCompilerVersion;
     this.initZkSolcJsonInput();
-  }
-
-  // The combined `zksolc:<v>;solc:<v>` string for the currently-resolved
-  // toolchain. This (not the inherited `compilerVersion`, which stays the plain
-  // zksolc semver so the Solidity heuristics in Verification can still parse it)
-  // is what gets exported and stored as the contract's compiler version.
-  public get resolvedCompilerVersion(): string {
-    return formatZkSolcCompilerVersion(
-      this.zksolcVersion,
-      this.solcCompilerVersion,
-    );
   }
 
   initZkSolcJsonInput() {
