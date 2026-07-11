@@ -6,12 +6,15 @@ import type {
   VyperJsonInput,
   VyperStorageLayout,
 } from '@ethereum-sourcify/compilers-types';
-import { VYPER_STORAGE_LAYOUT_WORKER } from './vyperStorageLayoutWorker';
 
 const FIRST_SUPPORTED_VYPER_LAYOUT = '0.1.0-beta.16';
 const FIRST_STANDARD_JSON_VYPER_LAYOUT = '0.4.1-beta.4';
 const MAX_LAYOUT_OUTPUT_SIZE = 16 * 1024 * 1024;
 const DEFAULT_VYPER_PROCESS_TIMEOUT = 5 * 60 * 1000;
+const VYPER_STORAGE_LAYOUT_WORKER_PATH = path.join(
+  __dirname,
+  'vyperStorageLayoutWorker.py',
+);
 
 interface VyperStorageLayoutWorkerOutput {
   schema?: string;
@@ -518,7 +521,7 @@ export async function useVyperStorageLayout(
     throw new Error(`Vyper storage layout target not found: ${targetPath}`);
   }
 
-  const command = ['python', '-c', VYPER_STORAGE_LAYOUT_WORKER];
+  const command = ['python', VYPER_STORAGE_LAYOUT_WORKER_PATH];
   const payload = JSON.stringify({
     target: targetPath,
     sources: vyperJsonInput.sources,

@@ -1,9 +1,3 @@
-// This worker is executed by an exact, uv-isolated Vyper installation. Keep
-// it stdlib-only and compatible with Python 3.8 for historical releases.
-//
-// It is embedded in TypeScript so the published compilers package remains
-// self-contained without a separate asset-copy step.
-export const VYPER_STORAGE_LAYOUT_WORKER = String.raw`
 import contextlib
 import copy
 import hashlib
@@ -616,4 +610,3 @@ if __name__ == "__main__":
     except Exception as exc:
         json.dump({"error": "{}: {}".format(type(exc).__name__, exc)}, sys.stdout)
         sys.exit(1)
-`;

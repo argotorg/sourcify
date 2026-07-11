@@ -7,6 +7,8 @@
   "module": "build/module/index.js",
   "scripts": {
     "build": "run-p build:*",
+    "build:assets-main": "copyfiles -u 1 src/**/*.py build/main",
+    "build:assets-module": "copyfiles -u 1 src/**/*.py build/module",
     "build:main": "tsc -p tsconfig.json",
     "build:module": "tsc -p tsconfig.module.json",
     "fix": "run-s fix:*",
@@ -56,6 +58,7 @@
     "@types/semver": "7.7.1",
     "c8": "11.0.0",
     "chai": "4.5.0",
+    "copyfiles": "2.4.1",
     "mocha": "10.8.2",
     "npm-run-all2": "9.0.2"
   },
