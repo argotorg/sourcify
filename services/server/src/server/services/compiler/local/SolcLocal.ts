@@ -1,9 +1,14 @@
 import type {
+  CompilationTarget,
+  StorageLayout,
   SolidityOutput,
   ISolidityCompiler,
   SolidityJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
-import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
+import {
+  generateHistoricalSolidityStorageLayout,
+  useSolidityCompiler,
+} from "@ethereum-sourcify/compilers";
 
 export class SolcLocal implements ISolidityCompiler {
   constructor(
@@ -22,6 +27,20 @@ export class SolcLocal implements ISolidityCompiler {
       version,
       solcJsonInput,
       forceEmscripten,
+    );
+  }
+
+  async extractStorageLayout(
+    version: string,
+    solcJsonInput: SolidityJsonInput,
+    compilerOutput: SolidityOutput,
+    compilationTarget: CompilationTarget,
+  ): Promise<StorageLayout | undefined> {
+    return generateHistoricalSolidityStorageLayout(
+      version,
+      solcJsonInput,
+      compilerOutput,
+      compilationTarget,
     );
   }
 }

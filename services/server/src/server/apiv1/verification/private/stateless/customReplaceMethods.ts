@@ -9,6 +9,7 @@ import {
 import type { SourcifyDatabaseService } from "../../../../services/storageServices/SourcifyDatabaseService";
 import { BadRequestError } from "../../../../../common/errors";
 import logger from "../../../../../common/logger";
+import { replaceSolidityStorageLayout } from "./solidityStorageLayoutReplace";
 
 /**
  * Result of a custom replace method:
@@ -276,4 +277,5 @@ export const REPLACE_METHODS: Record<string, CustomReplaceMethod> = {
   "replace-creation-information": replaceCreationInformation,
   "replace-metadata": replaceMetadata,
   "replace-vyper-immutable-references": replaceVyperImmutableReferences,
+  "replace-solidity-storage-layout": replaceSolidityStorageLayout,
 };

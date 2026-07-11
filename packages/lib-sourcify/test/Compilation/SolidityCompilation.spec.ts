@@ -2,15 +2,21 @@ import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import path from 'path';
 import fs from 'fs';
-import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
+import {
+  SolidityCompilation,
+  supportsHistoricalSolidityStorageLayoutExtraction,
+} from '../../src/Compilation/SolidityCompilation';
 import { solc } from '../utils';
 import {
   CompilationError,
   type CompilationTarget,
+  type ISolidityCompiler,
 } from '../../src/Compilation/CompilationTypes';
 import type {
   SolidityJsonInput,
+  SolidityOutput,
   SolidityOutputContract,
+  StorageLayout,
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import chaiAsPromised from 'chai-as-promised';
@@ -36,6 +42,29 @@ function getCompilationTargetFromMetadata(
 }
 
 describe('SolidityCompilation', () => {
+  it('recovers historical layouts only when bytecode binds the source metadata', () => {
+    expect(
+      supportsHistoricalSolidityStorageLayoutExtraction(
+        '0.4.6+commit.2dabbdf0',
+      ),
+    ).to.equal(false);
+    expect(
+      supportsHistoricalSolidityStorageLayoutExtraction(
+        '0.4.7+commit.822622cf',
+      ),
+    ).to.equal(true);
+    expect(
+      supportsHistoricalSolidityStorageLayoutExtraction(
+        '0.5.12+commit.7709ece9',
+      ),
+    ).to.equal(true);
+    expect(
+      supportsHistoricalSolidityStorageLayoutExtraction(
+        '0.5.13+commit.5b0b510c',
+      ),
+    ).to.equal(false);
+  });
+
   it('should compile a simple contract', async () => {
     const contractPath = path.join(__dirname, '..', 'sources', 'Storage');
     const metadata = JSON.parse(
@@ -96,6 +125,7 @@ describe('SolidityCompilation', () => {
     );
 
     await compilation.compile();
+
     await compilation.generateCborAuxdataPositions();
     expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
       '1': {
@@ -149,6 +179,7 @@ describe('SolidityCompilation', () => {
     );
 
     await compilation.compile();
+
     await compilation.generateCborAuxdataPositions();
 
     expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({
@@ -453,6 +484,19 @@ describe('SolidityCompilation', () => {
     );
 
     await compilation.compile();
+
+    const storageLayout = (
+      compilation.contractCompilerOutput as SolidityOutputContract
+    ).storageLayout;
+    const owner = storageLayout?.storage.find(({ label }) => label === 'owner');
+    expect(owner).to.include({
+      contract: 'Multidrop.sol:Multidrop',
+      label: 'owner',
+      offset: 0,
+      slot: '0',
+      type: 't_address',
+    });
+
     await compilation.generateCborAuxdataPositions();
 
     // For Solidity 0.4.11, auxdata should be extracted from bytecode directly
@@ -484,6 +528,127 @@ describe('SolidityCompilation', () => {
         /^0x[a-fA-F0-9]+$/,
       );
     }
+  });
+
+  it('should attach a recovered historical storage layout', async () => {
+    const recoveredLayout: StorageLayout = {
+      storage: [
+        {
+          astId: 1,
+          contract: 'Legacy.sol:Legacy',
+          label: 'value',
+          offset: 0,
+          slot: '0',
+          type: 't_uint256',
+        },
+      ],
+      types: {
+        t_uint256: {
+          encoding: 'inplace',
+          label: 'uint256',
+          numberOfBytes: '32',
+        },
+      },
+    };
+    let extractionCalls = 0;
+    const compiler: ISolidityCompiler = {
+      async compile() {
+        return emptySolidityOutput();
+      },
+      async extractStorageLayout() {
+        extractionCalls += 1;
+        return recoveredLayout;
+      },
+    };
+    const compilation = new SolidityCompilation(
+      compiler,
+      '0.5.12+commit.7709ece9',
+      basicSolidityInput(),
+      { path: 'Legacy.sol', name: 'Legacy' },
+    );
+
+    expect(
+      compilation.jsonInput.settings.outputSelection?.['*']?.[''],
+    ).to.deep.equal(['ast']);
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as SolidityOutputContract)
+        .storageLayout,
+    ).to.deep.equal(recoveredLayout);
+  });
+
+  it('should preserve native storage layouts without invoking recovery', async () => {
+    const nativeLayout: StorageLayout = { storage: [], types: null };
+    let extractionCalls = 0;
+    const compiler: ISolidityCompiler = {
+      async compile() {
+        return emptySolidityOutput(nativeLayout);
+      },
+      async extractStorageLayout() {
+        extractionCalls += 1;
+        throw new Error('must not run');
+      },
+    };
+    const compilation = new SolidityCompilation(
+      compiler,
+      '0.5.12+commit.7709ece9',
+      basicSolidityInput(),
+      { path: 'Legacy.sol', name: 'Legacy' },
+    );
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(0);
+    expect(
+      (compilation.contractCompilerOutput as SolidityOutputContract)
+        .storageLayout,
+    ).to.equal(nativeLayout);
+  });
+
+  it('should leave the layout absent when historical recovery fails', async () => {
+    const compiler: ISolidityCompiler = {
+      async compile() {
+        return emptySolidityOutput();
+      },
+      async extractStorageLayout() {
+        throw new Error('unresolved historical type');
+      },
+    };
+    const compilation = new SolidityCompilation(
+      compiler,
+      '0.4.11+commit.68ef5810',
+      basicSolidityInput(),
+      { path: 'Legacy.sol', name: 'Legacy' },
+    );
+
+    expect(
+      compilation.jsonInput.settings.outputSelection?.['*']?.[''],
+    ).to.deep.equal(['legacyAST']);
+    await compilation.compile();
+
+    expect(
+      (compilation.contractCompilerOutput as SolidityOutputContract)
+        .storageLayout,
+    ).to.equal(undefined);
+  });
+
+  it('should not request historical ASTs for native layout versions', () => {
+    const compilation = new SolidityCompilation(
+      {
+        async compile() {
+          return emptySolidityOutput();
+        },
+      },
+      '0.5.13+commit.5b0b510c',
+      basicSolidityInput(),
+      { path: 'Legacy.sol', name: 'Legacy' },
+    );
+
+    expect(
+      compilation.jsonInput.settings.outputSelection?.['*']?.[''],
+    ).to.equal(undefined);
   });
 
   it('should output transientStorageLayout for contracts with transient storage variables', async () => {
@@ -583,3 +748,29 @@ contract TransientStorage {
     expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
   });
 });
+
+function basicSolidityInput(): SolidityJsonInput {
+  return {
+    language: 'Solidity',
+    sources: { 'Legacy.sol': { content: 'contract Legacy { uint value; }' } },
+    settings: {},
+  };
+}
+
+function emptySolidityOutput(storageLayout?: StorageLayout): SolidityOutput {
+  return {
+    contracts: {
+      'Legacy.sol': {
+        Legacy: {
+          abi: [],
+          ...(storageLayout ? { storageLayout } : {}),
+          evm: {
+            bytecode: { object: '' },
+            deployedBytecode: { object: '' },
+          },
+        },
+      },
+    },
+    sources: { 'Legacy.sol': { id: 0 } },
+  };
+}

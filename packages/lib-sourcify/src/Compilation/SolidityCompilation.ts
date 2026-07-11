@@ -42,6 +42,15 @@ export const DEFAULT_OUTPUT_SELECTION = {
   },
 } as const;
 
+export function supportsHistoricalSolidityStorageLayoutExtraction(
+  version: string,
+): boolean {
+  // Before 0.4.7, bytecode did not bind the source through compiler metadata.
+  // Distinct source layouts can therefore deduplicate to one compiled_contracts
+  // row, which cannot safely carry a source-specific storageLayout artifact.
+  return semver.gte(version, '0.4.7') && semver.lt(version, '0.5.13');
+}
+
 /**
  * Abstraction of a solidity compilation
  */
@@ -75,7 +84,17 @@ export class SolidityCompilation extends AbstractCompilation {
   }
 
   initSolidityJsonInput() {
-    this.jsonInput.settings.outputSelection = DEFAULT_OUTPUT_SELECTION;
+    const outputSelection = structuredClone(
+      DEFAULT_OUTPUT_SELECTION,
+    ) as unknown as Record<string, Record<string, string[]>>;
+    if (
+      supportsHistoricalSolidityStorageLayoutExtraction(this.compilerVersion)
+    ) {
+      outputSelection['*'][''] = [
+        semver.gte(this.compilerVersion, '0.4.12') ? 'ast' : 'legacyAST',
+      ];
+    }
+    this.jsonInput.settings.outputSelection = outputSelection;
   }
 
   /** Generates an edited contract with a space at the end of each source file to create a different source file hash and consequently a different metadata hash.
@@ -279,6 +298,30 @@ export class SolidityCompilation extends AbstractCompilation {
   public async compile(forceEmscripten = false) {
     const contract =
       await this.compileAndReturnCompilationTarget(forceEmscripten);
+    if (
+      contract.storageLayout === undefined &&
+      this.compilerOutput &&
+      this.compiler.extractStorageLayout &&
+      supportsHistoricalSolidityStorageLayoutExtraction(this.compilerVersion)
+    ) {
+      try {
+        const storageLayout = await this.compiler.extractStorageLayout(
+          this.compilerVersion,
+          this.jsonInput,
+          this.compilerOutput,
+          this.compilationTarget,
+        );
+        if (storageLayout !== undefined) {
+          contract.storageLayout = storageLayout;
+        }
+      } catch (error) {
+        logWarn('Cannot recover historical Solidity storage layout', {
+          error,
+          compilerVersion: this.compilerVersion,
+          compilationTarget: this.compilationTarget,
+        });
+      }
+    }
     if (contract.metadata) {
       this._metadata = JSON.parse(contract.metadata.trim());
     } else {

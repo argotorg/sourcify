@@ -1,6 +1,7 @@
 import type {
   SolidityJsonInput,
   SolidityOutput,
+  StorageLayout,
   VyperJsonInput,
   VyperOutput,
   FeJsonInput,
@@ -64,6 +65,12 @@ export interface ISolidityCompiler {
     solcJsonInput: SolidityJsonInput,
     forceEmscripten?: boolean,
   ): Promise<SolidityOutput>;
+  extractStorageLayout?(
+    version: string,
+    solcJsonInput: SolidityJsonInput,
+    compilerOutput: SolidityOutput,
+    compilationTarget: CompilationTarget,
+  ): Promise<StorageLayout | undefined>;
 }
 
 export interface IVyperCompiler {
