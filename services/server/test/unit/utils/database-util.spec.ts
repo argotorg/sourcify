@@ -2,9 +2,12 @@ import { expect } from "chai";
 import { getDatabaseColumnsFromVerification } from "../../../src/server/services/utils/database-util";
 
 describe("database-util", () => {
-  it("stores non-empty Vyper immutable references in runtime code artifacts", async () => {
+  it("stores Vyper immutable references and transient storage layout", async () => {
     const immutableReferences = {
       "0": [{ length: 32, start: 3 }],
+    };
+    const transientStorageLayout = {
+      temporary_value: { type: "uint256", slot: 1, n_slots: 1 },
     };
 
     const databaseColumns = await getDatabaseColumnsFromVerification({
@@ -73,6 +76,7 @@ describe("database-util", () => {
           abi: [],
           userdoc: {},
           devdoc: {},
+          transientStorageLayout,
           evm: {
             bytecode: {
               object: "6000600102",
@@ -92,5 +96,9 @@ describe("database-util", () => {
       databaseColumns.compiledContract.runtime_code_artifacts
         .immutableReferences,
     ).to.deep.equal(immutableReferences);
+    expect(
+      databaseColumns.compiledContract.compilation_artifacts
+        .transientStorageLayout,
+    ).to.deep.equal(transientStorageLayout);
   });
 });

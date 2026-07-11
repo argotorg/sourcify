@@ -5,6 +5,7 @@ import semver from 'semver';
 import type {
   VyperJsonInput,
   VyperStorageLayout,
+  VyperStorageLayouts,
 } from '@ethereum-sourcify/compilers-types';
 
 const FIRST_SUPPORTED_VYPER_LAYOUT = '0.1.0-beta.16';
@@ -513,6 +514,24 @@ export function normalizeVyperStorageLayout(
   );
 }
 
+export function normalizeVyperTransientStorageLayout(
+  rawLayout: unknown,
+  rawTypeDefinitions?: unknown,
+  rawLeafTypeDefinitions?: unknown,
+): VyperStorageLayout | undefined {
+  if (!rawLayout || typeof rawLayout !== 'object' || Array.isArray(rawLayout)) {
+    throw new Error('Vyper storage layout worker returned an invalid layout');
+  }
+  const transientStorageLayout = (rawLayout as Record<string, unknown>)
+    .transient_storage_layout;
+  if (transientStorageLayout === undefined) return undefined;
+  return normalizeVyperStorageLayout(
+    transientStorageLayout,
+    rawTypeDefinitions,
+    rawLeafTypeDefinitions,
+  );
+}
+
 /**
  * Recover storage layout with the exact historical Vyper package.
  *
@@ -521,12 +540,12 @@ export function normalizeVyperStorageLayout(
  * data. The isolated worker handles both without loading Python compiler state
  * into the Node process.
  */
-export async function useVyperStorageLayout(
+export async function useVyperStorageLayouts(
   vyperRepoPath: string,
   version: string,
   vyperJsonInput: VyperJsonInput,
   targetPath: string,
-): Promise<VyperStorageLayout> {
+): Promise<VyperStorageLayouts> {
   if (!supportsHistoricalVyperStorageLayout(version)) {
     throw new Error(
       `Historical Vyper storage layout extraction does not support ${version}`,
@@ -563,9 +582,34 @@ export async function useVyperStorageLayout(
   if (parsed.schema !== 'sourcify/vyper-storage-layout/v1') {
     throw new Error('Vyper storage layout worker returned an unknown schema');
   }
-  return normalizeVyperStorageLayout(
+  const storageLayout = normalizeVyperStorageLayout(
     parsed.layout,
     parsed.type_definitions,
     parsed.leaf_type_definitions,
   );
+  const transientStorageLayout = normalizeVyperTransientStorageLayout(
+    parsed.layout,
+    parsed.type_definitions,
+    parsed.leaf_type_definitions,
+  );
+  return {
+    storageLayout,
+    ...(transientStorageLayout !== undefined ? { transientStorageLayout } : {}),
+  };
+}
+
+export async function useVyperStorageLayout(
+  vyperRepoPath: string,
+  version: string,
+  vyperJsonInput: VyperJsonInput,
+  targetPath: string,
+): Promise<VyperStorageLayout> {
+  return (
+    await useVyperStorageLayouts(
+      vyperRepoPath,
+      version,
+      vyperJsonInput,
+      targetPath,
+    )
+  ).storageLayout;
 }

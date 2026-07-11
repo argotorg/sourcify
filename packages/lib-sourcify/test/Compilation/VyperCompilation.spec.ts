@@ -815,12 +815,23 @@ describe('VyperCompilation historical storage layouts', () => {
     version,
     nativeLayout,
     extractStorageLayout,
+    extractStorageLayouts,
   }: {
     version: string;
     nativeLayout?: unknown;
-    extractStorageLayout: () => Promise<
+    extractStorageLayout?: () => Promise<
       Record<string, { type: string; slot: number; n_slots: number }>
     >;
+    extractStorageLayouts?: () => Promise<{
+      storageLayout: Record<
+        string,
+        { type: string; slot: number; n_slots: number }
+      >;
+      transientStorageLayout?: Record<
+        string,
+        { type: string; slot: number; n_slots: number }
+      >;
+    }>;
   }) {
     const contract = {
       abi: [],
@@ -843,6 +854,7 @@ describe('VyperCompilation historical storage layouts', () => {
         contracts: { 'Fixture.vy': { Fixture: contract } },
       }),
       extractStorageLayout,
+      extractStorageLayouts,
     };
     return new VyperCompilation(
       compiler as any,
@@ -893,6 +905,39 @@ describe('VyperCompilation historical storage layouts', () => {
       (compilation.contractCompilerOutput as VyperOutputContract).layout
         ?.storage_layout,
     ).to.deep.equal({});
+  });
+
+  it('attaches supplemental persistent and transient layouts together', async () => {
+    let extractionCalls = 0;
+    const compilation = compilationWithExtractor({
+      version: '0.4.0+commit.e9db8d9f',
+      nativeLayout: [null],
+      extractStorageLayouts: async () => {
+        extractionCalls += 1;
+        return {
+          storageLayout: {
+            persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+          },
+          transientStorageLayout: {
+            temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+          },
+        };
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout,
+    ).to.deep.equal({
+      storage_layout: {
+        persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+      },
+      transient_storage_layout: {
+        temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+      },
+    });
   });
 
   it('falls back for 0.4.1 betas before b4', async () => {

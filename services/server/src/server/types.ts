@@ -98,7 +98,9 @@ export interface VerifiedContract extends VerifiedContractMinimal {
   abi?: Nullable<JsonFragment[]>;
   metadata?: Nullable<Metadata>;
   storageLayout?: Nullable<StorageLayout | VyperStorageLayout>;
-  transientStorageLayout?: Nullable<TransientStorageLayout>;
+  transientStorageLayout?: Nullable<
+    TransientStorageLayout | VyperStorageLayout
+  >;
   userdoc?: Nullable<Userdoc>;
   devdoc?: Nullable<Devdoc>;
   sourceIds?: Nullable<

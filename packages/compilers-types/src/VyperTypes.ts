@@ -99,6 +99,11 @@ export interface VyperStorageLayout {
   };
 }
 
+export interface VyperStorageLayouts {
+  storageLayout: VyperStorageLayout;
+  transientStorageLayout?: VyperStorageLayout;
+}
+
 /**
  * Vyper's `ir` output. Version 0.3.1 emits text LLL as a string; 0.3.2 and
  * later (including 0.3.10+ and 0.4.x) emit a structured IR tree where each
@@ -121,6 +126,7 @@ export interface VyperOutputContract {
   ir: VyperIROutput;
   layout?: {
     storage_layout: VyperStorageLayout;
+    transient_storage_layout?: VyperStorageLayout;
   };
   evm: {
     bytecode: {

@@ -3,11 +3,13 @@ import path from 'path';
 import { useVyperCompiler } from '../src/lib/vyperCompiler';
 import {
   normalizeVyperStorageLayout,
+  normalizeVyperTransientStorageLayout,
   normalizeVyperVersionForPython,
   repairDuplicatedVyperHashMapType,
   runIsolatedVyper,
   supportsHistoricalVyperStorageLayout,
   useVyperStorageLayout,
+  useVyperStorageLayouts,
 } from '../src/lib/vyperStorageLayout';
 
 describe('Vyper storage layout helpers', () => {
@@ -73,6 +75,24 @@ describe('Vyper storage layout helpers', () => {
         },
       }),
     ).to.deep.equal({});
+  });
+
+  it('normalizes Vyper transient storage independently', () => {
+    expect(
+      normalizeVyperTransientStorageLayout({
+        storage_layout: {
+          persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+        },
+        transient_storage_layout: {
+          temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+        },
+      }),
+    ).to.deep.equal({
+      temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+    });
+    expect(
+      normalizeVyperTransientStorageLayout({ storage_layout: {} }),
+    ).to.equal(undefined);
   });
 
   it('rejects a layout whose span could not be recovered', () => {
@@ -212,6 +232,36 @@ values: uint256[3]
         'HashMap[address, HashMap[address, uint256]]',
       );
     });
+
+    for (const version of ['0.3.8', '0.4.0'] as const) {
+      it(`extracts Vyper ${version} transient storage layout`, async function () {
+        this.timeout(5 * 60 * 1000);
+        const layouts = await useVyperStorageLayouts(
+          vyperRepoPath,
+          version,
+          {
+            language: 'Vyper',
+            sources: {
+              'Fixture.vy': {
+                content:
+                  'persistent_value: uint256\ntemporary_value: transient(uint256)\n',
+              },
+            },
+            settings: {
+              evmVersion: 'cancun',
+              outputSelection: { 'Fixture.vy': [] },
+            },
+          },
+          'Fixture.vy',
+        );
+        expect(layouts.storageLayout).to.deep.equal({
+          persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+        });
+        expect(layouts.transientStorageLayout).to.deep.equal({
+          temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+        });
+      });
+    }
 
     for (const version of ['0.4.0b1', '0.4.0rc5'] as const) {
       it(`recovers spans omitted by the native ${version} layout`, async function () {

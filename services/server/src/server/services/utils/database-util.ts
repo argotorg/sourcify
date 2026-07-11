@@ -95,7 +95,9 @@ export namespace Tables {
       userdoc: Nullable<Userdoc> | Record<string, never>;
       devdoc: Nullable<Devdoc> | Record<string, never>;
       storageLayout: Nullable<StorageLayout | VyperStorageLayout>;
-      transientStorageLayout: Nullable<TransientStorageLayout>;
+      transientStorageLayout: Nullable<
+        TransientStorageLayout | VyperStorageLayout
+      >;
       sources: Nullable<CompilationArtifactsSources>;
     };
     compiler_settings: Omit<
@@ -794,6 +796,8 @@ export async function getDatabaseColumnsFromVerification(
       null,
     transientStorageLayout:
       (compilerOutput as SolidityOutputContract)?.transientStorageLayout ||
+      (compilerOutput as VyperOutputContract)?.layout
+        ?.transient_storage_layout ||
       null,
     sources: verification.compilation.compilerOutput?.sources || null,
   };

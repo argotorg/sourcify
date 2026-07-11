@@ -181,7 +181,7 @@ paths:
         - `userdoc` – user-facing NatSpec documentation
         - `devdoc` – developer NatSpec documentation
         - `storageLayout` – contract storage layout
-        - `transientStorageLayout` – transient storage layout (Solidity >= 0.8.24)
+        - `transientStorageLayout` – transient storage layout (Solidity >= 0.8.24 or Vyper >= 0.3.8 targeting Cancun)
         - `additionalInput` – extra top-level compiler input fields (e.g. Vyper `storage_layout_overrides`)
         - `stdJsonInput` – full standard JSON compiler input
         - `stdJsonOutput` – full standard JSON compiler output

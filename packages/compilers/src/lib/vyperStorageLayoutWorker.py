@@ -465,6 +465,48 @@ def _enrich_native_layout(layout, annotated, parsed):
     return layout
 
 
+def _split_legacy_transient_layout(layout, data, parsed):
+    # Vyper 0.3.8-0.3.10 added transient variables but allocated and reported
+    # them in the persistent storage namespace. The AST still records the
+    # transient qualifier, so preserve the compiler-assigned slots while
+    # separating the two EVM address spaces for Sourcify consumers.
+    if not ((0, 3, 8) <= parsed < (0, 4, 0)):
+        return layout
+    namespace = layout.get("storage_layout")
+    if not isinstance(namespace, dict) or data is None:
+        return layout
+
+    module = getattr(data, "annotated_vyper_module", None)
+    if module is None:
+        module = getattr(data, "vyper_module_folded", None)
+    if module is None:
+        return layout
+
+    from vyper import ast as vy_ast
+
+    transient_names = set()
+    node_types = [vy_ast.AnnAssign]
+    variable_decl = getattr(vy_ast, "VariableDecl", None)
+    if variable_decl is not None:
+        node_types.append(variable_decl)
+    for node_type in node_types:
+        for node in module.get_children(node_type):
+            varinfo = getattr(node.target, "_metadata", {}).get("varinfo")
+            if getattr(node, "is_transient", False) or getattr(
+                varinfo, "is_transient", False
+            ):
+                transient_names.add(str(node.target.id))
+
+    transient_namespace = {
+        name: namespace.pop(name)
+        for name in transient_names
+        if name in namespace
+    }
+    if transient_namespace:
+        layout["transient_storage_layout"] = transient_namespace
+    return layout
+
+
 def _compiler_data_paths(data):
     file_input = getattr(data, "file_input", None)
     if file_input is None:
@@ -581,6 +623,7 @@ def main():
             # The native slot table remains authoritative when optional type
             # enrichment is not possible (for example, an unusual import API).
             pass
+        layout = _split_legacy_transient_layout(layout, data, parsed)
         method = "native-layout"
     elif parsed >= (0, 2, 13):
         layout, definitions = _annotated_layout(

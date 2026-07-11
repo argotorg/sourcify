@@ -242,9 +242,23 @@ export class VyperCompilation extends AbstractCompilation {
       nativeStorageLayout !== null &&
       typeof nativeStorageLayout === 'object' &&
       !Array.isArray(nativeStorageLayout);
+    const nativeTransientStorageLayout =
+      contract.layout?.transient_storage_layout;
+    const hasNativeTransientStorageLayout =
+      nativeTransientStorageLayout !== null &&
+      typeof nativeTransientStorageLayout === 'object' &&
+      !Array.isArray(nativeTransientStorageLayout);
+    const supportsTransientStorage = gte(
+      this.compilerVersionCompatibleWithSemver,
+      '0.3.8',
+    );
+    const needsStorageLayout = !hasNativeStorageLayout;
+    const needsTransientStorageLayout =
+      supportsTransientStorage && !hasNativeTransientStorageLayout;
     if (
-      hasNativeStorageLayout ||
-      !this.compiler.extractStorageLayout ||
+      (!needsStorageLayout && !needsTransientStorageLayout) ||
+      (!this.compiler.extractStorageLayouts &&
+        !this.compiler.extractStorageLayout) ||
       !supportsHistoricalStorageLayoutExtraction(
         this.compilerVersion,
         this.compilerVersionCompatibleWithSemver,
@@ -254,12 +268,31 @@ export class VyperCompilation extends AbstractCompilation {
     }
 
     try {
-      const storageLayout = await this.compiler.extractStorageLayout(
-        this.compilerVersion,
-        this.jsonInput,
-        this.compilationTarget.path,
-      );
-      contract.layout = { storage_layout: storageLayout };
+      if (this.compiler.extractStorageLayouts) {
+        const { storageLayout, transientStorageLayout } =
+          await this.compiler.extractStorageLayouts(
+            this.compilerVersion,
+            this.jsonInput,
+            this.compilationTarget.path,
+          );
+        contract.layout = {
+          ...contract.layout,
+          storage_layout: needsStorageLayout
+            ? storageLayout
+            : nativeStorageLayout!,
+          ...(needsTransientStorageLayout &&
+          transientStorageLayout !== undefined
+            ? { transient_storage_layout: transientStorageLayout }
+            : {}),
+        };
+      } else if (needsStorageLayout && this.compiler.extractStorageLayout) {
+        const storageLayout = await this.compiler.extractStorageLayout(
+          this.compilerVersion,
+          this.jsonInput,
+          this.compilationTarget.path,
+        );
+        contract.layout = { storage_layout: storageLayout };
+      }
     } catch (error) {
       // Historical layout is a supplemental artifact. A failure must never
       // downgrade or invalidate an otherwise successful verification.
