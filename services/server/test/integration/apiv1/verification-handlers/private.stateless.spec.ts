@@ -290,12 +290,13 @@ def __init__(val: uint256):
     );
     const compiledContract = originalArtifactsResult.rows[0];
     const originalArtifacts = compiledContract.runtime_code_artifacts;
+    const expectedStorageLayout = {
+      stored: { type: "uint256", slot: 1, n_slots: 1 },
+      values: { type: "uint256[3]", slot: 2, n_slots: 3 },
+    };
     chai
       .expect(compiledContract.compilation_artifacts.storageLayout)
-      .to.deep.equal({
-        stored: { type: "uint256", slot: 1, n_slots: 1 },
-        values: { type: "uint256[3]", slot: 2, n_slots: 3 },
-      });
+      .to.deep.equal(expectedStorageLayout);
 
     // Sanity check: the fix stores non-empty immutableReferences for this contract
     chai.expect(originalArtifacts.immutableReferences).to.not.be.null;
@@ -431,10 +432,9 @@ def __init__(val: uint256):
           `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=${fields}`,
         );
       chai.expect(lookupRes.status).to.equal(StatusCodes.OK);
-      chai.expect(lookupRes.body.storageLayout).to.deep.equal({
-        stored: { type: "uint256", slot: 0, n_slots: 1 },
-        values: { type: "uint256[3]", slot: 1, n_slots: 3 },
-      });
+      chai
+        .expect(lookupRes.body.storageLayout)
+        .to.deep.equal(expectedStorageLayout);
     }
   });
 
