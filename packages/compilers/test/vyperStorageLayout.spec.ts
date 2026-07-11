@@ -266,7 +266,7 @@ values: uint256[3]
     for (const version of ['0.4.0b1', '0.4.0rc5'] as const) {
       it(`recovers spans omitted by the native ${version} layout`, async function () {
         this.timeout(5 * 60 * 1000);
-        const layout = await useVyperStorageLayout(
+        const layouts = await useVyperStorageLayouts(
           vyperRepoPath,
           version,
           {
@@ -281,10 +281,20 @@ values: uint256[3]
           },
           'Fixture.vy',
         );
+        const layout = layouts.storageLayout;
         expect(layout.values.n_slots).to.equal(3);
         expect(layout.balances.n_slots).to.equal(1);
         if (version === '0.4.0b1') {
           expect(layout['$.nonreentrant_key'].n_slots).to.equal(1);
+        } else {
+          expect(layouts.transientStorageLayout).to.not.equal(undefined);
+          expect(Object.keys(layouts.transientStorageLayout || {})).to.not.be
+            .empty;
+          expect(
+            Object.values(layouts.transientStorageLayout || {}).every(
+              ({ n_slots }) => n_slots === 1,
+            ),
+          ).to.equal(true);
         }
       });
     }

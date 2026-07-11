@@ -462,6 +462,9 @@ def _enrich_native_namespace(namespace, annotated, parsed, preserve_types=False)
 def _enrich_native_layout(layout, annotated, parsed):
     namespace = layout.get("storage_layout", layout)
     _enrich_native_namespace(namespace, annotated, parsed)
+    transient_namespace = layout.get("transient_storage_layout")
+    if isinstance(transient_namespace, dict):
+        _enrich_native_namespace(transient_namespace, annotated, parsed)
     return layout
 
 
