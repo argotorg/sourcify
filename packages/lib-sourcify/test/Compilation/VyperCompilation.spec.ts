@@ -817,10 +817,7 @@ describe('VyperCompilation historical storage layouts', () => {
     extractStorageLayout,
   }: {
     version: string;
-    nativeLayout?: Record<
-      string,
-      { type: string; slot: number; n_slots: number }
-    >;
+    nativeLayout?: unknown;
     extractStorageLayout: () => Promise<
       Record<string, { type: string; slot: number; n_slots: number }>
     >;
@@ -830,7 +827,9 @@ describe('VyperCompilation historical storage layouts', () => {
       userdoc: { kind: 'user', methods: {}, version: 1 },
       devdoc: { kind: 'dev', methods: {}, version: 1 },
       ir: '',
-      ...(nativeLayout ? { layout: { storage_layout: nativeLayout } } : {}),
+      ...(nativeLayout !== undefined
+        ? { layout: { storage_layout: nativeLayout } }
+        : {}),
       evm: {
         bytecode: { object: '0x01', opcodes: '' },
         deployedBytecode: { object: '0x01', opcodes: '', sourceMap: '' },
@@ -874,6 +873,26 @@ describe('VyperCompilation historical storage layouts', () => {
       (compilation.contractCompilerOutput as VyperOutputContract).layout
         ?.storage_layout,
     ).to.deep.equal({ owner: { type: 'address', slot: 0, n_slots: 1 } });
+  });
+
+  it('replaces a historical null-array layout sentinel', async () => {
+    let extractionCalls = 0;
+    const compilation = compilationWithExtractor({
+      version: '0.4.0+commit.e9db8d9f',
+      nativeLayout: [null],
+      extractStorageLayout: async () => {
+        extractionCalls += 1;
+        return {};
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout
+        ?.storage_layout,
+    ).to.deep.equal({});
   });
 
   it('falls back for 0.4.1 betas before b4', async () => {

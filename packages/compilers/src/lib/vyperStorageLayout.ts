@@ -466,9 +466,24 @@ export function normalizeVyperStorageLayout(
       ('type' in storageLayout &&
         (storageLayout.type === null || typeof storageLayout.type !== 'object'))
     );
+  const codeLayout = raw.code_layout;
+  const codeLayoutIsWrapper =
+    codeLayout !== null &&
+    typeof codeLayout === 'object' &&
+    !Array.isArray(codeLayout) &&
+    Object.values(codeLayout).every(
+      (item) =>
+        item !== null &&
+        typeof item === 'object' &&
+        !Array.isArray(item) &&
+        'offset' in item &&
+        'length' in item,
+    );
   const persistent = storageLayoutIsWrapper
     ? (storageLayout as Record<string, unknown>)
-    : raw;
+    : codeLayoutIsWrapper
+      ? {}
+      : raw;
   const leaves = flattenLayout(persistent).sort(
     (left, right) =>
       left.slot - right.slot || left.name.localeCompare(right.name),

@@ -65,6 +65,16 @@ describe('Vyper storage layout helpers', () => {
     });
   });
 
+  it('normalizes an immutable-only native layout to empty storage', () => {
+    expect(
+      normalizeVyperStorageLayout({
+        code_layout: {
+          OWNER: { type: 'address', offset: 0, length: 32 },
+        },
+      }),
+    ).to.deep.equal({});
+  });
+
   it('rejects a layout whose span could not be recovered', () => {
     expect(() =>
       normalizeVyperStorageLayout({

@@ -293,8 +293,8 @@ def __init__(val: uint256):
     chai
       .expect(compiledContract.compilation_artifacts.storageLayout)
       .to.deep.equal({
-        stored: { type: "uint256", slot: 0, n_slots: 1 },
-        values: { type: "uint256[3]", slot: 1, n_slots: 3 },
+        stored: { type: "uint256", slot: 1, n_slots: 1 },
+        values: { type: "uint256[3]", slot: 2, n_slots: 3 },
       });
 
     // Sanity check: the fix stores non-empty immutableReferences for this contract

@@ -237,8 +237,13 @@ export class VyperCompilation extends AbstractCompilation {
 
   public async compile() {
     const contract = await this.compileAndReturnCompilationTarget(false);
+    const nativeStorageLayout = contract.layout?.storage_layout;
+    const hasNativeStorageLayout =
+      nativeStorageLayout !== null &&
+      typeof nativeStorageLayout === 'object' &&
+      !Array.isArray(nativeStorageLayout);
     if (
-      contract.layout?.storage_layout !== undefined ||
+      hasNativeStorageLayout ||
       !this.compiler.extractStorageLayout ||
       !supportsHistoricalStorageLayoutExtraction(
         this.compilerVersion,
