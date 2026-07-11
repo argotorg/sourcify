@@ -33,9 +33,9 @@ export function returnFixedVyperVersion(compilerVersion: string): string {
   } else {
     // Check for beta or release candidate versions
     if (compilerVersion.match(/\d+\.\d+\.\d+(b\d+|rc\d+)/)) {
-      return `${compilerVersion.split('+')[0].replace(/(b\d+|rc\d+)$/, '')}+${
-        compilerVersion.split('+')[1]
-      }`;
+      const [release, build] = compilerVersion.split('+');
+      const compatibleRelease = release.replace(/(b\d+|rc\d+)$/, '');
+      return build ? `${compatibleRelease}+${build}` : compatibleRelease;
     } else {
       throw new CompilationError({ code: 'invalid_compiler_version' });
     }
@@ -57,6 +57,18 @@ export function supportsCreationBytecodeSourceMap(
   const rcMatch = compilerVersion.match(/0\.4\.0rc(\d+)/);
   if (rcMatch) return parseInt(rcMatch[1]) >= 4;
   return true; // stable 0.4.0
+}
+
+export function supportsHistoricalStorageLayoutExtraction(
+  compilerVersion: string,
+  compatibleVersion: string,
+): boolean {
+  const betaMatch = compilerVersion.match(/0\.1\.0(?:-beta\.|b)(\d+)/);
+  if (betaMatch) return parseInt(betaMatch[1]) >= 16;
+  const layoutBetaMatch = compilerVersion.match(/0\.4\.1(?:-beta\.|b)(\d+)/);
+  if (layoutBetaMatch) return parseInt(layoutBetaMatch[1]) < 4;
+  if (/0\.4\.1(?:-rc\.|rc)\d+/.test(compilerVersion)) return false;
+  return gte(compatibleVersion, '0.2.0') && lt(compatibleVersion, '0.4.1');
 }
 
 export function returnAuxdataStyle(
@@ -169,9 +181,16 @@ export class VyperCompilation extends AbstractCompilation {
       outputs.push('evm.bytecode.sourceMap');
     }
 
-    const outputSelection = {
-      [this.compilationTarget.path]: outputs,
-    };
+    // Historical Vyper Standard JSON formatters index outputSelection for
+    // every source, even when only the compilation target's outputs are
+    // requested. Keep non-target sources AST-only so legitimate imports do
+    // not fail with a KeyError while avoiding unnecessary contract outputs.
+    const outputSelection = Object.fromEntries(
+      Object.keys(this.jsonInput.sources).map((sourcePath) => [
+        sourcePath,
+        sourcePath === this.compilationTarget.path ? outputs : ['ast'],
+      ]),
+    );
     this.jsonInput.settings = { ...this.jsonInput.settings, outputSelection };
   }
 
@@ -217,7 +236,34 @@ export class VyperCompilation extends AbstractCompilation {
   }
 
   public async compile() {
-    await this.compileAndReturnCompilationTarget(false);
+    const contract = await this.compileAndReturnCompilationTarget(false);
+    if (
+      contract.layout?.storage_layout !== undefined ||
+      !this.compiler.extractStorageLayout ||
+      !supportsHistoricalStorageLayoutExtraction(
+        this.compilerVersion,
+        this.compilerVersionCompatibleWithSemver,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const storageLayout = await this.compiler.extractStorageLayout(
+        this.compilerVersion,
+        this.jsonInput,
+        this.compilationTarget.path,
+      );
+      contract.layout = { storage_layout: storageLayout };
+    } catch (error) {
+      // Historical layout is a supplemental artifact. A failure must never
+      // downgrade or invalidate an otherwise successful verification.
+      logWarn('Cannot extract historical Vyper storage layout', {
+        compilerVersion: this.compilerVersion,
+        compilationTarget: this.compilationTarget,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
   /**
    * Generate the cbor auxdata positions for the creation and runtime bytecodes.

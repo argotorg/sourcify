@@ -89,6 +89,9 @@ export interface VerificationTestCase {
  * /contract/{chainId}/{address} endpoint.
  */
 describe("Specific Verification Cases", function () {
+  // Historical Vyper cases may cold-install an exact Python/compiler runtime
+  // before the worker's own five-minute process timeout begins.
+  this.timeout(10 * 60 * 1000);
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
   const sandbox = sinon.createSandbox();
