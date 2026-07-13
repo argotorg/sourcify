@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x08798512808f838a06bce7c26905f05e94df6f50",
+  "contractName": "DefaultCallbackHandler",
+  "contractPath": "contracts/handler/DefaultCallbackHandler.sol",
+  "creationTransactionHash": "0xc692cced61a897566b2bb51a4a6cd63fddf1f9a9bf5f235d76728920785aa37b",
+  "explorerZkSolcVersion": "v1.3.8",
+  "explorerSolcVersion": "v0.7.6+commit.7338295f",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": false,
+  "creationMatchable": false,
+  "onchainRuntimeByteLength": 2976,
+  "compilerVersion": "zksolc:1.3.8;solc:v0.7.6+commit.7338295f",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": null,
+  "notes": "Legacy pre-1.5.0 zksolc (1.3.8): first fixture to exercise the matter-labs/zksolc-bin fallback download repo (the era-compiler-solidity release path 404s for 1.3.x) and the pre-1.5.0 CLI/output-selection handling; keccak-metadata era. Deployed via a batch/factory call rather than a direct ContractDeployer tx, so runtime is perfect but there is no creation match."
+}

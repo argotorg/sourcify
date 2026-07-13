@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x39249c625d7a6c952a5ac389510839eb1bb33099",
+  "contractName": "DealersMulticall",
+  "contractPath": "src/core/DealersMulticall.sol",
+  "creationTransactionHash": "0xbd3c06a16832fe68cf04de2414774ef677d032680936f8ced0f16a46665bdaf3",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.28-1.0.1",
+  "constructorArguments": "0000000000000000000000000d8d2755a49d30bd57f6a9ba5fa8a7c9fff86e8e00000000000000000000000061ee140e5757366ece5ee89ea9688c0ea2da88e600000000000000000000000049090a745ba1e45c9c0f9c21448ce965b3798949000000000000000000000000e7598e61738921967f888736a1977b80da526510000000000000000000000000b89125a33eb5fd401a9ef66dece2a6a060989ccc",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 73312,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.28-1.0.1",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "CBOR-metadata case pinned to the era-solc 1.0.1 edition (0.8.28-1.0.1), distinct from the 1.0.2 fixtures, with a large constructor-arguments blob. Covers a different era-solc edition and a bigger constructor-arguments transformation; perfect runtime + perfect creation match."
+}

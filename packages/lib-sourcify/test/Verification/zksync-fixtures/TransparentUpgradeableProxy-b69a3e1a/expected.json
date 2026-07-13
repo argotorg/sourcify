@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0xb69a3e1a659cbaefa405c9fd107dc63342240e8c",
+  "contractName": "TransparentUpgradeableProxy",
+  "contractPath": "lib/openzeppelin-contracts-v4/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
+  "creationTransactionHash": "0x79ed27ec7c9c4a2d69536a9c8608cd15d247701354669b1ac2d65846d9bf3bd8",
+  "explorerZkSolcVersion": "v1.5.0",
+  "explorerSolcVersion": "v0.8.24+commit.e11b9ed9",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": false,
+  "creationMatchable": false,
+  "onchainRuntimeByteLength": 10592,
+  "compilerVersion": "zksolc:1.5.0;solc:v0.8.24+commit.e11b9ed9",
+  "expectedRuntimeMatch": "partial",
+  "expectedCreationMatch": null,
+  "notes": "First 1.5.0 fixture (the earliest 1.5.x zksolc): exercises the 1.5.0 output-selection handling; keccak-metadata era. Partial runtime match (metadata hash differs from the recompilation) on a non-direct deploy, so no creation match."
+}

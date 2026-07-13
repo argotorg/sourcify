@@ -8,139 +8,34 @@ import {
   isZkSolcCompilerVersion,
   ZkSolcCompilation,
 } from '../../src/Compilation/ZkSolcCompilation';
+// Used only to observe compilation artifacts through Verification.export()
+// (forced output selection + EraVM link-reference derivation); this file has no
+// matching/verification tests — those live in ../Verification/ZkSolcVerification.spec.ts.
 import { Verification } from '../../src/Verification/Verification';
-import {
-  ZkSolcVerification,
-  decodeContractDeployerCalldata,
-} from '../../src/Verification/ZkSolcVerification';
 import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
 import {
   CompilationError,
-  type CompilationTarget,
   type IZkSolcCompiler,
 } from '../../src/Compilation/CompilationTypes';
 import { solc } from '../utils';
 import type {
   LinkReferences,
-  SolidityJsonInput,
   SolidityOutput,
-  SolidityOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import {
-  AuxdataStyle,
-  eraBytecodeHash,
-} from '@ethereum-sourcify/bytecode-utils';
+  ABSTRACT_ZKSYNC_1_3_19_TAIL,
+  ABSTRACT_ZKSYNC_1_5_7_TAIL,
+  ABSTRACT_ZKSYNC_1_5_15_TAIL,
+  compilationTarget,
+  makeCompiler,
+  makeContract,
+  makeJsonInput,
+  makeMetadata,
+  strip0x,
+} from '../utils/zksolcTestHelpers';
 
 use(chaiAsPromised);
-
-const compilationTarget: CompilationTarget = {
-  path: 'contracts/Storage.sol',
-  name: 'Storage',
-};
-
-const source = {
-  content: 'contract Storage { uint256 value; }',
-};
-
-const ABSTRACT_ZKSYNC_1_5_15_TAIL =
-  '0x9e2cb40b00000000000000000000000000000000000000000000000000000000d543610e6057093c81336d006b5249a51d6844768d5a0ffcf85636f37df255ac319284ad7d4265c99e51f9e0112e2425b1ad54f8c4e06d7a4191eaa263c72b15000000000000000000000000000000000000000000000000ffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000a264697066735822122007a4f6fdcc0e2b25207322b1a32774e47a4cfef8ba295d46da4f0f0be49859d964736f6c6378247a6b736f6c633a312e352e31353b736f6c633a302e382e32363b6c6c766d3a312e302e320055';
-const ABSTRACT_ZKSYNC_1_5_7_TAIL =
-  '0x416273747261637420426164676573000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000d9b67a260000000000000000000000000000000000000020000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1ba3b6579b23c9248232fe1a7fb885b70411346f3aad2273798356706e601a5a';
-const ABSTRACT_ZKSYNC_1_3_19_TAIL =
-  '0x45524332303a207472616e7366657220616d6f756e7420657863656564732061426c61636b6c69737461626c653a206163636f756e7420697320626c61636b6c426c61636b6c69737461626c653a2063616c6c6572206973206e6f742074686520626c61636b6c69737465720000000000000000000000000000000000000000117e3210bb9aa7d9baff172026820255c6f6c30ba8999d1c2fd88e2848137c4e020000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007e80383289496555d88a2468c5201b230bbc2d259b63f115fafc41dff7e0a304';
-
-function strip0x(bytecode: string) {
-  return bytecode.startsWith('0x') ? bytecode.slice(2) : bytecode;
-}
-
-function replaceHex(bytecode: string, from: string, to: string) {
-  const replaced = bytecode.replace(from, to);
-  if (replaced === bytecode) {
-    throw new Error(`Could not replace ${from} in bytecode`);
-  }
-  return replaced;
-}
-
-function makeMetadata(solcVersion: string) {
-  return JSON.stringify({
-    compiler: {
-      version: solcVersion,
-    },
-    language: 'Solidity',
-    output: {
-      abi: [],
-    },
-    settings: {},
-    sources: {},
-    version: 1,
-  });
-}
-
-function makeJsonInput(
-  outputSelection?: SolidityJsonInput['settings']['outputSelection'],
-): SolidityJsonInput {
-  return {
-    language: 'Solidity',
-    sources: {
-      [compilationTarget.path]: source,
-    },
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-      outputSelection,
-    },
-  };
-}
-
-function makeContract(
-  overrides: Partial<SolidityOutputContract> = {},
-): SolidityOutputContract {
-  return {
-    abi: [],
-    metadata: makeMetadata('0.8.24'),
-    evm: {
-      bytecode: {
-        object: '010203',
-      },
-      deployedBytecode: {
-        object: '',
-      },
-    },
-    ...overrides,
-  };
-}
-
-function makeCompiler(contract: SolidityOutputContract): IZkSolcCompiler & {
-  calls: Array<{
-    zksolcVersion: string;
-    solcVersion: string;
-    solcJsonInput: SolidityJsonInput;
-  }>;
-} {
-  return {
-    calls: [],
-    async compile(
-      zksolcVersion: string,
-      solcVersion: string,
-      solcJsonInput: SolidityJsonInput,
-    ): Promise<SolidityOutput> {
-      this.calls.push({
-        zksolcVersion,
-        solcVersion,
-        solcJsonInput,
-      });
-      return {
-        contracts: {
-          [compilationTarget.path]: {
-            [compilationTarget.name]: contract,
-          },
-        },
-      };
-    },
-  };
-}
 
 describe('ZkSolcCompilation', () => {
   it('parses, formats, and detects the combined compiler version string', () => {
@@ -669,76 +564,6 @@ describe('ZkSolcCompilation', () => {
     expect(compilation.creationBytecodeCborAuxdata).to.deep.equal({});
   });
 
-  for (const sample of [
-    {
-      address: '0xbc176ac2373614f9858a118917d83b139bcb3f8c',
-      zksolcVersion: '1.5.7',
-      solcVersion: '0.8.26-1.0.1',
-      bytecode: ABSTRACT_ZKSYNC_1_5_7_TAIL,
-      auxdataOffset: 224,
-    },
-    {
-      address: '0x4f7589c619d59443db52489dd375de63e03e671d',
-      zksolcVersion: '1.3.19',
-      solcVersion: 'v0.6.12+commit.27d51765',
-      bytecode: ABSTRACT_ZKSYNC_1_3_19_TAIL,
-      auxdataOffset: 192,
-    },
-    {
-      address: '0x0929d81a73a83b73e5de2ba63a15ce2a18addbe2',
-      zksolcVersion: '1.5.15',
-      solcVersion: '0.8.26-1.0.2',
-      bytecode: ABSTRACT_ZKSYNC_1_5_15_TAIL,
-      auxdataOffset: 128,
-    },
-  ]) {
-    it(`should verify PR-body Abstract EraVM bytecode sample ${sample.address}`, async () => {
-      const compiler = makeCompiler(
-        makeContract({
-          evm: {
-            bytecode: {
-              object: strip0x(sample.bytecode),
-            },
-            deployedBytecode: {
-              object: '',
-            },
-          },
-        }),
-      );
-      const compilation = new ZkSolcCompilation(
-        compiler,
-        `zksolc:${sample.zksolcVersion};solc:${sample.solcVersion}`,
-        makeJsonInput(),
-        compilationTarget,
-      );
-      const verification = new Verification(
-        compilation,
-        {
-          chainId: 2741,
-          async getBytecode() {
-            return sample.bytecode;
-          },
-        } as any,
-        sample.address,
-      );
-
-      await verification.verify();
-
-      expect(verification.status.runtimeMatch).to.equal('perfect');
-      expect(verification.status.creationMatch).to.equal(null);
-      expect(
-        verification.export().compilation.runtimeBytecodeCborAuxdata,
-      ).to.deep.equal({
-        '1': {
-          offset: sample.auxdataOffset,
-          value: `0x${strip0x(sample.bytecode).slice(
-            sample.auxdataOffset * 2,
-          )}`,
-        },
-      });
-    });
-  }
-
   it('should include EraVM zero-word padding in bare hash auxdata positions', async () => {
     const compiler = makeCompiler(
       makeContract({
@@ -799,102 +624,6 @@ describe('ZkSolcCompilation', () => {
     await compilation.generateCborAuxdataPositions();
 
     expect(compilation.runtimeBytecodeCborAuxdata).to.deep.equal({});
-  });
-
-  it('should partially match zkSync EraVM bytecode when only CBOR metadata differs', async () => {
-    const onchainBytecode = replaceHex(
-      ABSTRACT_ZKSYNC_1_5_15_TAIL,
-      '07a4f6fd',
-      '08a4f6fd',
-    );
-    const compiler = makeCompiler(
-      makeContract({
-        evm: {
-          bytecode: {
-            object: strip0x(ABSTRACT_ZKSYNC_1_5_15_TAIL),
-          },
-          deployedBytecode: {
-            object: '',
-          },
-        },
-      }),
-    );
-    const compilation = new ZkSolcCompilation(
-      compiler,
-      'zksolc:1.5.15;solc:0.8.26-1.0.2',
-      makeJsonInput(),
-      compilationTarget,
-    );
-    const verification = new Verification(
-      compilation,
-      {
-        chainId: 2741,
-        async getBytecode() {
-          return onchainBytecode;
-        },
-      } as any,
-      '0x0929d81a73a83b73e5de2ba63a15ce2a18addbe2',
-    );
-
-    await verification.verify();
-
-    expect(verification.status.runtimeMatch).to.equal('partial');
-    expect(verification.transformations.runtime?.list).to.deep.equal([
-      {
-        type: 'replace',
-        reason: 'cborAuxdata',
-        offset: 128,
-        id: '1',
-      },
-    ]);
-  });
-
-  it('should partially match zkSync EraVM bytecode when only bare metadata hash differs', async () => {
-    const onchainBytecode = replaceHex(
-      ABSTRACT_ZKSYNC_1_3_19_TAIL,
-      '7e803832',
-      '7f803832',
-    );
-    const compiler = makeCompiler(
-      makeContract({
-        evm: {
-          bytecode: {
-            object: strip0x(ABSTRACT_ZKSYNC_1_3_19_TAIL),
-          },
-          deployedBytecode: {
-            object: '',
-          },
-        },
-      }),
-    );
-    const compilation = new ZkSolcCompilation(
-      compiler,
-      'zksolc:1.3.19;solc:v0.6.12+commit.27d51765',
-      makeJsonInput(),
-      compilationTarget,
-    );
-    const verification = new Verification(
-      compilation,
-      {
-        chainId: 2741,
-        async getBytecode() {
-          return onchainBytecode;
-        },
-      } as any,
-      '0x4f7589c619d59443db52489dd375de63e03e671d',
-    );
-
-    await verification.verify();
-
-    expect(verification.status.runtimeMatch).to.equal('partial');
-    expect(verification.transformations.runtime?.list).to.deep.equal([
-      {
-        type: 'replace',
-        reason: 'cborAuxdata',
-        offset: 192,
-        id: '1',
-      },
-    ]);
   });
 
   it('should throw when the compilation target is missing', async () => {
@@ -1049,143 +778,5 @@ describe('PreRunCompilation (zksolc)', () => {
     const compilation = createPreRunZkSolcCompilation();
     expect(compilation.compilerName).to.equal('zksolc');
     expect(compilation.compilerVersion).to.equal(zkSolcVersion);
-  });
-});
-
-// Builds ContractDeployer `create(bytes32 salt, bytes32 bytecodeHash, bytes input)`
-// calldata around a versioned bytecode hash and (optionally) ABI-encoded args.
-function makeDeployerCalldata(bytecodeHash: string, encodedArgs = ''): string {
-  const salt = '00'.repeat(32);
-  const hashHex = bytecodeHash.replace(/^0x/, '');
-  const offsetHex = (96).toString(16).padStart(64, '0'); // input offset = 0x60
-  const lengthHex = (encodedArgs.length / 2).toString(16).padStart(64, '0');
-  return `0x9c4d535b${salt}${hashHex}${offsetHex}${lengthHex}${encodedArgs}`;
-}
-
-describe('ZkSolcVerification', () => {
-  const address = '0x2dae3b08e3daedf619e68c99f3e7f3c9608e0095';
-
-  // ZKsync ContractDeployer system contract; a direct deploy sends the creation
-  // tx to this address.
-  const SYSTEM_CONTRACT_DEPLOYER_ADDRESS =
-    '0x0000000000000000000000000000000000008006';
-
-  function makeChain(
-    runtime: string,
-    creationBytecode: string,
-    creationTxTo: string = SYSTEM_CONTRACT_DEPLOYER_ADDRESS,
-  ) {
-    return {
-      chainId: 2741,
-      async getBytecode() {
-        return `0x${runtime}`;
-      },
-      async getTx() {
-        return {
-          blockNumber: 1,
-          from: '0x0000000000000000000000000000000000000001',
-          to: creationTxTo,
-        };
-      },
-      async getContractCreationBytecodeAndReceipt() {
-        return { creationBytecode, txReceipt: { index: 0 } };
-      },
-    } as any;
-  }
-
-  function makeRuntimeCompilation(runtime: string) {
-    const compiler = makeCompiler(
-      makeContract({
-        evm: {
-          bytecode: { object: runtime },
-          deployedBytecode: { object: '' },
-        },
-      }),
-    );
-    return new ZkSolcCompilation(
-      compiler,
-      'zksolc:1.5.7;solc:0.8.26-1.0.1',
-      makeJsonInput(),
-      compilationTarget,
-    );
-  }
-
-  it('matches creation via the versioned bytecode hash and inherits the runtime match type', async () => {
-    const runtime = 'aa'.repeat(32);
-    const compilation = makeRuntimeCompilation(runtime);
-    const calldata = makeDeployerCalldata(eraBytecodeHash(`0x${runtime}`));
-    const verification = new ZkSolcVerification(
-      compilation,
-      makeChain(runtime, calldata),
-      address,
-      '0xcreationtx',
-    );
-
-    await verification.verify();
-
-    // The recompiled hash matches the one in the creation calldata, so creation
-    // matches — and it inherits the runtime match type rather than being graded
-    // on its own.
-    expect(verification.status.runtimeMatch).to.equal('perfect');
-    expect(verification.status.creationMatch).to.equal('perfect');
-  });
-
-  it('does not match creation when the calldata references a different bytecode hash', async () => {
-    const runtime = 'aa'.repeat(32);
-    const compilation = makeRuntimeCompilation(runtime);
-    const calldata = makeDeployerCalldata(
-      eraBytecodeHash(`0x${'bb'.repeat(32)}`),
-    );
-    const verification = new ZkSolcVerification(
-      compilation,
-      makeChain(runtime, calldata),
-      address,
-      '0xcreationtx',
-    );
-
-    await verification.verify();
-
-    expect(verification.status.runtimeMatch).to.equal('perfect');
-    expect(verification.status.creationMatch).to.equal(null);
-  });
-
-  it('does not match creation when the deploy tx does not target the ContractDeployer', async () => {
-    const runtime = 'aa'.repeat(32);
-    const compilation = makeRuntimeCompilation(runtime);
-    const calldata = makeDeployerCalldata(eraBytecodeHash(`0x${runtime}`));
-    const verification = new ZkSolcVerification(
-      compilation,
-      // Creation tx routed through a factory, not the ContractDeployer directly.
-      makeChain(
-        runtime,
-        calldata,
-        '0x00000000000000000000000000000000000f4c70',
-      ),
-      address,
-      '0xcreationtx',
-    );
-
-    await verification.verify();
-
-    expect(verification.status.runtimeMatch).to.equal('perfect');
-    expect(verification.status.creationMatch).to.equal(null);
-  });
-
-  describe('decodeContractDeployerCalldata', () => {
-    it('decodes the bytecode hash and the ABI-encoded constructor args', () => {
-      const hashHex = '11'.repeat(32);
-      const encodedAddress = `000000000000000000000000${'cd'.repeat(20)}`;
-      const calldata = makeDeployerCalldata(`0x${hashHex}`, encodedAddress);
-      expect(decodeContractDeployerCalldata(calldata)).to.deep.equal({
-        bytecodeHash: `0x${hashHex}`,
-        constructorArguments: `0x${encodedAddress}`,
-      });
-    });
-
-    it('returns null for calldata that is not a ContractDeployer deploy', () => {
-      expect(
-        decodeContractDeployerCalldata(`0xdeadbeef${'00'.repeat(64)}`),
-      ).to.equal(null);
-    });
   });
 });

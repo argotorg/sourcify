@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0xc841aeb1204ec9e404e8bf0608537b9e00d68d06",
+  "contractName": "OnchainExecutorDontApprove",
+  "contractPath": "contracts/periphery/OnchainExecutorDontApprove.sol",
+  "creationTransactionHash": "0x42f9ff5e8c6fcb3a24c0203bd1dc4382903bfa0a7a4e12804fe1d725f0134746",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.22+commit.4fc1097e",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": false,
+  "onchainRuntimeByteLength": 8160,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.22-1.0.2",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": null,
+  "notes": "Runtime-only case: this contract was deployed inside a batch/factory transaction, so the creation tx's receipt contractAddress is a DIFFERENT contract. getContractCreationBytecodeAndReceipt therefore cannot attribute creation bytecode to this address, so creationMatch stays null while runtime is a perfect match. Exercises the direct-deploy-vs-batch distinction that gates matchWithCreationTx (creationMatchable=false)."
+}

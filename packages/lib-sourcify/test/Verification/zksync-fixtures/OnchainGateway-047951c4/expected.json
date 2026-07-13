@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x047951c40532cb046863a8354a2a0099a3c977a6",
+  "contractName": "OnchainGateway",
+  "contractPath": "contracts/periphery/OnchainGateway.sol",
+  "creationTransactionHash": "0x42f9ff5e8c6fcb3a24c0203bd1dc4382903bfa0a7a4e12804fe1d725f0134746",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.22+commit.4fc1097e",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 8672,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.22-1.0.2",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "CBOR-metadata case where the explorer reports only a commit-form solc (v0.8.22+commit...); the era-solc edition (0.8.22-1.0.2) had to be resolved when capturing the fixture. No constructor arguments; perfect runtime + perfect creation match on a direct ContractDeployer deploy."
+}

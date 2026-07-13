@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x3b56a4ffccd5c4141abbe95f6eb4b2274644778c",
+  "contractName": "NftMarketSystem",
+  "contractPath": "src/gigaverse/market/NftMarketSystem.sol",
+  "creationTransactionHash": "0x09c6a6b21a4704152958bd7841e8b87180c82b2fffc8d1fd96438f8c3e670b72",
+  "explorerZkSolcVersion": "v1.5.7",
+  "explorerSolcVersion": "v0.8.28+commit.7893614a",
+  "constructorArguments": "00000000000000000000000074eb92b33f2400eb14f6d6725b14f76078d5e731",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 136928,
+  "compilerVersion": "zksolc:1.5.7;solc:v0.8.28+commit.7893614a",
+  "expectedRuntimeMatch": "partial",
+  "expectedCreationMatch": null,
+  "notes": "Primary keccak256-metadata case: zksolc <=1.5.12 (here 1.5.7) appends a bare keccak256 metadata hash, not CBOR. Recompiled metadata differs from on-chain so runtime is only a PARTIAL match; and because the EraVM versioned bytecode hash is all-or-nothing, a partial runtime cannot creation-match (creationMatch stays null even though the contract is a direct deploy). Also exercises the pre-1.5.8 path where zksolc accepts an upstream (non-fork) solc backend."
+}

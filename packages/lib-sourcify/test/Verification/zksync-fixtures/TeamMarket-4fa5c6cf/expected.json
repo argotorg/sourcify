@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x4fa5c6cf9c5ef23c284a5b85738699f61a5052fb",
+  "contractName": "TeamMarket",
+  "contractPath": "src/TeamMarket.sol",
+  "creationTransactionHash": "0x6dd26ffa321da337e33346b138f2c2959e8d910fac0d84ee6be158a906a51619",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.28+commit.7893614a",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 38304,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.28-1.0.2",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "CBOR-metadata case with the era-solc edition resolved from a commit-form solc on the 0.8.28 line (0.8.28-1.0.2), covering a different base solc version than the 0.8.22 fixtures. No constructor arguments; perfect runtime + perfect creation match."
+}

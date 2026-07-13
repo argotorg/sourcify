@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x3840796f4979f5c2d64041176c2ed15204bbab17",
+  "contractName": "GlueFactorySystem",
+  "contractPath": "src/gigaverse/petRacing/GlueFactorySystem.sol",
+  "creationTransactionHash": "0x59739c0fcb15beec8ffc37284b498d12e040248f9e9e185ad88aa2a6ba201106",
+  "explorerZkSolcVersion": "v1.5.7",
+  "explorerSolcVersion": "v0.8.28+commit.7893614a",
+  "constructorArguments": "00000000000000000000000074eb92b33f2400eb14f6d6725b14f76078d5e731",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 54624,
+  "compilerVersion": "zksolc:1.5.7;solc:v0.8.28+commit.7893614a",
+  "expectedRuntimeMatch": "partial",
+  "expectedCreationMatch": null,
+  "notes": "Second, independent keccak256-metadata contract (zksolc 1.5.7, different codebase and constructor). Guards the partial-runtime / null-creation behavior of the <=1.5.12 keccak path against per-contract flukes."
+}

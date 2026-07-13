@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x2e789760bf3399bbaed8eaacdebf23d0e4bcac8a",
+  "contractName": "PearlLPStaking",
+  "contractPath": "src/PearlLPStaking.sol",
+  "creationTransactionHash": "0x79d55042179319218c4f5d5faa321ab90d0ca2a6fca89236d89d012216ab92c5",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.24-1.0.2",
+  "constructorArguments": "0000000000000000000000003f37dd7ffddfc56eb310956fae11800092b19dc2000000000000000000000000fd3f90dd1355910fef471f7a8852714ff97cbfbd",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 59360,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.24-1.0.2",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "CBOR-metadata case (zksolc >=1.5.13) with the era-solc edition EXPLICIT in the explorer (0.8.24-1.0.2) and constructor arguments present. Verifies a perfect runtime + perfect creation match, exercising the constructor-arguments transformation on a direct ContractDeployer deploy."
+}

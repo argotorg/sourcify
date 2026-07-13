@@ -6,6 +6,7 @@ import {
   useSolidityCompiler,
   useVyperCompiler,
   useFeCompiler,
+  useZkSolcCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
   Metadata,
@@ -23,6 +24,7 @@ import type {
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
+  IZkSolcCompiler,
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
@@ -111,6 +113,27 @@ class FeCompiler implements IFeCompiler {
 }
 
 export const feCompiler = new FeCompiler();
+
+class ZkSolc implements IZkSolcCompiler {
+  async compile(
+    zksolcVersion: string,
+    solcVersion: string,
+    solcJsonInput: SolidityJsonInput,
+  ): Promise<SolidityOutput> {
+    return await useZkSolcCompiler(
+      path.join('/tmp', 'lib-sourcify-zksolc-repo'),
+      path.join('/tmp', 'lib-sourcify-era-solc-repo'),
+      zksolcVersion,
+      solcVersion,
+      solcJsonInput,
+      // Upstream solc repo, used when the `solc` half is a commit-form version
+      // (`v0.8.24+commit…`) rather than an era-solc edition (`0.8.24-1.0.2`).
+      path.join('/tmp', 'lib-sourcify-solc-repo'),
+    );
+  }
+}
+
+export const zksolc = new ZkSolc();
 
 /**
  * Helper function to verify a Verification object using its getters

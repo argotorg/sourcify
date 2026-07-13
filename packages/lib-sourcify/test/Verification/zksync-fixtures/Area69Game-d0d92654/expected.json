@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0xd0d9265433cb8b6df34755428ca6ef15dfc92470",
+  "contractName": "Area69Game",
+  "contractPath": "contracts/Area69Game.sol",
+  "creationTransactionHash": "0xaec5a2ce60d0f633476564616a42e0d340c4d355a94ca995135a9a402ecc6681",
+  "explorerZkSolcVersion": "v1.4.1",
+  "explorerSolcVersion": "v0.8.24+commit.e11b9ed9",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 55904,
+  "compilerVersion": "zksolc:1.4.1;solc:v0.8.24+commit.e11b9ed9",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "zksolc 1.4.1 on a large application contract (~56KB runtime, upstream commit-form solc v0.8.24): pre-1.5.0 path. Direct ContractDeployer deploy; perfect runtime + perfect creation match."
+}

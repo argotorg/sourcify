@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x1b4427e212475b12e62f0f142b8afef3bc18b559",
+  "contractName": "UniswapV2Factory",
+  "contractPath": "contracts/uni-v2/UniswapV2Factory.sol",
+  "creationTransactionHash": "0xc5ef9aba3d381c1e7f453d5c841c8f7375d52f63e3efdb46642ba1c59a968e0b",
+  "explorerZkSolcVersion": "v1.5.3",
+  "explorerSolcVersion": "v0.5.16+commit.9c3226ce",
+  "constructorArguments": "000000000000000000000000f3d63166f0ca56c3c1a3508fce03ff0cf3fb691e",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 5664,
+  "compilerVersion": "zksolc:1.5.3;solc:0.5.16-1.0.1",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "zksolc 1.5.3 that only reproduces with the era-solc edition (0.5.16-1.0.1): the upstream commit-form solc mismatches, and candidate expansion resolves it to the matter-labs/era-solidity build. Oldest solc line in the set (0.5.x). Direct ContractDeployer deploy with a constructor arg; perfect runtime + perfect creation match."
+}

@@ -1,0 +1,18 @@
+{
+  "chainId": 2741,
+  "address": "0x0cedb2b465fe794c20a3cf271c1edafdceff1961",
+  "contractName": "OnchainSwapV3",
+  "contractPath": "contracts/periphery/OnchainSwapV3.sol",
+  "creationTransactionHash": "0xce8afc0bcb8911b70163fc076032dd218e110cc846d7e256f6a05c93825777c8",
+  "explorerZkSolcVersion": "v1.5.15",
+  "explorerSolcVersion": "v0.8.22+commit.4fc1097e",
+  "constructorArguments": "",
+  "hasLibraries": false,
+  "directDeploy": true,
+  "creationMatchable": true,
+  "onchainRuntimeByteLength": 8672,
+  "compilerVersion": "zksolc:1.5.15;solc:0.8.22-1.0.2",
+  "expectedRuntimeMatch": "perfect",
+  "expectedCreationMatch": "perfect",
+  "notes": "Second independent CBOR contract on the same 0.8.22-1.0.2 toolchain as OnchainGateway, guarding the perfect runtime + perfect creation path against per-contract flukes."
+}
