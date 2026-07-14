@@ -771,6 +771,7 @@ export class Verification {
       libraryMap: this.libraryMap,
       compilation: {
         language: this.compilation.language,
+        vm: this.compilation.vm,
         compilationTarget: this.compilation.compilationTarget,
         compiler: this.compilation.compilerName,
         compilerVersion: this.compilation.compilerVersion,

@@ -3,6 +3,7 @@ import type {
   VerificationExport,
   VyperSettings,
 } from "@ethereum-sourcify/lib-sourcify";
+import { parseZkSolcCompilerVersion } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
 import type { StorageService, WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
@@ -472,6 +473,25 @@ export class EtherscanVerifyApiService implements WStorageService {
       finishTime: Date;
     },
   ): Promise<void> {
+    // EraVM (zksolc) contracts need zksync-specific verification fields
+    // (compilermode=zksync, zksolcVersion). Only the Etherscan API supports
+    // this; Blockscout uses a different endpoint and Routescan's zksync support
+    // is unverified, so skip non-EVM contracts for those.
+    if (
+      verification.compilation.vm !== "evm" &&
+      this.IDENTIFIER !== WStorageIdentifiers.EtherscanVerify
+    ) {
+      logger.info(
+        `${this.IDENTIFIER} does not support non-EVM contract verification`,
+        {
+          vm: verification.compilation.vm,
+          chainId: verification.chainId,
+          address: verification.address,
+        },
+      );
+      return;
+    }
+
     if (
       verification.compilation.language === "Vyper" &&
       this.IDENTIFIER === WStorageIdentifiers.RoutescanVerify
@@ -803,6 +823,17 @@ export class EtherscanVerifyApiService implements WStorageService {
       formData.append("optimizationUsed", vyperOptimization ? "1" : "0");
     }
 
+    // EraVM (zksolc) contracts need the zksync compiler mode and the separate
+    // zksolc version. The solc half is sent as `compilerversion` (handled by
+    // getCompilerVersion).
+    if (verification.compilation.vm === "eravm") {
+      const { zksolcVersion } = parseZkSolcCompilerVersion(
+        verification.compilation.compilerVersion,
+      );
+      formData.append("compilermode", "zksync");
+      formData.append("zksolcVersion", `v${zksolcVersion}`);
+    }
+
     return formData;
   }
 
@@ -872,10 +903,16 @@ export class EtherscanVerifyApiService implements WStorageService {
   }
 
   private getCompilerVersion(verification: VerificationExport): string {
-    const version = verification.compilation.compilerVersion;
+    let version = verification.compilation.compilerVersion;
 
     if (verification.compilation.language === "Vyper") {
       return `vyper:${version.split("+")[0]}`;
+    }
+    // For EraVM the compilerVersion is the combined `zksolc:<v>;solc:<v>`
+    // string; Etherscan expects the solc half here and the zksolc version in a
+    // separate `zksolcVersion` field.
+    if (verification.compilation.vm === "eravm") {
+      version = parseZkSolcCompilerVersion(version).solcCompilerVersion;
     }
     return version.startsWith("v") ? version : `v${version}`;
   }

@@ -58,6 +58,7 @@ describe("database-util", function () {
         libraryMap: {},
         compilation: {
           language: "Solidity",
+          vm: "eravm",
           compiler: "zksolc",
           compilerVersion: "zksolc:1.5.7;solc:0.8.26-1.0.1",
           zksolc: {
@@ -124,6 +125,10 @@ describe("database-util", function () {
       expect(
         columns.compiledContract.runtime_code_artifacts.linkReferences,
       ).to.equal(linkReferences);
+      // EraVM bytecode must be tagged as "eravm" so it can be stored only in
+      // the Sourcify database (and kept out of EVM-only backends).
+      expect(columns.recompiledRuntimeCode.vm).to.equal("eravm");
+      expect(columns.onchainRuntimeCode.vm).to.equal("eravm");
     });
 
     it("stores non-empty Vyper immutable references in runtime code artifacts", async function () {

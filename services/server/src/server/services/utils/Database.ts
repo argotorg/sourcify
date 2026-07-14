@@ -537,14 +537,27 @@ ${
 
   async insertCode(
     poolClient: PoolClient,
-    { bytecode_hash_keccak, bytecode }: Omit<Tables.Code, "bytecode_hash">,
+    { bytecode_hash_keccak, bytecode, vm }: Omit<Tables.Code, "bytecode_hash">,
   ): Promise<QueryResult<Pick<Tables.Code, "bytecode_hash">>> {
+    // Only write the `vm` column for non-EVM bytecode. EVM relies on the
+    // column's "evm" default, which keeps this INSERT compatible with schemas
+    // that don't have the column (e.g. the Verifier Alliance database, which
+    // never receives EraVM contracts).
+    const columns = ["code_hash", "code", "code_hash_keccak"];
+    const values = ["digest($1::bytea, 'sha256')", "$1::bytea", "$2"];
+    const params: unknown[] = [bytecode, bytecode_hash_keccak];
+    if (vm && vm !== "evm") {
+      columns.push("vm");
+      values.push(`$${params.length + 1}`);
+      params.push(vm);
+    }
+
     let codeInsertResult = await poolClient.query(
-      `INSERT INTO ${this.schema}.code (code_hash, code, code_hash_keccak)
-      VALUES (digest($1::bytea, 'sha256'), $1::bytea, $2)
+      `INSERT INTO ${this.schema}.code (${columns.join(", ")})
+      VALUES (${values.join(", ")})
       ON CONFLICT ON CONSTRAINT code_pkey DO NOTHING
       RETURNING code_hash as bytecode_hash`,
-      [bytecode, bytecode_hash_keccak],
+      params,
     );
 
     // If there is a conflict (ie. code already exists), the response will be empty. We still need to return the object to fill other tables

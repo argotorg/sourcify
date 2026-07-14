@@ -67,4 +67,21 @@ describe("AllianceDatabaseService", function () {
       "A verified contract already exist for your compilation and deployment",
     );
   });
+
+  it("should skip EraVM (non-EVM) contracts without writing to the database", async () => {
+    const eravmVerification = structuredClone(MockVerificationExport);
+    eravmVerification.compilation.vm = "eravm";
+    eravmVerification.compilation.compiler = "zksolc";
+    eravmVerification.compilation.compilerVersion =
+      "zksolc:1.5.7;solc:0.8.26-1.0.1";
+
+    await databaseService.init();
+    // Resolves without throwing and inserts nothing.
+    await databaseService.storeVerification(eravmVerification);
+
+    const { rows } = await databaseService.database.pool.query(
+      "SELECT COUNT(*)::int AS count FROM verified_contracts",
+    );
+    expect(rows[0].count).to.equal(0);
+  });
 });

@@ -26,6 +26,7 @@ import type {
   Devdoc,
   VyperSourceMap,
   FeSettings,
+  Vm,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   PreRunCompilation,
@@ -66,6 +67,9 @@ export namespace Tables {
     bytecode_hash: BytesSha;
     bytecode_hash_keccak: BytesKeccak;
     bytecode: Bytes;
+    // The VM the bytecode targets. Optional: when omitted the DB column
+    // defaults to "evm". EraVM (zksolc) bytecode is stored as "eravm".
+    vm?: Vm;
   }
   export interface Contract {
     id: string;
@@ -821,6 +825,10 @@ export async function getDatabaseColumnsFromVerification(
     throw new Error("Missing onchain runtime bytecode");
   }
 
+  // The VM is a property of the compilation and applies to every bytecode
+  // stored for this contract (both onchain and recompiled).
+  const vm = verification.compilation.vm;
+
   let recompiledCreationCode: Omit<Tables.Code, "bytecode_hash"> | undefined;
   if (normalizedCreationBytecode && keccak256RecompiledCreationBytecode) {
     recompiledCreationCode = {
@@ -828,6 +836,7 @@ export async function getDatabaseColumnsFromVerification(
         keccak256RecompiledCreationBytecode,
       ),
       bytecode: bytesFromString<Bytes>(normalizedCreationBytecode),
+      vm,
     };
   }
 
@@ -843,6 +852,7 @@ export async function getDatabaseColumnsFromVerification(
           keccak256OnchainCreationBytecode,
         ),
         bytecode: bytesFromString<Bytes>(verification.onchainCreationBytecode),
+        vm,
       };
     }
   } catch (e) {
@@ -868,6 +878,7 @@ export async function getDatabaseColumnsFromVerification(
         keccak256RecompiledRuntimeBytecode,
       ),
       bytecode: bytesFromString<Bytes>(normalizedRuntimeBytecode),
+      vm,
     },
     onchainCreationCode,
     onchainRuntimeCode: {
@@ -875,6 +886,7 @@ export async function getDatabaseColumnsFromVerification(
         keccak256OnchainRuntimeBytecode,
       ),
       bytecode: bytesFromString<Bytes>(verification.onchainRuntimeBytecode),
+      vm,
     },
     contractDeployment: {
       chain_id: verification.chainId.toString(),

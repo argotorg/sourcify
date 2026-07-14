@@ -36,6 +36,11 @@ export interface CompilationTarget {
 
 export type CompilationLanguage = 'Solidity' | 'Vyper' | 'Yul' | 'Fe';
 
+// The virtual machine the compiled bytecode targets. Defaults to the EVM;
+// zksolc compilations target ZKsync's EraVM. Used downstream to tag stored
+// bytecode and to keep EraVM contracts out of EVM-only backends.
+export type Vm = 'evm' | 'eravm';
+
 export type ZkSolcJsonInput = SolidityJsonInput & {
   settings: SolidityJsonInput['settings'] & {
     isSystem?: boolean;

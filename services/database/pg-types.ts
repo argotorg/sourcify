@@ -72,6 +72,7 @@ export interface PgCode {
   code_hash: Buffer;
   code: Buffer | null;
   code_hash_keccak: Buffer;
+  vm: string;
   created_at: Date;
   updated_at: Date;
   created_by: string;

@@ -12,6 +12,16 @@ export class AllianceDatabaseService
   IDENTIFIER = WStorageIdentifiers.AllianceDatabase;
 
   async storeVerification(verification: VerificationExport) {
+    // The Verifier Alliance database is EVM-only. EraVM (zksolc) contracts are
+    // stored only in the Sourcify database, so skip them here.
+    if (verification.compilation.vm !== "evm") {
+      logger.debug("Skipping non-EVM contract for AllianceDatabase", {
+        vm: verification.compilation.vm,
+        address: verification.address,
+        chainId: verification.chainId,
+      });
+      return;
+    }
     if (!verification.status.creationMatch) {
       throw new Error("Can't store to AllianceDatabase without creationMatch");
     }

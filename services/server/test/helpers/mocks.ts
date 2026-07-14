@@ -34,6 +34,7 @@ export const MockVerificationExport: VerificationExport = {
   },
   compilation: {
     language: "Solidity",
+    vm: "evm",
     compilationTarget: {
       path: "project:/contracts/Storage.sol",
       name: "Storage",

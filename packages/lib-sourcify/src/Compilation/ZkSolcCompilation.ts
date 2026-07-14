@@ -14,6 +14,7 @@ import type {
   CompilationTarget,
   CompiledContractCborAuxdata,
   IZkSolcCompiler,
+  Vm,
 } from './CompilationTypes';
 import { CompilationError } from './CompilationTypes';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
@@ -302,6 +303,10 @@ export class ZkSolcCompilation extends AbstractCompilation {
 
   public get compilerName(): string {
     return 'zksolc';
+  }
+
+  public get vm(): Vm {
+    return 'eravm';
   }
 
   public async compileAndReturnCompilationTarget(): Promise<SolidityOutputContract> {

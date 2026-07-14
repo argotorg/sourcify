@@ -154,6 +154,22 @@ describe("SourcifyDatabaseService", function () {
     expect(compiledContractStoreSig!.signature_type).to.equal("function");
   });
 
+  it("should tag stored EraVM bytecode with vm='eravm'", async () => {
+    const eravmVerification = structuredClone(MockVerificationExport);
+    eravmVerification.compilation.vm = "eravm";
+    eravmVerification.compilation.compiler = "zksolc";
+    eravmVerification.compilation.compilerVersion =
+      "zksolc:1.5.7;solc:0.8.26-1.0.1";
+
+    await databaseService.storeVerification(eravmVerification);
+
+    // Every non-empty code row stored for this contract must be tagged eravm.
+    const codeResult = await databaseService.database.pool.query(
+      "SELECT DISTINCT vm FROM code WHERE code IS NOT NULL",
+    );
+    expect(codeResult.rows.map((row) => row.vm)).to.deep.equal(["eravm"]);
+  });
+
   it("should handle duplicate signature storage gracefully", async () => {
     // Change mock to be able to store the verification twice
     const modifiedVerification = structuredClone(MockVerificationExport);

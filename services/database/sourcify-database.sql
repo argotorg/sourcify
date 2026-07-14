@@ -953,6 +953,7 @@ CREATE TABLE public.code (
     updated_by character varying DEFAULT CURRENT_USER NOT NULL,
     code_hash_keccak bytea NOT NULL,
     code bytea,
+    vm character varying DEFAULT 'evm'::character varying NOT NULL,
     CONSTRAINT code_hash_check CHECK ((((code IS NOT NULL) AND (code_hash = public.digest(code, 'sha256'::text))) OR ((code IS NULL) AND (code_hash = '\x'::bytea))))
 );
 
@@ -2210,4 +2211,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260309080000'),
     ('20260527081526'),
     ('20260527085036'),
-    ('20260527085037');
+    ('20260527085037'),
+    ('20260713120000');

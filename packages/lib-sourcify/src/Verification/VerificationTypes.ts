@@ -4,6 +4,7 @@ import type {
   CompilationTarget,
   CompiledContractCborAuxdata,
   StringMap,
+  Vm,
 } from '../Compilation/CompilationTypes';
 import type {
   FeSettings,
@@ -100,6 +101,7 @@ export interface VerificationExport {
   };
   compilation: {
     language: CompilationLanguage;
+    vm: Vm;
     compilationTarget: CompilationTarget;
     compiler: string;
     compilerVersion: string;

@@ -3,6 +3,7 @@ import type {
   CompilationTarget,
   CompiledContractCborAuxdata,
   CompilationLanguage,
+  Vm,
   StringMap,
   ISolidityCompiler,
   IZkSolcCompiler,
@@ -65,6 +66,11 @@ export abstract class AbstractCompilation {
   ): Promise<void>;
 
   public abstract get compilerName(): string;
+
+  /** The VM the compiled bytecode targets. Defaults to the EVM. */
+  public get vm(): Vm {
+    return 'evm';
+  }
 
   constructor(
     compilerVersion: string,
