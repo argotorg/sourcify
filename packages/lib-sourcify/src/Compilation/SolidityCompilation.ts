@@ -20,25 +20,27 @@ import {
 } from './auxdataUtils';
 import { logWarn } from '../logger';
 
+export const DEFAULT_OUTPUT_SELECTION_FIELDS = [
+  'abi',
+  'devdoc',
+  'userdoc',
+  'storageLayout',
+  'transientStorageLayout',
+  'evm.legacyAssembly',
+  'evm.bytecode.object',
+  'evm.bytecode.sourceMap',
+  'evm.bytecode.linkReferences',
+  'evm.bytecode.generatedSources',
+  'evm.deployedBytecode.object',
+  'evm.deployedBytecode.sourceMap',
+  'evm.deployedBytecode.linkReferences',
+  'evm.deployedBytecode.immutableReferences',
+  'metadata',
+] as const;
+
 export const DEFAULT_OUTPUT_SELECTION = {
   '*': {
-    '*': [
-      'abi',
-      'devdoc',
-      'userdoc',
-      'storageLayout',
-      'transientStorageLayout',
-      'evm.legacyAssembly',
-      'evm.bytecode.object',
-      'evm.bytecode.sourceMap',
-      'evm.bytecode.linkReferences',
-      'evm.bytecode.generatedSources',
-      'evm.deployedBytecode.object',
-      'evm.deployedBytecode.sourceMap',
-      'evm.deployedBytecode.linkReferences',
-      'evm.deployedBytecode.immutableReferences',
-      'metadata',
-    ],
+    '*': [...DEFAULT_OUTPUT_SELECTION_FIELDS],
   },
 } as const;
 
@@ -75,7 +77,15 @@ export class SolidityCompilation extends AbstractCompilation {
   }
 
   initSolidityJsonInput() {
-    this.jsonInput.settings.outputSelection = DEFAULT_OUTPUT_SELECTION;
+    // Scope outputSelection to the compilation target only. A wildcard
+    // ('*': '*') makes solc emit heavy artifacts (legacyAssembly,
+    // generatedSources, etc.) for every contract in every source, which can
+    // OOM the server on large projects. See issue #2880.
+    this.jsonInput.settings.outputSelection = {
+      [this.compilationTarget.path]: {
+        [this.compilationTarget.name]: [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+      },
+    };
   }
 
   /** Generates an edited contract with a space at the end of each source file to create a different source file hash and consequently a different metadata hash.
