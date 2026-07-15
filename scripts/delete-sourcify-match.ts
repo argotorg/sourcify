@@ -298,13 +298,15 @@ async function deleteCompiledContractSources(
   for (const row of sourcesResult) {
     const sourceHash = row.source_hash;
 
-    // Check if this source is referenced by other compiled_contracts_sources
+    // Check if this source is referenced by other compiled_contracts_sources.
+    // LIMIT 1 instead of COUNT(*): we only need existence, and counting all
+    // references of a widely shared source scans the whole index range.
     const otherSourceRefsResult = await client.query(
-      `SELECT COUNT(*) as count FROM compiled_contracts_sources WHERE source_hash = $1 AND compilation_id != $2`,
+      `SELECT 1 FROM compiled_contracts_sources WHERE source_hash = $1 AND compilation_id != $2 LIMIT 1`,
       [sourceHash, compilationId],
     );
 
-    const canDeleteSource = parseInt(otherSourceRefsResult[0].count) === 0;
+    const canDeleteSource = otherSourceRefsResult.length === 0;
 
     // Delete the compiled_contracts_sources entry
     await client.query(
@@ -335,19 +337,22 @@ async function deleteCompiledContractSignatures(
   );
 
   console.log(
-    `⏱️  Processing ${signaturesResult.length} signatures for compilation ${compilationId}. For many signatures this may take 10-20 minutes...`,
+    `⏱️  Processing ${signaturesResult.length} signatures for compilation ${compilationId}...`,
   );
 
   for (const row of signaturesResult) {
     const signatureHash = row.signature_hash_32;
 
-    // Check if this signature is referenced by other compiled_contracts_signatures
+    // Check if this signature is referenced by other compiled_contracts_signatures.
+    // LIMIT 1 instead of COUNT(*): common signatures (e.g. transfer) have
+    // millions of references and counting them takes ~80s each; an existence
+    // probe stops at the first match (~40ms).
     const otherSigRefsResult = await client.query(
-      `SELECT COUNT(*) as count FROM compiled_contracts_signatures WHERE signature_hash_32 = $1 AND compilation_id != $2`,
+      `SELECT 1 FROM compiled_contracts_signatures WHERE signature_hash_32 = $1 AND compilation_id != $2 LIMIT 1`,
       [signatureHash, compilationId],
     );
 
-    const canDeleteSignature = parseInt(otherSigRefsResult[0].count) === 0;
+    const canDeleteSignature = otherSigRefsResult.length === 0;
 
     // Delete the compiled_contracts_signatures entry
     await client.query(
@@ -374,23 +379,25 @@ async function deleteCodeIfOrphaned(
 ): Promise<void> {
   if (!codeHash) return;
 
-  // Check if this code is referenced by other compiled_contracts
+  // Check if this code is referenced by other compiled_contracts.
+  // LIMIT 1 instead of COUNT(*): popular bytecode (e.g. minimal proxies) has
+  // millions of references; an existence probe stops at the first match.
   const otherCompiledContractsResult = await client.query(
-    `SELECT COUNT(*) as count FROM compiled_contracts
-     WHERE creation_code_hash = $1 OR runtime_code_hash = $1`,
+    `SELECT 1 FROM compiled_contracts
+     WHERE creation_code_hash = $1 OR runtime_code_hash = $1 LIMIT 1`,
     [codeHash],
   );
 
   // Check if this code is referenced by other contracts
   const otherContractsResult = await client.query(
-    `SELECT COUNT(*) as count FROM contracts
-     WHERE creation_code_hash = $1 OR runtime_code_hash = $1`,
+    `SELECT 1 FROM contracts
+     WHERE creation_code_hash = $1 OR runtime_code_hash = $1 LIMIT 1`,
     [codeHash],
   );
 
   const canDeleteCode =
-    parseInt(otherCompiledContractsResult[0].count) === 0 &&
-    parseInt(otherContractsResult[0].count) === 0;
+    otherCompiledContractsResult.length === 0 &&
+    otherContractsResult.length === 0;
 
   if (canDeleteCode) {
     await client.query(`DELETE FROM code WHERE code_hash = $1`, [codeHash]);
