@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.6.1 - 2026-07-06
+
+- update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.6.0 - 2026-06-16
 
 - Reduce standard JSON input to the fields we store (#2823)

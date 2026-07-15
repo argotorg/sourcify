@@ -1,5 +1,9 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.13.3 - 2026-07-06
+
+- backfill missing Vyper immutableReferences (#2855)
+
 ## sourcify-database@2.13.2 - 2026-06-16
 
 - Update dependencies

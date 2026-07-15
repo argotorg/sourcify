@@ -92,7 +92,12 @@ export class SolidityCompilation extends AbstractCompilation {
       forceEmscripten: boolean;
     } = JSON.parse(JSON.stringify(compilerSettings));
     Object.values(newCompilerSettings.solcJsonInput.sources).forEach(
-      (source) => (source.content += ' '),
+      (source) => {
+        source.content += ' ';
+        // Drop the now-stale keccak256 so solc doesn't reject the edited source.
+        // See https://github.com/argotorg/sourcify/pull/2876
+        delete source.keccak256;
+      },
     );
     return await this.compiler.compile(
       newCompilerSettings.version,

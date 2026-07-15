@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.6.0 - 2026-07-06
+
+- feat(monitor): submit contracts via Sourcify API v2 (#2840)
+- chore(monitor): add drpc RPC before quicknode for high-traffic chains (#2846)
+
 ## sourcify-monitor@1.5.8 - 2026-06-16
 
 - Update dependencies

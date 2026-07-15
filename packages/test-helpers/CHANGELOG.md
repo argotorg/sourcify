@@ -1,3 +1,7 @@
+## @ethereum-sourcify/test-helpers@1.0.3 - 2026-07-06
+
+- update dependencies
+
 ## @ethereum-sourcify/test-helpers@1.0.2 - 2026-06-16
 
 - Update dependencies
