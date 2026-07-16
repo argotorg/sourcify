@@ -37,6 +37,27 @@ describe('SourcifyChain', () => {
     sandbox.restore();
   });
 
+  it('should preserve zksolc support in the exported chain object', () => {
+    sourcifyChain = new SourcifyChain({
+      name: 'Abstract Mainnet',
+      chainId: 2741,
+      rpcs: [
+        {
+          rpc: 'https://api.mainnet.abs.xyz',
+        },
+      ],
+      supported: true,
+      zksolc: {
+        supported: true,
+      },
+    });
+
+    expect(sourcifyChain.zksolc).to.deep.equal({ supported: true });
+    expect(sourcifyChain.getSourcifyChainObj().zksolc).to.deep.equal({
+      supported: true,
+    });
+  });
+
   describe('getCreationBytecodeForFactory', () => {
     it('should throw an error if trace support is not available', async () => {
       sourcifyChain = new SourcifyChain({

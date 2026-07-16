@@ -4,6 +4,7 @@ import type {
   FeJsonInput,
   CompilationTarget,
   Metadata,
+  ZkSolcJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { splitFullyQualifiedName } from "@ethereum-sourcify/lib-sourcify";
 import type { TypedResponse } from "../../types";
@@ -20,7 +21,11 @@ interface VerifyFromJsonInputRequest extends Request {
     address: string;
   };
   body: {
-    stdJsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
+    stdJsonInput:
+      | SolidityJsonInput
+      | VyperJsonInput
+      | FeJsonInput
+      | ZkSolcJsonInput;
     compilerVersion: string;
     contractIdentifier: string;
     creationTransactionHash?: string;

@@ -5,6 +5,9 @@ const {
 
 module.exports = {
   verifyDeprecated: true,
+  // Enable zksolc (EraVM) verification for the test suite.
+  zksolcRepo: "/tmp/zksolc-bin",
+  eraSolcRepo: "/tmp/era-solc-bin",
   repositoryV1: {
     path: "/tmp/repositoryV1-test/",
   },

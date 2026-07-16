@@ -39,6 +39,7 @@ import type {
   FeOutputContract,
   SoliditySettings,
   Metadata,
+  LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
@@ -47,6 +48,10 @@ function auxdataLacksMetadataOrIntegrityHash(
   auxdata: CompiledContractCborAuxdata[string],
   compilation: AbstractCompilation,
 ): boolean {
+  if (compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
+    return false;
+  }
+
   try {
     if (
       compilation.auxdataStyle === AuxdataStyle.SOLIDITY &&
@@ -84,18 +89,22 @@ export class Verification {
 
   // Transformations
   private runtimeTransformations: Transformation[] = [];
-  private creationTransformations: Transformation[] = [];
+  protected creationTransformations: Transformation[] = [];
   private runtimeTransformationValues: TransformationValues = {};
-  private creationTransformationValues: TransformationValues = {};
+  protected creationTransformationValues: TransformationValues = {};
 
   // Match status
-  private runtimeMatch: VerificationStatus = null;
-  private creationMatch: VerificationStatus = null;
+  protected runtimeMatch: VerificationStatus = null;
+  protected creationMatch: VerificationStatus = null;
   private runtimeLibraryMap?: StringMap;
   private creationLibraryMap?: StringMap;
   private blockNumber?: number;
   private txIndex?: number;
   private deployer?: string;
+  // Recipient of the creation transaction. Null for a direct EOA create;
+  // subclasses (e.g. EraVM) use it to detect deploys routed through a system
+  // contract. Only the fields we need are kept off the fetched creation tx.
+  protected creationTxTo?: string;
 
   constructor(
     public compilation: AbstractCompilation,
@@ -103,6 +112,14 @@ export class Verification {
     public address: string,
     private creatorTxHash?: string,
   ) {}
+
+  // Check if solc + Solidity to rule out Language:"Yul" or compiler:"zksolc"
+  protected get isSolidityViaSolc(): boolean {
+    return (
+      this.compilation.language === 'Solidity' &&
+      this.compilation.compilerName === 'solc'
+    );
+  }
 
   async verify({
     forceEmscripten = false,
@@ -162,7 +179,7 @@ export class Verification {
       });
     }
     if (
-      this.compilation.language === 'Solidity' &&
+      this.isSolidityViaSolc &&
       compiledRuntimeBytecode.length !== this.onchainRuntimeBytecode.length
     ) {
       // Before throwing the bytecode length mismatch error, check for Solidity extra file input bug
@@ -225,10 +242,7 @@ export class Verification {
       });
     }
 
-    if (
-      this.compilation.language === 'Solidity' &&
-      this.runtimeMatch === null
-    ) {
+    if (this.isSolidityViaSolc && this.runtimeMatch === null) {
       // Handle Solidity extra file input bug
       let solidityBugType = this.handleSolidityExtraFileInputBug();
       if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
@@ -253,6 +267,7 @@ export class Verification {
         const creatorTx = await this.sourcifyChain.getTx(this.creatorTxHash);
         this.blockNumber = creatorTx.blockNumber || undefined;
         this.deployer = creatorTx.from;
+        this.creationTxTo = creatorTx.to ?? undefined;
 
         const { creationBytecode, txReceipt } =
           await this.sourcifyChain.getContractCreationBytecodeAndReceipt(
@@ -272,6 +287,7 @@ export class Verification {
         this.creatorTxHash = undefined;
         this.blockNumber = undefined;
         this.deployer = undefined;
+        this.creationTxTo = undefined;
       }
     }
 
@@ -322,10 +338,7 @@ export class Verification {
         this.compilation.runtimeBytecode,
         AuxdataStyle.SOLIDITY,
       );
-      if (
-        this.compilation.language === 'Solidity' &&
-        onchainAuxdata !== recompiledAuxdata
-      ) {
+      if (this.isSolidityViaSolc && onchainAuxdata !== recompiledAuxdata) {
         const solidityMetadataContract = new SolidityMetadataContract(
           this.compilation.metadata,
           Object.keys(this.compilation.jsonInput.sources).map((source) => ({
@@ -472,6 +485,10 @@ export class Verification {
       return result;
     }
 
+    // CBOR validation is now decided per auxdata position by whether the
+    // recompiled auxdata is itself CBOR-encoded (see extractAuxdataTransformation),
+    // so ZKSYNC no longer needs a blanket opt-out: its CBOR metadata is validated
+    // like Solidity's, while keccak256 metadata-hash positions skip validation.
     const auxdataTransformationResult = extractAuxdataTransformation(
       populatedRecompiledBytecode,
       onchainBytecode,
@@ -542,7 +559,7 @@ export class Verification {
     this.runtimeLibraryMap = matchBytecodesResult.libraryMap;
   }
 
-  private async matchWithCreationTx() {
+  protected async matchWithCreationTx() {
     const matchBytecodesResult = await this.matchBytecodes(
       true,
       this.compilation.creationBytecode,
@@ -649,7 +666,7 @@ export class Verification {
     let compilerOutputSources: Record<string, { id: number }> | undefined;
     if (this.compilation.compilerOutput?.sources) {
       if (
-        this.compilation.language === 'Solidity' &&
+        this.isSolidityViaSolc &&
         semver.lt(this.compilation.compilerVersion, '0.3.6')
       ) {
         // In Solidity versions < 0.3.6 there is no id in sources
@@ -722,6 +739,21 @@ export class Verification {
       // pass
     }
 
+    let creationLinkReferencesFallback: LinkReferences | undefined;
+    let runtimeLinkReferencesFallback: LinkReferences | undefined;
+    if (this.compilation.auxdataStyle === AuxdataStyle.ZKSYNC) {
+      try {
+        creationLinkReferencesFallback =
+          this.compilation.creationLinkReferences;
+      } catch {
+        // pass
+      }
+      try {
+        runtimeLinkReferencesFallback = this.compilation.runtimeLinkReferences;
+      } catch {
+        // pass
+      }
+    }
     // Surface every top-level standard JSON input field used for compilation other than
     // language/sources/settings (e.g. Vyper's `storage_layout_overrides`) so consumers can
     // persist them.
@@ -741,7 +773,8 @@ export class Verification {
       compilation: {
         language: this.compilation.language,
         compilationTarget: this.compilation.compilationTarget,
-        compilerVersion: this.compilation.compilerVersion,
+        compiler: this.compilation.compilerName,
+        compilerVersion: this.compilation.resolvedCompilerVersion,
         sources: this.compilation.sources,
         compilerOutput: { sources: compilerOutputSources },
         contractCompilerOutput: {
@@ -762,14 +795,17 @@ export class Verification {
                   | SolidityOutputContract
                   | VyperOutputContract
               )?.evm?.bytecode?.sourceMap,
-              linkReferences: (contractCompilerOutput as SolidityOutputContract)
-                ?.evm?.bytecode?.linkReferences,
+              linkReferences:
+                (contractCompilerOutput as SolidityOutputContract)?.evm
+                  ?.bytecode?.linkReferences ?? creationLinkReferencesFallback,
             },
             deployedBytecode: {
               sourceMap:
                 contractCompilerOutput?.evm?.deployedBytecode?.sourceMap,
-              linkReferences: (contractCompilerOutput as SolidityOutputContract)
-                ?.evm?.deployedBytecode?.linkReferences,
+              linkReferences:
+                (contractCompilerOutput as SolidityOutputContract)?.evm
+                  ?.deployedBytecode?.linkReferences ??
+                runtimeLinkReferencesFallback,
             },
           },
         },

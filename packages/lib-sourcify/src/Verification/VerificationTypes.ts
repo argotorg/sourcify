@@ -101,6 +101,7 @@ export interface VerificationExport {
   compilation: {
     language: CompilationLanguage;
     compilationTarget: CompilationTarget;
+    compiler: string;
     compilerVersion: string;
     sources: StringMap;
     compilerOutput: {

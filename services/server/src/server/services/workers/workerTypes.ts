@@ -6,6 +6,7 @@ import type {
   CompilationTarget,
   Metadata,
   EtherscanResult,
+  ZkSolcJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { type MatchingErrorResponse } from "../../apiv2/errors";
 import type { JobErrorData } from "../utils/database-util";
@@ -18,7 +19,7 @@ export interface VerificationWorkerInput {
 export interface VerifyFromJsonInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
-  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
+  jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput | ZkSolcJsonInput;
   compilerVersion: string;
   compilationTarget: CompilationTarget;
   creationTransactionHash?: string;

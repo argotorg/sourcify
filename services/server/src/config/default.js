@@ -29,6 +29,9 @@ module.exports = {
   solJsonRepo: "/tmp/solc-bin/soljson",
   vyperRepo: "/tmp/vyper-bin",
   feRepo: "/tmp/fe-bin",
+  // // zksolc (zksync EraVM) verification is optional
+  // zksolcRepo: "/tmp/zksolc-bin",
+  // eraSolcRepo: "/tmp/era-solc-bin",
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   corsAllowedOrigins: [

@@ -5,6 +5,7 @@ import type {
   CompilationLanguage,
   StringMap,
   ISolidityCompiler,
+  IZkSolcCompiler,
   IVyperCompiler,
   IFeCompiler,
 } from './CompilationTypes';
@@ -34,7 +35,11 @@ export abstract class AbstractCompilation {
   /**
    * Constructor parameters
    */
-  abstract compiler: ISolidityCompiler | IVyperCompiler | IFeCompiler;
+  abstract compiler:
+    | ISolidityCompiler
+    | IZkSolcCompiler
+    | IVyperCompiler
+    | IFeCompiler;
   compilerVersion: string;
   abstract compilationTarget: CompilationTarget;
   jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput;
@@ -59,6 +64,16 @@ export abstract class AbstractCompilation {
     forceEmscripten?: boolean,
   ): Promise<void>;
 
+  public abstract get compilerName(): string;
+
+  // The compiler version string stored/exported for this compilation. Defaults
+  // to compilerVersion; zksolc-based compilations override this with the
+  // combined `zksolc:<v>;solc:<v>` toolchain string while keeping
+  // compilerVersion as the plain zksolc semver for Solidity heuristics.
+  public get resolvedCompilerVersion(): string {
+    return this.compilerVersion;
+  }
+
   constructor(
     compilerVersion: string,
     jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
@@ -81,11 +96,11 @@ export abstract class AbstractCompilation {
     });
     logSilly('Compilation input', { solcJsonInput: this.jsonInput });
     try {
-      this.compilerOutput = await this.compiler.compile(
-        version,
-        this.jsonInput as any,
-        forceEmscripten,
-      );
+      // ZkSolcCompilation overrides this method and calls its own compiler, so
+      // the base compile path only ever runs for solc/vyper/fe compilations.
+      this.compilerOutput = await (
+        this.compiler as ISolidityCompiler | IVyperCompiler | IFeCompiler
+      ).compile(version, this.jsonInput as any, forceEmscripten);
     } catch (e: any) {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,

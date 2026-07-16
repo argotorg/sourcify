@@ -9,6 +9,7 @@ import { RWStorageIdentifiers } from "../../src/server/services/storageServices/
 import type { Pool } from "pg";
 import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
+import { ZkSolcLocal } from "../../src/server/services/compiler/local/ZkSolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import { FeLocal } from "../../src/server/services/compiler/local/FeLocal";
 import path from "path";
@@ -85,12 +86,29 @@ export class ServerFixture {
         throw new Error("Not all required environment variables set");
       }
 
+      // zksolc is optional: enabled only when both repo paths are configured.
+      const zksolcRepoPath = config.has("zksolcRepo")
+        ? config.get<string>("zksolcRepo")
+        : "";
+      const eraSolcRepoPath = config.has("eraSolcRepo")
+        ? config.get<string>("eraSolcRepo")
+        : "";
+      const zksolc =
+        zksolcRepoPath && eraSolcRepoPath
+          ? new ZkSolcLocal(
+              zksolcRepoPath,
+              eraSolcRepoPath,
+              config.get("solcRepo"),
+            )
+          : undefined;
+
       const serverOptions: ServerOptions = {
         port: fixtureOptions_?.port || config.get<number>("server.port"),
         maxFileSize: config.get<number>("server.maxFileSize"),
         corsAllowedOrigins: config.get<string[]>("corsAllowedOrigins"),
         chains: sourcifyChainsMap,
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
+        zksolc,
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
         verifyDeprecated: true,
@@ -105,6 +123,8 @@ export class ServerFixture {
           sourcifyChainMap: sourcifyChainsMap,
           solcRepoPath: config.get("solcRepo"),
           solJsonRepoPath: config.get("solJsonRepo"),
+          zksolcRepoPath,
+          eraSolcRepoPath,
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
         },

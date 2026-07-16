@@ -1,10 +1,8 @@
 import type {
   SourcifyChain,
-  ISolidityCompiler,
   SolidityJsonInput,
   VyperJsonInput,
   FeJsonInput,
-  PathBuffer,
   SourcifyChainMap,
   VerificationExport,
   SourcifyChainInstance,
@@ -12,6 +10,7 @@ import type {
   Metadata,
   EtherscanResult,
   AnyCompilation,
+  ZkSolcJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { Verification } from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
@@ -52,6 +51,8 @@ export interface VerificationServiceOptions {
   sourcifyChainMap: SourcifyChainMap;
   solcRepoPath: string;
   solJsonRepoPath: string;
+  zksolcRepoPath: string;
+  eraSolcRepoPath: string;
   vyperRepoPath: string;
   feRepoPath: string;
   workerIdleTimeout?: number;
@@ -63,6 +64,8 @@ export class VerificationService {
   initCompilers: boolean;
   solcRepoPath: string;
   solJsonRepoPath: string;
+  zksolcRepoPath: string;
+  eraSolcRepoPath: string;
   storageService: StorageService;
   private sourcifyChainMap: SourcifyChainMap;
 
@@ -76,6 +79,11 @@ export class VerificationService {
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
 
+  // zksolc is only available when its compiler repo paths are configured.
+  get isZkSolcEnabled(): boolean {
+    return Boolean(this.zksolcRepoPath && this.eraSolcRepoPath);
+  }
+
   constructor(
     options: VerificationServiceOptions,
     storageService: StorageService,
@@ -83,6 +91,8 @@ export class VerificationService {
     this.initCompilers = options.initCompilers || false;
     this.solcRepoPath = options.solcRepoPath;
     this.solJsonRepoPath = options.solJsonRepoPath;
+    this.zksolcRepoPath = options.zksolcRepoPath;
+    this.eraSolcRepoPath = options.eraSolcRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
 
@@ -132,6 +142,8 @@ export class VerificationService {
         sourcifyChainInstanceMap,
         solcRepoPath: options.solcRepoPath,
         solJsonRepoPath: options.solJsonRepoPath,
+        zksolcRepoPath: options.zksolcRepoPath,
+        eraSolcRepoPath: options.eraSolcRepoPath,
         vyperRepoPath: options.vyperRepoPath,
         feRepoPath: options.feRepoPath,
       },
@@ -255,7 +267,11 @@ export class VerificationService {
     verificationEndpoint: string,
     chainId: string,
     address: string,
-    jsonInput: SolidityJsonInput | VyperJsonInput | FeJsonInput,
+    jsonInput:
+      | SolidityJsonInput
+      | VyperJsonInput
+      | FeJsonInput
+      | ZkSolcJsonInput,
     compilerVersion: string,
     compilationTarget: CompilationTarget,
     creationTransactionHash?: string,

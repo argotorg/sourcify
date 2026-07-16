@@ -3,6 +3,7 @@ import type { LegacyVerifyRequest } from "../../verification.common";
 import { extractFiles } from "../../verification.common";
 import type {
   ISolidityCompiler,
+  IZkSolcCompiler,
   SolidityMetadataContract,
   SolidityJsonInput,
   AbstractCompilation,
@@ -199,6 +200,8 @@ export async function replaceContract(
 
   // Get the solc compiler and services
   const solc = req.app.get("solc") as ISolidityCompiler;
+  // zksolc is optional: undefined when EraVM verification is disabled.
+  const zksolc = req.app.get("zksolc") as IZkSolcCompiler | undefined;
   const vyper = req.app.get("vyper") as IVyperCompiler;
   const fe = req.app.get("fe") as IFeCompiler;
   const services = req.app.get("services") as Services;
@@ -241,7 +244,7 @@ export async function replaceContract(
       }
       try {
         compilation = createCompilationFromJsonInput(
-          { solc, vyper, fe },
+          { solc, zksolc, vyper, fe },
           compilerVersion,
           jsonInput,
           compilationTarget,

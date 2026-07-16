@@ -8,6 +8,7 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   Verification,
+  ZkSolcVerification,
   SourcifyLibError,
   SourcifyChain,
   SolidityMetadataContract,
@@ -17,6 +18,7 @@ import {
 import { resolve } from "path";
 import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
+import { ZkSolcLocal } from "../compiler/local/ZkSolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
 import { FeLocal } from "../compiler/local/FeLocal";
 import { v4 as uuidv4 } from "uuid";
@@ -40,10 +42,11 @@ export const filename = resolve(__filename);
 
 let chainRepository: ChainRepository;
 let solc: SolcLocal;
+let zksolc: ZkSolcLocal;
 let vyper: VyperLocal;
 let fe: FeLocal;
 const initWorker = () => {
-  if (chainRepository && solc && vyper && fe) {
+  if (chainRepository && solc && zksolc && vyper && fe) {
     return;
   }
 
@@ -64,6 +67,11 @@ const initWorker = () => {
   solc = new SolcLocal(
     Piscina.workerData.solcRepoPath,
     Piscina.workerData.solJsonRepoPath,
+  );
+  zksolc = new ZkSolcLocal(
+    Piscina.workerData.zksolcRepoPath,
+    Piscina.workerData.eraSolcRepoPath,
+    Piscina.workerData.solcRepoPath,
   );
   vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
   fe = new FeLocal(Piscina.workerData.feRepoPath);
@@ -111,10 +119,12 @@ async function _verifyFromJsonInput({
   compilationTarget,
   creationTransactionHash,
 }: VerifyFromJsonInput): Promise<VerifyOutput> {
+  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
+
   let compilation: AnyCompilation;
   try {
     compilation = createCompilationFromJsonInput(
-      { solc, vyper, fe },
+      { solc, zksolc, vyper, fe },
       compilerVersion,
       jsonInput,
       compilationTarget,
@@ -134,18 +144,25 @@ async function _verifyFromJsonInput({
     };
   }
 
-  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
   const foundCreationTxHash =
     creationTransactionHash ||
     (await getCreatorTx(sourcifyChain, address)) ||
     undefined;
 
-  const verification = new Verification(
-    compilation,
-    sourcifyChain,
-    address,
-    foundCreationTxHash,
-  );
+  const verification =
+    compilation.compilerName === "zksolc"
+      ? new ZkSolcVerification(
+          compilation,
+          sourcifyChain,
+          address,
+          foundCreationTxHash,
+        )
+      : new Verification(
+          compilation,
+          sourcifyChain,
+          address,
+          foundCreationTxHash,
+        );
 
   try {
     await verification.verify();
@@ -346,12 +363,20 @@ async function _verifySimilarity({
       continue;
     }
 
-    const verification = new Verification(
-      compilation,
-      mockChain,
-      address,
-      resolvedCreatorTxHash,
-    );
+    const verification =
+      compilation.compilerName === "zksolc"
+        ? new ZkSolcVerification(
+            compilation,
+            mockChain,
+            address,
+            resolvedCreatorTxHash,
+          )
+        : new Verification(
+            compilation,
+            mockChain,
+            address,
+            resolvedCreatorTxHash,
+          );
 
     try {
       await verification.verify();

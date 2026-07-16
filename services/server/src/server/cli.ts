@@ -18,6 +18,7 @@ import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 import type { LibSourcifyConfig } from "./server";
 import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
+import { ZkSolcLocal } from "./services/compiler/local/ZkSolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
 
@@ -74,6 +75,19 @@ const selectedSolidityCompiler = new SolcLocal(solcRepoPath, solJsonRepoPath);
 
 export const solc = selectedSolidityCompiler;
 
+// zksolc (zksync EraVM) is optional
+const zksolcRepoPath = config.has("zksolcRepo")
+  ? (config.get("zksolcRepo") as string)
+  : "";
+const eraSolcRepoPath = config.has("eraSolcRepo")
+  ? (config.get("eraSolcRepo") as string)
+  : "";
+let zksolc: ZkSolcLocal | undefined;
+if (zksolcRepoPath && eraSolcRepoPath) {
+  logger.info("Using local zksolc compiler");
+  zksolc = new ZkSolcLocal(zksolcRepoPath, eraSolcRepoPath, solcRepoPath);
+}
+
 logger.info("Using local vyper compiler");
 const vyperRepoPath =
   (config.get("vyperRepo") as string) || path.join("/tmp", "vyper-repo");
@@ -108,6 +122,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solc,
       vyper,
       fe,
+      zksolc,
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),
@@ -126,6 +141,8 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       sourcifyChainMap: sourcifyChainsMap,
       solcRepoPath,
       solJsonRepoPath,
+      zksolcRepoPath,
+      eraSolcRepoPath,
       vyperRepoPath,
       feRepoPath,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT

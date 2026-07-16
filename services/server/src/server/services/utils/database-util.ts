@@ -702,20 +702,6 @@ function getKeccak256Bytecodes(
   };
 }
 
-export function getCompilerNameFromLanguage(language: string): string {
-  switch (language.toLocaleLowerCase()) {
-    case "yul":
-    case "solidity":
-      return "solc";
-    case "vyper":
-      return "vyper";
-    case "fe":
-      return "fe";
-    default:
-      throw new Error("Language not supported");
-  }
-}
-
 export async function getDatabaseColumnsFromVerification(
   verification: VerificationExport,
 ): Promise<DatabaseColumns> {
@@ -900,7 +886,7 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler: getCompilerNameFromLanguage(verification.compilation.language),
+      compiler: verification.compilation.compiler,
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,
@@ -975,7 +961,9 @@ export function createPreRunCompilationFromStoredCandidate(
     runtimeCborAuxdata || {},
   );
 
-  if (jsonInput.language === "Vyper" && metadata) {
+  // Vyper and zksolc metadata aren't reconstructed inside PreRunCompilation, so
+  // restore them from the stored candidate metadata when available.
+  if ((jsonInput.language === "Vyper" || compilation.isZkSolc) && metadata) {
     compilation.setMetadata(metadata);
   }
 

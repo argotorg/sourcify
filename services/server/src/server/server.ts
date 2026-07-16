@@ -22,6 +22,7 @@ import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
 import type {
   ISolidityCompiler,
+  IZkSolcCompiler,
   IVyperCompiler,
   IFeCompiler,
   SourcifyChainMap,
@@ -59,6 +60,8 @@ export interface ServerOptions {
   solc: ISolidityCompiler;
   vyper: IVyperCompiler;
   fe: IFeCompiler;
+  // Optional: only set when zksolc (EraVM) verification is enabled.
+  zksolc?: IZkSolcCompiler;
   verifyDeprecated: boolean;
   replaceContract: boolean;
   sourcifyPrivateToken?: string;
@@ -138,6 +141,7 @@ export class Server {
     this.app.set("solc", options.solc);
     this.app.set("vyper", options.vyper);
     this.app.set("fe", options.fe);
+    this.app.set("zksolc", options.zksolc);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
     this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);

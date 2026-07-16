@@ -9,6 +9,7 @@ export type ILibSourcifyLogger = ILogger;
 // Compilation exports
 export * from './Compilation/AbstractCompilation';
 export * from './Compilation/SolidityCompilation';
+export * from './Compilation/ZkSolcCompilation';
 export * from './Compilation/VyperCompilation';
 export * from './Compilation/YulCompilation';
 export * from './Compilation/FeCompilation';
@@ -17,6 +18,7 @@ export * from './Compilation/CompilationTypes';
 
 // Verification exports
 export * from './Verification/Verification';
+export * from './Verification/ZkSolcVerification';
 export * from './Verification/VerificationTypes';
 
 // Etherscan utils exports

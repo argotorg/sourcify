@@ -21,6 +21,10 @@ import type {
  */
 export class FeCompilation extends AbstractCompilation {
   public language: CompilationLanguage = 'Fe';
+
+  public get compilerName(): string {
+    return 'fe';
+  }
   // Use declare to override AbstractCompilation's types to target Fe types
   declare jsonInput: FeJsonInput;
   declare compilerOutput?: FeOutput;
