@@ -341,6 +341,83 @@ describe("POST /v2/verify/:chainId/:address", function () {
     });
   });
 
+  it("should store a job error if the compiler does not output the runtime bytecode", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    // Yul contracts compiled with solc <0.6.9 have no evm.deployedBytecode in the compiler output
+    // See https://github.com/argotorg/sourcify/issues/2887
+    const yulFileName = "deterministic-deployment-proxy.yul";
+    const yulContent = `object "Proxy" {
+  code {
+    let size := datasize("runtime")
+    datacopy(0, dataoffset("runtime"), size)
+    return(0, size)
+  }
+  object "runtime" {
+    code {
+      calldatacopy(0, 32, sub(calldatasize(), 32))
+      let result := create2(callvalue(), 0, sub(calldatasize(), 32), calldataload(0))
+      if iszero(result) { revert(0, 0) }
+      mstore(0, result)
+      return(12, 20)
+    }
+  }
+}
+`;
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: {
+          language: "Yul",
+          sources: {
+            [yulFileName]: {
+              content: yulContent,
+            },
+          },
+          settings: {
+            optimizer: { enabled: true, details: { yul: true } },
+            outputSelection: {
+              "*": { "*": ["*"] },
+            },
+          },
+        },
+        compilerVersion: "0.5.8+commit.23d335f2",
+        contractIdentifier: `${yulFileName}:Proxy`,
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body).to.include({
+      isJobCompleted: true,
+    });
+    chai.expect(jobRes.body.error).to.exist;
+    chai
+      .expect(jobRes.body.error.customCode)
+      .to.equal("runtime_bytecode_not_found_in_compiler_output");
+    chai
+      .expect(jobRes.body.error.message)
+      .to.include("did not output the runtime bytecode");
+    chai.expect(jobRes.body.contract).to.deep.equal({
+      match: null,
+      creationMatch: null,
+      runtimeMatch: null,
+      chainId: chainFixture.chainId,
+      address: chainFixture.defaultContractAddress,
+    });
+  });
+
   it("should return a 429 if the contract is being verified at the moment already", async () => {
     await testAlreadyBeingVerified(
       serverFixture,

@@ -41,6 +41,7 @@ export type CompilationErrorCode =
   | 'invalid_compiler_version'
   | 'unsupported_compiler_version'
   | 'contract_not_found_in_compiler_output'
+  | 'runtime_bytecode_not_found_in_compiler_output'
   | 'compiler_error'
   | 'no_compiler_output'
   | 'metadata_not_set'

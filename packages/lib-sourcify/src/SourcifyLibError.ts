@@ -101,6 +101,8 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
       return 'Compiler output is undefined.';
     case 'contract_not_found_in_compiler_output':
       return 'Contract not found in compiler output.';
+    case 'runtime_bytecode_not_found_in_compiler_output':
+      return 'The compiler did not output the runtime bytecode (evm.deployedBytecode) for the contract. This happens e.g. for Yul contracts compiled with solc <0.6.9 or without a deployed subobject, or Solidity contracts compiled with solc <0.1.3.';
     case 'metadata_not_set':
       return 'No metadata on compilation object.';
     case 'creation_bytecode_cbor_auxdata_not_set':

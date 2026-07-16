@@ -108,6 +108,19 @@ export abstract class AbstractCompilation {
     // We call contractCompilerOutput() before logging because it can throw an error
     const compilationTargetContract = this.contractCompilerOutput;
 
+    // Some compilers don't output the deployedBytecode, e.g. Yul contracts compiled
+    // with solc <0.6.9 or without a deployed subobject, or Solidity <0.1.3.
+    // The rest of the verification flow relies on it being present, so fail here.
+    if (!compilationTargetContract.evm.deployedBytecode) {
+      logWarn('Runtime bytecode not found in compiler output', {
+        path: this.compilationTarget.path,
+        name: this.compilationTarget.name,
+      });
+      throw new CompilationError({
+        code: 'runtime_bytecode_not_found_in_compiler_output',
+      });
+    }
+
     const compilationEndTime = Date.now();
     this.compilationTime = compilationEndTime - compilationStartTime;
     logSilly('Compilation output', { compilerOutput: this.compilerOutput });
@@ -159,10 +172,9 @@ export abstract class AbstractCompilation {
   }
 
   get runtimeBytecode() {
-    // Solidity versions prior to 0.1.3 do not include the deployedBytecode in the compiler output,
-    // instead of handling the runtime bytecode type as optional, we set it to an empty string if it's not present
-    // otherwise the verification process would need to handle the runtime bytecode as optional
-    // and this would add unnecessary complexity to the verification process
+    // The deployedBytecode presence is enforced in compileAndReturnCompilationTarget.
+    // Its object can still be empty, e.g. for abstract contracts, in which case
+    // verification fails with `compiled_bytecode_is_zero`.
     return `0x${this.contractCompilerOutput.evm.deployedBytecode.object || ''}`;
   }
 
