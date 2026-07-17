@@ -250,77 +250,34 @@ describe("EtherscanVerifyApiService", function () {
     });
   });
 
-  it("sends zksync compiler mode and zksolc version for EraVM contracts", async () => {
-    const baseUrl = "https://etherscan.example/api";
-    const upsertStub = sandbox.stub().resolves();
-    const service = createService(
-      WStorageIdentifiers.EtherscanVerify,
-      baseUrl,
-      upsertStub,
-    );
-    const jobData = {
-      verificationId: "verification-job-id",
-      finishTime: new Date(),
-    };
+  const externalVerifyIdentifiers: EtherscanVerifyApiIdentifiers[] = [
+    WStorageIdentifiers.EtherscanVerify,
+    WStorageIdentifiers.BlockscoutVerify,
+    WStorageIdentifiers.RoutescanVerify,
+  ];
+  for (const identifier of externalVerifyIdentifiers) {
+    it(`skips EraVM (non-EVM) contracts for ${identifier}`, async () => {
+      const baseUrl = "https://explorer.example/api";
+      const upsertStub = sandbox.stub().resolves();
+      const service = createService(identifier, baseUrl, upsertStub);
+      const jobData = {
+        verificationId: "verification-job-id",
+        finishTime: new Date(),
+      };
 
-    const eravmVerification = structuredClone(MockVerificationExport);
-    eravmVerification.compilation.vm = "eravm";
-    eravmVerification.compilation.compiler = "zksolc";
-    eravmVerification.compilation.compilerVersion =
-      "zksolc:1.5.7;solc:0.8.26-1.0.1";
+      const eravmVerification = structuredClone(MockVerificationExport);
+      eravmVerification.compilation.vm = "eravm";
+      eravmVerification.compilation.compiler = "zksolc";
+      eravmVerification.compilation.compilerVersion =
+        "zksolc:1.5.7;solc:0.8.26-1.0.1";
 
-    const fetchPayload = {
-      status: "1" as const,
-      message: "OK",
-      result: "receipt-eravm",
-    };
-    fetchStub.resolves(mockFetchResponse(fetchPayload));
+      await expect(service.storeVerification(eravmVerification, jobData)).to
+        .eventually.be.fulfilled;
 
-    await expect(service.storeVerification(eravmVerification, jobData)).to
-      .eventually.be.fulfilled;
-
-    const [, requestInit] = fetchStub.firstCall.args;
-    const body = (requestInit as RequestInit).body as FormData;
-    const formData = formDataToObject(body);
-    const expectedSourceCode =
-      buildExpectedStandardJsonInput(eravmVerification);
-    expect(formData).to.deep.equal({
-      codeformat: "solidity-standard-json-input",
-      sourceCode: expectedSourceCode,
-      contractaddress: eravmVerification.address,
-      contractname: `${eravmVerification.compilation.compilationTarget?.path}:${eravmVerification.compilation.compilationTarget?.name}`,
-      compilerversion: "v0.8.26-1.0.1",
-      constructorArguements: "",
-      compilermode: "zksync",
-      zksolcVersion: "v1.5.7",
+      sinon.assert.notCalled(fetchStub);
+      sinon.assert.notCalled(upsertStub);
     });
-  });
-
-  it("skips EraVM contracts for the Blockscout explorer", async () => {
-    const baseUrl = "https://blockscout.example/api";
-    const upsertStub = sandbox.stub().resolves();
-    const service = createService(
-      WStorageIdentifiers.BlockscoutVerify,
-      baseUrl,
-      upsertStub,
-    );
-    const jobData = {
-      verificationId: "verification-job-id",
-      finishTime: new Date(),
-    };
-
-    const eravmVerification = structuredClone(MockVerificationExport);
-    eravmVerification.compilation.vm = "eravm";
-    eravmVerification.compilation.compiler = "zksolc";
-    eravmVerification.compilation.compilerVersion =
-      "zksolc:1.5.7;solc:0.8.26-1.0.1";
-
-    await expect(service.storeVerification(eravmVerification, jobData)).to
-      .eventually.be.fulfilled;
-
-    sinon.assert.notCalled(fetchStub);
-    sinon.assert.notCalled(upsertStub);
-  });
+  }
 
   it("uses the Blockscout specific endpoint and payload for Vyper verification", async () => {
     const baseUrl = "https://blockscout.example/api";
