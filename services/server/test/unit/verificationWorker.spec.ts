@@ -124,10 +124,12 @@ describe("verificationWorker", function () {
         },
         compilation: {
           language: chainFixture.defaultContractMetadataObject.language,
+          vm: "evm",
           compilationTarget: {
             path: contractPath,
             name: contractName,
           },
+          compiler: "solc",
           compilerVersion:
             chainFixture.defaultContractMetadataObject.compiler.version,
           sources: {
