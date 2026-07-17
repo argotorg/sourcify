@@ -126,9 +126,14 @@ export async function detectAndResolveProxy(
 }
 
 function isEIP1167Proxy(bytecode: string, resolvedAddress: string): boolean {
-  return bytecode
-    .toLowerCase()
-    .endsWith(
-      `363d3d373d3d3d363d73${resolvedAddress.slice(2)}5af43d82803e903d91602b57fd5bf3`,
-    );
+  // The EIP-1167 minimal proxy stub sits at the *start* of the runtime bytecode.
+  // We must anchor the match at the beginning (not the end): "clones with immutable
+  // args" (e.g. OpenZeppelin `Clones.cloneWithImmutableArgs`) append per-clone
+  // argument bytes *after* the stub, so those clones do not end with the stub.
+  const normalizedBytecode = (
+    bytecode.startsWith("0x") ? bytecode.slice(2) : bytecode
+  ).toLowerCase();
+  return normalizedBytecode.startsWith(
+    `363d3d373d3d3d363d73${resolvedAddress.slice(2).toLowerCase()}5af43d82803e903d91602b57fd5bf3`,
+  );
 }
