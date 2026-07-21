@@ -126,15 +126,14 @@ The server supports multiple storage backends:
 
 ### API Structure
 
-- **v1 API**: Legacy endpoints under `/` (deprecated, adds `Deprecation: true` header)
-  - Session-based verification: `/session`
-  - Stateless verification: `/verify`
-  - Repository access: `/files`, `/check-by-addresses`
-  - Etherscan integration: `/verify/etherscan`
 - **v2 API**: Modern endpoints under `/v2` (requires database backend)
   - Contract lookup: `/v2/contracts`, `/v2/contract/`
   - Verification: `/v2/verify`
   - Job lookup: `/v2/verify`
+- **Private API**: Authenticated admin endpoints under `/private` (gated by config; not for public use)
+  - Deprecated verification: `/private/verify-deprecated`
+  - Contract replacement: `/private/replace-contract`
+  - Log level: `/private/change-log-level`
 - OpenAPI/Swagger documentation available at runtime at `/api-docs/swagger.json`
 
 ## Development Workflow
@@ -200,7 +199,7 @@ The `FIELDS_TO_STORED_PROPERTIES` map is the authoritative source used by the va
 When reviewing PRs as an automated agent:
 
 - Check database migration safety (services/database/) — flag destructive operations
-- Verify API changes maintain backwards compatibility for both v1 and v2 endpoints
+- Verify API changes maintain backwards compatibility for the v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
 - Verify the OpenAPI/Swagger spec (`apiv2.yaml`) is updated if API endpoints or response fields change — including the **Available fields** section and the `fields` query parameter description
 - Flag any hardcoded secrets, credentials, or API keys
