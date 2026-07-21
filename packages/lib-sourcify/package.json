@@ -37,9 +37,9 @@
     "@ethereum-sourcify/bytecode-utils": "^1.6.1",
     "@fairdatasociety/bmt-js": "2.1.0",
     "bs58": "6.0.0",
-    "ethers": "6.16.0",
+    "ethers": "6.17.0",
     "jszip": "3.10.1",
-    "semver": "7.8.4"
+    "semver": "7.8.5"
   },
   "devDependencies": {
     "@ethereum-sourcify/compilers": "^1.1.5",
@@ -49,7 +49,7 @@
     "@types/chai-as-promised": "7.1.8",
     "@types/debug": "4.1.13",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.19.21",
+    "@types/node": "22.20.0",
     "@types/semver": "7.7.1",
     "@types/sinon": "21.0.1",
     "@types/sinon-chai": "4.0.0",
@@ -61,7 +61,7 @@
     "cz-conventional-changelog": "3.3.0",
     "gh-pages": "6.3.0",
     "mocha": "10.8.2",
-    "nock": "14.0.15",
+    "nock": "14.0.16",
     "npm-run-all2": "9.0.2",
     "open-cli": "9.0.0",
     "sinon": "21.1.2",
