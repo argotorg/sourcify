@@ -124,6 +124,6 @@ const repoUiHandler = (req: Request, res: Response) => {
 router.get("/repo-ui", repoUiHandler);
 router.get("/repo-ui/*path", repoUiHandler);
 
-router.use("/", apiPrivateRoutes);
+router.use("/private", apiPrivateRoutes);
 router.use("/v2", apiV2Routes);
 export default router;
