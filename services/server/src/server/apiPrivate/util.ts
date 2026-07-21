@@ -38,15 +38,19 @@ export function checksumAddresses(
   _res: Response,
   next: NextFunction,
 ) {
-  // stateless
-  if (req.body?.address) {
-    req.body.address = getAddress(req.body.address);
-  }
-  if (req.query.addresses) {
-    req.query.addresses = (req.query.addresses as string)
-      .split(",")
-      .map((address: string) => getAddress(address))
-      .join(",");
+  try {
+    // stateless
+    if (req.body?.address) {
+      req.body.address = getAddress(req.body.address);
+    }
+    if (req.query.addresses) {
+      req.query.addresses = (req.query.addresses as string)
+        .split(",")
+        .map((address: string) => getAddress(address))
+        .join(",");
+    }
+  } catch (err: any) {
+    throw new BadRequestError(`Invalid address: ${err.message}`);
   }
   next();
 }

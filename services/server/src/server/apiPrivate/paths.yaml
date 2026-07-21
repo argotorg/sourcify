@@ -26,7 +26,9 @@ paths:
               properties:
                 address:
                   type: string
-                  format: address
+                  pattern: '(\b0x[a-fA-F0-9]{40}\b)'
+                  minLength: 42
+                  maxLength: 42
                   example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
                 chain:
                   type: string
@@ -168,7 +170,9 @@ paths:
                   example: "1"
                 address:
                   type: string
-                  format: address
+                  pattern: '(\b0x[a-fA-F0-9]{40}\b)'
+                  minLength: 42
+                  maxLength: 42
                   description: The contract address
                   example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
                 transactionHash:

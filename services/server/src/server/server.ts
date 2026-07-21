@@ -30,7 +30,6 @@ import {
   SourcifyChain,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ChainRepository } from "../sourcify-chain-repository";
-import { makePrivateValidatorFormats } from "./apiPrivate/validation";
 import { errorHandler as v2ErrorHandler } from "./apiv2/errors";
 import type http from "http";
 import { RWStorageIdentifiers } from "./services/storageServices/identifiers";
@@ -246,9 +245,6 @@ export class Server {
               return token === options.sourcifyPrivateToken;
             },
           },
-        },
-        formats: {
-          ...makePrivateValidatorFormats(),
         },
         $refParser: {
           mode: "dereference",
