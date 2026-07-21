@@ -644,7 +644,8 @@ describe("4byte API End-to-End Tests", function () {
 
       // total should be the number of unique signatures in the database
       chai.expect(res.body.result.count.total).to.be.equal(
-        new Set( // Use a set to count unique signatures
+        new Set(
+          // Use a set to count unique signatures
           FourByteServerFixture.testSignatures.map((sig) => sig.signature),
         ).size,
       );

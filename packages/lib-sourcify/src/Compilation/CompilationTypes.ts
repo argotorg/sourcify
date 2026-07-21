@@ -79,6 +79,4 @@ export interface IFeCompiler {
 }
 
 export type AnyCompilation =
-  | SolidityCompilation
-  | VyperCompilation
-  | FeCompilation;
+  SolidityCompilation | VyperCompilation | FeCompilation;

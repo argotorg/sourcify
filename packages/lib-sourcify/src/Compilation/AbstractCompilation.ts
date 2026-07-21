@@ -136,9 +136,7 @@ export abstract class AbstractCompilation {
   }
 
   get contractCompilerOutput():
-    | SolidityOutputContract
-    | VyperOutputContract
-    | FeOutputContract {
+    SolidityOutputContract | VyperOutputContract | FeOutputContract {
     if (!this.compilerOutput) {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });

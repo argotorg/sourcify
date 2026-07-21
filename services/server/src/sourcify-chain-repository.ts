@@ -60,12 +60,10 @@ export class ChainRepository {
    * Note that there might be chains not supported for verification anymore but still exist as a SourcifyChain e.g. Ropsten.
    */
   checkSupportedChainId(chainId: string) {
-    if (
-      !(
-        chainId in this.sourcifyChainMap &&
-        this.sourcifyChainMap[chainId].supported
-      )
-    ) {
+    if (!(
+      chainId in this.sourcifyChainMap &&
+      this.sourcifyChainMap[chainId].supported
+    )) {
       throw new BadRequestError(
         `Chain ${chainId} not supported for verification!`,
       );

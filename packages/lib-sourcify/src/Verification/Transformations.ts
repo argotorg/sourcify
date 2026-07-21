@@ -336,13 +336,11 @@ export function extractLibrariesTransformation(
         // (In our database we store bytecodes with the placeholder zeroed out)
         const calculatedZeroedPlaceholder = '0'.repeat(40);
 
-        if (
-          !(
-            placeholder === calculatedPlaceholder ||
-            placeholder === calculatedPreV050Placeholder ||
-            placeholder === calculatedZeroedPlaceholder
-          )
-        )
+        if (!(
+          placeholder === calculatedPlaceholder ||
+          placeholder === calculatedPreV050Placeholder ||
+          placeholder === calculatedZeroedPlaceholder
+        ))
           throw new Error(
             `Library placeholder mismatch: ${placeholder} vs ${calculatedPlaceholder} or ${calculatedPreV050Placeholder}`,
           );
@@ -408,10 +406,8 @@ export function extractAuxdataTransformation(
           // We first try to decode the auxdata removing the auxdata length bytes,
           // if it fails we try to decode it as is, since some Vyper auxdata doesn't
           // include the auxdata length in the bytecode.
-          (
-            isCborEncoded(onchainAuxdata.slice(0, -4)) ||
-            isCborEncoded(onchainAuxdata)
-          )
+          isCborEncoded(onchainAuxdata.slice(0, -4)) ||
+          isCborEncoded(onchainAuxdata)
         )
       ) {
         throw new Error(

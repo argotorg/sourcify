@@ -119,9 +119,7 @@ export function validateStandardJsonInput(
   }
 
   const stdJsonInput = req.body.stdJsonInput as
-    | SolidityJsonInput
-    | VyperJsonInput
-    | FeJsonInput;
+    SolidityJsonInput | VyperJsonInput | FeJsonInput;
   if (!stdJsonInput.language) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a language field.",
