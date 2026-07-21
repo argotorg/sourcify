@@ -1,12 +1,5 @@
-import type {
-  JsonRpcSigner,
-  JsonFragment,
-  JsonRpcProvider,
-  BytesLike,
-} from "ethers";
-import { ContractFactory, Wallet, Contract, getAddress } from "ethers";
-import type { SourcifyDatabaseService } from "../../src/server/services/storageServices/SourcifyDatabaseService";
-import { MockVerificationExport } from "./mocks";
+import type { JsonRpcSigner, JsonFragment, BytesLike } from "ethers";
+import { ContractFactory, Contract } from "ethers";
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
 import path from "path";
@@ -20,7 +13,6 @@ chai.use(chaiHttp);
 
 export const invalidAddress = "0x000000bCB92160f8B7E094998Af6BCaD7fa537ff"; // checksum false
 export const unusedAddress = "0xf1Df8172F308e0D47D0E5f9521a5210467408535";
-export const unsupportedChain = "3"; // Ropsten
 
 export async function deployFromAbiAndBytecode(
   signer: JsonRpcSigner,
@@ -252,50 +244,6 @@ export async function deployAndVerifyContract(
   return contractAddress;
 }
 
-/**
- * Function to deploy contracts from an external account with private key
- */
-export async function deployFromPrivateKey(
-  provider: JsonRpcProvider,
-  abi: JsonFragment[],
-  bytecode: BytesLike | { object: string },
-  privateKey: string,
-  args?: any[],
-) {
-  const signer = new Wallet(privateKey, provider);
-  const contractFactory = new ContractFactory(abi, bytecode, signer);
-  console.log(`Deploying contract ${args?.length ? `with args ${args}` : ""}`);
-  const deployment = await contractFactory.deploy(...(args || []));
-  await deployment.waitForDeployment();
-
-  const contractAddress = await deployment.getAddress();
-  console.log(`Deployed contract at ${contractAddress}`);
-  return contractAddress;
-}
-
-/**
- * Await `secs` seconds
- * @param  {Number} secs seconds
- * @return {Promise}
- */
-export function waitSecs(secs = 0) {
-  return new Promise((resolve) => setTimeout(resolve, secs * 1000));
-}
-
-// Uses staticCall which does not send a tx i.e. change the state.
-export async function callContractMethod(
-  provider: JsonRpcProvider,
-  abi: JsonFragment[],
-  contractAddress: string,
-  methodName: string,
-  args: any[],
-) {
-  const contract = new Contract(contractAddress, abi, provider);
-  const callResponse = await contract[methodName].staticCall(...args);
-
-  return callResponse;
-}
-
 // Sends a tx that changes the state
 export async function callContractMethodWithTx(
   signer: JsonRpcSigner,
@@ -399,34 +347,4 @@ export function hookIntoVerificationWorkerRun(
   };
 
   return makeWorkersWait;
-}
-
-/**
- * Insert a mock verified contract directly into the database.
- * Each contract gets unique bytecodes and address derived from the index
- * to satisfy the DB unique constraints, avoiding expensive on-chain
- * deployments and full verification round-trips.
- */
-export async function insertMockVerification(
-  databaseService: SourcifyDatabaseService,
-  index: number,
-  partial: boolean,
-  chainId: number = 31337,
-): Promise<string> {
-  const hexIndex = index.toString(16).padStart(4, "0");
-  const mock = structuredClone(MockVerificationExport);
-  mock.address = getAddress(`0x${hexIndex}${"0".repeat(40 - hexIndex.length)}`);
-  mock.chainId = chainId;
-  mock.onchainRuntimeBytecode = `0x${"aa".repeat(32)}${hexIndex}`;
-  mock.onchainCreationBytecode = `0x${"bb".repeat(32)}${hexIndex}`;
-  mock.compilation.runtimeBytecode = `0x${"cc".repeat(32)}${hexIndex}`;
-  mock.compilation.creationBytecode = `0x${"dd".repeat(32)}${hexIndex}`;
-  mock.compilation.runtimeBytecodeCborAuxdata = {};
-  mock.compilation.creationBytecodeCborAuxdata = {};
-  mock.deploymentInfo.txHash = `0x${"ee".repeat(31)}${hexIndex}`;
-  mock.status = partial
-    ? { runtimeMatch: "partial", creationMatch: "partial" }
-    : { runtimeMatch: "perfect", creationMatch: "perfect" };
-  await databaseService.storeVerification(mock);
-  return mock.address;
 }

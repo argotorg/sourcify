@@ -21,24 +21,6 @@ import chaiHttp from "chai-http";
 
 chai.use(chaiHttp);
 
-export const assertValidationError = (
-  err: Error | null,
-  res: Response,
-  field: string,
-  message?: string,
-) => {
-  try {
-    chai.expect(err).to.be.null;
-    chai.expect(res.body.message.toLowerCase()).to.include(field.toLowerCase());
-    if (message) chai.expect(res.body.message).to.equal(message);
-    chai.expect(res.status).to.equal(StatusCodes.BAD_REQUEST);
-  } catch (err) {
-    console.log("Not validating as expected:");
-    console.log(JSON.stringify(res.body, null, 2));
-    throw err;
-  }
-};
-
 // If you pass storageService = false, then the match will not be compared to the database
 export const assertVerification = async (
   serverFixture: ServerFixture,
