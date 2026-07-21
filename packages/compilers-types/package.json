@@ -12,9 +12,9 @@
     "prepublishOnly": "npm run build",
     "fix": "run-s fix:*",
     "fix:prettier": "prettier \"./**/*.ts\" --write",
-    "fix:lint": "eslint . --ext .ts --fix",
+    "fix:lint": "eslint . --fix",
     "check": "run-s check:*",
-    "check:eslint": "eslint . --ext .ts",
+    "check:eslint": "eslint .",
     "check:prettier": "prettier \"./**/*.ts\" --check"
   },
   "files": [

@@ -90,8 +90,7 @@ router.get("/chains", (_req, res) => {
 
 const verifyUiHandler = (req: Request, res: Response, next: NextFunction) => {
   const sourcifyVerifyUi = req.app.get("sourcifyVerifyUi") as
-    | string
-    | undefined;
+    string | undefined;
   if (sourcifyVerifyUi) {
     const pathAfterVerify = req.path.substring("/verify-ui".length);
     const redirectUrl = `${sourcifyVerifyUi}${pathAfterVerify}`;

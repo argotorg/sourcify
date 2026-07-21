@@ -759,8 +759,7 @@ export class Verification {
             bytecode: {
               sourceMap: (
                 contractCompilerOutput as
-                  | SolidityOutputContract
-                  | VyperOutputContract
+                  SolidityOutputContract | VyperOutputContract
               )?.evm?.bytecode?.sourceMap,
               linkReferences: (contractCompilerOutput as SolidityOutputContract)
                 ?.evm?.bytecode?.linkReferences,
