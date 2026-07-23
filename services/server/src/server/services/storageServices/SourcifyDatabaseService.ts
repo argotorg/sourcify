@@ -1006,6 +1006,14 @@ export class SourcifyDatabaseService
     });
   }
 
+  // Marks in-progress verification jobs older than `thresholdMs` as abandoned so
+  // their chain+address stops being locked against resubmission (issue #2880).
+  // Returns the ids of the reaped jobs.
+  async reapStaleJobs(thresholdMs: number): Promise<VerificationJobId[]> {
+    const result = await this.database.reapStaleVerificationJobs(thresholdMs);
+    return result.rows.map((row) => row.id);
+  }
+
   private async storeSignatures(
     poolClient: PoolClient,
     verifiedContractId: Tables.VerifiedContract["id"],

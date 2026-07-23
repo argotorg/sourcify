@@ -118,6 +118,7 @@ export interface RWStorageService extends WStorageService {
     runtimeBytecode: string,
     limit: number,
   ): Promise<SimilarityCandidate[]>;
+  reapStaleJobs?(thresholdMs: number): Promise<VerificationJobId[]>;
 }
 
 export interface EnabledServices {

@@ -135,6 +135,15 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
         .CONCURRENT_VERIFICATIONS_PER_WORKER
         ? parseInt(process.env.CONCURRENT_VERIFICATIONS_PER_WORKER)
         : undefined,
+      reaperEnabled: process.env.REAPER_ENABLED
+        ? process.env.REAPER_ENABLED === "true"
+        : undefined,
+      reaperIntervalMs: process.env.REAPER_INTERVAL_MS
+        ? parseInt(process.env.REAPER_INTERVAL_MS)
+        : undefined,
+      reaperStaleJobThresholdMs: process.env.REAPER_STALE_JOB_THRESHOLD_MS
+        ? parseInt(process.env.REAPER_STALE_JOB_THRESHOLD_MS)
+        : undefined,
       debugDataS3Config:
         process.env.DEBUG_DATA_S3_BUCKET && process.env.DEBUG_DATA_S3_REGION
           ? {

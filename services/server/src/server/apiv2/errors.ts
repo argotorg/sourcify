@@ -266,7 +266,8 @@ export type VerificationErrorCode =
   | "unsupported_language"
   | "already_verified"
   | "internal_error"
-  | "no_similar_match_found";
+  | "no_similar_match_found"
+  | "job_abandoned";
 
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
@@ -290,6 +291,8 @@ export function getVerificationErrorMessage(
       return "The compiler timed out while compiling the contract. The compilation took too long and was aborted.";
     case "compiler_out_of_memory":
       return "The compiler process was killed unexpectedly, likely because it ran out of memory while compiling the contract.";
+    case "job_abandoned":
+      return "The verification job did not complete in time and was marked as abandoned by the server. This usually happens when the compilation runs out of memory or hangs. You can resubmit the verification.";
     default:
       return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }

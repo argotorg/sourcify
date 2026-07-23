@@ -53,6 +53,19 @@ describe("VerificationService", function () {
     return mockStorageService;
   }
 
+  function createMockStorageServiceWithReaper(
+    reapStaleJobsStub?: sinon.SinonStub,
+  ) {
+    return {
+      performServiceOperation: sandbox.stub(),
+      rwServices: {
+        [RWStorageIdentifiers.SourcifyDatabase]: reapStaleJobsStub
+          ? { reapStaleJobs: reapStaleJobsStub }
+          : undefined,
+      },
+    } as any;
+  }
+
   function mockWorkerPoolError(verificationService: VerificationService) {
     const workerPoolStub = sandbox.stub(
       verificationService["workerPool"],
@@ -256,6 +269,90 @@ describe("VerificationService", function () {
     expect(storedData.sources).to.deep.equal(
       MockVerificationExport.compilation.sources,
     );
+  });
+
+  describe("stale verification-job reaper", function () {
+    const baseOptions = () => ({
+      initCompilers: false,
+      sourcifyChainMap: {},
+      solcRepoPath: config.get<string>("solcRepo"),
+      solJsonRepoPath: config.get<string>("solJsonRepo"),
+      vyperRepoPath: config.get<string>("vyperRepo"),
+      feRepoPath: config.get<string>("feRepo"),
+    });
+
+    it("should call the storage reap method with the configured threshold", async function () {
+      const reapStub = sandbox.stub().resolves(["job-1", "job-2"]);
+      verificationService = new VerificationService(
+        {
+          ...baseOptions(),
+          reaperEnabled: true,
+          reaperIntervalMs: 10,
+          reaperStaleJobThresholdMs: 12345,
+        },
+        createMockStorageServiceWithReaper(reapStub),
+      );
+
+      await verificationService.init();
+
+      // Wait for the interval to fire at least once
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(reapStub.called).to.be.true;
+      expect(reapStub.firstCall.args[0]).to.equal(12345);
+    });
+
+    it("should be a no-op when the reaper is disabled", async function () {
+      const reapStub = sandbox.stub().resolves([]);
+      verificationService = new VerificationService(
+        {
+          ...baseOptions(),
+          reaperEnabled: false,
+          reaperIntervalMs: 10,
+        },
+        createMockStorageServiceWithReaper(reapStub),
+      );
+
+      await verificationService.init();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(reapStub.called).to.be.false;
+      expect(verificationService["reaperInterval"]).to.be.undefined;
+    });
+
+    it("should be a no-op when SourcifyDatabase is not configured", async function () {
+      verificationService = new VerificationService(
+        {
+          ...baseOptions(),
+          reaperEnabled: true,
+          reaperIntervalMs: 10,
+        },
+        createMockStorageServiceWithReaper(undefined),
+      );
+
+      await verificationService.init();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(verificationService["reaperInterval"]).to.be.undefined;
+    });
+
+    it("should start the interval on init and clear it on close", async function () {
+      const reapStub = sandbox.stub().resolves([]);
+      verificationService = new VerificationService(
+        {
+          ...baseOptions(),
+          reaperEnabled: true,
+          reaperIntervalMs: 10000,
+        },
+        createMockStorageServiceWithReaper(reapStub),
+      );
+
+      await verificationService.init();
+      expect(verificationService["reaperInterval"]).to.not.be.undefined;
+
+      await verificationService.close();
+      expect(verificationService["reaperInterval"]).to.be.undefined;
+    });
   });
 
   it("should not throw if S3 storage fails during failed verification", async function () {
