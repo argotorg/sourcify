@@ -286,6 +286,10 @@ export function getVerificationErrorMessage(
       return "The server encountered an unexpected error.";
     case "no_similar_match_found":
       return "No similar verified contracts were found in the database.";
+    case "compiler_timeout":
+      return "The compiler timed out while compiling the contract. The compilation took too long and was aborted.";
+    case "compiler_out_of_memory":
+      return "The compiler process was killed unexpectedly, likely because it ran out of memory while compiling the contract.";
     default:
       return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }
