@@ -649,8 +649,7 @@ components:
                     allOf:
                       - $ref: "#/components/schemas/MatchingErrorResponse"
                       - description: |-
-                          Optional, when the verification fails for some reason.
-                          The `customCode` indicates the reason. In addition to the compilation/matching error codes, the server may set `job_abandoned` when a job never completed in time (e.g. the compilation ran out of memory or hung) and was reaped by the server; such jobs can be resubmitted.
+                          Optional, when the verification fails for some reason. The `customCode` indicates the reason.
                   jobStartTime:
                     type: string
                     format: date-time
