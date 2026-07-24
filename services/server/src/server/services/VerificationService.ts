@@ -24,7 +24,6 @@ import {
 } from "@ethereum-sourcify/compilers";
 import type { S3Config, VerificationJobId } from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
-import { RWStorageIdentifiers } from "./storageServices/identifiers";
 import Piscina from "piscina";
 import path from "path";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
@@ -48,12 +47,6 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 
-// How often the reaper checks for stale (never-completed) verification jobs.
-const DEFAULT_REAPER_INTERVAL_MS = 300000; // 5 minutes
-// A job whose started_at is older than this and is still in progress is
-// considered abandoned (e.g. the worker OOMed or hung) and gets failed.
-const DEFAULT_REAPER_STALE_JOB_THRESHOLD_MS = 10800000; // 3 hours
-
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
   sourcifyChainMap: SourcifyChainMap;
@@ -64,9 +57,6 @@ export interface VerificationServiceOptions {
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
-  reaperEnabled?: boolean;
-  reaperIntervalMs?: number;
-  reaperStaleJobThresholdMs?: number;
 }
 
 export class VerificationService {
@@ -86,12 +76,6 @@ export class VerificationService {
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
 
-  private readonly reaperEnabled: boolean;
-  private readonly reaperIntervalMs: number;
-  private readonly reaperStaleJobThresholdMs: number;
-  private reaperInterval?: NodeJS.Timeout;
-  private isReaping = false;
-
   constructor(
     options: VerificationServiceOptions,
     storageService: StorageService,
@@ -101,13 +85,6 @@ export class VerificationService {
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
-
-    this.reaperEnabled = options.reaperEnabled ?? true;
-    this.reaperIntervalMs =
-      options.reaperIntervalMs ?? DEFAULT_REAPER_INTERVAL_MS;
-    this.reaperStaleJobThresholdMs =
-      options.reaperStaleJobThresholdMs ??
-      DEFAULT_REAPER_STALE_JOB_THRESHOLD_MS;
 
     if (options.debugDataS3Config) {
       const s3Config = options.debugDataS3Config;
@@ -216,83 +193,15 @@ export class VerificationService {
 
       logger.info("Initialized compilers");
     }
-
-    this.startStaleJobReaper();
-
     return true;
   }
 
   public async close() {
     logger.info("Gracefully closing all in-process verifications");
-    if (this.reaperInterval) {
-      clearInterval(this.reaperInterval);
-      this.reaperInterval = undefined;
-    }
     // Immediately abort all workers. Tasks that still run will have their Promises rejected.
     await this.workerPool.destroy();
     // Here, we wait for the rejected tasks which also waits for writing the failed status to the database.
     await Promise.all(this.runningTasks);
-  }
-
-  // Periodically fails verification jobs that never completed (e.g. the worker
-  // OOMed or hung) so their chain+address stops being locked against
-  // resubmission. See: https://github.com/argotorg/sourcify/issues/2880
-  private startStaleJobReaper() {
-    if (!this.reaperEnabled) {
-      logger.info("Stale verification-job reaper disabled, not starting");
-      return;
-    }
-
-    const sourcifyDatabase =
-      this.storageService.rwServices[RWStorageIdentifiers.SourcifyDatabase];
-    if (!sourcifyDatabase?.reapStaleJobs) {
-      logger.info(
-        "SourcifyDatabase storage service not configured, not starting stale verification-job reaper",
-      );
-      return;
-    }
-
-    logger.info("Starting stale verification-job reaper", {
-      intervalMs: this.reaperIntervalMs,
-      staleJobThresholdMs: this.reaperStaleJobThresholdMs,
-    });
-
-    this.reaperInterval = setInterval(() => {
-      void this.reapStaleJobs();
-    }, this.reaperIntervalMs);
-    // Don't let the reaper timer keep the process alive (e.g. in tests).
-    this.reaperInterval.unref();
-  }
-
-  private async reapStaleJobs(): Promise<void> {
-    // Guard against overlapping runs if a reap takes longer than the interval.
-    if (this.isReaping) {
-      logger.debug("Stale verification-job reaper already running, skipping");
-      return;
-    }
-    this.isReaping = true;
-    try {
-      const sourcifyDatabase =
-        this.storageService.rwServices[RWStorageIdentifiers.SourcifyDatabase];
-      if (!sourcifyDatabase?.reapStaleJobs) {
-        return;
-      }
-      const reapedIds = await sourcifyDatabase.reapStaleJobs(
-        this.reaperStaleJobThresholdMs,
-      );
-      if (reapedIds.length > 0) {
-        logger.info("Reaped stale verification jobs", {
-          count: reapedIds.length,
-          verificationIds: reapedIds,
-          staleJobThresholdMs: this.reaperStaleJobThresholdMs,
-        });
-      }
-    } catch (error) {
-      // Never throw out of the interval callback.
-      logger.error("Failed to reap stale verification jobs", { error });
-    } finally {
-      this.isReaping = false;
-    }
   }
 
   private throwErrorIfContractIsAlreadyBeingVerified(

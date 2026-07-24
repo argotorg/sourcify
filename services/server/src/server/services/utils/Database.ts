@@ -1069,31 +1069,6 @@ ${
     );
   }
 
-  // Marks verification jobs that never completed (e.g. because the compiler
-  // ran out of memory or hung) as failed, so their chain+address stops being
-  // locked against resubmission. A single atomic UPDATE is race-safe across
-  // multiple server instances: the `completed_at IS NULL` predicate means a
-  // second concurrent reaper matches nothing.
-  // See: https://github.com/argotorg/sourcify/issues/2880
-  async reapStaleVerificationJobs(
-    thresholdMs: number,
-    poolClient?: PoolClient,
-  ): Promise<QueryResult<Pick<Tables.VerificationJob, "id">>> {
-    return await (poolClient || this.pool).query(
-      `UPDATE ${this.schema}.verification_jobs
-      SET
-        completed_at = NOW(),
-        error_code = 'job_abandoned',
-        error_id = gen_random_uuid(),
-        verified_contract_id = NULL,
-        compilation_time = NULL
-      WHERE completed_at IS NULL
-        AND started_at < NOW() - ($1::bigint * INTERVAL '1 millisecond')
-      RETURNING id`,
-      [thresholdMs],
-    );
-  }
-
   async upsertExternalVerification(
     verificationJobId: Tables.VerificationJob["id"],
     verifierIdentifier: EtherscanVerifyApiIdentifiers,

@@ -400,7 +400,7 @@ async function main() {
 
     // The generator compiles directly via useSolidityCompiler (bypassing the
     // SolidityCompilation class, which scopes output to the target), so it
-    // requests full output for every contract to build a complete fixture.
+    // requests full output for every contract to build a complete fixture, hence the "*": "*" selection.
     verificationStdJsonInput.settings.outputSelection = {
       "*": { "*": [...DEFAULT_OUTPUT_SELECTION_FIELDS] },
     };
