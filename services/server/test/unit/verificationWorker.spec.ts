@@ -67,8 +67,8 @@ describe("verificationWorker", function () {
       ...chainFixture.defaultContractMetadataObject.settings,
     } as unknown as SoliditySettings;
     compilerSettings.outputSelection = {
-      "*": {
-        "*": [
+      [contractPath]: {
+        [contractName]: [
           "abi",
           "devdoc",
           "userdoc",
