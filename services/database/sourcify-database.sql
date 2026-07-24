@@ -1689,6 +1689,13 @@ CREATE INDEX verification_jobs_chain_id_address_idx ON public.verification_jobs 
 
 
 --
+-- Name: verification_jobs_verified_contract_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX verification_jobs_verified_contract_id_idx ON public.verification_jobs USING btree (verified_contract_id);
+
+
+--
 -- Name: verified_contracts_compilation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2210,4 +2217,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260309080000'),
     ('20260527081526'),
     ('20260527085036'),
-    ('20260527085037');
+    ('20260527085037'),
+    ('20260715080000');

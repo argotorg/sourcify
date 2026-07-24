@@ -4,13 +4,7 @@ import { deprecatedRoutesVerifyStateless } from "./verification/verify/stateless
 import { deprecatedRoutesRepository } from "./repository/repository.routes";
 
 type HTTPMethod =
-  | "get"
-  | "post"
-  | "put"
-  | "delete"
-  | "patch"
-  | "options"
-  | "head";
+  "get" | "post" | "put" | "delete" | "patch" | "options" | "head";
 
 export const deprecatedRoutes: {
   [index: string]: { path: string; method: string };
