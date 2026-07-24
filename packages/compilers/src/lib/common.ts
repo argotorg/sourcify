@@ -1,6 +1,10 @@
 import { exec } from 'child_process';
 import { logDebug, logError, logSilly } from '../logger';
 import type { OutputError } from '@ethereum-sourcify/compilers-types';
+import {
+  COMPILER_TIMEOUT_CODE,
+  COMPILER_OOM_CODE,
+} from '@ethereum-sourcify/compilers-types';
 
 /**
  * Fetches a resource with an exponential timeout.
@@ -55,13 +59,6 @@ export async function fetchWithBackoff(
   }
   throw new Error(`Failed fetching ${resource}`);
 }
-
-// Machine-readable discriminators attached to the `.code` property of the
-// Error thrown by asyncExec when the compiler subprocess dies. lib-sourcify
-// (which cannot import this package's runtime types) reads these to map the
-// failure onto a CompilationErrorCode. See AbstractCompilation.
-export const COMPILER_TIMEOUT_CODE = 'COMPILER_TIMEOUT';
-export const COMPILER_OOM_CODE = 'COMPILER_OOM';
 
 // Default wall-clock timeout for a single compiler invocation: 45 minutes.
 // Overridable via SOLC_COMPILE_TIMEOUT_MS. A genuinely hung compiler must be

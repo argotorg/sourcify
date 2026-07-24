@@ -23,6 +23,10 @@ import type {
   FeOutput,
   FeOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import {
+  COMPILER_TIMEOUT_CODE,
+  COMPILER_OOM_CODE,
+} from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
 function cleanCompilerVersion(version: string): string {
@@ -93,10 +97,10 @@ export abstract class AbstractCompilation {
       // The compilers package attaches a machine-readable discriminator on
       // `.code` when the compiler subprocess dies, so we can surface a
       // dedicated error code instead of a generic compiler_error (#2880).
-      if (e?.code === 'COMPILER_TIMEOUT') {
+      if (e?.code === COMPILER_TIMEOUT_CODE) {
         throw new CompilationError({ code: 'compiler_timeout' });
       }
-      if (e?.code === 'COMPILER_OOM') {
+      if (e?.code === COMPILER_OOM_CODE) {
         throw new CompilationError({ code: 'compiler_out_of_memory' });
       }
       // Depending on the compiler implementation, the errors object could be undefined
@@ -145,7 +149,9 @@ export abstract class AbstractCompilation {
   }
 
   get contractCompilerOutput():
-    SolidityOutputContract | VyperOutputContract | FeOutputContract {
+    | SolidityOutputContract
+    | VyperOutputContract
+    | FeOutputContract {
     if (!this.compilerOutput) {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });

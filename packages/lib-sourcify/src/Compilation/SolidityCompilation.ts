@@ -38,12 +38,6 @@ export const DEFAULT_OUTPUT_SELECTION_FIELDS = [
   'metadata',
 ] as const;
 
-export const DEFAULT_OUTPUT_SELECTION = {
-  '*': {
-    '*': [...DEFAULT_OUTPUT_SELECTION_FIELDS],
-  },
-} as const;
-
 /**
  * Abstraction of a solidity compilation
  */
@@ -77,10 +71,6 @@ export class SolidityCompilation extends AbstractCompilation {
   }
 
   initSolidityJsonInput() {
-    // Scope outputSelection to the compilation target only. A wildcard
-    // ('*': '*') makes solc emit heavy artifacts (legacyAssembly,
-    // generatedSources, etc.) for every contract in every source, which can
-    // OOM the server on large projects. See issue #2880.
     this.jsonInput.settings.outputSelection = {
       [this.compilationTarget.path]: {
         [this.compilationTarget.name]: [...DEFAULT_OUTPUT_SELECTION_FIELDS],

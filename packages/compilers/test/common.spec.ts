@@ -1,9 +1,9 @@
 import { expect } from 'chai';
+import { asyncExec } from '../src/lib/common';
 import {
-  asyncExec,
   COMPILER_OOM_CODE,
   COMPILER_TIMEOUT_CODE,
-} from '../src/lib/common';
+} from '@ethereum-sourcify/compilers-types';
 
 const MAX_BUFFER = 250 * 1024 * 1024;
 
