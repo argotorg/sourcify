@@ -6,6 +6,10 @@ import path from "path";
 import fs from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+import {
+  splitRepositoryFiles,
+  verifyFromMetadata,
+} from "./scripts/sourcify-v2-client.mjs";
 
 // Convert the URL to a file path and get the directory name. Workaround for .mjs scripts
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -469,22 +473,37 @@ const processContract = async (
       files[entry.path] = await readFile(entry.fullPath, "utf8");
     }
 
-    const body = {
-      address: address,
-      chain: chainId,
-      files,
-      creatorTxHash,
-    };
-
     const headers = {
       "Content-Type": "application/json",
     };
     if (process.env.BEARER_TOKEN) {
       headers.Authorization = `Bearer ${process.env.BEARER_TOKEN}`;
     }
-    let url = `${sourcifyInstance}/verify`;
+
+    const markSynced = () =>
+      executeQueryWithRetry(
+        databasePool,
+        `
+        UPDATE ${syncTable}
+        SET
+          synced = true
+        WHERE 1=1
+          AND chain_id = $1
+          AND address = $2
+          AND match_type = $3
+        `,
+        [contract.chain_id, contract.address, contract.match_type],
+      );
+
     if (deprecated) {
-      url = `${sourcifyInstance}/private/verify-deprecated`;
+      // The private verify-deprecated endpoint is not part of API v2 and still
+      // takes the legacy request shape.
+      const body = {
+        address,
+        chain: chainId,
+        files,
+        creatorTxHash,
+      };
       switch (matchType) {
         case "full_match":
           body.match = "perfect";
@@ -495,49 +514,65 @@ const processContract = async (
         default:
           throw new Error("Cannot infer match type");
       }
-    }
-    const request = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers,
-    });
 
-    if (request.status === 200) {
-      const response = await request.json();
-      if (response.result[0].status !== null) {
-        await executeQueryWithRetry(
-          databasePool,
-          `
-          UPDATE ${syncTable}
-          SET 
-            synced = true
-          WHERE 1=1
-            AND chain_id = $1
-            AND address = $2
-            AND match_type = $3   
-          `,
-          [contract.chain_id, contract.address, contract.match_type],
+      const request = await fetch(
+        `${sourcifyInstance}/private/verify-deprecated`,
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+          headers,
+        },
+      );
+
+      if (request.status !== 200) {
+        throw new Error(
+          `Failed to sync: ${[
+            contract.chain_id,
+            address,
+            contract.match_type,
+          ]} with error: ${await request.text()}`,
         );
-      } else {
-        throw new Error([
-          false,
-          `${[
+      }
+
+      const response = await request.json();
+      if (response.result[0].status === null) {
+        throw new Error(
+          `Failed to sync: ${[
             contract.chain_id,
             address,
             contract.match_type,
           ]} with error: ${response.result[0].message}`,
-        ]);
+        );
       }
+
+      await markSynced();
       return [true, [contract.chain_id, contract.address, contract.match_type]];
-    } else {
+    }
+
+    const { metadata, sources } = splitRepositoryFiles(files);
+
+    try {
+      await verifyFromMetadata({
+        server: sourcifyInstance,
+        chainId,
+        address,
+        metadata,
+        sources,
+        creationTransactionHash: creatorTxHash,
+        headers,
+      });
+    } catch (err) {
       throw new Error(
         `Failed to sync: ${[
           contract.chain_id,
           address,
           contract.match_type,
-        ]} with error: ${await request.text()}`,
+        ]} with error: ${err.message}`,
       );
     }
+
+    await markSynced();
+    return [true, [contract.chain_id, contract.address, contract.match_type]];
   } catch (e) {
     throw new Error(
       `Failed to sync ${[
