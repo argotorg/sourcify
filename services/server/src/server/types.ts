@@ -178,12 +178,6 @@ export type PathConfig = {
   source?: boolean;
 };
 
-export type FileObject = {
-  name: string;
-  path: string;
-  content?: string;
-};
-
 export type MethodNames<T> = {
   // The part: T[K] extends (...args: any) => any checks if T[K] is a function. If yes then it returns K, the method name, else it returns never
   [K in keyof T]: T[K] extends (...args: any) => any ? K : never;
