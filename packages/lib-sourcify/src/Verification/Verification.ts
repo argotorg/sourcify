@@ -38,9 +38,11 @@ import type {
   SolidityOutputContract,
   FeOutputContract,
   SoliditySettings,
+  SolidityJsonInput,
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract';
+import { SolidityCompilation } from '../Compilation/SolidityCompilation';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
 
 function auxdataLacksMetadataOrIntegrityHash(
@@ -295,6 +297,10 @@ export class Verification {
     }
 
     if (this.creationMatch !== null || this.runtimeMatch !== null) {
+      // Remove unused sources so they don't get stored with the verified contract
+      // See https://github.com/argotorg/sourcify/issues/2363
+      await this.removeUnusedSources(forceEmscripten);
+
       logInfo('Verified contract', {
         address: this.address,
         chainId: this.sourcifyChain.chainId,
@@ -347,6 +353,108 @@ export class Verification {
     } catch (e: any) {
       // If we fail to find perfect metadata, we proceed with the verification
     }
+  }
+
+  /**
+   * Removes input sources that are not listed in the target's metadata.
+   * Only runs after a successful match, so failed verifications never pay
+   * for it. With the optimizer enabled, unused sources can change the
+   * bytecode (extra file input bug), so in that case they are only removed
+   * after checking that the bytecode stays the same without them.
+   * See https://github.com/argotorg/sourcify/issues/2363
+   */
+  private async removeUnusedSources(forceEmscripten: boolean): Promise<void> {
+    const compilation = this.compilation;
+    if (
+      !(compilation instanceof SolidityCompilation) ||
+      compilation.language !== 'Solidity'
+    ) {
+      return;
+    }
+
+    const metadataSources = compilation.metadata?.sources;
+    if (!metadataSources) {
+      return;
+    }
+
+    const inputSources = compilation.jsonInput.sources;
+    const unusedPaths = Object.keys(inputSources).filter(
+      (path) => !(path in metadataSources),
+    );
+    // Most verifications have no unused sources and stop here
+    if (unusedPaths.length === 0) {
+      return;
+    }
+    // A check compilation is only needed when the unused sources could have
+    // affected the bytecode (extra file input bug), which can only happen
+    // with the optimizer enabled. With the optimizer disabled, the unused
+    // sources are removed without recompiling.
+    if (compilation.jsonInput.settings.optimizer?.enabled) {
+      try {
+        // Compile without the unused sources, only outputting the bytecodes
+        const checkJsonInput: SolidityJsonInput = {
+          ...compilation.jsonInput,
+          sources: Object.keys(metadataSources).reduce(
+            (sources, path) => {
+              sources[path] = inputSources[path];
+              return sources;
+            },
+            {} as SolidityJsonInput['sources'],
+          ),
+          settings: {
+            ...compilation.jsonInput.settings,
+            outputSelection: {
+              '*': {
+                '*': ['evm.bytecode.object', 'evm.deployedBytecode.object'],
+              },
+            },
+          },
+        };
+        const checkOutput = await compilation.compiler.compile(
+          compilation.compilerVersion,
+          checkJsonInput,
+          forceEmscripten,
+        );
+        const checkContract =
+          checkOutput.contracts[compilation.compilationTarget.path][
+            compilation.compilationTarget.name
+          ];
+        if (
+          `0x${checkContract.evm.bytecode.object}` !==
+            compilation.creationBytecode ||
+          `0x${checkContract.evm.deployedBytecode?.object}` !==
+            compilation.runtimeBytecode
+        ) {
+          logInfo(
+            'Unused sources affect the bytecode (extra file input bug), keeping all sources',
+            {
+              address: this.address,
+              chainId: this.sourcifyChain.chainId,
+              unusedPaths,
+            },
+          );
+          return;
+        }
+      } catch (e: any) {
+        logWarn('Error checking unused sources, keeping all sources', {
+          address: this.address,
+          chainId: this.sourcifyChain.chainId,
+          unusedPaths,
+          error: e.message,
+        });
+        return;
+      }
+    }
+
+    for (const path of unusedPaths) {
+      delete compilation.jsonInput.sources[path];
+      delete compilation.compilerOutput?.sources?.[path];
+    }
+    logInfo('Removed unused sources from the compilation', {
+      address: this.address,
+      chainId: this.sourcifyChain.chainId,
+      unusedPaths,
+    });
   }
 
   handleSolidityExtraFileInputBug(): SolidityBugType {
@@ -759,7 +867,8 @@ export class Verification {
             bytecode: {
               sourceMap: (
                 contractCompilerOutput as
-                  SolidityOutputContract | VyperOutputContract
+                  | SolidityOutputContract
+                  | VyperOutputContract
               )?.evm?.bytecode?.sourceMap,
               linkReferences: (contractCompilerOutput as SolidityOutputContract)
                 ?.evm?.bytecode?.linkReferences,

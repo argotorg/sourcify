@@ -70,6 +70,58 @@ describe("POST /v2/verify/:chainId/:address", function () {
     );
   });
 
+  it("should not store sources that are unused by the compilation target", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const jsonInput = JSON.parse(
+      JSON.stringify(chainFixture.defaultContractJsonInput),
+    );
+    // Add a source that is unrelated to the compilation target
+    jsonInput.sources["contracts/Unrelated.sol"] = {
+      content:
+        "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.4;\ncontract Unrelated { uint256 number; }\n",
+    };
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: jsonInput,
+        compilerVersion:
+          chainFixture.defaultContractMetadataObject.compiler.version,
+        contractIdentifier: Object.entries(
+          chainFixture.defaultContractMetadataObject.settings.compilationTarget,
+        )[0].join(":"),
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      chainFixture.defaultContractAddress,
+      "exact_match",
+    );
+
+    // Only the sources listed in the metadata of the compilation target
+    // should be stored
+    const contractRes = await chai
+      .request(serverFixture.server.app)
+      .get(
+        `/v2/contract/${chainFixture.chainId}/${chainFixture.defaultContractAddress}?fields=sources`,
+      );
+
+    chai.expect(contractRes.status).to.equal(200);
+    chai
+      .expect(Object.keys(contractRes.body.sources))
+      .to.have.members(
+        Object.keys(chainFixture.defaultContractMetadataObject.sources),
+      );
+  });
+
   it("should verify a Vyper contract", async () => {
     const { resolveWorkers } = makeWorkersWait();
 
