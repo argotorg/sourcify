@@ -294,8 +294,6 @@ There are two types of storages: `RWStorageIdentifiers` (Read and Write) and `WS
 
 `RWStorageIdentifiers` can both be used as a source of truth (`read`) and store (`writeOr...`) the verified contracts. `WStorageIdentifiers` can only store (write) verified contracts. For instance, Sourcify can write to the [Verifier Alliance](https://verifieralliance.org) whenever it receives a verified contract, but this can't be the source of truth for the Sourcify APIs. In practice `SourcifyDatabase` is the only usable `read` option, as it's the only one backing an API.
 
-If you have an instance running on the legacy filesystem storage backend, see [docs](https://docs.sourcify.dev/docs/database-migration/) for migration instructions.
-
 The following is an example of the storage config:
 
 ```js
