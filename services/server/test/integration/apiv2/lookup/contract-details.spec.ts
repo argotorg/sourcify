@@ -3,8 +3,8 @@ import chaiHttp from "chai-http";
 import type { DeploymentInfo } from "../../../helpers/helpers";
 import {
   deployFromAbiAndBytecode,
+  hookIntoVerificationWorkerRun,
   verifyContract,
-  waitForJob,
 } from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
@@ -23,6 +23,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
   const sandbox = Sinon.createSandbox();
+  const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
 
   afterEach(() => {
     sandbox.restore();
@@ -320,7 +321,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   };
 
   it("should return minimal information for a verified contract by default", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -332,7 +334,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return creationBytecode information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -346,7 +349,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return runtimeBytecode information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -360,7 +364,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return deployment information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -374,7 +379,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return sources information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -388,7 +394,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return compilation information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -402,7 +409,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return abi information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -416,7 +424,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return metadata information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -430,7 +439,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return storageLayout information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -444,7 +454,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return userdoc information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -458,7 +469,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return devdoc information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -472,7 +484,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return sourceIds information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -486,7 +499,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return stdJsonInput information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -500,7 +514,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return stdJsonOutput information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -514,7 +529,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return signatures information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -528,7 +544,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return proxyResolution information when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -567,6 +584,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
       proxyArtifact.bytecode,
       [logicAddress, chainFixture.localSigner.address, "0x"],
     );
+    const { resolveWorkers } = makeWorkersWait();
     let res = await chai
       .request(serverFixture.server.app)
       .post(`/v2/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
@@ -577,7 +595,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
         metadata: proxyMetadata,
       });
     chai.expect(res.status).to.equal(202);
-    await waitForJob(serverFixture, res.body.verificationId);
+    await resolveWorkers();
 
     res = await chai
       .request(serverFixture.server.app)
@@ -625,6 +643,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
       [logicAddress, chainFixture.localSigner.address, "0x"],
     );
 
+    const { resolveWorkers } = makeWorkersWait();
     let res = await chai
       .request(serverFixture.server.app)
       .post(`/v2/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
@@ -635,7 +654,7 @@ describe("GET /v2/contract/:chainId/:address", function () {
         metadata: proxyMetadata,
       });
     chai.expect(res.status).to.equal(202);
-    await waitForJob(serverFixture, res.body.verificationId);
+    await resolveWorkers();
 
     res = await chai
       .request(serverFixture.server.app)
@@ -661,7 +680,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return all fields when requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -677,7 +697,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should support a special field 'all' for returning all fields", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -695,7 +716,9 @@ describe("GET /v2/contract/:chainId/:address", function () {
   it("should return all fields but the omitted ones when requested", async function () {
     const omittedFields = ["proxyResolution", "deployment"];
 
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -711,7 +734,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should allow for selecting subproperties of a field", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -726,7 +750,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should allow for deselecting subproperties of a field", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -745,8 +770,10 @@ describe("GET /v2/contract/:chainId/:address", function () {
 
   it("should return minimal information for a contract for which no creation code is stored", async function () {
     // Random tx hash to make sure creation code cannot be found
+    const { resolveWorkers } = makeWorkersWait();
     await verifyContract(
       serverFixture,
+      resolveWorkers,
       chainFixture,
       undefined,
       "0x60b6dcfac48e31ebdba02f8b32759b66d2593ffa00b763761a22e25d55ace14e",
@@ -767,7 +794,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return minimal information for a contract for which no deployer is stored", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     await serverFixture.sourcifyDatabase.query(
       `UPDATE contract_deployments SET deployer = NULL WHERE address = $1`,
@@ -795,7 +823,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when unknown fields are requested", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -810,7 +839,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when unknown fields should be omitted", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -825,7 +855,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when omit and fields parameters are provided at the same time", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -840,7 +871,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when 'all' is used with another field", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)
@@ -855,7 +887,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
   });
 
   it("should return a 400 when invalid subproperties for fields are selected", async function () {
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     let res = await chai
       .request(serverFixture.server.app)
@@ -896,7 +929,9 @@ describe("GET /v2/contract/:chainId/:address", function () {
     const chainMap = serverFixture.sourcifyChainsMap;
     sandbox.stub(chainMap, unknownChainId).value(undefined);
 
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     const res = await chai
       .request(serverFixture.server.app)

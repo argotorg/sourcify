@@ -5,6 +5,7 @@ import { LocalChainFixture } from "../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../helpers/ServerFixture";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
+  hookIntoVerificationWorkerRun,
   verifyContract,
   verifyVyperV2,
 } from "../../helpers/helpers";
@@ -13,16 +14,24 @@ import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { LOCAL_CHAINS } from "../../../src/sourcify-chains";
+import Sinon from "sinon";
 
 chai.use(chaiHttp);
 
 describe("/private/replace-contract", function () {
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
+  const sandbox = Sinon.createSandbox();
+  const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
+
+  afterEach(() => {
+    sandbox.restore();
+  });
 
   it("should replace contract using existing database compilation (forceCompilation: false) and restore creation_match", async () => {
     // First, verify with perfect match
-    await verifyContract(serverFixture, chainFixture);
+    const { resolveWorkers } = makeWorkersWait();
+    await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
     // Store the original creation_match value
     const originalMatchResult = await serverFixture.sourcifyDatabase.query(
@@ -113,8 +122,10 @@ describe("/private/replace-contract", function () {
       );
 
     // First, verify the Vyper contract via API v2 to get a partial match
+    const { resolveWorkers } = makeWorkersWait();
     await verifyVyperV2(
       serverFixture,
+      resolveWorkers,
       chainFixture,
       contractAddress,
       txHash,
@@ -225,8 +236,10 @@ describe("/private/replace-contract", function () {
       );
 
     // Verify the contract. With the #2817 fix this persists immutableReferences.
+    const { resolveWorkers } = makeWorkersWait();
     await verifyVyperV2(
       serverFixture,
+      resolveWorkers,
       chainFixture,
       contractAddress,
       txHash,
@@ -334,8 +347,11 @@ describe("/private/replace-contract", function () {
         vyperArtifact.bytecode,
       );
 
+    const { resolveWorkers } = makeWorkersWait();
+
     await verifyVyperV2(
       serverFixture,
+      resolveWorkers,
       chainFixture,
       contractAddress,
       txHash,
@@ -407,8 +423,11 @@ describe("/private/replace-contract", function () {
         [5],
       );
 
+    const { resolveWorkers } = makeWorkersWait();
+
     await verifyVyperV2(
       serverFixture,
+      resolveWorkers,
       chainFixture,
       contractAddress,
       txHash,

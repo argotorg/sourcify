@@ -113,25 +113,23 @@ export async function deployFromBytecodeForCreatorTxHash(
   };
 }
 
-// Polls a verification job until it completes, then returns the final job body.
-export async function waitForJob(
+// Fetches a finished verification job and fails if it isn't complete.
+async function getFinishedJob(
   serverFixture: ServerFixture,
   verificationId: string,
-  timeoutMs: number = 30000,
 ) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const jobRes = await chai
-      .request(serverFixture.server.app)
-      .get(`/v2/verify/${verificationId}`);
-    if (jobRes.body?.isJobCompleted) {
-      return jobRes.body;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+  const jobRes = await chai
+    .request(serverFixture.server.app)
+    .get(`/v2/verify/${verificationId}`);
+
+  if (!jobRes.body?.isJobCompleted) {
+    throw new Error(
+      `Verification job ${verificationId} did not complete: ${JSON.stringify(
+        jobRes.body,
+      )}`,
+    );
   }
-  throw new Error(
-    `Verification job ${verificationId} did not complete within ${timeoutMs}ms`,
-  );
+  return jobRes.body;
 }
 
 // Seeds a verified contract via the API v2 metadata verification endpoint and
@@ -139,6 +137,7 @@ export async function waitForJob(
 // need an already-verified contract in the database.
 export async function verifyContract(
   serverFixture: ServerFixture,
+  resolveWorkers: () => Promise<void>,
   chainFixture: LocalChainFixture,
   contractAddress?: string,
   creatorTxHash?: string,
@@ -174,7 +173,8 @@ export async function verifyContract(
   const { verificationId } = verifyRes.body;
   expect(verificationId, "No verificationId returned").to.be.a("string");
 
-  const job = await waitForJob(serverFixture, verificationId);
+  await resolveWorkers();
+  const job = await getFinishedJob(serverFixture, verificationId);
   expect(
     job.error,
     `Verification job errored for ${address}: ${JSON.stringify(job.error)}`,
@@ -187,6 +187,7 @@ export async function verifyContract(
 // waits for the job to finish. Returns the final job body.
 export async function verifyVyperV2(
   serverFixture: ServerFixture,
+  resolveWorkers: () => Promise<void>,
   chainFixture: LocalChainFixture,
   contractAddress: string,
   txHash: string,
@@ -213,7 +214,11 @@ export async function verifyVyperV2(
     verifyRes.status,
     `Vyper verification request failed: ${JSON.stringify(verifyRes.body)}`,
   ).to.equal(202);
-  const job = await waitForJob(serverFixture, verifyRes.body.verificationId);
+  await resolveWorkers();
+  const job = await getFinishedJob(
+    serverFixture,
+    verifyRes.body.verificationId,
+  );
   expect(
     job.error,
     `Vyper verification job errored: ${JSON.stringify(job.error)}`,
@@ -225,6 +230,7 @@ export async function verifyVyperV2(
 export async function deployAndVerifyContract(
   chainFixture: LocalChainFixture,
   serverFixture: ServerFixture,
+  resolveWorkers: () => Promise<void>,
   partial: boolean = false,
 ) {
   const { contractAddress, txHash } =
@@ -236,6 +242,7 @@ export async function deployAndVerifyContract(
     );
   await verifyContract(
     serverFixture,
+    resolveWorkers,
     chainFixture,
     contractAddress,
     txHash,
