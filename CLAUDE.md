@@ -119,12 +119,6 @@ How the tables join:
 - `compiled_contracts_sources` (`compilation_id`, `path`, `source_hash`) is the source set stored for a compilation; join `source_hash` → `sources.source_hash` for the actual content
 - `code` holds bytecode, referenced via `creation_code_hash`/`runtime_code_hash` by both `compiled_contracts` (compiled) and `contracts` (onchain); reach the latter through `contract_deployments.contract_id` → `contracts.id`
 
-Notable columns when analysing verifications:
-
-- `compiled_contracts.compiler_settings` (jsonb) — the standard-JSON `settings`, e.g. `compiler_settings->'optimizer'->>'enabled'`
-- `sourcify_matches.metadata` (json) — the contract metadata; `metadata->'sources'` lists only the sources the target actually uses, so it differs from `compiled_contracts_sources` when the submitted input carried extra files. Nullable, so filter out NULLs before comparing source sets.
-- `compiled_contracts.language` — `solidity` | `vyper` | `yul` | `fe`
-
 ### Storage Services
 
 The server supports multiple storage backends:
