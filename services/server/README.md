@@ -214,7 +214,7 @@ module.exports = {
   initCompilers: false,
   // The origins that are allowed to access the server, regex allowed
   corsAllowedOrigins: [/^https?:\/\/(?:.+\.)?sourcify.dev$/],
-  // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
+  // Enables the private verify-deprecated endpoint. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
 };
 ```

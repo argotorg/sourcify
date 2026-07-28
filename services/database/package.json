@@ -5,7 +5,6 @@
   "description": "The Sourcify database",
   "main": "index.js",
   "scripts": {
-    "sourcify:database": "node scripts.mjs ",
     "migrate:setup": "TEMP_DIR=migrations-temp-${SERVICE_NAME:-default} && rm -rf $TEMP_DIR && mkdir -p $TEMP_DIR && ln -sf $PWD/database-specs/migrations/* $PWD/$TEMP_DIR/ && ln -sf $PWD/migrations/* $PWD/$TEMP_DIR/",
     "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate up",
     "migrate:up-no-dump": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate --no-dump-schema up",
@@ -14,8 +13,7 @@
     "migrate:create-db": "dbmate create",
     "migrate:drop-db": "dbmate drop",
     "migrate:load-schema": "dbmate load",
-    "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate status",
-    "massive-replace": "ts-node massive-replace-script/massive-replace-script.ts"
+    "migrate:status": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate status"
   },
   "author": "",
   "license": "MIT",
@@ -24,7 +22,6 @@
     "dbmate": "2.33.0",
     "dotenv": "16.6.1",
     "ethers": "6.17.0",
-    "pg": "8.22.0",
-    "readdirp": "3.6.0"
+    "pg": "8.22.0"
   }
 }
