@@ -1165,39 +1165,6 @@ ALTER SEQUENCE public.sourcify_matches_verified_contract_id_seq OWNED BY public.
 
 
 --
--- Name: sourcify_sync; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.sourcify_sync (
-    id bigint NOT NULL,
-    chain_id numeric NOT NULL,
-    address bytea NOT NULL,
-    match_type character varying NOT NULL,
-    synced boolean DEFAULT false NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: sourcify_sync_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.sourcify_sync_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sourcify_sync_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.sourcify_sync_id_seq OWNED BY public.sourcify_sync.id;
-
-
---
 -- Name: verification_jobs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1293,13 +1260,6 @@ ALTER TABLE ONLY public.sourcify_matches ALTER COLUMN id SET DEFAULT nextval('pu
 --
 
 ALTER TABLE ONLY public.sourcify_matches ALTER COLUMN verified_contract_id SET DEFAULT nextval('public.sourcify_matches_verified_contract_id_seq'::regclass);
-
-
---
--- Name: sourcify_sync id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync ALTER COLUMN id SET DEFAULT nextval('public.sourcify_sync_id_seq'::regclass);
 
 
 --
@@ -1435,22 +1395,6 @@ ALTER TABLE ONLY public.sourcify_matches
 
 ALTER TABLE ONLY public.sourcify_matches
     ADD CONSTRAINT sourcify_matches_pseudo_pkey UNIQUE (verified_contract_id);
-
-
---
--- Name: sourcify_sync sourcify_sync_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync
-    ADD CONSTRAINT sourcify_sync_pkey PRIMARY KEY (id);
-
-
---
--- Name: sourcify_sync sourcify_sync_pseudo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync
-    ADD CONSTRAINT sourcify_sync_pseudo_pkey UNIQUE (chain_id, address);
 
 
 --
@@ -2218,4 +2162,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260527081526'),
     ('20260527085036'),
     ('20260527085037'),
-    ('20260715080000');
+    ('20260715080000'),
+    ('20260729090000');
