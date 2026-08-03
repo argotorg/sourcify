@@ -358,9 +358,9 @@ export class Verification {
   /**
    * Removes input sources that are not listed in the target's metadata.
    * Only runs after a successful match, so failed verifications never pay
-   * for it. With the optimizer enabled, unused sources can change the
-   * bytecode (extra file input bug), so in that case they are only removed
-   * after checking that the bytecode stays the same without them.
+   * for it. When the compiler settings make the extra file input bug possible,
+   * unused sources can change the bytecode, so in that case they are only
+   * removed after checking that the bytecode stays the same without them.
    * See https://github.com/argotorg/sourcify/issues/2363
    */
   private async removeUnusedSources(forceEmscripten: boolean): Promise<void> {
@@ -386,10 +386,20 @@ export class Verification {
       return;
     }
     // A check compilation is only needed when the unused sources could have
-    // affected the bytecode (extra file input bug), which can only happen
-    // with the optimizer enabled. With the optimizer disabled, the unused
-    // sources are removed without recompiling.
-    if (compilation.jsonInput.settings.optimizer?.enabled) {
+    // affected the bytecode (extra file input bug), which requires the
+    // optimizer to be enabled. From 0.8.22 on we additionally require a custom
+    // Yul optimizer step sequence: unrelated sources shift the names solc
+    // generates in the Yul IR, and only a hand-picked sequence skips the passes
+    // that would otherwise normalize that difference away.
+    // See https://github.com/argotorg/solidity/issues/15686#issuecomment-5103812547
+    const settings = compilation.jsonInput.settings;
+    const usesCustomYulOptimizerSteps =
+      settings.optimizer?.details?.yulDetails?.optimizerSteps !== undefined;
+    const mayHitExtraFileInputBug =
+      settings.optimizer?.enabled &&
+      (semver.lt(compilation.compilerVersion, '0.8.22') ||
+        usesCustomYulOptimizerSteps);
+    if (mayHitExtraFileInputBug) {
       try {
         // Compile without the unused sources, only outputting the bytecodes
         const checkJsonInput: SolidityJsonInput = {
