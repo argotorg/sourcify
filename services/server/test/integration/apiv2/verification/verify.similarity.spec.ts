@@ -48,7 +48,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(runTaskStub.calledOnce).to.be.true;
     const [workerInput] = runTaskStub.firstCall.args;
-    chai.expect(workerInput).to.include({
+    chai.expect(workerInput.creationData).to.include({
       creationTransactionHash: customCreationHash,
     });
   });

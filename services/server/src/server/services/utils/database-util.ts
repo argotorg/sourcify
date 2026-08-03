@@ -264,9 +264,24 @@ export type GetSourcifyMatchesByChainResult = Pick<
 
 export interface CodePrefixMatchResult {
   compilation_id: Tables.VerifiedContract["compilation_id"];
-  chain_id: Tables.ContractDeployment["chain_id"];
-  address: string;
 }
+
+/**
+ * Compilation-level data needed to re-run a compilation, keyed on the
+ * compilation itself rather than on a (chain, address) deployment.
+ */
+export type GetCompilationsByIdsResult = Pick<
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
+  | "std_json_input"
+  | "std_json_output"
+  | "version"
+  | "fully_qualified_name"
+  | "creation_cbor_auxdata"
+  | "runtime_cbor_auxdata"
+  | "metadata"
+> & {
+  compilation_id: Tables.VerifiedContract["compilation_id"];
+};
 
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
   Pick<
@@ -362,6 +377,23 @@ export type GetVerificationJobsByChainAndAddressResult = {
 const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
 
+/**
+ * Builds the `std_json_input` selector around a caller-provided SQL expression
+ * yielding the `sources` object.
+ *
+ * Deployment-keyed queries aggregate sources via a JOIN + GROUP BY
+ * (`sourcesAggregation`), while compilation-keyed batch queries use a scalar
+ * subquery so they don't need a GROUP BY at all. Both must produce the same
+ * standard JSON input, so the surrounding structure lives here only once.
+ */
+export function buildStdJsonInputSelector(sourcesExpression: string) {
+  return `json_build_object(
+      'language', INITCAP(compiled_contracts.language),
+      'sources', ${sourcesExpression},
+      'settings', compiled_contracts.compiler_settings
+    )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`;
+}
+
 function generateSignaturesSelector(type: SignatureType) {
   // Use jsonb_agg(DISTINCT ...) to avoid duplicate signatures caused by the
   // Cartesian product when both compiled_contracts_sources and
@@ -439,11 +471,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   source_ids:
     "compiled_contracts.compilation_artifacts->'sources' as source_ids",
   additional_input: "compiled_contracts.additional_input",
-  std_json_input: `json_build_object(
-      'language', INITCAP(compiled_contracts.language),
-      'sources', ${sourcesAggregation},
-      'settings', compiled_contracts.compiler_settings
-    )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`,
+  std_json_input: buildStdJsonInputSelector(sourcesAggregation),
   std_json_output: `json_build_object(
     'sources', compiled_contracts.compilation_artifacts->'sources',
     'contracts', json_build_object(

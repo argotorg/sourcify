@@ -507,6 +507,13 @@ describe("verificationWorker", function () {
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        creationData: {
+          creationTransactionHash: chainFixture.defaultContractCreatorTx,
+          creationBytecode: chainFixture.defaultContractArtifact.bytecode,
+          deployer: getAddress(chainFixture.localSigner.address),
+          blockNumber: chainFixture.defaultContractBlockNumber,
+          txIndex: chainFixture.defaultContractTxIndex,
+        },
         candidates: [createCandidate()],
       });
 
@@ -527,6 +534,13 @@ describe("verificationWorker", function () {
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        creationData: {
+          creationTransactionHash: chainFixture.defaultContractCreatorTx,
+          creationBytecode: chainFixture.defaultContractArtifact.bytecode,
+          deployer: getAddress(chainFixture.localSigner.address),
+          blockNumber: chainFixture.defaultContractBlockNumber,
+          txIndex: chainFixture.defaultContractTxIndex,
+        },
         candidates: [
           createCandidate({ std_json_output: failingOutput }),
           createCandidate(),
@@ -541,6 +555,13 @@ describe("verificationWorker", function () {
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
+        creationData: {
+          creationTransactionHash: chainFixture.defaultContractCreatorTx,
+          creationBytecode: chainFixture.defaultContractArtifact.bytecode,
+          deployer: getAddress(chainFixture.localSigner.address),
+          blockNumber: chainFixture.defaultContractBlockNumber,
+          txIndex: chainFixture.defaultContractTxIndex,
+        },
         candidates: [{} as SimilarityCandidate],
       });
 
