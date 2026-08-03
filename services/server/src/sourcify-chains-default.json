@@ -1,0 +1,12 @@
+{
+  "401": {
+    "sourcifyName": "Ozone Chain Testnet",
+    "supported": true,
+    "fetchContractCreationTxUsing": {
+      "blockscoutApi": {
+        "url": "https://testnet.ozonescan.io/"
+      }
+    },
+    "rpc": ["https://node2.testnet.ozonechain.io"]
+  }
+}
