@@ -21,7 +21,11 @@ import {
   getSolcExecutable,
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
-import type { S3Config, VerificationJobId } from "../types";
+import type {
+  S3Config,
+  SimilarityCandidate,
+  VerificationJobId,
+} from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
 import path from "path";
@@ -44,6 +48,7 @@ import {
 import { asyncLocalStorage } from "../../common/async-context";
 import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
 import type { VerificationErrorCode } from "../apiv2/errors";
+import { isStatementTimeoutError } from "./utils/database-util";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
@@ -424,7 +429,12 @@ export class VerificationService {
         address,
         error,
       });
-      errorCode = "internal_error";
+      // The prefix scan is the query that can exceed the database's
+      // statement_timeout, so surface that as its own error instead of an
+      // opaque internal error.
+      errorCode = isStatementTimeoutError(error)
+        ? "similarity_search_timeout"
+        : "internal_error";
     }
 
     if (errorCode) {
@@ -541,10 +551,24 @@ export class VerificationService {
         offset + SIMILARITY_CANDIDATE_BATCH_SIZE,
       );
 
-      const candidates = await this.storageService.performServiceOperation(
-        "getSimilarityCandidatesByCompilationIds",
-        [batchIds],
-      );
+      let candidates: SimilarityCandidate[];
+      try {
+        candidates = await this.storageService.performServiceOperation(
+          "getSimilarityCandidatesByCompilationIds",
+          [batchIds],
+        );
+      } catch (error) {
+        if (isStatementTimeoutError(error)) {
+          return {
+            errorExport: {
+              customCode: "similarity_search_timeout",
+              errorId: uuidv4(),
+            },
+          };
+        }
+        // Will be mapped to an internal_error by storeVerificationOutcome
+        throw error;
+      }
 
       if (candidates.length === 0) {
         continue;

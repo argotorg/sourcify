@@ -84,6 +84,81 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     });
   });
 
+  it("should store a similarity_search_timeout error when the candidate id query times out", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const timeoutError = new Error(
+      "canceling statement due to statement timeout",
+    );
+    (timeoutError as any).code = "57014";
+    sandbox
+      .stub(databaseService, "getSimilarityCandidateIdsByRuntimeCode")
+      .rejects(timeoutError);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body.isJobCompleted).to.be.true;
+    chai.expect(jobRes.body.error).to.deep.include({
+      customCode: "similarity_search_timeout",
+    });
+  });
+
+  it("should store a similarity_search_timeout error when the candidate batch query times out", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    // Seed a verified contract so that candidate ids are found
+    const verification = structuredClone(MockVerificationExport);
+    verification.address = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF";
+    await databaseService.storeVerification(verification);
+
+    const timeoutError = new Error(
+      "canceling statement due to statement timeout",
+    );
+    (timeoutError as any).code = "57014";
+    sandbox
+      .stub(databaseService, "getSimilarityCandidatesByCompilationIds")
+      .rejects(timeoutError);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body.isJobCompleted).to.be.true;
+    chai.expect(jobRes.body.error).to.deep.include({
+      customCode: "similarity_search_timeout",
+    });
+  });
+
   it("should return an error when fetching the runtime bytecode fails", async () => {
     const getBytecodeStub = sandbox
       .stub(

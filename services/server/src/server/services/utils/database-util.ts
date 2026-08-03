@@ -621,6 +621,18 @@ export type Field =
   | `deployment.${deploymentSubfields}`
   | `compilation.${compilationSubfields}`;
 
+/**
+ * Postgres cancels a statement that exceeds statement_timeout with SQLSTATE
+ * 57014 (query_canceled). node-postgres exposes it as `code` on the error.
+ */
+export function isStatementTimeoutError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "57014"
+  );
+}
+
 // Function overloads
 export function bytesFromString<T extends BytesTypes>(str: string): T;
 export function bytesFromString<T extends BytesTypes>(
