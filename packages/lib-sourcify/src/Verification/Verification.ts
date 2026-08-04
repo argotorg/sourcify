@@ -1,4 +1,5 @@
 import type { AbstractCompilation } from '../Compilation/AbstractCompilation';
+import { findContractInCompilerOutput } from '../Compilation/AbstractCompilation';
 import { logDebug, logInfo, logWarn } from '../logger';
 import type { SourcifyChain } from '../SourcifyChain/SourcifyChain';
 import { lt } from 'semver';
@@ -425,10 +426,10 @@ export class Verification {
           checkJsonInput,
           forceEmscripten,
         );
-        const checkContract =
-          checkOutput.contracts[compilation.compilationTarget.path][
-            compilation.compilationTarget.name
-          ];
+        const checkContract = findContractInCompilerOutput(
+          checkOutput,
+          compilation.compilationTarget,
+        ) as SolidityOutputContract;
         if (
           `0x${checkContract.evm.bytecode.object}` !==
             compilation.creationBytecode ||

@@ -1,5 +1,8 @@
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import { AbstractCompilation } from './AbstractCompilation';
+import {
+  AbstractCompilation,
+  findContractInCompilerOutput,
+} from './AbstractCompilation';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -49,9 +52,10 @@ export class PreRunCompilation extends AbstractCompilation {
     switch (this.language) {
       case 'Solidity': {
         this.auxdataStyle = AuxdataStyle.SOLIDITY;
-        const contractOutput = jsonOutput.contracts[
-          this.compilationTarget.path
-        ][this.compilationTarget.name] as SolidityOutputContract;
+        const contractOutput = findContractInCompilerOutput(
+          jsonOutput,
+          this.compilationTarget,
+        ) as SolidityOutputContract;
         if (contractOutput.metadata) {
           this._metadata = JSON.parse(contractOutput.metadata.trim());
         }

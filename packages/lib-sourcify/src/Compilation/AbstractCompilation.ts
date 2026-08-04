@@ -30,6 +30,32 @@ function cleanCompilerVersion(version: string): string {
   return version.replace(/^[^\d]*/, '');
 }
 
+/**
+ * Returns the compilation target's contract from a compiler output.
+ * Use this instead of indexing `contracts` directly: in solcjs, for solidity
+ * versions prior to 0.4.9, the contracts are stored without the source path as a key.
+ */
+export function findContractInCompilerOutput(
+  compilerOutput: SolidityOutput | VyperOutput | FeOutput,
+  compilationTarget: CompilationTarget,
+): SolidityOutputContract | VyperOutputContract | FeOutputContract {
+  const contract =
+    compilerOutput.contracts?.['']?.[compilationTarget.name] ??
+    compilerOutput.contracts?.[compilationTarget.path]?.[
+      compilationTarget.name
+    ];
+  if (!contract) {
+    logWarn('Contract not found in compiler output', {
+      path: compilationTarget.path,
+      name: compilationTarget.name,
+    });
+    throw new CompilationError({
+      code: 'contract_not_found_in_compiler_output',
+    });
+  }
+  return contract;
+}
+
 export abstract class AbstractCompilation {
   /**
    * Constructor parameters
@@ -141,28 +167,10 @@ export abstract class AbstractCompilation {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });
     }
-    // In solcjs, for solidity versions prior to 0.4.9, the contracts are stored without the source path as a key
-    if (this.compilerOutput.contracts['']?.[this.compilationTarget.name]) {
-      return this.compilerOutput.contracts[''][this.compilationTarget.name];
-    }
-    if (
-      !this.compilerOutput.contracts ||
-      !this.compilerOutput.contracts[this.compilationTarget.path] ||
-      !this.compilerOutput.contracts[this.compilationTarget.path][
-        this.compilationTarget.name
-      ]
-    ) {
-      logWarn('Contract not found in compiler output', {
-        path: this.compilationTarget.path,
-        name: this.compilationTarget.name,
-      });
-      throw new CompilationError({
-        code: 'contract_not_found_in_compiler_output',
-      });
-    }
-    return this.compilerOutput.contracts[this.compilationTarget.path][
-      this.compilationTarget.name
-    ];
+    return findContractInCompilerOutput(
+      this.compilerOutput,
+      this.compilationTarget,
+    );
   }
 
   get creationBytecode() {
