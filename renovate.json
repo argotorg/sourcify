@@ -18,10 +18,15 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": "Keep the Node version pinned manually, but still let digest updates through so pinned base images keep receiving security patches",
+      "description": "We choose the Node version by hand, so turn off version bumps for these two images. 'digest' is deliberately not in the list above: rebuilds of the tag we already use still come through, otherwise pinning by digest would freeze us on an unpatched base image forever.",
       "matchPackageNames": ["node", "cimg/node"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
+    },
+    {
+      "description": "A digest update is upstream rebuilding a tag we already trust, usually to ship OS security patches. The 14-day wait above guards against compromised package releases, which does not apply here and would only delay the patches we pin for.",
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": "0 days"
     }
   ],
   "pinDigests": true,
