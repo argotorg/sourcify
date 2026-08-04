@@ -16,9 +16,15 @@
       "groupName": "all patch and minor dependencies",
       "groupSlug": "all-patch-and-minor",
       "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Keep the Node version pinned manually, but still let digest updates through so pinned base images keep receiving security patches",
+      "matchPackageNames": ["node", "cimg/node"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "enabled": false
     }
   ],
-  "ignoreDeps": ["node", "cimg/node"],
+  "pinDigests": true,
   "major": {
     "dependencyDashboardApproval": true
   },
