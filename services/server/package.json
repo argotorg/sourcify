@@ -46,7 +46,7 @@
   },
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1086.0",
+    "@aws-sdk/client-s3": "3.1091.0",
     "@ethereum-sourcify/bytecode-utils": "^1.6.1",
     "@ethereum-sourcify/compilers": "^1.1.5",
     "@ethereum-sourcify/lib-sourcify": "^3.6.1",
@@ -65,7 +65,7 @@
     "http-status-codes": "2.3.0",
     "json-refs": "3.0.15",
     "pg": "8.22.0",
-    "piscina": "5.2.0",
+    "piscina": "5.3.0",
     "serve-index": "1.9.2",
     "swagger-ui-express": "5.0.1",
     "ts-node": "10.9.2",
