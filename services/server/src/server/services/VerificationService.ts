@@ -46,9 +46,16 @@ import {
   type SimilarityCreationData,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
-import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
+import {
+  BytecodeTooShortForSimilarityError,
+  ContractNotDeployedError,
+  GetBytecodeError,
+} from "../apiv2/errors";
 import type { VerificationErrorCode } from "../apiv2/errors";
-import { isStatementTimeoutError } from "./utils/database-util";
+import {
+  isStatementTimeoutError,
+  SIMILARITY_PREFIX_LENGTH_BYTES,
+} from "./utils/database-util";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
@@ -376,6 +383,16 @@ export class VerificationService {
     ) {
       throw new ContractNotDeployedError(
         `There is no bytecode at address ${address} on chain ${chainId}.`,
+      );
+    }
+
+    // Similarity candidates are indexed by their first 75 bytes of runtime
+    // code; shorter bytecodes (e.g. minimal proxies) are too weak a
+    // discriminator and are not indexed at all.
+    const runtimeBytecodeLengthBytes = (runtimeBytecode.length - 2) / 2;
+    if (runtimeBytecodeLengthBytes < SIMILARITY_PREFIX_LENGTH_BYTES) {
+      throw new BytecodeTooShortForSimilarityError(
+        `The bytecode at address ${address} on chain ${chainId} is only ${runtimeBytecodeLengthBytes} bytes long. Similarity verification requires at least ${SIMILARITY_PREFIX_LENGTH_BYTES} bytes.`,
       );
     }
 

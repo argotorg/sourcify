@@ -31,7 +31,8 @@ export type ErrorCode =
   | "etherscan_limit"
   | "not_etherscan_verified"
   | "malformed_etherscan_response"
-  | "failed_to_get_bytecode";
+  | "failed_to_get_bytecode"
+  | "bytecode_too_short_for_similarity";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -224,6 +225,19 @@ export class GetBytecodeError extends BadGatewayError {
     super(message);
     this.payload = {
       customCode: "failed_to_get_bytecode",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class BytecodeTooShortForSimilarityError extends BadRequestError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "bytecode_too_short_for_similarity",
       message,
       errorId: uuidv4(),
     };

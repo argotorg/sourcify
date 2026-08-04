@@ -19,6 +19,7 @@ import type {
 import {
   bytesFromString,
   buildStdJsonInputSelector,
+  SIMILARITY_PREFIX_LENGTH_BYTES,
   STORED_PROPERTIES_TO_SELECTORS,
 } from "./database-util";
 import { createHash } from "crypto";
@@ -273,16 +274,16 @@ ${
    * compilation ids -- the deployment a candidate happens to have is irrelevant
    * to verifying a different contract.
    *
-   * The previous version joined code -> compiled_contracts -> verified_contracts
-   * -> sourcify_matches -> contract_deployments and applied LIMIT to the final
-   * deployment rows, so the whole fanout had to materialize before the limit
-   * applied. That timed out for unselective prefixes, where common solc
-   * boilerplate and proxy prefixes are shared by a large number of code rows.
-   *
-   * Here the LIMIT bounds the compilations directly. compiled_contracts.
-   * runtime_code_hash points at exactly one code row, so each compilation
-   * appears once without a DISTINCT/GROUP BY sort barrier and the LIMIT can
-   * short-circuit.
+   * Reads the compiled_contracts_runtime_code_prefixes side table rather than
+   * prefix-matching on code: code holds every bytecode ever observed on chain,
+   * and for contract classes that bake immutables into runtime code hundreds of
+   * thousands of onchain variants share a prefix while only a handful of
+   * compilations exist -- a prefix scan on code walks the whole variant set
+   * (measured in production: 142,872 rows scanned for 21 candidates, 36s). In
+   * the prefix table every entry is a candidate, so the LIMIT short-circuits
+   * after ~limit index entries. The table only holds prefixes of exactly 75
+   * bytes; shorter bytecodes are not indexed and are rejected by the API
+   * upfront.
    *
    * The LATERAL keeps only compilations that are actually verified: without a
    * sourcify_match a compilation is stale (re-verification moves the match to a
@@ -290,39 +291,29 @@ ${
    *
    * Do NOT rewrite that LATERAL as EXISTS, however obvious that looks. Postgres
    * de-correlates EXISTS into a semi-join it is free to drive the whole query
-   * from, and on production it did exactly that: sequential scans over
-   * verified_contracts (~48M rows) and sourcify_matches (~36M rows), hash joined
-   * and aggregated before ever touching the bytecode, with the prefix index
-   * unused and the substring demoted to a post-hoc filter. It never completed.
-   *
-   * The LIMIT 1 inside the LATERAL blocks subquery pull-up, so the planner has
-   * to run it per candidate row and drives from idx_code_code_first_75 instead.
-   * That turns the substring into an Index Cond and yields a fast-start plan
-   * that stops once LIMIT $2 candidates are found.
-   *
-   * This is more fragile than it should be because pg_stats reports
-   * n_distinct = ~10k for verified_contracts.compilation_id when the true value
-   * is in the tens of millions, making the de-correlated plan look cheap. If
-   * that statistic is ever corrected, the plan choice becomes robust rather
-   * than merely correct.
+   * from, and on production it did exactly that: sequential scans over the
+   * tens of millions of rows in verified_contracts and sourcify_matches, hash
+   * joined and aggregated before ever touching the bytecode. It never
+   * completed. The LIMIT 1 inside the LATERAL blocks subquery pull-up, so the
+   * planner has to run it per candidate row and drives from the prefix index
+   * instead.
    */
-  async getVerifiedContractsByRuntimeCodePrefix(
+  async getCompilationsByRuntimeCodePrefix(
     runtimeBytecode: Buffer,
     limit: number = 20,
   ): Promise<QueryResult<CodePrefixMatchResult>> {
     return await this.pool.query(
       `
-        SELECT compiled_contracts.id as compilation_id
-        FROM ${this.schema}.code code
-        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
+        SELECT prefixes.compilation_id
+        FROM ${this.schema}.compiled_contracts_runtime_code_prefixes prefixes
         CROSS JOIN LATERAL (
           SELECT 1
           FROM ${this.schema}.verified_contracts
           JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-          WHERE verified_contracts.compilation_id = compiled_contracts.id
+          WHERE verified_contracts.compilation_id = prefixes.compilation_id
           LIMIT 1
         ) verified
-        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        WHERE prefixes.runtime_code_prefix = substring($1::bytea FROM 1 FOR ${SIMILARITY_PREFIX_LENGTH_BYTES})
         LIMIT $2
       `,
       [runtimeBytecode, limit],

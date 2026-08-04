@@ -209,6 +209,32 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.not.have.property("verificationId");
   });
 
+  it("should return a 400 when the bytecode is shorter than the similarity prefix", async () => {
+    const getBytecodeStub = sandbox
+      .stub(
+        serverFixture.sourcifyChainsMap[chainFixture.chainId],
+        "getBytecode",
+      )
+      // 45-byte EIP-1167 style bytecode, below the 75-byte prefix length
+      .resolves("0x" + "ff".repeat(45));
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(getBytecodeStub.calledOnce).to.be.true;
+    chai.expect(verifyRes.status).to.equal(400);
+    chai
+      .expect(verifyRes.body.customCode)
+      .to.equal("bytecode_too_short_for_similarity");
+    chai.expect(verifyRes.body).to.have.property("errorId");
+    chai.expect(verifyRes.body).to.have.property("message");
+    chai.expect(verifyRes.body).to.not.have.property("verificationId");
+  });
+
   it("should return a 400 if the address is invalid", async () => {
     const verifyRes = await chai
       .request(serverFixture.server.app)

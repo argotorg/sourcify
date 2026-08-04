@@ -622,6 +622,36 @@ export type Field =
   | `compilation.${compilationSubfields}`;
 
 /**
+ * Length of the runtime code prefixes used for similarity search. Must stay
+ * consistent with the compiled_contracts_runtime_code_prefixes table, its
+ * insert trigger, and the backfill script in services/database.
+ */
+export const SIMILARITY_PREFIX_LENGTH_BYTES = 75;
+
+/**
+ * Solidity libraries start their runtime code with a call protection: PUSH20
+ * (0x73) followed by the library's own address. In compiled bytecode the
+ * address is all zeros; onchain it is the real deployed address (see
+ * lib-sourcify's CallProtectionTransformation). Similarity prefixes are stored
+ * from compiled bytecode, so the onchain input must have the address bytes
+ * zeroed for deployed libraries to match their compilations.
+ *
+ * Unlike lib-sourcify, which detects the call protection via the zeroed
+ * placeholder in the compiled bytecode, this has to key on the onchain first
+ * byte alone: at similarity-search time the compiled bytecode is exactly what
+ * is being searched for. That is safe because non-library bytecode never
+ * starts with PUSH20 (solc and Vyper emit a memory-setup preamble first).
+ */
+export function normalizeCallProtection(runtimeBytecode: Buffer): Buffer {
+  if (runtimeBytecode[0] !== 0x73) {
+    return runtimeBytecode;
+  }
+  const normalized = Buffer.from(runtimeBytecode);
+  normalized.fill(0, 1, 21);
+  return normalized;
+}
+
+/**
  * Postgres cancels a statement that exceeds statement_timeout with SQLSTATE
  * 57014 (query_canceled). node-postgres exposes it as `code` on the error.
  */

@@ -17,6 +17,7 @@ import type {
 } from "../utils/database-util";
 import {
   bytesFromString,
+  normalizeCallProtection,
   FIELDS_TO_STORED_PROPERTIES,
   createPreRunCompilationFromStoredCandidate,
 } from "../utils/database-util";
@@ -668,8 +669,10 @@ export class SourcifyDatabaseService
     }
 
     const prefixMatches =
-      await this.database.getVerifiedContractsByRuntimeCodePrefix(
-        runtimeBuffer,
+      await this.database.getCompilationsByRuntimeCodePrefix(
+        // Deployed libraries carry their own address in the call protection at
+        // the start of the runtime code; stored prefixes have zeros there.
+        normalizeCallProtection(runtimeBuffer),
         limit,
       );
 
