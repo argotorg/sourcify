@@ -24,7 +24,7 @@
       "enabled": false
     },
     {
-      "description": "A digest update is upstream rebuilding a tag we already trust, usually to ship OS security patches. The 14-day wait above guards against compromised package releases, which does not apply here and would only delay the patches we pin for.",
+      "description": "Digest updates go out immediately: they ship the OS patches we pin for, and Renovate currently cannot age-gate docker digests anyway (no releaseTimestamp for digests, see renovatebot/renovate#38656). Caveat: a compromised upstream rebuild also arrives as a digest update — the pin's protection is that it lands as a reviewable PR instead of silently in CI, so digest updates must never be automerged.",
       "matchUpdateTypes": ["digest"],
       "minimumReleaseAge": "0 days"
     }
