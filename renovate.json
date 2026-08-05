@@ -18,15 +18,15 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": "We choose the Node version by hand, so turn off version bumps for these two images. 'digest' is deliberately not in the list above: rebuilds of the tag we already use still come through, otherwise pinning by digest would freeze us on an unpatched base image forever.",
+      "description": "We choose the Node version by hand, so turn off version bumps for these two images. Scoped to update types rather than using ignoreDeps so the carve-out stays accurate if digest updates are ever switched back on below.",
       "matchPackageNames": ["node", "cimg/node"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
     },
     {
-      "description": "Digest updates go out immediately: they ship the OS patches we pin for, and Renovate currently cannot age-gate docker digests anyway (no releaseTimestamp for digests, see renovatebot/renovate#38656). Caveat: a compromised upstream rebuild also arrives as a digest update — the pin's protection is that it lands as a reviewable PR instead of silently in CI, so digest updates must never be automerged.",
+      "description": "No routine digest churn. A new upstream digest is not evidence that ours is bad, and a rebuilt base image is not reviewable — a weekly stream of opaque hash bumps trains people to rubber-stamp them. We bump a pin deliberately when something tells us the pinned image is actually vulnerable. Note this only stops refreshes of existing pins: pinDigests still adds a digest to any newly introduced image.",
       "matchUpdateTypes": ["digest"],
-      "minimumReleaseAge": "0 days"
+      "enabled": false
     }
   ],
   "pinDigests": true,
