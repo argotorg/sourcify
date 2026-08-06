@@ -6,7 +6,12 @@ import semver from 'semver';
 import type { WorkerOptions } from 'worker_threads';
 import { Worker } from 'worker_threads';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerArtifactPath,
+} from './common';
 import type {
   SolidityJsonInput,
   SolidityOutput,
@@ -141,7 +146,7 @@ export async function getSolcExecutable(
   version: string,
 ): Promise<string | null> {
   const fileName = `solc-${platform}-v${version}`;
-  const solcPath = path.join(solcRepoPath, fileName);
+  const solcPath = resolveCompilerArtifactPath(solcRepoPath, fileName, version);
   if (fs.existsSync(solcPath) && validateSolcPath(solcPath)) {
     logDebug('Found existing solc', { version, platform, solcPath });
     return solcPath;

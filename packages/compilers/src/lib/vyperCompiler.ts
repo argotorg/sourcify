@@ -2,7 +2,12 @@
 import path from 'path';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerArtifactPath,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type {
   VyperJsonInput,
@@ -107,7 +112,11 @@ export async function getVyperExecutable(
   version: string,
 ): Promise<string> {
   const fileName = `vyper.${version}.${platform}`;
-  const vyperPath = path.join(vyperRepoPath, fileName);
+  const vyperPath = resolveCompilerArtifactPath(
+    vyperRepoPath,
+    fileName,
+    version,
+  );
   if (validateVyperPath(vyperPath)) {
     return vyperPath;
   }

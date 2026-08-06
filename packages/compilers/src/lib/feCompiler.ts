@@ -3,7 +3,11 @@ import fs from 'fs';
 import os from 'os';
 import { spawnSync } from 'child_process';
 import semver from 'semver';
-import { CompilerError, fetchWithBackoff } from './common';
+import {
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerArtifactPath,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
 import type { JsonFragment } from 'ethers';
@@ -40,7 +44,7 @@ export async function getFeExecutable(
   version: string,
 ): Promise<string> {
   const fileName = `fe-${version}-${platform}`;
-  const fePath = path.join(feRepoPath, fileName);
+  const fePath = resolveCompilerArtifactPath(feRepoPath, fileName, version);
   if (validateFePath(fePath)) {
     return fePath;
   }

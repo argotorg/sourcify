@@ -1,3 +1,4 @@
+import path from 'path';
 import { exec } from 'child_process';
 import { logDebug, logError, logSilly } from '../logger';
 import type { OutputError } from '@ethereum-sourcify/compilers-types';
@@ -54,6 +55,46 @@ export async function fetchWithBackoff(
     }
   }
   throw new Error(`Failed fetching ${resource}`);
+}
+
+/**
+ * Build a compiler artifact path under repoPath from a version-derived fileName.
+ * Rejects versions/file names that could escape repoPath via path segments
+ * (e.g. "0.8.28/../../../tmp/pwn"), which OpenAPI's loose CompilerVersion
+ * pattern would otherwise allow.
+ */
+export function resolveCompilerArtifactPath(
+  repoPath: string,
+  fileName: string,
+  version: string,
+): string {
+  const isUnsafePathInput = (value: string): boolean => {
+    if (value.includes('\0') || value.includes('..')) {
+      return true;
+    }
+    // Reject any path separator (POSIX or Windows), independent of host OS.
+    if (value.includes('/') || value.includes('\\')) {
+      return true;
+    }
+    if (path.basename(value) !== value) {
+      return true;
+    }
+    return false;
+  };
+
+  if (isUnsafePathInput(version) || isUnsafePathInput(fileName)) {
+    throw new Error(`Invalid compiler version: ${JSON.stringify(version)}`);
+  }
+
+  const resolvedRepo = path.resolve(repoPath);
+  const resolvedPath = path.resolve(resolvedRepo, fileName);
+  const repoPrefix = resolvedRepo.endsWith(path.sep)
+    ? resolvedRepo
+    : `${resolvedRepo}${path.sep}`;
+  if (resolvedPath !== resolvedRepo && !resolvedPath.startsWith(repoPrefix)) {
+    throw new Error(`Invalid compiler version: ${JSON.stringify(version)}`);
+  }
+  return resolvedPath;
 }
 
 export function asyncExec(
