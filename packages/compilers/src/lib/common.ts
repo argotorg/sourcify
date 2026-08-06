@@ -78,11 +78,21 @@ export function createCompilerTimeoutError(timeoutMs: number): Error & {
   return timeoutError;
 }
 
+export type AsyncExecOptions = {
+  /**
+   * Working directory for the compiler subprocess.
+   * Used by native solc to isolate import resolution from the host process cwd
+   * (solc >=0.8.8 may read relative imports from base path ".").
+   */
+  cwd?: string;
+};
+
 export function asyncExec(
   command: string,
   inputStringified: string,
   maxBuffer: number,
   timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
+  options: AsyncExecOptions = {},
 ): Promise<string> {
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
@@ -121,6 +131,7 @@ export function asyncExec(
         maxBuffer,
         timeout: timeoutMs,
         killSignal: 'SIGKILL',
+        cwd: options.cwd,
       },
       (error, stdout, stderr) => {
         if (error) {
