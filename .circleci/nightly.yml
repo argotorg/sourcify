@@ -23,7 +23,7 @@ aliases:
           command: cd ~/project/metacoin-source-verify && ./scripts/monitor_e2e.sh
           no_output_timeout: 30m
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
   - &verification-e2e-base
     steps:
       - run:
@@ -41,7 +41,7 @@ aliases:
       - store_artifacts:
           path: ~/project/metacoin-source-verify/verified-contracts
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
 
 workflows:
   e2e-tests:

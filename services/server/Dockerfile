@@ -1,7 +1,7 @@
 # Needs to be run from the project root context e.g. `cd sourcify/ && docker build -f services/monitor/Dockerfile .`
 
 # Builder image
-FROM node:22.22.0-bookworm as builder
+FROM node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c as builder
 
 RUN mkdir -p /home/app
 WORKDIR /home/app
@@ -15,7 +15,7 @@ RUN npx lerna run build --scope sourcify-server
 ######################
 ## Production image ##
 ######################
-FROM node:22.22.0-trixie-slim as production
+FROM node:22.22.0-trixie-slim@sha256:465a8c8f0f4103861bcbcf3e512608394b7155eccb1955425f4ea3f672ddc53e as production
 
 # Historical Vyper storage layouts are recovered in exact-version, isolated
 # Python environments. uv manages the matching Python runtime and compiler

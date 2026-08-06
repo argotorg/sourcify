@@ -3,7 +3,7 @@ import { Router } from "express";
 import logger, { setLogLevel } from "../common/logger";
 import type { ChainRepository } from "../sourcify-chain-repository";
 import apiV2Routes from "./apiv2/routes";
-import apiV1Routes from "./apiv1/routes";
+import apiPrivateRoutes from "./apiPrivate/routes";
 import { readFileSync } from "fs";
 import { join } from "path";
 import packageJson from "../../package.json";
@@ -90,8 +90,7 @@ router.get("/chains", (_req, res) => {
 
 const verifyUiHandler = (req: Request, res: Response, next: NextFunction) => {
   const sourcifyVerifyUi = req.app.get("sourcifyVerifyUi") as
-    | string
-    | undefined;
+    string | undefined;
   if (sourcifyVerifyUi) {
     const pathAfterVerify = req.path.substring("/verify-ui".length);
     const redirectUrl = `${sourcifyVerifyUi}${pathAfterVerify}`;
@@ -124,6 +123,6 @@ const repoUiHandler = (req: Request, res: Response) => {
 router.get("/repo-ui", repoUiHandler);
 router.get("/repo-ui/*path", repoUiHandler);
 
-router.use("/", apiV1Routes);
+router.use("/private", apiPrivateRoutes);
 router.use("/v2", apiV2Routes);
 export default router;

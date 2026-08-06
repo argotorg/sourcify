@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import sinon from "sinon";
-import { replaceVyperStorageLayout } from "../../src/server/apiv1/verification/private/stateless/customReplaceMethods";
+import { replaceVyperStorageLayout } from "../../src/server/apiPrivate/customReplaceMethods";
 
 function verificationWithStatus(runtimeMatch: "perfect" | "partial" | null) {
   return {

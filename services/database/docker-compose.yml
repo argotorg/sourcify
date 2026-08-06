@@ -4,12 +4,9 @@ services:
   db:
     build:
       context: .
-      dockerfile_inline: |
-        FROM postgres:15-bookworm
-        RUN apt-get update && \
-            apt-get -y install postgresql-15-cron && \
-            apt-get clean && \
-            rm -rf /var/lib/apt/lists/*
+      # Kept as a real Dockerfile rather than `dockerfile_inline` so Renovate's
+      # dockerfile manager can see the base image and refresh its digest.
+      dockerfile: Dockerfile
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:

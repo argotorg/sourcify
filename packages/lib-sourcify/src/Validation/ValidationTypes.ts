@@ -36,9 +36,7 @@ export interface VariedPathContent extends PathContent {
 }
 
 export type ValidationErrorCode =
-  | 'missing_source'
-  | 'missing_or_invalid_source'
-  | 'invalid_compilation_target';
+  'missing_source' | 'missing_or_invalid_source' | 'invalid_compilation_target';
 
 export class ValidationError extends SourcifyLibError {
   declare code: ValidationErrorCode;

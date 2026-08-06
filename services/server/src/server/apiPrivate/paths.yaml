@@ -1,0 +1,301 @@
+openapi: "3.0.0"
+
+paths:
+  /private/verify-deprecated:
+    post:
+      deprecated: false
+      summary: Private endpoint for verifying contracts on deprecated chains.
+      description: |
+        This endpoint is used to submit verifications for contracts on deprecated chains. The endpoint puts placeholders for the onchain data such as the onchain bytecodes or tx hashes, as such data can't be fetched from a chain that is no longer live.
+
+        Useful for example when we get an old dataset of verified contracts and we want to verify on old chains.
+      tags:
+        - Private
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+                - chain
+                - files
+              properties:
+                address:
+                  type: string
+                  pattern: '(\b0x[a-fA-F0-9]{40}\b)'
+                  minLength: 42
+                  maxLength: 42
+                  example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                chain:
+                  type: string
+                  example: "1"
+                files:
+                  type: object
+                  example:
+                    metadata.json: "{...}"
+                    SimpleStorage.sol: "// file"
+                creatorTxHash:
+                  type: string
+                chosenContract:
+                  type: string
+                match:
+                  type: string
+      responses:
+        "200":
+          description: The contract has been successfully checked or sourcified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        address:
+                          type: string
+                        chainId:
+                          type: string
+                        status:
+                          type: string
+                        message:
+                          type: string
+                        libraryMap:
+                          type: object
+              examples:
+                Perfect Match:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "perfect"
+                        libraryMap:
+                          lib1: "0x3f681646d4a755815f9cb19e1acc8565a0c2ac"
+                          lib2: "0x4f681646d4a755815f9cb19e1acc8565a0c2ac"
+                Partial Match:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "partial"
+                        libraryMap:
+                          lib1: "0x3f681646d4a755815f9cb19e1acc8565a0c2ac"
+                          lib2: "0x4f681646d4a755815f9cb19e1acc8565a0c2ac"
+                Not Deployed:
+                  value:
+                    result:
+                      - address: "0x123f681646d4a755815f9cb19e1acc8565a0c2ac"
+                        chainId: "1"
+                        status: "null"
+                        message: "Chain #1 does not have a contract deployed at 0x...."
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Metadata not found:
+                  value:
+                    error: 'Metadata file not found. Did you include "metadata.json"?'
+                Bad Formatted Json:
+                  value:
+                    error: "Unexpected token ' in JSON at position 107"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                File Not Found:
+                  value:
+                    error: "Couldn't extract files from the request. Please make sure you have added files"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Resource Missing:
+                  value:
+                    error: "Resource missing; unsuccessful fetching: contracts/SingleFile.sol"
+                Deployed and recompiled mismatch:
+                  value:
+                    error: "The deployed and recompiled bytecode don't match."
+  /private/replace-contract:
+    post:
+      deprecated: false
+      summary: Private endpoint for replacing contract data in the database.
+      description: |
+        Replaces an existing contract in the database, addressing issues with misaligned or incorrect contract data.
+        This endpoint provides a generic, maintainable solution and optimizes performance by optionally skipping 
+        recompilation and on-chain RPC calls, using data already stored in the database.
+      tags:
+        - Private
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chainId
+                - address
+                - forceCompilation
+                - forceRPCRequest
+              properties:
+                chainId:
+                  oneOf:
+                    - type: string
+                    - type: number
+                  description: The chain ID of the contract
+                  example: "1"
+                address:
+                  type: string
+                  pattern: '(\b0x[a-fA-F0-9]{40}\b)'
+                  minLength: 42
+                  maxLength: 42
+                  description: The contract address
+                  example: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                transactionHash:
+                  type: string
+                  description: The creation transaction hash
+                  example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                forceCompilation:
+                  type: boolean
+                  description: If true, recompiles the contract using the provided jsonInput, compilerVersion and compilationTarget
+                  example: false
+                forceRPCRequest:
+                  type: boolean
+                  description: If true, fetches the contract's information from the RPC
+                  example: false
+                jsonInput:
+                  type: object
+                  description: Required if forceCompilation is true. The JSON input to use for recompilation
+                compilerVersion:
+                  type: string
+                  description: Required if forceCompilation is true. The compiler version to use for recompilation
+                  example: "0.8.19+commit.7dd6d404"
+                compilationTarget:
+                  type: string
+                  description: Required if forceCompilation is true. The compilation target to use for recompilation
+                  example: "project:/contracts/Storage.sol:Storage"
+                customReplaceMethod:
+                  type: string
+                  description: |
+                    Specifies the custom database update strategy to use when replacing contract data. 
+                    Available methods:
+                    - "replace-creation-information": Updates an existing verified contract's creation bytecode, 
+                      deployment transaction details (hash, block number, transaction index, deployer), and 
+                      creation match status while preserving the runtime verification data. This method is 
+                      useful for correcting incomplete or missing creation data on contracts that were 
+                      previously verified only against runtime bytecode.
+                    - "replace-metadata": Updates only the metadata of an existing verified contract.
+                    - "replace-vyper-immutable-references": Recomputes a Vyper contract's
+                      `immutableReferences` from a fresh compile and backfills them into the
+                      existing `compiled_contracts.runtime_code_artifacts` (only the
+                      `immutableReferences` key is updated). Intended to backfill Vyper contracts
+                      whose `immutableReferences` were never persisted; use with
+                      `forceCompilation: true`. Only Vyper is supported (throws otherwise);
+                      contracts without immutables are left untouched.
+                    - "replace-vyper-storage-layout": Recomputes a Vyper contract's
+                      storage layout with its verified compiler input and backfills only
+                      `compiled_contracts.compilation_artifacts.storageLayout`. Use with
+                      `forceCompilation: true`. An unavailable supplemental layout leaves
+                      the existing row untouched. The compiler version, target, settings,
+                      additional input, and complete source set must exactly match the stored
+                      compilation identity.
+                  example: "replace-creation-information"
+      responses:
+        "200":
+          description: The contract has been successfully replaced.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  replaced:
+                    type: boolean
+                    description: Whether the replacement was applied. False when the replace method intentionally skipped it (see replacedReason).
+                  replacedReason:
+                    type: string
+                    description: Optional reason describing the outcome reported by the replace method, e.g. why a replacement was skipped (the Vyper contract has no immutableReferences to backfill). Absent when the replacement was applied with nothing to report.
+                  address:
+                    type: string
+                  chainId:
+                    oneOf:
+                      - type: string
+                      - type: number
+                  transactionHash:
+                    type: string
+                  newStatus:
+                    type: object
+                    properties:
+                      creationMatch:
+                        type: string
+                      runtimeMatch:
+                        type: string
+                  rpcFailedFetchingCreationBytecode:
+                    type: boolean
+                    description: Indicates if the RPC call to fetch the creation bytecode failed
+              examples:
+                Success:
+                  value:
+                    replaced: true
+                    address: "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+                    chainId: "1"
+                    transactionHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+                    newStatus:
+                      creationMatch: "perfect"
+                      runtimeMatch: "perfect"
+                    rpcFailedFetchingCreationBytecode: false
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Missing Parameters:
+                  value:
+                    error: "jsonInput, compilerVersion and compilationTarget are required when forceCompilation is true"
+                Verification Failed:
+                  value:
+                    error: "The contract is not verified or the verification is not perfect"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Database Error:
+                  value:
+                    error: "Database service not available"
+                Internal Error:
+                  value:
+                    error: "Error during replacement process"

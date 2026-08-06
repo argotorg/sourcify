@@ -1,11 +1,4 @@
-import type {
-  ISolidityCompiler,
-  IVyperCompiler,
-  SourcifyChain,
-} from "@ethereum-sourcify/lib-sourcify";
-import { BadRequestError, NotFoundError } from "../../../common/errors";
-import { TooManyRequests } from "../../../common/errors/TooManyRequests";
-import { BadGatewayError } from "../../../common/errors/BadGatewayError";
+import type { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import {
   ChainNotFoundError,
   EtherscanLimitError,
@@ -18,40 +11,30 @@ import {
   EtherscanImportError,
 } from "@ethereum-sourcify/lib-sourcify";
 
-function mapLibError(err: any, throwV2Errors: boolean): never {
+function mapLibError(err: any): never {
   const message = err?.message || "Etherscan import error";
 
   if (err instanceof EtherscanImportError) {
     switch (err.code) {
       case "etherscan_rate_limit":
-        throw throwV2Errors
-          ? new EtherscanLimitError(message)
-          : new TooManyRequests(message);
+        throw new EtherscanLimitError(message);
 
       case "etherscan_not_verified":
-        throw throwV2Errors
-          ? new NotEtherscanVerifiedError(message)
-          : new NotFoundError(message);
+        throw new NotEtherscanVerifiedError(message);
 
       case "etherscan_network_error":
       case "etherscan_http_error":
       case "etherscan_api_error":
-        throw throwV2Errors
-          ? new EtherscanRequestFailedError(message)
-          : new BadGatewayError(message);
+        throw new EtherscanRequestFailedError(message);
 
       case "etherscan_vyper_version_mapping_failed":
       case "etherscan_missing_contract_in_json":
       case "etherscan_missing_vyper_settings":
-        throw throwV2Errors
-          ? new MalformedEtherscanResponseError(message)
-          : new BadRequestError(message);
+        throw new MalformedEtherscanResponseError(message);
 
       default:
         // Fallback for any new error codes not yet handled
-        throw throwV2Errors
-          ? new EtherscanRequestFailedError(message)
-          : new BadGatewayError(message);
+        throw new EtherscanRequestFailedError(message);
     }
   }
 
@@ -76,20 +59,18 @@ export const deriveEtherscanApiKey = (
   return userApiKey || chainSpecificKey || globalKey || "";
 };
 
-// Fetches contract data from Etherscan and maps any errors to appropriate server errors (v1 or v2)
+// Fetches contract data from Etherscan and maps any errors to appropriate server errors
 export const fetchFromEtherscanOrThrowError = async (
   sourcifyChain: SourcifyChain,
   address: string,
   userApiKey?: string,
-  throwV2Errors = false,
 ) => {
   try {
     // Enforce server-side support check previously done in lib
     if (!sourcifyChain.etherscanApi?.supported) {
-      const errorMessage = `Requested chain ${sourcifyChain.chainId} is not supported for importing from Etherscan.`;
-      throw throwV2Errors
-        ? new ChainNotFoundError(errorMessage)
-        : new BadRequestError(errorMessage);
+      throw new ChainNotFoundError(
+        `Requested chain ${sourcifyChain.chainId} is not supported for importing from Etherscan.`,
+      );
     }
 
     const apiKey = deriveEtherscanApiKey(sourcifyChain, userApiKey);
@@ -101,23 +82,6 @@ export const fetchFromEtherscanOrThrowError = async (
       sourcifyChain.etherscanApi?.url,
     );
   } catch (err) {
-    return mapLibError(err, throwV2Errors);
+    return mapLibError(err);
   }
 };
-
-// Fetches compilation from Etherscan result and maps any errors to appropriate v1 server errors
-export async function getCompilationFromEtherscanResultOrThrowV1Error(
-  etherscanResult: any,
-  solc: ISolidityCompiler,
-  vyperCompiler: IVyperCompiler,
-) {
-  try {
-    return EtherscanUtils.getCompilationFromEtherscanResult(
-      etherscanResult,
-      solc,
-      vyperCompiler,
-    );
-  } catch (err) {
-    return mapLibError(err, false);
-  }
-}

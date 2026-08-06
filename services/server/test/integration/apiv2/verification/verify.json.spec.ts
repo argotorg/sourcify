@@ -70,6 +70,58 @@ describe("POST /v2/verify/:chainId/:address", function () {
     );
   });
 
+  it("should not store sources that are unused by the compilation target", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const jsonInput = JSON.parse(
+      JSON.stringify(chainFixture.defaultContractJsonInput),
+    );
+    // Add a source that is unrelated to the compilation target
+    jsonInput.sources["contracts/Unrelated.sol"] = {
+      content:
+        "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.4;\ncontract Unrelated { uint256 number; }\n",
+    };
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: jsonInput,
+        compilerVersion:
+          chainFixture.defaultContractMetadataObject.compiler.version,
+        contractIdentifier: Object.entries(
+          chainFixture.defaultContractMetadataObject.settings.compilationTarget,
+        )[0].join(":"),
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      chainFixture.defaultContractAddress,
+      "exact_match",
+    );
+
+    // Only the sources listed in the metadata of the compilation target
+    // should be stored
+    const contractRes = await chai
+      .request(serverFixture.server.app)
+      .get(
+        `/v2/contract/${chainFixture.chainId}/${chainFixture.defaultContractAddress}?fields=sources`,
+      );
+
+    chai.expect(contractRes.status).to.equal(200);
+    chai
+      .expect(Object.keys(contractRes.body.sources))
+      .to.have.members(
+        Object.keys(chainFixture.defaultContractMetadataObject.sources),
+      );
+  });
+
   it("should verify a Vyper contract", async () => {
     const { resolveWorkers } = makeWorkersWait();
 
@@ -338,6 +390,83 @@ describe("POST /v2/verify/:chainId/:address", function () {
       runtimeMatch: null,
       chainId: chainFixture.chainId,
       address: contractAddress,
+    });
+  });
+
+  it("should store a job error if the compiler does not output the runtime bytecode", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    // Yul contracts compiled with solc <0.6.9 have no evm.deployedBytecode in the compiler output
+    // See https://github.com/argotorg/sourcify/issues/2887
+    const yulFileName = "deterministic-deployment-proxy.yul";
+    const yulContent = `object "Proxy" {
+  code {
+    let size := datasize("runtime")
+    datacopy(0, dataoffset("runtime"), size)
+    return(0, size)
+  }
+  object "runtime" {
+    code {
+      calldatacopy(0, 32, sub(calldatasize(), 32))
+      let result := create2(callvalue(), 0, sub(calldatasize(), 32), calldataload(0))
+      if iszero(result) { revert(0, 0) }
+      mstore(0, result)
+      return(12, 20)
+    }
+  }
+}
+`;
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: {
+          language: "Yul",
+          sources: {
+            [yulFileName]: {
+              content: yulContent,
+            },
+          },
+          settings: {
+            optimizer: { enabled: true, details: { yul: true } },
+            outputSelection: {
+              "*": { "*": ["*"] },
+            },
+          },
+        },
+        compilerVersion: "0.5.8+commit.23d335f2",
+        contractIdentifier: `${yulFileName}:Proxy`,
+        creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      });
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body).to.include({
+      isJobCompleted: true,
+    });
+    chai.expect(jobRes.body.error).to.exist;
+    chai
+      .expect(jobRes.body.error.customCode)
+      .to.equal("runtime_bytecode_not_found_in_compiler_output");
+    chai
+      .expect(jobRes.body.error.message)
+      .to.include("did not output the runtime bytecode");
+    chai.expect(jobRes.body.contract).to.deep.equal({
+      match: null,
+      creationMatch: null,
+      runtimeMatch: null,
+      chainId: chainFixture.chainId,
+      address: chainFixture.defaultContractAddress,
     });
   });
 

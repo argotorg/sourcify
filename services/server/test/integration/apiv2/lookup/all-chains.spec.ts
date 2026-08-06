@@ -1,9 +1,13 @@
 import chai, { expect } from "chai";
 import chaiHttp from "chai-http";
-import { deployAndVerifyContract } from "../../../helpers/helpers";
+import {
+  deployAndVerifyContract,
+  hookIntoVerificationWorkerRun,
+} from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import { getAddress } from "ethers";
+import Sinon from "sinon";
 import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
@@ -40,6 +44,13 @@ describe("GET /v2/contract/all-chains/:address", function () {
   // Note: LocalChainFixture and ServerFixture have their own before/after hooks
   // built into their constructors, so no additional setup needed here
 
+  const sandbox = Sinon.createSandbox();
+  const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
   it("should return a 404 and empty results when the contract is not found", async function () {
     const randomAddress =
       chainFixtures[0].defaultContractAddress.slice(0, -8) + "aaaaaaaa";
@@ -54,10 +65,19 @@ describe("GET /v2/contract/all-chains/:address", function () {
   });
 
   it("should return the deployed and verified contract on the same address on all chains", async function () {
+    // One hook for all three: makeWorkersWait stubs the worker pool, which can
+    // only be wrapped once, and resolveWorkers awaits every in-flight task.
+    const { resolveWorkers } = makeWorkersWait();
+
     // Deploy the contract on all chains in parallel
     const addresses = await Promise.all(
       chainFixtures.map((chainFixture) =>
-        deployAndVerifyContract(chainFixture, serverFixture, false),
+        deployAndVerifyContract(
+          chainFixture,
+          serverFixture,
+          resolveWorkers,
+          false,
+        ),
       ),
     );
     expect(addresses.length).to.equal(TEST_CHAIN_IDs.length); // Make sure all are deployed

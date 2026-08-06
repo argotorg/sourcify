@@ -61,11 +61,7 @@ export enum SolidityBugType {
 }
 
 export type VerificationStatus =
-  | 'perfect'
-  | 'partial'
-  | 'extra-file-input-bug'
-  | 'error'
-  | null;
+  'perfect' | 'partial' | 'extra-file-input-bug' | 'error' | null;
 
 // When changing this type, be sure that it doesn't break the behavior
 // of the server's storage services.

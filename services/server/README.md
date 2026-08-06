@@ -214,7 +214,7 @@ module.exports = {
   initCompilers: false,
   // The origins that are allowed to access the server, regex allowed
   corsAllowedOrigins: [/^https?:\/\/(?:.+\.)?sourcify.dev$/],
-  // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
+  // Enables the private verify-deprecated endpoint. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
 };
 ```
@@ -286,15 +286,13 @@ A full example of a chain entry is as follows:
 
 There are two types of storages: `RWStorageIdentifiers` (Read and Write) and `WStorageIdentifiers` (Write only). These are the possible options:
 
-- ~~`RWStorageIdentifiers.RepositoryV1`~~ (deprecated) - the legacy repository that saves the source files and metadata as is inside a filesystem. A file system has many limitations and newer versions of the sourcify-server keeps it for backwards compatibility. If used as the `read` option, the `/v2` API endpoints won't be available. We don't recommend using this option.
+- ~~`RWStorageIdentifiers.RepositoryV1`~~ (deprecated) - the legacy repository that saves the source files and metadata as is inside a filesystem. A file system has many limitations and newer versions of the sourcify-server keeps it for backwards compatibility. Use it for writing only: since the removal of API v1 it can no longer serve any read API, so a server configured with `read: RepositoryV1` responds to every `/v2` request with a `route_not_found` 404. We don't recommend using this option.
 - `WStorageIdentifiers.RepositoryV2` - a filesystem for serving source files and metadata.json files on IPFS. Since pinning files on IPFS is done over a file system, Sourcify saves these files here. This repository does not save source file names as given in the metadata file (e.g. `contracts/MyContract.sol`) but saves each file with their keccak256 hash. This is done to avoid file name issues, as source file names can be arbitrary strings.
 
 - `WStorageIdentifiers.AllianceDatabase` - To write the verified contracts to the [Verifier Alliance](https://verifieralliance.org) database (optional)
 - `RWStorageIdentifiers.SourcifyDatabase` - the PostgreSQL database that is an extension of the Verifier Alliance database. Required for API v2. See [Database](#database).
 
-`RWStorageIdentifiers` can both be used as a source of truth (`read`) and store (`writeOr...`) the verified contracts. `WStorageIdentifiers` can only store (write) verified contracts. For instance, Sourcify can write to the [Verifier Alliance](https://verifieralliance.org) whenever it receives a verified contract, but this can't be the source of truth for the Sourcify APIs.
-
-If you have an instance running on the legacy filesystem storage backend, see [docs](https://docs.sourcify.dev/docs/database-migration/) for migration instructions.
+`RWStorageIdentifiers` can both be used as a source of truth (`read`) and store (`writeOr...`) the verified contracts. `WStorageIdentifiers` can only store (write) verified contracts. For instance, Sourcify can write to the [Verifier Alliance](https://verifieralliance.org) whenever it receives a verified contract, but this can't be the source of truth for the Sourcify APIs. In practice `SourcifyDatabase` is the only usable `read` option, as it's the only one backing an API.
 
 The following is an example of the storage config:
 

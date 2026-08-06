@@ -15,8 +15,6 @@ import { asyncLocalStorage } from "../common/async-context";
 import logger, { setLogLevel } from "../common/logger";
 import routes from "./routes";
 import genericErrorHandler from "../common/errors/GenericErrorHandler";
-import { initDeprecatedRoutes } from "./apiv1/deprecated.routes";
-import type { BrownoutV1Config } from "./middleware/brownoutV1";
 import { Services } from "./services/services";
 import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
@@ -32,7 +30,6 @@ import {
   SourcifyChain,
 } from "@ethereum-sourcify/lib-sourcify";
 import { ChainRepository } from "../sourcify-chain-repository";
-import { makeV1ValidatorFormats } from "./apiv1/validation";
 import { errorHandler as v2ErrorHandler } from "./apiv2/errors";
 import type http from "http";
 import { RWStorageIdentifiers } from "./services/storageServices/identifiers";
@@ -66,7 +63,6 @@ export interface ServerOptions {
   logLevel?: string;
   sourcifyVerifyUi?: string;
   sourcifyRepoUi?: string;
-  brownoutV1?: BrownoutV1Config;
 }
 
 export class Server {
@@ -143,7 +139,6 @@ export class Server {
     this.app.set("services", this.services);
     this.app.set("sourcifyVerifyUi", options.sourcifyVerifyUi);
     this.app.set("sourcifyRepoUi", options.sourcifyRepoUi);
-    this.app.set("brownoutV1", options.brownoutV1);
 
     this.app.use((req, res, next) => {
       // * for all non-session paths
@@ -159,10 +154,6 @@ export class Server {
       }),
     );
     this.app.use(bodyParser.json({ limit: options.maxFileSize }));
-
-    // Init deprecated routes before OpenApiValidator so that it can handle the request with the defined paths.
-    // initDeprecatedRoutes is a middleware that replaces the deprecated paths with the real ones.
-    initDeprecatedRoutes(this.app);
 
     this.app.use(
       fileUpload({
@@ -254,9 +245,6 @@ export class Server {
               return token === options.sourcifyPrivateToken;
             },
           },
-        },
-        formats: {
-          ...makeV1ValidatorFormats(this.chainRepository),
         },
         $refParser: {
           mode: "dereference",

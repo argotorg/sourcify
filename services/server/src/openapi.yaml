@@ -34,10 +34,8 @@ tags:
     description: API v2 - Submit a contract for verification
   - name: Verification Jobs
     description: API v2 - Check the status of a verification job
-  - name: (Deprecated) Stateless Verification
-    description: API v1 - Main verification endpoints - Deprecated. Please verify via API v2 instead.
-  - name: (Deprecated) Repository
-    description: API v1 - Access to already verified contracts and files. - Deprecated. Please use the API v2 Contract Lookup instead.
+  - name: Private
+    description: Private, authenticated endpoints for maintaining verifications. Not intended for public use.
   - name: Other
     description: General server endpoints
 paths:
@@ -174,9 +172,9 @@ paths:
         "302":
           description: Redirect to repository UI
   /private/verify-deprecated:
-    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1verify-deprecated"
+    $ref: "server/apiPrivate/paths.yaml#/paths/~1private~1verify-deprecated"
   /private/replace-contract:
-    $ref: "server/apiv1/verification/private/stateless/private.stateless.paths.yaml#/paths/~1private~1replace-contract"
+    $ref: "server/apiPrivate/paths.yaml#/paths/~1private~1replace-contract"
   /v2/verify/{chainId}/{address}:
     $ref: "apiv2.yaml#/paths/~1v2~1verify~1{chainId}~1{address}"
   /v2/verify/metadata/{chainId}/{address}:
@@ -193,34 +191,6 @@ paths:
     $ref: "apiv2.yaml#/paths/~1v2~1contract~1all-chains~1{address}"
   /v2/contracts/{chainId}:
     $ref: "apiv2.yaml#/paths/~1v2~1contracts~1{chainId}"
-  /verify:
-    $ref: "server/apiv1/verification/verify/stateless/verify.stateless.paths.yaml#/paths/~1verify"
-  /verify/vyper:
-    $ref: "server/apiv1/verification/vyper/stateless/vyper.stateless.paths.yaml#/paths/~1verify~1vyper"
-  /verify/etherscan:
-    $ref: "server/apiv1/verification/etherscan/stateless/etherscan.stateless.paths.yaml#/paths/~1verify~1etherscan"
-  /verify/solc-json:
-    $ref: "server/apiv1/verification/solc-json/stateless/solc-json.stateless.paths.yaml#/paths/~1verify~1solc-json"
-  /repository/contracts/{matchType}/{chain}/{address}/{filePath}:
-    $ref: "server/apiv1/repository/get-file-static.stateless.paths.yaml#/paths/~1repository~1contracts~1{matchType}~1{chain}~1{address}~1{filePath}"
-  /check-all-by-addresses:
-    $ref: "server/apiv1/repository/check-all-by-addresses.stateless.paths.yaml#/paths/~1check-all-by-addresses"
-  /check-by-addresses:
-    $ref: "server/apiv1/repository/check-by-addresses.stateless.paths.yaml#/paths/~1check-by-addresses"
-  /files/any/{chain}/{address}:
-    $ref: "server/apiv1/repository/get-source-files-all.stateless.paths.yaml#/paths/~1files~1any~1{chain}~1{address}"
-  /files/{chain}/{address}:
-    $ref: "server/apiv1/repository/get-source-files-full.stateless.paths.yaml#/paths/~1files~1{chain}~1{address}"
-  /files/contracts/{chain}:
-    $ref: "server/apiv1/repository/get-contract-addresses-all.stateless.paths.yaml#/paths/~1files~1contracts~1{chain}"
-  /files/contracts/any/{chain}:
-    $ref: "server/apiv1/repository/get-contract-addresses-paginated-all.stateless.paths.yaml#/paths/~1files~1contracts~1any~1{chain}"
-  /files/contracts/full/{chain}:
-    $ref: "server/apiv1/repository/get-contract-addresses-paginated-full.stateless.paths.yaml#/paths/~1files~1contracts~1full~1{chain}"
-  /files/tree/any/{chain}/{address}:
-    $ref: "server/apiv1/repository/get-file-tree-all.stateless.paths.yaml#/paths/~1files~1tree~1any~1{chain}~1{address}"
-  /files/tree/{chain}/{address}:
-    $ref: "server/apiv1/repository/get-file-tree-full.stateless.paths.yaml#/paths/~1files~1tree~1{chain}~1{address}"
   /private/change-log-level:
     post:
       summary: Change the logging level of the application
