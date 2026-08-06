@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   fourbytes-db:
-    image: postgres:15-alpine
+    image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
     environment:
       POSTGRES_DB: "fourbytes_test_db"
       POSTGRES_USER: "fourbytes"

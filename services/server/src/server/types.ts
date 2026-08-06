@@ -36,13 +36,6 @@ import type {
 
 // Types used internally by the server.
 
-export type V1MatchLevelWithoutAny = "full_match" | "partial_match";
-
-/**
- * A type for specfifying the strictness level of querying (only full, partial or any kind of matches)
- */
-export type V1MatchLevel = V1MatchLevelWithoutAny | "any_match";
-
 // New naming for matches in API v2
 export type MatchLevel = "match" | "exact_match" | null;
 
@@ -169,42 +162,9 @@ export interface VerificationJob<
 }
 
 /**
- * An array wrapper with info properties.
- */
-export type FilesInfo<T> = { status: MatchQuality; files: T };
-
-export type FilesRawValue = { [index: string]: string };
-
-export type FilesRaw = {
-  status: MatchQuality;
-  files: FilesRawValue;
-  sources: FilesRawValue;
-};
-
-/**
  * A type for specifying the match quality of files.
  */
 export type MatchQuality = "full" | "partial";
-
-export interface ContractData {
-  full: string[];
-  partial: string[];
-}
-
-export interface Pagination {
-  currentPage: number;
-  totalPages: number;
-  resultsCurrentPage: number;
-  resultsPerPage: number;
-  totalResults: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-export interface PaginatedData<T> {
-  results: T[];
-  pagination: Pagination;
-}
 
 export type RepositoryTag = {
   timestamp: any;
@@ -216,12 +176,6 @@ export type PathConfig = {
   address: string;
   fileName?: string;
   source?: boolean;
-};
-
-export type FileObject = {
-  name: string;
-  path: string;
-  content?: string;
 };
 
 export type MethodNames<T> = {

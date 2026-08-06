@@ -316,8 +316,7 @@ export const buildJobExternalVerificationsObject = (
   return Object.keys(externalVerification).reduce((verifiersData, verifier) => {
     const verifierIdentifier = verifier as EtherscanVerifyApiIdentifiers;
     const verifierService = storageService.wServices[verifierIdentifier] as
-      | EtherscanVerifyApiService
-      | undefined;
+      EtherscanVerifyApiService | undefined;
     const verifierData = externalVerification[verifierIdentifier];
     if (!verifierData) {
       return verifiersData;

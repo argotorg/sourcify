@@ -341,7 +341,7 @@ describe('VyperCompilation', () => {
       'utf8',
     );
 
-    // Mock vyperCompiler to return output without auxdata
+    // Mock vyperCompiler to return an empty creation bytecode, which makes splitAuxdata throw
     const mockCompiler = {
       compile: async () => ({
         contracts: {
@@ -349,6 +349,9 @@ describe('VyperCompilation', () => {
             [contractName]: {
               evm: {
                 bytecode: {
+                  object: '',
+                },
+                deployedBytecode: {
                   object: '0x123456',
                 },
               },
@@ -410,6 +413,9 @@ describe('VyperCompilation', () => {
             [contractName]: {
               evm: {
                 bytecode: {
+                  object: '0x123456',
+                },
+                deployedBytecode: {
                   object: '0x123456',
                 },
               },

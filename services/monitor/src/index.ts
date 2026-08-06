@@ -55,11 +55,9 @@ function loadJSON(filePath: string, throws = true) {
 }
 
 const config = loadJSON(options.configPath, false) as
-  | PassedMonitorConfig
-  | undefined;
+  PassedMonitorConfig | undefined;
 const monitoredChains = loadJSON(options.chainsPath) as
-  | { chainId: number; rpc: string[]; name: string }[]
-  | undefined;
+  { chainId: number; rpc: string[]; name: string }[] | undefined;
 
 if (monitoredChains) {
   if (require.main === module) {

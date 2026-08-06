@@ -135,7 +135,7 @@ workflows:
 aliases:
   - &build-base
     docker:
-      - image: cimg/base:2024.12
+      - image: cimg/base:2024.12@sha256:03c91d4730297b5af3718e1e81d43e210eae02be271ed7d370ccb3b994dad2bd
     resource_class: xlarge
     parameters:
       run-build:
@@ -204,7 +204,7 @@ jobs:
       DOCKERFILE: "services/4byte/Dockerfile"
   publish-multiarch-images:
     docker:
-      - image: cimg/base:2024.12
+      - image: cimg/base:2024.12@sha256:03c91d4730297b5af3718e1e81d43e210eae02be271ed7d370ccb3b994dad2bd
     resource_class: small
     steps:
       - checkout
@@ -218,7 +218,7 @@ jobs:
   npm-publish:
     working_directory: ~/sourcify
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     steps:
       - checkout
       - run:

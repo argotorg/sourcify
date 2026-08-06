@@ -847,7 +847,10 @@ export class SourcifyChain {
     let creationBytecode;
     // Non null txreceipt.contractAddress means that the contract was created with an EOA
     if (txReceipt.contractAddress !== null) {
-      if (txReceipt.contractAddress !== address) {
+      // Compare case-insensitively: the receipt's contractAddress is checksummed
+      // on some RPCs, while the caller may pass a lowercase address, and a pure
+      // `!==` would spuriously reject a genuine match.
+      if (txReceipt.contractAddress.toLowerCase() !== address.toLowerCase()) {
         // we need to check if this contract creation tx actually yields the same contract address https://github.com/argotorg/sourcify/issues/887
         throw new Error(
           `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}`,

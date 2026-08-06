@@ -157,12 +157,6 @@ export namespace Tables {
     chain_id: string;
   }
 
-  export interface SourcifySync {
-    chain_id: number;
-    address: string;
-    match_type: string;
-  }
-
   export interface CompilationArtifactsSources {
     [globalName: string]: {
       id: number;

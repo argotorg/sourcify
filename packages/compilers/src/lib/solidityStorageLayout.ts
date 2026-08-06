@@ -30,12 +30,7 @@ interface HistoricalType {
   key: string;
   label: string;
   kind:
-    | 'value'
-    | 'bytes'
-    | 'dynamic_array'
-    | 'fixed_array'
-    | 'mapping'
-    | 'struct';
+    'value' | 'bytes' | 'dynamic_array' | 'fixed_array' | 'mapping' | 'struct';
   astId: number;
   storageBytes: bigint;
   base?: HistoricalType;

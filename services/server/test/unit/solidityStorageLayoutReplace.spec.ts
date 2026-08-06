@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import sinon from "sinon";
-import { replaceSolidityStorageLayout } from "../../src/server/apiv1/verification/private/stateless/solidityStorageLayoutReplace";
+import { replaceSolidityStorageLayout } from "../../src/server/apiPrivate/solidityStorageLayoutReplace";
 
 const storageLayout = {
   storage: [
