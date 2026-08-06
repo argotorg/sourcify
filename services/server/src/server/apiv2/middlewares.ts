@@ -219,6 +219,41 @@ export function validateMetadata(
   next();
 }
 
+/**
+ * Reject absolute paths and `..` segments in Fe source keys.
+ * Complements path confinement in @ethereum-sourcify/compilers' useFeCompiler,
+ * which writes sources into a temp ingot directory.
+ */
+function assertSafeFeSourcePath(sourcePath: string) {
+  if (!sourcePath || sourcePath.includes("\0")) {
+    throw new InvalidParametersError(
+      `Invalid Fe source path: ${JSON.stringify(sourcePath)}`,
+    );
+  }
+  if (sourcePath.includes("\\")) {
+    throw new InvalidParametersError(
+      `Fe source path must use POSIX separators ("/"): ${sourcePath}`,
+    );
+  }
+  if (sourcePath.startsWith("/") || /^[A-Za-z]:\//.test(sourcePath)) {
+    throw new InvalidParametersError(
+      `Fe source path must be relative: ${sourcePath}`,
+    );
+  }
+
+  const segments = sourcePath.split("/");
+  if (
+    segments.length === 0 ||
+    segments.some(
+      (segment) => segment === "" || segment === "." || segment === "..",
+    )
+  ) {
+    throw new InvalidParametersError(
+      `Fe source path contains invalid segment(s): ${sourcePath}`,
+    );
+  }
+}
+
 export function validateAndNormalizeFeInput(
   req: Request,
   res: Response,
@@ -250,6 +285,16 @@ export function validateAndNormalizeFeInput(
     req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
   }
 
+  // Validate final source keys after src/ normalization so traversal cannot
+  // sneak in via bare keys (e.g. "../etc/passwd" -> "src/../etc/passwd").
+  const finalSources = (req.body.stdJsonInput as FeJsonInput).sources as Record<
+    string,
+    { content: string }
+  >;
+  for (const sourcePath of Object.keys(finalSources)) {
+    assertSafeFeSourcePath(sourcePath);
+  }
+
   // Normalize contractIdentifier for Fe:
   // - Must include a colon, e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter"
   // - Path must start with "src/" and end with ".fe"
@@ -272,6 +317,7 @@ export function validateAndNormalizeFeInput(
             '(e.g. "src/lib.fe:Counter" or "src/counter.fe:Counter").',
         );
       }
+      assertSafeFeSourcePath(contractPath);
       req.body.contractIdentifier = `${contractPath}:${contractName}`;
     }
   }

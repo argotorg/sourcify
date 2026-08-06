@@ -2,9 +2,12 @@ import { expect } from 'chai';
 import {
   findFePlatform,
   getFeExecutable,
+  resolveSafeSourcePath,
   useFeCompiler,
 } from '../src/lib/feCompiler';
 import { CompilerError } from '../src/lib/common';
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 describe('Verify Fe Compiler', () => {
@@ -174,5 +177,99 @@ pub contract Counter {
     expect(counter.evm.bytecode.object).to.be.a('string').that.is.not.empty;
     expect(counter.evm.deployedBytecode.object).to.be.a('string').that.is.not
       .empty;
+  });
+
+  describe('resolveSafeSourcePath', () => {
+    const baseDir = path.join(os.tmpdir(), 'fe-safe-path-base');
+
+    it('allows normal relative source paths under the base dir', () => {
+      const resolved = resolveSafeSourcePath(baseDir, 'src/lib.fe');
+      expect(resolved).to.equal(path.resolve(baseDir, 'src/lib.fe'));
+    });
+
+    it('allows nested relative source paths under the base dir', () => {
+      const resolved = resolveSafeSourcePath(baseDir, 'src/nested/counter.fe');
+      expect(resolved).to.equal(path.resolve(baseDir, 'src/nested/counter.fe'));
+    });
+
+    it('rejects absolute source paths', () => {
+      expect(() => resolveSafeSourcePath(baseDir, '/tmp/evil.fe')).to.throw(
+        'must be relative',
+      );
+    });
+
+    it('rejects parent-directory traversal', () => {
+      expect(() =>
+        resolveSafeSourcePath(baseDir, 'src/../../outside.fe'),
+      ).to.throw('escapes compilation directory');
+    });
+
+    it('rejects deep traversal that collapses outside the base dir', () => {
+      expect(() =>
+        resolveSafeSourcePath(
+          baseDir,
+          `src/${'../'.repeat(32)}tmp/sourcify-fe-escaped.fe`,
+        ),
+      ).to.throw('escapes compilation directory');
+    });
+
+    it('rejects backslash separators', () => {
+      expect(() =>
+        resolveSafeSourcePath(baseDir, 'src\\..\\..\\outside.fe'),
+      ).to.throw('POSIX separators');
+    });
+
+    it('rejects empty and null-byte paths', () => {
+      expect(() => resolveSafeSourcePath(baseDir, '')).to.throw(
+        'Invalid Fe source path',
+      );
+      expect(() => resolveSafeSourcePath(baseDir, 'src/lib\0.fe')).to.throw(
+        'Invalid Fe source path',
+      );
+    });
+  });
+
+  it('Should reject path-traversing source keys without writing outside tmp', async function () {
+    if (!findFePlatform()) {
+      this.skip();
+    }
+
+    const markerPath = path.join(
+      os.tmpdir(),
+      `sourcify-fe-path-traversal-${process.pid}-${Date.now()}`,
+    );
+    // Enough ../ segments to escape any temp directory layout.
+    const traversalKey = `src/${'../'.repeat(64)}${path
+      .relative(path.parse(os.tmpdir()).root, markerPath)
+      .split(path.sep)
+      .join('/')}`;
+
+    expect(fs.existsSync(markerPath)).to.equal(false);
+
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          [traversalKey]: {
+            content: 'path-traversal-poc',
+          },
+        },
+      });
+      expect.fail('Expected path traversal to be rejected');
+    } catch (error: any) {
+      expect(error).to.be.instanceOf(Error);
+      expect(error.message).to.match(
+        /escapes compilation directory|must be relative|Invalid Fe source path/,
+      );
+    } finally {
+      const leaked = fs.existsSync(markerPath);
+      if (leaked) {
+        fs.rmSync(markerPath, { force: true });
+      }
+      expect(leaked, 'traversal must not write outside the temp dir').to.equal(
+        false,
+      );
+    }
   });
 });

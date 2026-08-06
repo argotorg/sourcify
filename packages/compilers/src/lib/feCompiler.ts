@@ -108,6 +108,47 @@ async function fetchAndSaveFe(
 }
 
 /**
+ * Resolve a user-provided source path strictly inside baseDir.
+ * Rejects absolute paths and any `..` traversal that would escape the
+ * compilation temp directory (`path.join` alone is not sufficient).
+ */
+export function resolveSafeSourcePath(
+  baseDir: string,
+  sourcePath: string,
+): string {
+  if (!sourcePath || sourcePath.includes('\0')) {
+    throw new Error(`Invalid Fe source path: ${JSON.stringify(sourcePath)}`);
+  }
+  if (path.isAbsolute(sourcePath)) {
+    throw new Error(`Fe source path must be relative: ${sourcePath}`);
+  }
+  // Disallow backslashes so mixed-separator inputs cannot sneak past checks
+  // on POSIX hosts (where `\` is a normal filename character).
+  if (sourcePath.includes('\\')) {
+    throw new Error(
+      `Fe source path must use POSIX separators ("/"): ${sourcePath}`,
+    );
+  }
+
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedPath = path.resolve(baseDir, sourcePath);
+  const relative = path.relative(resolvedBase, resolvedPath);
+
+  if (
+    relative === '' ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new Error(
+      `Fe source path escapes compilation directory: ${sourcePath}`,
+    );
+  }
+
+  return resolvedPath;
+}
+
+/**
  * Compiles Fe source files by:
  * 1. Scaffolding a unique temp ingot directory
  * 2. Running `fe build`
@@ -144,7 +185,7 @@ export async function useFeCompiler(
 
     // Write source files (sourcePaths already have src/ prefix, e.g. 'src/lib.fe')
     for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
-      const fullPath = path.join(tmpDir, sourcePath);
+      const fullPath = resolveSafeSourcePath(tmpDir, sourcePath);
       await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.promises.writeFile(fullPath, source.content);
     }
