@@ -70,7 +70,7 @@ export function asyncExec(
   command: string,
   inputStringified: string,
   maxBuffer: number,
-  timeout: number = DEFAULT_COMPILE_TIMEOUT_MS,
+  timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
 ): Promise<string> {
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
@@ -107,7 +107,7 @@ export function asyncExec(
       command,
       {
         maxBuffer,
-        timeout,
+        timeout: timeoutMs,
         killSignal: 'SIGKILL',
       },
       (error, stdout, stderr) => {
@@ -122,7 +122,7 @@ export function asyncExec(
           };
           if (err.killed) {
             const timeoutError = new Error(
-              `Compiler timed out after ${timeout}ms`,
+              `Compiler timed out after ${timeoutMs}ms`,
             ) as Error & { code?: string };
             timeoutError.code = COMPILER_TIMEOUT_CODE;
             settleReject(timeoutError);
