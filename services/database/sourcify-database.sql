@@ -137,6 +137,28 @@ $$;
 
 
 --
+-- Name: reap_stale_verification_jobs(interval); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reap_stale_verification_jobs(stale_threshold interval DEFAULT '03:00:00'::interval) RETURNS integer
+    LANGUAGE sql
+    AS $$
+  WITH reaped AS (
+    UPDATE public.verification_jobs
+    SET completed_at = NOW(),
+        error_code = 'job_abandoned',
+        error_id = gen_random_uuid(),
+        verified_contract_id = NULL,
+        compilation_time = NULL
+    WHERE completed_at IS NULL
+      AND started_at < NOW() - stale_threshold
+    RETURNING 1
+  )
+  SELECT count(*)::integer FROM reaped;
+$$;
+
+
+--
 -- Name: trigger_reuse_created_at(); Type: FUNCTION; Schema: public; Owner: -
 --
 
