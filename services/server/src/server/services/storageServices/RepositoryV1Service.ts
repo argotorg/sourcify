@@ -1,4 +1,3 @@
-import dirTree from "directory-tree";
 import Path from "path";
 import fs from "fs";
 import type {
@@ -6,23 +5,14 @@ import type {
   StringMap,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
-import type {
-  ContractData,
-  FileObject,
-  FilesInfo,
-  V1MatchLevel,
-  V1MatchLevelWithoutAny,
-  MatchQuality,
-  PathConfig,
-  Match,
-} from "../../types";
+import type { MatchQuality, PathConfig, Match } from "../../types";
 import path from "path";
 import logger from "../../../common/logger";
 import { getAddress } from "ethers";
 import type { RWStorageService } from "../StorageService";
 import { RWStorageIdentifiers } from "./identifiers";
-import { exists, readFile } from "../utils/util";
-import { getMatchStatus } from "../../apiv1/controllers.common";
+import { exists } from "../utils/util";
+import { getMatchStatus } from "../utils/util";
 
 export interface RepositoryV1ServiceOptions {
   repositoryPath: string;
@@ -38,160 +28,12 @@ export class RepositoryV1Service implements RWStorageService {
     this.serverUrl = serverUrl;
   }
 
-  async getFile(
-    chainId: string,
-    address: string,
-    match: V1MatchLevelWithoutAny,
-    path: string,
-  ): Promise<string | false> {
-    return await readFile(this.repositoryPath, match, chainId, address, path);
-  }
-
   async init() {
     logger.info(`${this.IDENTIFIER} initialized`, {
       repositoryPath: this.repositoryPath,
     });
     return true;
   }
-
-  fetchAllFileUrls(
-    chain: string,
-    address: string,
-    match = "full_match",
-  ): Array<string> {
-    const files: Array<FileObject> = this.fetchAllFilePaths(
-      chain,
-      address,
-      match,
-    );
-    const urls: Array<string> = [];
-    files.forEach((file) => {
-      const relativePath = file.path.replace(this.repositoryPath, "");
-      urls.push(`${this.serverUrl}/repository/${relativePath}`);
-    });
-    return urls;
-  }
-
-  /**
-   * Returns all the files under the given chain and address directory.
-   *
-   * @param chain
-   * @param address
-   * @param match
-   * @returns FileObject[]
-   *
-   * @example [
-   *   { name: '0x1234.sol',
-   *     path: '/contracts/full_match/1/0x1234/0x1234.sol,
-   *     content: "pragma solidity ^0.5.0; contract A { ... }"
-   *   },
-   * ... ]
-   */
-  fetchAllFilePaths(
-    chain: string,
-    address: string,
-    match = "full_match",
-  ): Array<FileObject> {
-    const fullPath = Path.join(
-      this.repositoryPath,
-      "contracts",
-      match,
-      chain,
-      getAddress(address),
-    );
-    const files: Array<FileObject> = [];
-    dirTree(fullPath, {}, (item) => {
-      files.push({ name: item.name, path: item.path });
-    });
-    return files;
-  }
-
-  async fetchAllFileContents(
-    chain: string,
-    address: string,
-    match = "full_match",
-  ): Promise<Array<FileObject>> {
-    const files = this.fetchAllFilePaths(chain, address, match);
-    for (const file in files) {
-      const loadedFile = await fs.promises.readFile(files[file].path);
-      files[file].content = loadedFile.toString();
-      files[file].path = files[file].path.replace(this.repositoryPath, "");
-    }
-
-    return files;
-  }
-
-  fetchAllContracts = async (chain: string): Promise<ContractData> => {
-    const fullPath = Path.join(
-      this.repositoryPath,
-      "contracts",
-      "full_match",
-      chain,
-    );
-
-    const partialPath = Path.join(
-      this.repositoryPath,
-      "contracts",
-      "partial_match",
-      chain,
-    );
-
-    const full = (await exists(fullPath))
-      ? await fs.promises.readdir(fullPath)
-      : [];
-    const partial = (await exists(partialPath))
-      ? await fs.promises.readdir(partialPath)
-      : [];
-    return {
-      full,
-      partial,
-    };
-  };
-
-  getTree = async (
-    chainId: string,
-    address: string,
-    match: V1MatchLevel,
-  ): Promise<FilesInfo<string[]>> => {
-    const fullMatchesTree = this.fetchAllFileUrls(
-      chainId,
-      address,
-      "full_match",
-    );
-    if (fullMatchesTree.length || match === "full_match") {
-      return { status: "full", files: fullMatchesTree };
-    }
-
-    const files = this.fetchAllFileUrls(chainId, address, "partial_match");
-    return { status: "partial", files };
-  };
-
-  getContent = async (
-    chainId: string,
-    address: string,
-    match: V1MatchLevel,
-  ): Promise<FilesInfo<Array<FileObject>>> => {
-    const fullMatchesFiles = await this.fetchAllFileContents(
-      chainId,
-      address,
-      "full_match",
-    );
-    if (fullMatchesFiles.length || match === "full_match") {
-      return { status: "full", files: fullMatchesFiles };
-    }
-
-    const files = await this.fetchAllFileContents(
-      chainId,
-      address,
-      "partial_match",
-    );
-    return { status: "partial", files };
-  };
-
-  getContracts = async (chainId: string): Promise<ContractData> => {
-    const contracts = await this.fetchAllContracts(chainId);
-    return contracts;
-  };
 
   // /home/user/sourcify/data/repository/contracts/full_match/5/0x00878Ac0D6B8d981ae72BA7cDC967eA0Fae69df4/sources/filename
   public generateAbsoluteFilePath(pathConfig: PathConfig) {

@@ -27,7 +27,7 @@
 import { program } from "commander";
 import dotenv from "dotenv";
 import pg from "pg";
-import { logger } from "../scripts/logger.js";
+import { logger } from "./logger.js";
 
 const { Pool } = pg;
 dotenv.config({ path: "../.env" });

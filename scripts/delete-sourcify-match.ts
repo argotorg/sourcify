@@ -433,7 +433,7 @@ async function tableExists(
         [prefixedTableName],
       );
       return result[0]?.table_exists === true;
-    } catch (error) {
+    } catch {
       // If INFORMATION_SCHEMA query fails, assume table doesn't exist
       return false;
     }
@@ -545,7 +545,7 @@ async function deleteVerifiedContracts(
         }
 
         // Then delete from verification_jobs
-        const deleteJobsResult = await client.query(
+        await client.query(
           `DELETE FROM verification_jobs WHERE verified_contract_id = $1`,
           [verifiedContractId],
         );

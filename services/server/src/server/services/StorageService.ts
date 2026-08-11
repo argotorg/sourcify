@@ -7,15 +7,9 @@ import { SourcifyDatabaseService } from "./storageServices/SourcifyDatabaseServi
 import { AllianceDatabaseService } from "./storageServices/AllianceDatabaseService";
 import logger from "../../common/logger";
 import type {
-  ContractData,
-  FileObject,
-  FilesInfo,
-  V1MatchLevel,
-  V1MatchLevelWithoutAny,
   MethodArgs,
   MethodNames,
   MethodReturnType,
-  PaginatedData,
   VerifiedContractMinimal,
   VerifiedContract,
   VerificationJob,
@@ -66,30 +60,6 @@ export interface WStorageService {
 }
 
 export interface RWStorageService extends WStorageService {
-  getFile(
-    chainId: string,
-    address: string,
-    match: V1MatchLevelWithoutAny,
-    path: string,
-  ): Promise<string | false>;
-  getTree(
-    chainId: string,
-    address: string,
-    match: V1MatchLevel,
-  ): Promise<FilesInfo<string[]>>;
-  getContent(
-    chainId: string,
-    address: string,
-    match: V1MatchLevel,
-  ): Promise<FilesInfo<Array<FileObject>>>;
-  getContracts(chainId: string): Promise<ContractData>;
-  getPaginatedContractAddresses?(
-    chainId: string,
-    match: V1MatchLevel,
-    page: number,
-    limit: number,
-    descending: boolean,
-  ): Promise<PaginatedData<string>>;
   checkByChainAndAddress(address: string, chainId: string): Promise<Match[]>;
   checkAllByChainAndAddress(address: string, chainId: string): Promise<Match[]>;
   getContractsByChainId?(

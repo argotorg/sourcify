@@ -2,7 +2,6 @@ import type {
   SourcifyChain,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";
-import { BadRequestError } from "./common/errors/BadRequestError";
 
 export class ChainRepository {
   readonly sourcifyChainsArray: SourcifyChain[];
@@ -56,22 +55,6 @@ export class ChainRepository {
   }
 
   /**
-   * To check if a chain is supported for verification.
-   * Note that there might be chains not supported for verification anymore but still exist as a SourcifyChain e.g. Ropsten.
-   */
-  checkSupportedChainId(chainId: string) {
-    if (!(
-      chainId in this.sourcifyChainMap &&
-      this.sourcifyChainMap[chainId].supported
-    )) {
-      throw new BadRequestError(
-        `Chain ${chainId} not supported for verification!`,
-      );
-    }
-    return true;
-  }
-
-  /**
    * To check if a chain exists as a SourcifyChain.
    * Note that there might be chains not supported for verification anymore but still exist as a SourcifyChain e.g. Ropsten.
    */
@@ -81,31 +64,6 @@ export class ChainRepository {
       chainId != "0"
     ) {
       throw new Error(`Chain ${chainId} is not a Sourcify chain!`);
-    }
-    return true;
-  }
-
-  /**
-   * Validation function for multiple chainIds
-   * Note that this checks if a chain exists as a SourcifyChain.
-   * This is different that checking for verification support i.e. supported: true or monitoring support i.e. monitored: true
-   */
-  validateSourcifyChainIds(chainIds: string) {
-    const chainIdsArray = chainIds.split(",");
-    const validChainIds: string[] = [];
-    const invalidChainIds: string[] = [];
-    for (const chainId of chainIdsArray) {
-      try {
-        if (this.checkSourcifyChainId(chainId)) {
-          validChainIds.push(chainId);
-        }
-      } catch (e) {
-        invalidChainIds.push(chainId);
-      }
-    }
-
-    if (invalidChainIds.length) {
-      throw new Error(`Invalid chainIds: ${invalidChainIds.join(", ")}`);
     }
     return true;
   }

@@ -71,7 +71,7 @@ parameters:
 aliases:
   - &build-base
     docker:
-      - image: cimg/base:2024.12
+      - image: cimg/base:2024.12@sha256:03c91d4730297b5af3718e1e81d43e210eae02be271ed7d370ccb3b994dad2bd
     resource_class: xlarge
     parameters:
       run-build:
@@ -119,7 +119,7 @@ aliases:
           command: cd ~/project/metacoin-source-verify && ./scripts/monitor_e2e.sh
           no_output_timeout: 30m
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: small
   - &verification-e2e-base
     steps:
@@ -136,7 +136,7 @@ aliases:
           name: verification test
           command: cd ~/project/metacoin-source-verify && ./scripts/verification_e2e.sh
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: small
 ####################
 #### WORKFLOWS #####
@@ -281,7 +281,7 @@ jobs:
       DOCKERFILE: "services/4byte/Dockerfile"
   publish-multiarch-images:
     docker:
-      - image: cimg/base:2024.12
+      - image: cimg/base:2024.12@sha256:03c91d4730297b5af3718e1e81d43e210eae02be271ed7d370ccb3b994dad2bd
     resource_class: small
     steps:
       - checkout
@@ -310,7 +310,7 @@ jobs:
             ./.circleci/scripts/deploy_to_gcp.sh
   build-and-lint:
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: medium
     working_directory: ~/sourcify
     steps:
@@ -347,7 +347,7 @@ jobs:
             - .git/modules
   test-bytecode-utils:
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: small
     working_directory: ~/sourcify
     steps:
@@ -363,7 +363,7 @@ jobs:
       - codecov/upload
   test-compilers:
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: medium
     working_directory: ~/sourcify
     steps:
@@ -379,7 +379,7 @@ jobs:
       - codecov/upload
   test-lib-sourcify:
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: medium
     working_directory: ~/sourcify
     steps:
@@ -395,7 +395,7 @@ jobs:
       - codecov/upload
   test-monitor:
     docker:
-      - image: cimg/node:22.22.0
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
     resource_class: medium
     working_directory: ~/sourcify
     steps:
@@ -411,8 +411,8 @@ jobs:
       - codecov/upload
   test-server:
     docker:
-      - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
+      - image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
         name: sourcify-db
         environment:
           POSTGRES_DB: sourcify
@@ -443,8 +443,8 @@ jobs:
       - codecov/upload
   test-4byte:
     docker:
-      - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
+      - image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
         name: fourbytes-db
         environment:
           POSTGRES_DB: fourbytes_test_db
@@ -494,8 +494,8 @@ jobs:
       CHAIN_NAME: hoodi
   validate-database-schema:
     docker:
-      - image: cimg/node:22.22.0
-      - image: postgres:15-alpine
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
+      - image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
         environment:
           POSTGRES_PASSWORD: password
           POSTGRES_USER: postgres

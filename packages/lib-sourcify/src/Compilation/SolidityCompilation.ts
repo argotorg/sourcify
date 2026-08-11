@@ -1,6 +1,9 @@
 import { AuxdataStyle, splitAuxdata } from '@ethereum-sourcify/bytecode-utils';
 import semver from 'semver';
-import { AbstractCompilation } from './AbstractCompilation';
+import {
+  AbstractCompilation,
+  findContractInCompilerOutput,
+} from './AbstractCompilation';
 import type {
   ImmutableReferences,
   SolidityJsonInput,
@@ -241,10 +244,10 @@ export class SolidityCompilation extends AbstractCompilation {
         solcJsonInput: this.jsonInput,
         forceEmscripten,
       });
-      const editedContract =
-        editedContractCompilerOutput.contracts[this.compilationTarget.path][
-          this.compilationTarget.name
-        ];
+      const editedContract = findContractInCompilerOutput(
+        editedContractCompilerOutput,
+        this.compilationTarget,
+      ) as SolidityOutputContract;
 
       const editedContractAuxdatasFromCompilerOutput =
         findAuxdatasInLegacyAssembly(editedContract.evm.legacyAssembly);

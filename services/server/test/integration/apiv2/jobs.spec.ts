@@ -6,6 +6,7 @@ import type {
   VerificationJob,
 } from "../../../src/server/types";
 import { v4 as uuidv4 } from "uuid";
+import sinon from "sinon";
 import { LocalChainFixture } from "../../helpers/LocalChainFixture";
 import type { MatchingErrorResponse } from "../../../src/server/apiv2/errors";
 import { getVerificationErrorMessage } from "../../../src/server/apiv2/errors";
@@ -13,7 +14,6 @@ import {
   hookIntoVerificationWorkerRun,
   verifyContract,
 } from "../../helpers/helpers";
-import sinon from "sinon";
 import type {
   JobErrorData,
   Tables,
@@ -54,7 +54,8 @@ describe("GET /v2/verify/:verificationId", function () {
     let verifiedContractId: string | undefined;
 
     if (isVerified) {
-      await verifyContract(serverFixture, chainFixture);
+      const { resolveWorkers } = makeWorkersWait();
+      await verifyContract(serverFixture, resolveWorkers, chainFixture);
 
       // Get the verification details from the database
       const verificationResult = await serverFixture.sourcifyDatabase.query(

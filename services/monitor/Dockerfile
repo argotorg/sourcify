@@ -1,5 +1,5 @@
 # Needs to be run from the project root context e.g. `cd sourcify/ && docker build -f services/monitor/Dockerfile .`
-FROM node:22.22.0-bookworm as builder
+FROM node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c as builder
 RUN mkdir -p /home/app
 WORKDIR /home/app
 
@@ -11,7 +11,7 @@ RUN npx lerna run build --scope sourcify-monitor
 ######################
 ## Production image ##
 ######################
-FROM node:22.22.0-trixie-slim as production
+FROM node:22.22.0-trixie-slim@sha256:465a8c8f0f4103861bcbcf3e512608394b7155eccb1955425f4ea3f672ddc53e as production
 
 RUN mkdir -p /home/app/services/monitor
 

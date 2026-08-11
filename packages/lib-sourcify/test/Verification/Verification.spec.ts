@@ -604,6 +604,152 @@ describe('Verification Class Tests', () => {
           creationMatch: null,
         },
       });
+
+      // All sources must be kept because they affect the bytecode
+      // due to the extra file input bug
+      expect(Object.keys(verification.compilation.sources)).to.have.members(
+        Object.keys(additionalSources),
+      );
+    });
+
+    it('should remove sources unused by the compilation target', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'Storage',
+      );
+      const { contractAddress } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const compilation = await getCompilationFromMetadata(contractFolderPath);
+      const neededSourcePaths = Object.keys(compilation.jsonInput.sources);
+
+      // Add a source that is unrelated to the compilation target
+      compilation.jsonInput.sources['contracts/Unrelated.sol'] = {
+        content:
+          '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.4;\ncontract Unrelated { uint256 number; }\n',
+      };
+
+      const compileSpy = sandbox.spy(compilation.compiler, 'compile');
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: {
+          runtimeMatch: 'perfect',
+          creationMatch: null,
+        },
+      });
+
+      // Only the sources listed in the metadata should be kept
+      expect(Object.keys(verification.compilation.sources)).to.have.members(
+        neededSourcePaths,
+      );
+      expect(
+        Object.keys(verification.export().compilation.sources),
+      ).to.have.members(neededSourcePaths);
+      // With the optimizer disabled there must be no check compilation
+      expect(compileSpy.callCount).to.equal(1);
+    });
+
+    it('should remove unused sources with the optimizer enabled after a check compilation', async () => {
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'CallProtectionForLibraries',
+      );
+      const { contractAddress } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const compilation = await getCompilationFromMetadata(contractFolderPath);
+      const neededSourcePaths = Object.keys(compilation.jsonInput.sources);
+
+      // Add a source that is unrelated to the compilation target
+      compilation.jsonInput.sources['contracts/Unrelated.sol'] = {
+        content:
+          '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\ncontract Unrelated { uint256 number; }\n',
+      };
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+      );
+      await verification.verify();
+
+      expect(verification.status.runtimeMatch).to.equal('perfect');
+      expect(Object.keys(verification.compilation.sources)).to.have.members(
+        neededSourcePaths,
+      );
+    });
+
+    it('should remove unused sources for solc >=0.8.22 without a check compilation', async () => {
+      // CBORInTheMiddle is compiled with 0.8.26 and the optimizer enabled but
+      // solc's default Yul optimizer steps, so the extra file input bug cannot
+      // occur and the check compilation must be skipped
+      const contractFolderPath = path.join(
+        __dirname,
+        '..',
+        'sources',
+        'CBORInTheMiddle',
+      );
+      const unrelatedSourcePath = 'contracts/Unrelated.sol';
+      const { contractAddress } = await deployFromAbiAndBytecode(
+        signer,
+        contractFolderPath,
+      );
+
+      const compilation = await getCompilationFromMetadata(contractFolderPath);
+      const neededSourcePaths = Object.keys(compilation.jsonInput.sources);
+
+      // Add a source that is unrelated to the compilation target
+      compilation.jsonInput.sources[unrelatedSourcePath] = {
+        content:
+          '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\ncontract Unrelated { uint256 number; }\n',
+      };
+
+      // The check compilation is the only one that drops the unrelated source.
+      // Its sources must be recorded as the call happens because the input is
+      // mutated afterwards, and this contract also recompiles to locate its
+      // CBOR auxdata, so counting the calls is not enough.
+      const compiledSourcePaths: string[][] = [];
+      const originalCompile = compilation.compiler.compile.bind(
+        compilation.compiler,
+      );
+      sandbox
+        .stub(compilation.compiler, 'compile')
+        .callsFake(async (version, jsonInput, forceEmscripten) => {
+          compiledSourcePaths.push(Object.keys(jsonInput.sources));
+          return originalCompile(version, jsonInput, forceEmscripten);
+        });
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChainHardhat,
+        contractAddress,
+      );
+      await verification.verify();
+
+      expect(verification.status.runtimeMatch).to.equal('perfect');
+      expect(Object.keys(verification.compilation.sources)).to.have.members(
+        neededSourcePaths,
+      );
+      expect(
+        compiledSourcePaths.every((paths) =>
+          paths.includes(unrelatedSourcePath),
+        ),
+      ).to.be.true;
     });
 
     it('should NOT diagnose extra_file_input_bug when bytecodes have no CBOR metadata (pre-0.4.7)', async () => {

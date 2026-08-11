@@ -133,7 +133,6 @@ export async function verifyFromEtherscanEndpoint(
     chainRepository.supportedChainMap[req.params.chainId],
     req.params.address,
     req.body?.apiKey,
-    true,
   );
 
   const verificationId =
