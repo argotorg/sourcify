@@ -61,30 +61,19 @@ export async function fetchWithBackoff(
 }
 
 // Default wall-clock timeout for a single compiler invocation: 45 minutes.
-// Overridable via SOLC_COMPILE_TIMEOUT_MS. A genuinely hung compiler must be
-// killed so the verification job can fail instead of hanging forever (#2880).
+// A genuinely hung compiler must be killed so the verification job can fail
+// instead of hanging forever (#2880). Callers override it per invocation; the
+// server derives its value from COMPILER_TIMEOUT_MS.
 const DEFAULT_COMPILE_TIMEOUT_MS = 2_700_000;
-
-function getCompileTimeoutMs(): number {
-  const fromEnv = process.env.SOLC_COMPILE_TIMEOUT_MS;
-  if (fromEnv) {
-    const parsed = Number(fromEnv);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  return DEFAULT_COMPILE_TIMEOUT_MS;
-}
 
 export function asyncExec(
   command: string,
   inputStringified: string,
   maxBuffer: number,
+  timeout: number = DEFAULT_COMPILE_TIMEOUT_MS,
 ): Promise<string> {
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
-
-  const timeout = getCompileTimeoutMs();
 
   return new Promise((resolve, reject) => {
     // Guard so the promise settles exactly once. Multiple failure signals can

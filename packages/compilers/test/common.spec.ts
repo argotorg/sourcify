@@ -8,20 +8,6 @@ import {
 const MAX_BUFFER = 250 * 1024 * 1024;
 
 describe('asyncExec robustness (#2880)', () => {
-  let originalTimeout: string | undefined;
-
-  beforeEach(() => {
-    originalTimeout = process.env.SOLC_COMPILE_TIMEOUT_MS;
-  });
-
-  afterEach(() => {
-    if (originalTimeout === undefined) {
-      delete process.env.SOLC_COMPILE_TIMEOUT_MS;
-    } else {
-      process.env.SOLC_COMPILE_TIMEOUT_MS = originalTimeout;
-    }
-  });
-
   it('resolves normally for a well-behaved subprocess', async () => {
     // `cat` echoes stdin back to stdout, mirroring how a compiler consumes
     // the standard-json input we stream in.
@@ -30,13 +16,11 @@ describe('asyncExec robustness (#2880)', () => {
   });
 
   it('rejects with COMPILER_TIMEOUT when the subprocess hangs past the timeout', async () => {
-    // Tiny timeout so a blocking command is killed almost immediately instead
-    // of hanging the promise forever.
-    process.env.SOLC_COMPILE_TIMEOUT_MS = '150';
     let thrown: any;
     try {
       // `sleep` never reads stdin and never exits within the timeout window.
-      await asyncExec('sleep 30', '{}', MAX_BUFFER);
+      // The tiny timeout kills it almost immediately instead of hanging.
+      await asyncExec('sleep 30', '{}', MAX_BUFFER, 150);
     } catch (error) {
       thrown = error;
     }

@@ -37,6 +37,8 @@ export function findSolcPlatform(): string | false {
  * @param version the version of solc to be used for compilation
  * @param input a JSON object of the standard-json format compatible with solc
  * @param log the logger
+ * @param timeoutMs wall-clock limit for the native solc subprocess. Defaults to
+ *   DEFAULT_COMPILE_TIMEOUT_MS. Has no effect on the soljson path.
  * @returns stringified solc output
  */
 
@@ -46,6 +48,7 @@ export async function useSolidityCompiler(
   version: string,
   solcJsonInput: SolidityJsonInput,
   forceEmscripten = false,
+  timeoutMs?: number,
 ): Promise<SolidityOutput> {
   // For nightly builds, Solidity version is saved as 0.8.17-ci.2022.8.9+commit.6b60524c instead of 0.8.17-nightly.2022.8.9+commit.6b60524c.
   // Not possible to retrieve compilers with "-ci.".
@@ -88,6 +91,7 @@ export async function useSolidityCompiler(
         `${solcPath} --standard-json`,
         inputStringified,
         250 * 1024 * 1024,
+        timeoutMs,
       );
     } catch (error: any) {
       if (error?.code === 'ENOBUFS') {
