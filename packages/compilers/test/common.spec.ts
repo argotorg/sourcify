@@ -47,9 +47,10 @@ describe('asyncExec robustness (#2880)', () => {
 
   it('rejects (does not hang) when the subprocess is killed', async () => {
     // A shell that SIGKILLs itself models an OOM-killed compiler. This guards
-    // the stdin 'error' handler + settled guard: without them the EPIPE from
-    // writing to the dying process would be an uncaught exception and the
-    // promise would never settle.
+    // the stdin 'error' handler + settled guard: without the listener the EPIPE
+    // from writing to the dying process would be an uncaught exception and the
+    // promise would never settle. The OOM code comes from the exec callback
+    // (signal === 'SIGKILL'), not from the stdin listener.
     let thrown: any;
     try {
       await asyncExec('kill -9 $$', '{}', MAX_BUFFER);
@@ -60,7 +61,7 @@ describe('asyncExec robustness (#2880)', () => {
     expect(thrown.code).to.equal(COMPILER_OOM_CODE);
   });
 
-  it('rejects with EPIPE-attributed OOM when writing a large input to a dying subprocess', async () => {
+  it('rejects (does not hang) when writing a large input to a dying subprocess', async () => {
     // Process closes its stdin and exits immediately while we stream a large
     // input, forcing an EPIPE on the stdin pipe.
     const largeInput = JSON.stringify({ blob: 'a'.repeat(20 * 1024 * 1024) });
@@ -77,5 +78,25 @@ describe('asyncExec robustness (#2880)', () => {
     // The subprocess death may surface either as an exec error or a stdin EPIPE;
     // both must reject rather than hang. We only require a rejection here.
     expect(thrown, 'expected asyncExec to reject').to.be.instanceOf(Error);
+  });
+
+  it('does not misattribute a failed spawn as out of memory', async () => {
+    // A missing compiler binary exits 127 immediately, which breaks the stdin
+    // pipe while we are still streaming a large input. The real exit error must
+    // win over the EPIPE, otherwise a bad-binary incident is reported as OOM.
+    const largeInput = JSON.stringify({ blob: 'a'.repeat(20 * 1024 * 1024) });
+    let thrown: any;
+    try {
+      await asyncExec(
+        'this-compiler-binary-does-not-exist --standard-json',
+        largeInput,
+        MAX_BUFFER,
+      );
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected asyncExec to reject').to.be.instanceOf(Error);
+    expect(thrown.code).to.not.equal(COMPILER_OOM_CODE);
+    expect(thrown.code).to.not.equal(COMPILER_TIMEOUT_CODE);
   });
 });

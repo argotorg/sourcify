@@ -101,6 +101,18 @@ export function asyncExec(
       settled = true;
       reject(error);
     };
+    // A failed stdin write only tells us the pipe broke, not why the process
+    // died. Record it and let the exec callback (which has the exit code and
+    // signal) attribute the failure; only fall back to this if the callback
+    // would otherwise report success.
+    let stdinError: Error | undefined;
+    const settleSuccess = (stdout: string) => {
+      if (stdinError) {
+        settleReject(stdinError);
+        return;
+      }
+      settleResolve(stdout);
+    };
 
     const child = exec(
       command,
@@ -140,14 +152,14 @@ export function asyncExec(
           // Vyper compilers <0.4.0 outputs warnings to stderr
           // we handle this by checking if the stderr starts with "Warning:"
           if (stderr.startsWith('Warning:')) {
-            settleResolve(stdout);
+            settleSuccess(stdout);
           } else {
             settleReject(
               new Error(`Compiler process returned with errors:\n ${stderr}`),
             );
           }
         } else {
-          settleResolve(stdout);
+          settleSuccess(stdout);
         }
       },
     );
@@ -158,25 +170,21 @@ export function asyncExec(
     // If the compiler dies mid-write (e.g. OOM-killed while we stream a large
     // input), the stdin pipe emits 'error' (EPIPE). Without a listener this is
     // an uncaught exception in the Piscina worker thread and the compile promise
-    // never rejects -> the verification job hangs forever (#2880). Treat it as
-    // an unexpected process death (out of memory).
+    // never rejects -> the verification job hangs forever (#2880). The listener
+    // alone prevents that; the exec callback settles the promise.
     child.stdin.on('error', (err: NodeJS.ErrnoException) => {
-      const oomError = new Error(
-        `Compiler process was killed (likely out of memory): ${err.message}`,
-      ) as Error & { code?: string };
-      oomError.code = COMPILER_OOM_CODE;
-      settleReject(oomError);
+      stdinError = new Error(
+        `Failed writing input to compiler: ${err.message}`,
+      );
     });
     // Write input to child process's stdin
     try {
       child.stdin.write(inputStringified);
       child.stdin.end();
     } catch (err: any) {
-      const oomError = new Error(
-        `Compiler process was killed (likely out of memory): ${err?.message ?? err}`,
-      ) as Error & { code?: string };
-      oomError.code = COMPILER_OOM_CODE;
-      settleReject(oomError);
+      stdinError = new Error(
+        `Failed writing input to compiler: ${err?.message ?? err}`,
+      );
     }
   });
 }
