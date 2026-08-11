@@ -6,7 +6,13 @@ import semver from 'semver';
 import type { WorkerOptions } from 'worker_threads';
 import { Worker } from 'worker_threads';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  createCompilerTimeoutError,
+  DEFAULT_COMPILE_TIMEOUT_MS,
+  fetchWithBackoff,
+} from './common';
 import type {
   SolidityJsonInput,
   SolidityOutput,
@@ -37,8 +43,9 @@ export function findSolcPlatform(): string | false {
  * @param version the version of solc to be used for compilation
  * @param input a JSON object of the standard-json format compatible with solc
  * @param log the logger
- * @param timeoutMs wall-clock limit for the native solc subprocess. Defaults to
- *   DEFAULT_COMPILE_TIMEOUT_MS. Has no effect on the soljson path.
+ * @param timeoutMs wall-clock limit for the compilation. Defaults to
+ *   DEFAULT_COMPILE_TIMEOUT_MS. On the native path the subprocess is SIGKILLed,
+ *   on the soljson path the worker thread is terminated.
  * @returns stringified solc output
  */
 
@@ -104,15 +111,50 @@ export async function useSolidityCompiler(
     // Solc versions < 0.4.0 require this isolation for a clean compiler context. See: https://github.com/argotorg/sourcify/issues/1099
     logDebug('Compiling with solc-js in the worker', { version });
     startCompilation = Date.now();
+    const workerTimeoutMs = timeoutMs ?? DEFAULT_COMPILE_TIMEOUT_MS;
     compiled = await new Promise((resolve, reject) => {
       const worker = importWorker(path.resolve(__dirname, './compilerWorker'), {
         workerData: { solJsonRepoPath, version, inputStringified },
       });
+      // soljson runs in-process, so there is no subprocess to SIGKILL as on the
+      // native path: terminating the thread is the only way to stop a hung
+      // compile and free the verification worker slot (#2880).
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        logWarn('Terminating hung solc-js worker', {
+          version,
+          timeoutMs: workerTimeoutMs,
+        });
+        void worker.terminate();
+        reject(createCompilerTimeoutError(workerTimeoutMs));
+      }, workerTimeoutMs);
+      // Don't let a pending timeout keep the event loop alive.
+      timer.unref?.();
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
       worker.once('message', (result) => {
-        resolve(result);
+        settle(() => resolve(result));
       });
       worker.once('error', (error) => {
-        reject(error);
+        settle(() => reject(error));
+      });
+      // A worker that dies without posting a result emits neither 'message' nor
+      // 'error' (e.g. it was OOM-killed), which would leave this promise pending
+      // forever.
+      worker.once('exit', (code) => {
+        settle(() =>
+          reject(
+            new Error(
+              `solc-js worker exited without returning a result (exit code ${code})`,
+            ),
+          ),
+        );
       });
     });
   }

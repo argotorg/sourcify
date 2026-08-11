@@ -70,7 +70,10 @@ const initWorker = () => {
     Piscina.workerData.vyperRepoPath,
     Piscina.workerData.compilerTimeoutMs,
   );
-  fe = new FeLocal(Piscina.workerData.feRepoPath);
+  fe = new FeLocal(
+    Piscina.workerData.feRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
+  );
 };
 
 async function runWorkerFunctionWithContext<T extends VerificationWorkerInput>(

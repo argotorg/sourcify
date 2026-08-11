@@ -92,7 +92,7 @@ export const vyper = new VyperLocal(vyperRepoPath, compilerTimeoutMs);
 logger.info("Using local Fe compiler");
 const feRepoPath =
   (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
-export const fe = new FeLocal(feRepoPath);
+export const fe = new FeLocal(feRepoPath, compilerTimeoutMs);
 
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {

@@ -3,7 +3,12 @@ import fs from 'fs';
 import os from 'os';
 import { spawnSync } from 'child_process';
 import semver from 'semver';
-import { CompilerError, fetchWithBackoff } from './common';
+import {
+  CompilerError,
+  createCompilerTimeoutError,
+  DEFAULT_COMPILE_TIMEOUT_MS,
+  fetchWithBackoff,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
 import type { JsonFragment } from 'ethers';
@@ -113,11 +118,15 @@ async function fetchAndSaveFe(
  * 2. Running `fe build`
  * 3. Reading bytecode artifacts from `out/`
  * 4. Cleaning up
+ *
+ * @param timeoutMs wall-clock limit for the `fe build` subprocess, after which
+ *   it is SIGKILLed. Defaults to DEFAULT_COMPILE_TIMEOUT_MS.
  */
 export async function useFeCompiler(
   feRepoPath: string,
   version: string,
   feJsonInput: FeJsonInput,
+  timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
 ): Promise<FeOutput> {
   if (!semver.valid(version) || semver.lt(version, MINIMUM_FE_VERSION)) {
     throw new Error(
@@ -151,14 +160,28 @@ export async function useFeCompiler(
 
     // Run fe build
     const startCompilation = Date.now();
+    // spawnSync blocks this thread until fe exits, so a timer could never fire
+    // here: its own timeout option is the only way to bound a hung compile and
+    // free the verification worker slot (#2880).
     const spawned = spawnSync(fePath, ['build', tmpDir], {
       cwd: tmpDir,
       maxBuffer: 250 * 1024 * 1024,
+      timeout: timeoutMs,
+      killSignal: 'SIGKILL',
     });
     const endCompilation = Date.now();
     logInfo('Fe compilation done', {
       timeInMs: endCompilation - startCompilation,
     });
+
+    // On timeout spawnSync reports ETIMEDOUT and leaves status null, so this
+    // has to be checked before the generic non-zero-exit handling below.
+    if (
+      (spawned.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT'
+    ) {
+      logWarn('Fe compiler timed out', { version, timeoutMs });
+      throw createCompilerTimeoutError(timeoutMs);
+    }
 
     if (spawned.status !== 0) {
       const stderr = spawned.stderr?.toString() || '';

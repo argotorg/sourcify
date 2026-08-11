@@ -4,6 +4,7 @@ import {
   getSolcJs,
   useSolidityCompiler,
 } from '../src/lib/solidityCompiler';
+import { COMPILER_TIMEOUT_CODE } from '@ethereum-sourcify/compilers-types';
 import earlyCompilerInput from './utils/pre-v0.4.0-input.json';
 import { keccak256 } from 'ethers';
 import path from 'path';
@@ -151,6 +152,42 @@ describe('Verify Solidity Compiler', () => {
         writable: false,
       });
     }
+  });
+
+  // The soljson path runs in-process in a worker thread, so the timeout has to
+  // terminate the thread instead of killing a subprocess. See #2880.
+  it('Should time out a solcjs compilation that exceeds the timeout', async () => {
+    let thrown: any;
+    try {
+      await useSolidityCompiler(
+        compilersPath,
+        solJsonRepo,
+        '0.8.9+commit.e5eed63a',
+        {
+          language: 'Solidity',
+          sources: {
+            'test.sol': {
+              content: 'contract C { function f() public  {} }',
+            },
+          },
+          settings: {
+            outputSelection: {
+              '*': {
+                '*': ['*'],
+              },
+            },
+          },
+        },
+        true, // forceEmscripten, i.e. the soljson worker path
+        1, // the worker cannot even load the compiler within 1ms
+      );
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the compilation to reject').to.be.instanceOf(
+      Error,
+    );
+    expect(thrown.code).to.equal(COMPILER_TIMEOUT_CODE);
   });
 
   // See https://github.com/argotorg/sourcify/issues/1099

@@ -64,7 +64,19 @@ export async function fetchWithBackoff(
 // A genuinely hung compiler must be killed so the verification job can fail
 // instead of hanging forever (#2880). Callers override it per invocation; the
 // server derives its value from COMPILER_TIMEOUT_MS.
-const DEFAULT_COMPILE_TIMEOUT_MS = 2_700_000;
+export const DEFAULT_COMPILE_TIMEOUT_MS = 2_700_000;
+
+// Every compile path (native subprocess, soljson worker thread, Fe spawnSync)
+// reports a timeout the same way, so callers can map it to compiler_timeout.
+export function createCompilerTimeoutError(timeoutMs: number): Error & {
+  code?: string;
+} {
+  const timeoutError = new Error(
+    `Compiler timed out after ${timeoutMs}ms`,
+  ) as Error & { code?: string };
+  timeoutError.code = COMPILER_TIMEOUT_CODE;
+  return timeoutError;
+}
 
 export function asyncExec(
   command: string,
@@ -121,11 +133,7 @@ export function asyncExec(
             signal?: string;
           };
           if (err.killed) {
-            const timeoutError = new Error(
-              `Compiler timed out after ${timeoutMs}ms`,
-            ) as Error & { code?: string };
-            timeoutError.code = COMPILER_TIMEOUT_CODE;
-            settleReject(timeoutError);
+            settleReject(createCompilerTimeoutError(timeoutMs));
             return;
           }
           if (err.signal === 'SIGKILL') {

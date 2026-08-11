@@ -47,6 +47,10 @@ Vyper follows the same pattern.
 
 ## Compilation timeout
 
-The last argument of `useSolidityCompiler` and `useVyperCompiler` is an optional wall-clock timeout in milliseconds for the compiler subprocess. When it elapses the process is killed with `SIGKILL` and the call rejects with an error whose `code` is `COMPILER_TIMEOUT` (exported as `COMPILER_TIMEOUT_CODE` from `@ethereum-sourcify/compilers-types`). If omitted, a default of 45 minutes applies.
+The last argument of `useSolidityCompiler`, `useVyperCompiler` and `useFeCompiler` is an optional wall-clock timeout in milliseconds for the compilation. When it elapses the call rejects with an error whose `code` is `COMPILER_TIMEOUT` (exported as `COMPILER_TIMEOUT_CODE` from `@ethereum-sourcify/compilers-types`). If omitted, a default of 45 minutes applies.
 
-This bounds the native compiler binaries only. Solidity versions old enough to fall back to the soljson (Emscripten) build compile in a worker thread and are not covered.
+It covers all three ways a compiler is run, each of which needs a different mechanism to stop it:
+
+- native `solc`/`vyper` binaries run as a child process and are killed with `SIGKILL`
+- `fe build` runs synchronously via `spawnSync`, which enforces the timeout itself
+- the soljson (Emscripten) build of `solc` runs in-process in a worker thread — there is no process to kill, so the thread is terminated instead

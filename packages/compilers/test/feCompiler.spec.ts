@@ -5,6 +5,7 @@ import {
   useFeCompiler,
 } from '../src/lib/feCompiler';
 import { CompilerError } from '../src/lib/common';
+import { COMPILER_TIMEOUT_CODE } from '@ethereum-sourcify/compilers-types';
 import path from 'path';
 
 describe('Verify Fe Compiler', () => {
@@ -174,5 +175,37 @@ pub contract Counter {
     expect(counter.evm.bytecode.object).to.be.a('string').that.is.not.empty;
     expect(counter.evm.deployedBytecode.object).to.be.a('string').that.is.not
       .empty;
+  });
+
+  // fe runs through spawnSync, which blocks the thread, so only spawnSync's own
+  // timeout can bound a hung compile. See #2880.
+  it('Should time out a Fe compilation that exceeds the timeout', async () => {
+    const platform = findFePlatform();
+    if (!platform) {
+      return;
+    }
+    let thrown: any;
+    try {
+      await useFeCompiler(
+        feRepoPath,
+        version,
+        {
+          language: 'Fe',
+          settings: {},
+          sources: {
+            'src/lib.fe': {
+              content: 'pub contract Empty {}',
+            },
+          },
+        },
+        1, // fe cannot even start within 1ms
+      );
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the compilation to reject').to.be.instanceOf(
+      Error,
+    );
+    expect(thrown.code).to.equal(COMPILER_TIMEOUT_CODE);
   });
 });
