@@ -236,6 +236,7 @@ export interface DatabaseColumns {
     "id" | "compilation_id" | "deployment_id"
   >;
   sourcesInformation: SourceInformation[];
+  metadata: any;
 }
 
 export type GetVerifiedContractByChainAndAddressResult =
@@ -923,6 +924,7 @@ export async function getDatabaseColumnsFromVerification(
       runtime_metadata_match,
       creation_metadata_match,
     },
+    metadata: (verification.compilation as any).metadata,
   };
 }
 

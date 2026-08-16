@@ -120,7 +120,7 @@ export default abstract class AbstractDatabaseService {
 
         await this.database.insertCompiledContractMetadata(client, {
           compilation_id: compiledContractId,
-          metadata: databaseColumns.sourcifyMatch.metadata,
+          metadata: databaseColumns.metadata,
         });
       }
 
@@ -222,7 +222,7 @@ export default abstract class AbstractDatabaseService {
 
         await this.database.insertCompiledContractMetadata(client, {
           compilation_id: compiledContractId,
-          metadata: databaseColumns.sourcifyMatch.metadata,
+          metadata: databaseColumns.metadata,
         });
       }
 
