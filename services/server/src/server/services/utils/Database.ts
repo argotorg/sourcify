@@ -221,7 +221,12 @@ ${
         onchain_runtime_code.code_hash,
         onchain_creation_code.code_hash,
         recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash`
+        recompiled_creation_code.code_hash${
+          properties.includes("metadata") ||
+          properties.includes("std_json_output")
+            ? ",\n        compiled_contracts_metadata.compilation_id"
+            : ""
+        }`
         : "";
 
     return await this.pool.query(
@@ -241,7 +246,7 @@ ${
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
 ${
-  properties.includes("metadata")
+  properties.includes("metadata") || properties.includes("std_json_output")
     ? `LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = verified_contracts.compilation_id`
     : ""
 }
