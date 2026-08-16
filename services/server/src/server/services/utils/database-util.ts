@@ -435,7 +435,8 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   name: "compiled_contracts.name",
   fully_qualified_name: "compiled_contracts.fully_qualified_name",
   abi: "compiled_contracts.compilation_artifacts->'abi' as abi",
-  metadata: "COALESCE(compiled_contracts_metadata.metadata, sourcify_matches.metadata) as metadata",
+  metadata:
+    "COALESCE(compiled_contracts_metadata.metadata, sourcify_matches.metadata) as metadata",
   storage_layout:
     "compiled_contracts.compilation_artifacts->'storageLayout' as storage_layout",
   transient_storage_layout:

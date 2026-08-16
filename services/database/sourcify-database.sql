@@ -987,6 +987,16 @@ CREATE TABLE public.compiled_contracts (
 
 
 --
+-- Name: compiled_contracts_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compiled_contracts_metadata (
+    compilation_id uuid NOT NULL,
+    metadata json NOT NULL
+);
+
+
+--
 -- Name: compiled_contracts_signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1315,6 +1325,14 @@ ALTER TABLE ONLY public.verified_contracts ALTER COLUMN id SET DEFAULT nextval('
 
 ALTER TABLE ONLY public.code
     ADD CONSTRAINT code_pkey PRIMARY KEY (code_hash);
+
+
+--
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_pkey PRIMARY KEY (compilation_id);
 
 
 --
@@ -2075,6 +2093,14 @@ ALTER TABLE ONLY public.compiled_contracts
 
 
 --
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_compilation_id_fkey FOREIGN KEY (compilation_id) REFERENCES public.compiled_contracts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: compiled_contracts compiled_contracts_runtime_code_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2210,4 +2236,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260309080000'),
     ('20260527081526'),
     ('20260527085036'),
-    ('20260527085037');
+    ('20260527085037'),
+    ('20260816133800');

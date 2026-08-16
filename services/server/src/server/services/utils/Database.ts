@@ -1243,10 +1243,7 @@ ${
 
   async insertCompiledContractMetadata(
     poolClient: PoolClient,
-    {
-      compilation_id,
-      metadata,
-    }: { compilation_id: string; metadata: any },
+    { compilation_id, metadata }: { compilation_id: string; metadata: any },
   ) {
     await poolClient.query(
       `INSERT INTO ${this.schema}.compiled_contracts_metadata (compilation_id, metadata)

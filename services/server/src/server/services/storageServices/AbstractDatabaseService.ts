@@ -117,7 +117,7 @@ export default abstract class AbstractDatabaseService {
           sourcesInformation: databaseColumns.sourcesInformation,
           compilation_id: compiledContractId,
         });
-        
+
         await this.database.insertCompiledContractMetadata(client, {
           compilation_id: compiledContractId,
           metadata: databaseColumns.sourcifyMatch.metadata,
