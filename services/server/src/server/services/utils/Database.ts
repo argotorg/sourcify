@@ -1255,6 +1255,8 @@ ${
     poolClient: PoolClient,
     { compilation_id, metadata }: { compilation_id: string; metadata: any },
   ) {
+    if (metadata == null) return;
+
     await poolClient.query(
       `INSERT INTO ${this.schema}.compiled_contracts_metadata (compilation_id, metadata)
        VALUES ($1, $2)
