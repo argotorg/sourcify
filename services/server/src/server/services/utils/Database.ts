@@ -165,7 +165,7 @@ export class Database {
           sourcify_matches.created_at,
           sourcify_matches.creation_match,
           sourcify_matches.runtime_match,
-          sourcify_matches.metadata,
+          COALESCE(compiled_contracts_metadata.metadata, sourcify_matches.metadata) as metadata,
           verified_contracts.creation_values,
           verified_contracts.runtime_values,
           verified_contracts.compilation_id,
@@ -177,6 +177,7 @@ export class Database {
         FROM ${this.schema}.sourcify_matches
         JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
         JOIN ${this.schema}.compiled_contracts ON compiled_contracts.id = verified_contracts.compilation_id
+        LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = verified_contracts.compilation_id
         JOIN ${this.schema}.contract_deployments ON 
           contract_deployments.id = verified_contracts.deployment_id 
           AND contract_deployments.chain_id = $1 
@@ -1238,5 +1239,20 @@ ${
         [hash],
       );
     }
+  }
+
+  async insertCompiledContractMetadata(
+    poolClient: PoolClient,
+    {
+      compilation_id,
+      metadata,
+    }: { compilation_id: string; metadata: any },
+  ) {
+    await poolClient.query(
+      `INSERT INTO ${this.schema}.compiled_contracts_metadata (compilation_id, metadata)
+       VALUES ($1, $2)
+       ON CONFLICT (compilation_id) DO NOTHING`,
+      [compilation_id, metadata],
+    );
   }
 }

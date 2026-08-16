@@ -117,6 +117,11 @@ export default abstract class AbstractDatabaseService {
           sourcesInformation: databaseColumns.sourcesInformation,
           compilation_id: compiledContractId,
         });
+        
+        await this.database.insertCompiledContractMetadata(client, {
+          compilation_id: compiledContractId,
+          metadata: databaseColumns.sourcifyMatch.metadata,
+        });
       }
 
       // insert new recompiled contract with newly added contract and compiledContract
@@ -213,6 +218,11 @@ export default abstract class AbstractDatabaseService {
         await this.database.insertCompiledContractsSources(client, {
           sourcesInformation: databaseColumns.sourcesInformation,
           compilation_id: compiledContractId,
+        });
+
+        await this.database.insertCompiledContractMetadata(client, {
+          compilation_id: compiledContractId,
+          metadata: databaseColumns.sourcifyMatch.metadata,
         });
       }
 
