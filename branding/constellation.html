@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Korda György - Ha én lennék a Don Juan (Táncdalfesztivál 68)</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: #fff;
+      }
+      #canvas-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1;
+      }
+      #overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 40px;
+        border-radius: 15px;
+        border: 2px solid #ff9900;
+        box-shadow: 0 0 20px rgba(255, 153, 0, 0.5);
+        pointer-events: none;
+      }
+      h1 {
+        color: #ffcc00;
+        margin-bottom: 10px;
+        font-size: 3rem;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+      }
+      h2 {
+        color: #33cc33;
+        margin-bottom: 20px;
+        font-size: 2rem;
+        font-style: italic;
+      }
+      h3 {
+        color: #ff3300;
+        font-size: 1.5rem;
+        margin-top: 30px;
+      }
+      .festival {
+        color: #3399ff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container"></div>
+    <div id="overlay">
+      <h1>Korda György</h1>
+      <h2>Ha én lennék a Don Juan</h2>
+      <h3><span class="festival">MRT Táncdalfesztivál '68</span></h3>
+      <p style="color: #ff9900">Qualiton</p>
+    </div>
+
+    <!-- Load Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      // Scene setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      document
+        .getElementById("canvas-container")
+        .appendChild(renderer.domElement);
+
+      // Constellation Particles
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 700;
+
+      const posArray = new Float32Array(particlesCount * 3);
+      const colorsArray = new Float32Array(particlesCount * 3);
+
+      // Yellow, Green, Red, Orange theme (Qualiton Blue/Orange)
+      const colors = [
+        new THREE.Color(0xffff00), // Yellow
+        new THREE.Color(0x33cc33), // Green
+        new THREE.Color(0xff3300), // Red
+        new THREE.Color(0xff9900), // Orange
+        new THREE.Color(0x3399ff), // Qualiton Blue
+      ];
+
+      for (let i = 0; i < particlesCount * 3; i += 3) {
+        // Random positions in a sphere
+        posArray[i] = (Math.random() - 0.5) * 15;
+        posArray[i + 1] = (Math.random() - 0.5) * 15;
+        posArray[i + 2] = (Math.random() - 0.5) * 15;
+
+        // Assign random theme color
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        colorsArray[i] = color.r;
+        colorsArray[i + 1] = color.g;
+        colorsArray[i + 2] = color.b;
+      }
+
+      particlesGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(posArray, 3),
+      );
+      particlesGeometry.setAttribute(
+        "color",
+        new THREE.BufferAttribute(colorsArray, 3),
+      );
+
+      // Material for particles
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.05,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 0.8,
+      });
+
+      const particleMesh = new THREE.Points(
+        particlesGeometry,
+        particlesMaterial,
+      );
+      scene.add(particleMesh);
+
+      // Connect particles with lines (Constellation effect)
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xffaa00,
+        transparent: true,
+        opacity: 0.15,
+      });
+
+      // We'll create the lines dynamically in the animation loop
+      // for a more "wavy" effect or static if performance is an issue.
+      // For simplicity, let's create a static line mesh where close particles are connected
+      const lineGeometry = new THREE.BufferGeometry();
+      const linePositions = [];
+
+      // Wavy background element
+      const waveGeometry = new THREE.PlaneGeometry(30, 30, 50, 50);
+      const waveMaterial = new THREE.MeshBasicMaterial({
+        color: 0x222222,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.1,
+      });
+      const waveMesh = new THREE.Mesh(waveGeometry, waveMaterial);
+      waveMesh.rotation.x = -Math.PI / 2;
+      waveMesh.position.y = -5;
+      scene.add(waveMesh);
+
+      camera.position.z = 8;
+
+      // Animation Loop
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const elapsedTime = clock.getElapsedTime();
+
+        // Rotate constellation
+        particleMesh.rotation.y = elapsedTime * 0.05;
+        particleMesh.rotation.x = elapsedTime * 0.02;
+
+        // Animate wave
+        const positions = waveGeometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i);
+          const y = positions.getY(i);
+          // Create a wave using sine and cosine
+          const z =
+            Math.sin(x * 0.5 + elapsedTime) *
+            Math.cos(y * 0.5 + elapsedTime) *
+            1.5;
+          positions.setZ(i, z);
+        }
+        positions.needsUpdate = true;
+        waveMesh.rotation.z = elapsedTime * 0.1;
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // Handle Resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
