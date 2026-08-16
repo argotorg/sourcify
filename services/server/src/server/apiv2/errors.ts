@@ -257,8 +257,14 @@ export function errorHandler(
     return;
   }
 
-  logger.error("API v2 internal error: ", { error: err });
-  next(new InternalError("The server encountered an unexpected error."));
+  const internalError = new InternalError(
+    "The server encountered an unexpected error.",
+  );
+  logger.error("API v2 internal error: ", {
+    error: err,
+    errorId: internalError.payload.errorId,
+  });
+  next(internalError);
 }
 
 export type VerificationErrorCode =
