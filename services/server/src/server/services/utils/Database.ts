@@ -212,7 +212,8 @@ ${
       properties.includes("std_json_input") ||
       properties.includes("function_signatures") ||
       properties.includes("event_signatures") ||
-      properties.includes("error_signatures")
+      properties.includes("error_signatures") ||
+      properties.includes("metadata")
         ? `GROUP BY sourcify_matches.id,
         verified_contracts.id,
         compiled_contracts.id,
@@ -221,7 +222,11 @@ ${
         onchain_runtime_code.code_hash,
         onchain_creation_code.code_hash,
         recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash`
+        recompiled_creation_code.code_hash${
+          properties.includes("metadata")
+            ? ",\n        compiled_contracts_metadata.metadata"
+            : ""
+        }`
         : "";
 
     return await this.pool.query(
@@ -240,6 +245,11 @@ ${
         LEFT JOIN ${this.schema}.code as onchain_creation_code ON onchain_creation_code.code_hash = contracts.creation_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
+${
+  properties.includes("metadata")
+    ? `LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = verified_contracts.compilation_id`
+    : ""
+}
 ${
   properties.includes("function_signatures") ||
   properties.includes("event_signatures") ||
