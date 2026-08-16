@@ -212,8 +212,7 @@ ${
       properties.includes("std_json_input") ||
       properties.includes("function_signatures") ||
       properties.includes("event_signatures") ||
-      properties.includes("error_signatures") ||
-      properties.includes("metadata")
+      properties.includes("error_signatures")
         ? `GROUP BY sourcify_matches.id,
         verified_contracts.id,
         compiled_contracts.id,
@@ -222,11 +221,7 @@ ${
         onchain_runtime_code.code_hash,
         onchain_creation_code.code_hash,
         recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash${
-          properties.includes("metadata")
-            ? ",\n        compiled_contracts_metadata.metadata"
-            : ""
-        }`
+        recompiled_creation_code.code_hash`
         : "";
 
     return await this.pool.query(
