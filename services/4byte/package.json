@@ -46,16 +46,16 @@
     "@types/express": "5.0.6",
     "@types/mocha": "10.0.10",
     "@types/node": "22.20.1",
-    "@types/pg": "8.20.0",
+    "@types/pg": "8.20.3",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
     "c8": "11.0.0",
     "chai": "4.5.0",
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
-    "csv-parse": "7.0.1",
+    "csv-parse": "7.0.2",
     "dbmate": "2.34.1",
     "mocha": "10.8.2",
-    "npm-run-all2": "9.0.2"
+    "npm-run-all2": "9.0.3"
   }
 }
