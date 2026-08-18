@@ -270,33 +270,17 @@ ${
    * Returns the ids of up to `limit` compilations whose runtime code shares its
    * first 75 bytes with the given bytecode.
    *
-   * Similarity is a property of the *compilation*, so this only yields
-   * compilation ids -- the deployment a candidate happens to have is irrelevant
-   * to verifying a different contract.
+   * Reads the compiled_contracts_runtime_code_prefixes side table: there every
+   * entry is a candidate, so the LIMIT short-circuits after ~limit index
+   * entries. A prefix scan on the code table is too slow -- see the analysis in
+   * https://github.com/argotorg/sourcify/issues/2891.
    *
-   * Reads the compiled_contracts_runtime_code_prefixes side table rather than
-   * prefix-matching on code: code holds every bytecode ever observed on chain,
-   * and for contract classes that bake immutables into runtime code hundreds of
-   * thousands of onchain variants share a prefix while only a handful of
-   * compilations exist -- a prefix scan on code walks the whole variant set
-   * (measured in production: 142,872 rows scanned for 21 candidates, 36s). In
-   * the prefix table every entry is a candidate, so the LIMIT short-circuits
-   * after ~limit index entries. The table only holds prefixes of exactly 75
-   * bytes; shorter bytecodes are not indexed and are rejected by the API
-   * upfront.
-   *
-   * The LATERAL keeps only compilations that are actually verified: without a
-   * sourcify_match a compilation is stale (re-verification moves the match to a
-   * new verified_contracts row) and carries no metadata, so it is unusable here.
-   *
-   * Do NOT rewrite that LATERAL as EXISTS, however obvious that looks. Postgres
-   * de-correlates EXISTS into a semi-join it is free to drive the whole query
-   * from, and on production it did exactly that: sequential scans over the
-   * tens of millions of rows in verified_contracts and sourcify_matches, hash
-   * joined and aggregated before ever touching the bytecode. It never
-   * completed. The LIMIT 1 inside the LATERAL blocks subquery pull-up, so the
-   * planner has to run it per candidate row and drives from the prefix index
-   * instead.
+   * The LATERAL keeps only compilations that still have a sourcify_match;
+   * compilations without one are stale. Do NOT rewrite it as EXISTS: Postgres
+   * de-correlates EXISTS into a semi-join and drives the query from sequential
+   * scans over verified_contracts and sourcify_matches (see the issue). The
+   * LIMIT 1 inside the LATERAL blocks that, so the planner drives from the
+   * prefix index.
    */
   async getCompilationsByRuntimeCodePrefix(
     runtimeBytecode: Buffer,
@@ -324,20 +308,10 @@ ${
    * Fetches the compilation data needed to re-run a compilation, for a batch of
    * compilation ids in a single round trip.
    *
-   * Everything a similarity candidate needs is compilation-level, so this keys
-   * on compiled_contracts.id rather than looking each candidate up by
-   * (chain, address) as getSourcifyMatchByChainAddressWithProperties does.
-   * contract_deployments is not involved at all.
-   *
-   * Two details worth knowing before editing:
-   *
-   * - Sources come from a scalar subquery rather than a JOIN + aggregate, so no
-   *   GROUP BY is needed. That matters for a batch query: metadata is a `json`
-   *   column, which has no equality operator and therefore cannot be grouped.
-   * - The LATERAL is aliased `sourcify_matches` so the shared std_json_output
-   *   selector, which references sourcify_matches.metadata, works verbatim and
-   *   cannot drift from the deployment-keyed query. Inside the LATERAL the name
-   *   resolves to the real table.
+   * - Sources come from a scalar subquery instead of a JOIN + GROUP BY:
+   *   metadata is a `json` column, which cannot be grouped.
+   * - The LATERAL is aliased `sourcify_matches` so the shared selectors that
+   *   reference sourcify_matches.metadata work verbatim.
    */
   async getCompilationsByIds(
     compilationIds: string[],
