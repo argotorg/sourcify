@@ -103,6 +103,11 @@ paths:
         Starts a verification job that searches the Sourcify database for contracts whose
         runtime bytecode is similar to the contract deployed at the given address. The job will
         attempt to verify against each candidate until a match is found or the candidate list is exhausted.
+
+        Candidates are found by comparing the first 75 bytes of runtime bytecode. Therefore, the
+        deployed contract's runtime bytecode must be at least 75 bytes long. Shorter bytecode —
+        for example EIP-1167 minimal proxies, which are 45 bytes — is rejected with a `400` response
+        and `customCode: bytecode_too_short_for_similarity`.
       operationId: verify-similarity
       parameters:
         - $ref: "#/components/parameters/chainId"
@@ -113,7 +118,22 @@ paths:
         "202":
           $ref: "#/components/responses/ReturnVerificationJob"
         "400":
-          $ref: "#/components/responses/BadRequestResponse"
+          description: Bad request, for example an unsupported chain or bytecode too short for similarity search
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+              examples:
+                bytecode_too_short_for_similarity:
+                  value:
+                    customCode: bytecode_too_short_for_similarity
+                    message: The bytecode at address 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is only 45 bytes long. Similarity verification requires at least 75 bytes.
+                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
+                unsupported_chain:
+                  value:
+                    customCode: unsupported_chain
+                    message: The chain with chainId 9429413 is not supported
+                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
         "409":
           description: The contract is already verified
           content:

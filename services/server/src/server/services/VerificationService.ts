@@ -387,8 +387,9 @@ export class VerificationService {
     }
 
     // Similarity candidates are indexed by their first 75 bytes of runtime
-    // code; shorter bytecodes (e.g. minimal proxies) are too weak a
-    // discriminator and are not indexed at all.
+    // code. The index only holds prefixes of exactly 75 bytes, so shorter
+    // bytecodes (e.g. EIP-1167 minimal proxies) are deliberately not
+    // supported and are rejected upfront.
     const runtimeBytecodeLengthBytes = (runtimeBytecode.length - 2) / 2;
     if (runtimeBytecodeLengthBytes < SIMILARITY_PREFIX_LENGTH_BYTES) {
       throw new BytecodeTooShortForSimilarityError(
