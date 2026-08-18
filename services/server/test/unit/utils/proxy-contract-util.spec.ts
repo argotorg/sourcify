@@ -118,6 +118,59 @@ describe("proxy contract util", function () {
     });
   });
 
+  it("should detect MaticProxy (Polygon UpgradableProxy)", async function () {
+    // Polygon's own proxy pattern stores the implementation at
+    // keccak256("matic.network.proxy.implementation") instead of the EIP-1967 slot.
+    // solc 0.6.6 does not fold the constant, so the hash never appears in the
+    // bytecode; whatsabi finds it via the "matic.network.proxy.implementation"
+    // string in the aux-data segment. Based on Polygon DAI (chain 137)
+    // 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063.
+    mockSourcifyChain.getStorageAt = sandbox
+      .stub()
+      .resolves(
+        "000000000000000000000000490e379c9cff64944be82b849f8fd5972c7999a7",
+      );
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.MaticProxy,
+      "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "MaticProxy",
+      implementations: [
+        { address: "0x490e379c9cff64944be82b849f8fd5972c7999a7" },
+      ],
+    });
+  });
+
+  it("should detect MaticProxy from creation bytecode (the path Sourcify uses)", async function () {
+    // Sourcify passes creation bytecode preferentially. Its tail is constructor
+    // args, not CBOR metadata, so this only works with the CBOR plausibility
+    // guard added in whatsabi 0.28.0.
+    mockSourcifyChain.getStorageAt = sandbox
+      .stub()
+      .resolves(
+        "000000000000000000000000490e379c9cff64944be82b849f8fd5972c7999a7",
+      );
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.MaticProxyWithSlotOnlyInCreationCode,
+      "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "MaticProxy",
+      implementations: [
+        { address: "0x490e379c9cff64944be82b849f8fd5972c7999a7" },
+      ],
+    });
+  });
+
   it("should return false for factories that deploy proxies", async function () {
     // Based on 0x7dB8637A5fd20BbDab1176BdF49C943A96F2E9c6 deployed on ETH Mainnet
     const result = await detectAndResolveProxy(

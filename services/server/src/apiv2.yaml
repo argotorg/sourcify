@@ -1803,6 +1803,7 @@ components:
         - DiamondProxy
         - PROXIABLEProxy
         - ZeppelinOSProxy
+        - MaticProxy
         - SequenceWalletProxy
         - null
       title: ProxyType
