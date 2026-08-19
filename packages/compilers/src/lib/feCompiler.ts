@@ -32,21 +32,14 @@ export function resolveFeSourcePath(root: string, sourcePath: string): string {
   const prefix = rootResolved.endsWith(path.sep)
     ? rootResolved
     : rootResolved + path.sep;
-  if (resolved !== rootResolved && !resolved.startsWith(prefix)) {
+  // A key must name a file under the root. `src/..` resolves to the root
+  // itself and would otherwise hit EISDIR on write.
+  if (!resolved.startsWith(prefix)) {
     throw new Error(
       `Fe source path escapes the compilation directory: ${sourcePath}`,
     );
   }
   return resolved;
-}
-
-function assertFeSourcesStayInside(
-  root: string,
-  sources: FeJsonInput['sources'],
-): void {
-  for (const sourcePath of Object.keys(sources)) {
-    resolveFeSourcePath(root, sourcePath);
-  }
 }
 
 /**
@@ -171,13 +164,6 @@ export async function useFeCompiler(
   if (!fePlatform) {
     throw new Error('Fe compiler is not supported on this machine.');
   }
-
-  // Fail closed before downloading the binary. Public verify accepts Fe
-  // source keys; the API src/ prefix check does not stop src/../...
-  assertFeSourcesStayInside(
-    path.resolve(os.tmpdir(), 'sourcify-fe-jail-root'),
-    feJsonInput.sources,
-  );
 
   const fePath = await getFeExecutable(feRepoPath, fePlatform, version);
 
