@@ -1,3 +1,4 @@
+import path from "path";
 import type { Request, Response, NextFunction } from "express";
 import type { ChainRepository } from "../../sourcify-chain-repository";
 import logger from "../../common/logger";
@@ -248,6 +249,30 @@ export function validateAndNormalizeFeInput(
       normalized[`src/${k}`] = v;
     }
     req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
+  }
+
+  // Prefix check alone does not stop src/../... path.join on the compiler
+  // treats that as a write outside the temp ingot.
+  const jailedSources = req.body.stdJsonInput.sources as Record<
+    string,
+    { content: string }
+  >;
+  for (const sourcePath of Object.keys(jailedSources)) {
+    if (sourcePath.includes("\0")) {
+      throw new InvalidParametersError(
+        "Fe source paths must not contain a null byte.",
+      );
+    }
+    const normalized = path.posix.normalize(sourcePath.replace(/\\/g, "/"));
+    if (
+      path.posix.isAbsolute(normalized) ||
+      normalized === ".." ||
+      normalized.startsWith("../")
+    ) {
+      throw new InvalidParametersError(
+        "Fe source paths must stay under the compilation directory.",
+      );
+    }
   }
 
   // Normalize contractIdentifier for Fe:

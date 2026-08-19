@@ -17,6 +17,39 @@ const HOST_FE_REPO = 'https://github.com/argotorg/fe/releases/download/';
 const MINIMUM_FE_VERSION = '26.0.0-alpha.12';
 
 /**
+ * Resolve a Fe source key under `root`. `path.join` treats an absolute
+ * segment as a new root, and `src/../..` walks out of the temp ingot.
+ */
+export function resolveFeSourcePath(root: string, sourcePath: string): string {
+  if (sourcePath.includes('\0')) {
+    throw new Error(`Fe source path contains a null byte: ${sourcePath}`);
+  }
+  if (path.isAbsolute(sourcePath)) {
+    throw new Error(`Fe source path must be relative: ${sourcePath}`);
+  }
+  const resolved = path.resolve(root, sourcePath);
+  const rootResolved = path.resolve(root);
+  const prefix = rootResolved.endsWith(path.sep)
+    ? rootResolved
+    : rootResolved + path.sep;
+  if (resolved !== rootResolved && !resolved.startsWith(prefix)) {
+    throw new Error(
+      `Fe source path escapes the compilation directory: ${sourcePath}`,
+    );
+  }
+  return resolved;
+}
+
+function assertFeSourcesStayInside(
+  root: string,
+  sources: FeJsonInput['sources'],
+): void {
+  for (const sourcePath of Object.keys(sources)) {
+    resolveFeSourcePath(root, sourcePath);
+  }
+}
+
+/**
  * Returns the platform-specific asset name for the Fe binary.
  * Asset names follow the pattern: fe_{os}_{arch}[.exe]
  */
@@ -139,6 +172,13 @@ export async function useFeCompiler(
     throw new Error('Fe compiler is not supported on this machine.');
   }
 
+  // Fail closed before downloading the binary. Public verify accepts Fe
+  // source keys; the API src/ prefix check does not stop src/../...
+  assertFeSourcesStayInside(
+    path.resolve(os.tmpdir(), 'sourcify-fe-jail-root'),
+    feJsonInput.sources,
+  );
+
   const fePath = await getFeExecutable(feRepoPath, fePlatform, version);
 
   // Create a unique temp directory to avoid collisions from parallel compilations
@@ -153,7 +193,7 @@ export async function useFeCompiler(
 
     // Write source files (sourcePaths already have src/ prefix, e.g. 'src/lib.fe')
     for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
-      const fullPath = path.join(tmpDir, sourcePath);
+      const fullPath = resolveFeSourcePath(tmpDir, sourcePath);
       await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.promises.writeFile(fullPath, source.content);
     }

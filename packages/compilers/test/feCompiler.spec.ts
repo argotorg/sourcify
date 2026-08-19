@@ -1,7 +1,10 @@
 import { expect } from 'chai';
+import fs from 'fs';
+import os from 'os';
 import {
   findFePlatform,
   getFeExecutable,
+  resolveFeSourcePath,
   useFeCompiler,
 } from '../src/lib/feCompiler';
 import { CompilerError } from '../src/lib/common';
@@ -39,6 +42,50 @@ describe('Verify Fe Compiler', () => {
     } catch (error) {
       expect(error).to.be.instanceOf(Error);
     }
+  });
+
+  it('Should reject source paths that escape the temp compilation directory', async () => {
+    const marker = path.join(os.tmpdir(), 'sourcify-fe-escape-probe');
+    try {
+      fs.unlinkSync(marker);
+    } catch {
+      undefined;
+    }
+
+    let thrown: unknown;
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          'src/../../../tmp/sourcify-fe-escape-probe': {
+            content: 'pwned',
+          },
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown, 'expected the compilation to reject').to.be.instanceOf(
+      Error,
+    );
+    expect((thrown as Error).message).to.include(
+      'escapes the compilation directory',
+    );
+    expect(fs.existsSync(marker)).to.equal(false);
+  });
+
+  it('Should resolve Fe source paths under the compilation directory', () => {
+    const root = path.join(os.tmpdir(), 'sourcify-fe-jail-unit');
+    const inside = resolveFeSourcePath(root, 'src/lib.fe');
+    expect(inside).to.equal(path.resolve(root, 'src/lib.fe'));
+    expect(() =>
+      resolveFeSourcePath(root, 'src/../../../tmp/sourcify-fe-escape-probe'),
+    ).to.throw('escapes the compilation directory');
+    expect(() => resolveFeSourcePath(root, '/etc/passwd')).to.throw(
+      'must be relative',
+    );
   });
 
   it('Should throw for Fe versions older than minimum supported', async () => {
