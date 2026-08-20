@@ -62,6 +62,12 @@ const logLevel =
   process.env.NODE_LOG_LEVEL ||
   (process.env.NODE_ENV === "production" ? "info" : "debug");
 
+// Wall-clock limit for a single compiler subprocess. Left undefined the
+// compilers package applies its own default.
+const compilerTimeoutMs = process.env.COMPILER_TIMEOUT_MS
+  ? parseInt(process.env.COMPILER_TIMEOUT_MS)
+  : undefined;
+
 // Solidity Compiler
 
 const solcRepoPath =
@@ -70,19 +76,23 @@ const solJsonRepoPath =
   (config.get("solJsonRepo") as string) || path.join("/tmp", "soljson-repo");
 
 logger.info("Using local solidity compiler");
-const selectedSolidityCompiler = new SolcLocal(solcRepoPath, solJsonRepoPath);
+const selectedSolidityCompiler = new SolcLocal(
+  solcRepoPath,
+  solJsonRepoPath,
+  compilerTimeoutMs,
+);
 
 export const solc = selectedSolidityCompiler;
 
 logger.info("Using local vyper compiler");
 const vyperRepoPath =
   (config.get("vyperRepo") as string) || path.join("/tmp", "vyper-repo");
-export const vyper = new VyperLocal(vyperRepoPath);
+export const vyper = new VyperLocal(vyperRepoPath, compilerTimeoutMs);
 
 logger.info("Using local Fe compiler");
 const feRepoPath =
   (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
-export const fe = new FeLocal(feRepoPath);
+export const fe = new FeLocal(feRepoPath, compilerTimeoutMs);
 
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
@@ -116,10 +126,6 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       libSourcifyConfig,
       sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
       sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
-      brownoutV1: {
-        enabled: config.get("brownoutV1.enabled"),
-        windows: config.get("brownoutV1.windows"),
-      },
     },
     {
       initCompilers: config.get("initCompilers") || false,
@@ -128,6 +134,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solJsonRepoPath,
       vyperRepoPath,
       feRepoPath,
+      compilerTimeoutMs,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,
@@ -230,6 +237,21 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
   const swaggerDocument = await server.loadSwagger(
     yamljs.load(path.join(__dirname, "..", "openapi.yaml")), // load the openapi file with the $refs resolved
   );
+  // Hide the private/internal endpoints from the public API docs (#2875).
+  // They remain served and request-validated (server.ts loads openapi.yaml
+  // independently for validation); we only strip them from the published spec.
+  if (swaggerDocument?.paths) {
+    for (const apiPath of Object.keys(swaggerDocument.paths)) {
+      if (apiPath.startsWith("/private/")) {
+        delete swaggerDocument.paths[apiPath];
+      }
+    }
+  }
+  if (Array.isArray(swaggerDocument?.tags)) {
+    swaggerDocument.tags = swaggerDocument.tags.filter(
+      (tag: { name?: string }) => tag?.name !== "Private",
+    );
+  }
   server.app.get("/api-docs/swagger.json", (req, res) => {
     res.json(swaggerDocument);
   });

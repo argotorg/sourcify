@@ -1,3 +1,5 @@
+import path from "path";
+import { resolveFeSourcePath } from "@ethereum-sourcify/compilers";
 import type { Request, Response, NextFunction } from "express";
 import type { ChainRepository } from "../../sourcify-chain-repository";
 import logger from "../../common/logger";
@@ -109,39 +111,6 @@ export function validateFieldsAndOmit(
   next();
 }
 
-export function validateCompilerVersion(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  let compilerVersion = req.body.compilerVersion;
-  if (!compilerVersion) {
-    throw new InvalidParametersError("Compiler version is required.");
-  }
-
-  if (compilerVersion.startsWith("v")) {
-    compilerVersion = compilerVersion.slice(1);
-  }
-
-  // Validate based on language if available
-  const language = req.body.stdJsonInput?.language;
-  if (language === "Solidity") {
-    // Solidity version pattern: 0.8.7+commit.e28d00a7 or 0.8.31-nightly.2025.8.11+commit.635fe8f8
-    const solidityPattern =
-      /^\d+\.\d+\.\d+(-nightly\.\d{4}\.\d+\.\d+)?\+commit\.[a-f0-9]{8}$/;
-    if (!solidityPattern.test(compilerVersion)) {
-      throw new InvalidParametersError(
-        `Invalid Solidity compiler version format: ${compilerVersion}. Expected format: x.y.z+commit.xxxxxxxx or x.y.z-nightly.yyyy.m.d+commit.xxxxxxxx`,
-      );
-    }
-  }
-  // For Vyper and other languages, we can't do much validation here due to inconsistent naming.
-  // It will throw if it can't download the version.
-
-  req.body.compilerVersion = compilerVersion;
-  next();
-}
-
 export function validateStandardJsonInput(
   req: Request,
   res: Response,
@@ -152,9 +121,7 @@ export function validateStandardJsonInput(
   }
 
   const stdJsonInput = req.body.stdJsonInput as
-    | SolidityJsonInput
-    | VyperJsonInput
-    | FeJsonInput;
+    SolidityJsonInput | VyperJsonInput | FeJsonInput;
   if (!stdJsonInput.language) {
     throw new InvalidParametersError(
       "Standard JSON input must contain a language field.",
@@ -283,6 +250,24 @@ export function validateAndNormalizeFeInput(
       normalized[`src/${k}`] = v;
     }
     req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
+  }
+
+  // Same rules as resolveFeSourcePath in the compiler write loop. The
+  // root is only used to classify the key; nothing is written here.
+  // Kept so the API returns 400 before a verification job starts.
+  const jailedSources = req.body.stdJsonInput.sources as Record<
+    string,
+    { content: string }
+  >;
+  const keyCheckRoot = path.resolve("sourcify-fe-key-check");
+  for (const sourcePath of Object.keys(jailedSources)) {
+    try {
+      resolveFeSourcePath(keyCheckRoot, sourcePath);
+    } catch {
+      throw new InvalidParametersError(
+        "Fe source paths must stay under the compilation directory.",
+      );
+    }
   }
 
   // Normalize contractIdentifier for Fe:

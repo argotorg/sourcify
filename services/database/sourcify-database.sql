@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.0
--- Dumped by pg_dump version 16.11 (Homebrew)
+-- Dumped from database version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -51,6 +51,26 @@ CREATE TYPE public.signature_type_enum AS ENUM (
     'event',
     'error'
 );
+
+
+--
+-- Name: insert_compiled_contracts_runtime_code_prefix(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_compiled_contracts_runtime_code_prefix() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    INSERT INTO compiled_contracts_runtime_code_prefixes (compilation_id, runtime_code_prefix)
+    SELECT NEW.id, substring(code.code FROM 1 FOR 75)
+    FROM code
+    WHERE code.code_hash = NEW.runtime_code_hash
+      AND code.code IS NOT NULL
+      AND octet_length(code.code) >= 75
+    ON CONFLICT (compilation_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$;
 
 
 --
@@ -133,6 +153,28 @@ CREATE FUNCTION public.is_valid_hex(val text, repetition text) RETURNS boolean
 BEGIN
     RETURN val SIMILAR TO CONCAT('0x([0-9|a-f|A-F][0-9|a-f|A-F])', repetition);
 END;
+$$;
+
+
+--
+-- Name: reap_stale_verification_jobs(interval); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reap_stale_verification_jobs(stale_threshold interval DEFAULT '03:00:00'::interval) RETURNS integer
+    LANGUAGE sql
+    AS $$
+  WITH reaped AS (
+    UPDATE public.verification_jobs
+    SET completed_at = NOW(),
+        error_code = 'job_abandoned',
+        error_id = gen_random_uuid(),
+        verified_contract_id = NULL,
+        compilation_time = NULL
+    WHERE completed_at IS NULL
+      AND started_at < NOW() - stale_threshold
+    RETURNING 1
+  )
+  SELECT count(*)::integer FROM reaped;
 $$;
 
 
@@ -987,6 +1029,17 @@ CREATE TABLE public.compiled_contracts (
 
 
 --
+-- Name: compiled_contracts_runtime_code_prefixes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compiled_contracts_runtime_code_prefixes (
+    compilation_id uuid NOT NULL,
+    runtime_code_prefix bytea NOT NULL,
+    CONSTRAINT runtime_code_prefix_length_check CHECK ((octet_length(runtime_code_prefix) = 75))
+);
+
+
+--
 -- Name: compiled_contracts_signatures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1165,39 +1218,6 @@ ALTER SEQUENCE public.sourcify_matches_verified_contract_id_seq OWNED BY public.
 
 
 --
--- Name: sourcify_sync; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.sourcify_sync (
-    id bigint NOT NULL,
-    chain_id numeric NOT NULL,
-    address bytea NOT NULL,
-    match_type character varying NOT NULL,
-    synced boolean DEFAULT false NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: sourcify_sync_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.sourcify_sync_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sourcify_sync_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.sourcify_sync_id_seq OWNED BY public.sourcify_sync.id;
-
-
---
 -- Name: verification_jobs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1296,13 +1316,6 @@ ALTER TABLE ONLY public.sourcify_matches ALTER COLUMN verified_contract_id SET D
 
 
 --
--- Name: sourcify_sync id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync ALTER COLUMN id SET DEFAULT nextval('public.sourcify_sync_id_seq'::regclass);
-
-
---
 -- Name: verified_contracts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1331,6 +1344,14 @@ ALTER TABLE ONLY public.compiled_contracts
 
 ALTER TABLE ONLY public.compiled_contracts
     ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, version, language, creation_code_hash, runtime_code_hash);
+
+
+--
+-- Name: compiled_contracts_runtime_code_prefixes compiled_contracts_runtime_code_prefixes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_runtime_code_prefixes
+    ADD CONSTRAINT compiled_contracts_runtime_code_prefixes_pkey PRIMARY KEY (compilation_id);
 
 
 --
@@ -1438,22 +1459,6 @@ ALTER TABLE ONLY public.sourcify_matches
 
 
 --
--- Name: sourcify_sync sourcify_sync_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync
-    ADD CONSTRAINT sourcify_sync_pkey PRIMARY KEY (id);
-
-
---
--- Name: sourcify_sync sourcify_sync_pseudo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sourcify_sync
-    ADD CONSTRAINT sourcify_sync_pseudo_pkey UNIQUE (chain_id, address);
-
-
---
 -- Name: verification_jobs_ephemeral verification_jobs_ephemeral_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1518,6 +1523,13 @@ CREATE INDEX compiled_contracts_creation_code_hash ON public.compiled_contracts 
 --
 
 CREATE INDEX compiled_contracts_runtime_code_hash ON public.compiled_contracts USING btree (runtime_code_hash);
+
+
+--
+-- Name: compiled_contracts_runtime_code_prefixes_prefix_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX compiled_contracts_runtime_code_prefixes_prefix_idx ON public.compiled_contracts_runtime_code_prefixes USING btree (runtime_code_prefix);
 
 
 --
@@ -1689,6 +1701,20 @@ CREATE INDEX verification_jobs_chain_id_address_idx ON public.verification_jobs 
 
 
 --
+-- Name: verification_jobs_in_progress_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX verification_jobs_in_progress_idx ON public.verification_jobs USING btree (started_at) WHERE (completed_at IS NULL);
+
+
+--
+-- Name: verification_jobs_verified_contract_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX verification_jobs_verified_contract_id_idx ON public.verification_jobs USING btree (verified_contract_id);
+
+
+--
 -- Name: verified_contracts_compilation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1707,6 +1733,13 @@ CREATE INDEX verified_contracts_created_at ON public.verified_contracts USING bt
 --
 
 CREATE INDEX verified_contracts_deployment_id ON public.verified_contracts USING btree (deployment_id);
+
+
+--
+-- Name: compiled_contracts insert_runtime_code_prefix; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER insert_runtime_code_prefix AFTER INSERT ON public.compiled_contracts FOR EACH ROW EXECUTE FUNCTION public.insert_compiled_contracts_runtime_code_prefix();
 
 
 --
@@ -2083,6 +2116,14 @@ ALTER TABLE ONLY public.compiled_contracts
 
 
 --
+-- Name: compiled_contracts_runtime_code_prefixes compiled_contracts_runtime_code_prefixes_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_runtime_code_prefixes
+    ADD CONSTRAINT compiled_contracts_runtime_code_prefixes_compilation_id_fkey FOREIGN KEY (compilation_id) REFERENCES public.compiled_contracts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: compiled_contracts_signatures compiled_contracts_signatures_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2210,4 +2251,9 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260309080000'),
     ('20260527081526'),
     ('20260527085036'),
-    ('20260527085037');
+    ('20260527085037'),
+    ('20260715080000'),
+    ('20260723090000'),
+    ('20260724100000'),
+    ('20260729090000'),
+    ('20260803100000');

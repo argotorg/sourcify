@@ -1,3 +1,8 @@
+## @ethereum-sourcify/compilers@1.2.0 - 2026-08-20
+
+- fix(compilers): jail Fe source writes to the compilation temp dir (#2933)
+- fix: prevent and auto-recover stuck v2 verification jobs (compiler OOM/hang) (#2880) (#2886)
+
 ## @ethereum-sourcify/compilers@1.1.5 - 2026-07-06
 
 - update dependencies

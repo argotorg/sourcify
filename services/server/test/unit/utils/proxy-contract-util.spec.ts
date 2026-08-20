@@ -28,6 +28,26 @@ describe("proxy contract util", function () {
     });
   });
 
+  it("should detect EIP1167Proxy with appended immutable args (clone-with-immutable-args)", async function () {
+    // "Clones with immutable args" (e.g. OpenZeppelin `Clones.cloneWithImmutableArgs`)
+    // append per-clone argument bytes *after* the 45-byte EIP-1167 stub, so the
+    // runtime does not *end* with the stub. Based on BSC (chain 56) contract
+    // 0xa301f4151baa004979dfb2a8e25a236ff2cf4fa5.
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.EIP1167ProxyWithImmutableArgs,
+      "0x1234567890123456789012345678901234567890",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "EIP1167Proxy",
+      implementations: [
+        { address: "0x19570da7f9f41d7b406eb5942db28c0e7221eec6" },
+      ],
+    });
+  });
+
   it("should detect DiamondProxy", async function () {
     mockSourcifyChain.call = sandbox
       .stub()
@@ -94,6 +114,59 @@ describe("proxy contract util", function () {
       proxyType: "EIP1967Proxy",
       implementations: [
         { address: "0xac805a864be8b5c6727a7ecd502c287a20c91379" },
+      ],
+    });
+  });
+
+  it("should detect MaticProxy (Polygon UpgradableProxy)", async function () {
+    // Polygon's own proxy pattern stores the implementation at
+    // keccak256("matic.network.proxy.implementation") instead of the EIP-1967 slot.
+    // solc 0.6.6 does not fold the constant, so the hash never appears in the
+    // bytecode; whatsabi finds it via the "matic.network.proxy.implementation"
+    // string in the aux-data segment. Based on Polygon DAI (chain 137)
+    // 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063.
+    mockSourcifyChain.getStorageAt = sandbox
+      .stub()
+      .resolves(
+        "000000000000000000000000490e379c9cff64944be82b849f8fd5972c7999a7",
+      );
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.MaticProxy,
+      "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "MaticProxy",
+      implementations: [
+        { address: "0x490e379c9cff64944be82b849f8fd5972c7999a7" },
+      ],
+    });
+  });
+
+  it("should detect MaticProxy from creation bytecode (the path Sourcify uses)", async function () {
+    // Sourcify passes creation bytecode preferentially. Its tail is constructor
+    // args, not CBOR metadata, so this only works with the CBOR plausibility
+    // guard added in whatsabi 0.28.0.
+    mockSourcifyChain.getStorageAt = sandbox
+      .stub()
+      .resolves(
+        "000000000000000000000000490e379c9cff64944be82b849f8fd5972c7999a7",
+      );
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.MaticProxyWithSlotOnlyInCreationCode,
+      "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "MaticProxy",
+      implementations: [
+        { address: "0x490e379c9cff64944be82b849f8fd5972c7999a7" },
       ],
     });
   });

@@ -23,11 +23,41 @@ import type {
   FeOutput,
   FeOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import {
+  COMPILER_TIMEOUT_CODE,
+  COMPILER_OOM_CODE,
+} from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
 function cleanCompilerVersion(version: string): string {
   // Remove non-numerical characters from the beginning of the version string
   return version.replace(/^[^\d]*/, '');
+}
+
+/**
+ * Returns the compilation target's contract from a compiler output.
+ * Use this instead of indexing `contracts` directly: in solcjs, for solidity
+ * versions prior to 0.4.9, the contracts are stored without the source path as a key.
+ */
+export function findContractInCompilerOutput(
+  compilerOutput: SolidityOutput | VyperOutput | FeOutput,
+  compilationTarget: CompilationTarget,
+): SolidityOutputContract | VyperOutputContract | FeOutputContract {
+  const contract =
+    compilerOutput.contracts?.['']?.[compilationTarget.name] ??
+    compilerOutput.contracts?.[compilationTarget.path]?.[
+      compilationTarget.name
+    ];
+  if (!contract) {
+    logWarn('Contract not found in compiler output', {
+      path: compilationTarget.path,
+      name: compilationTarget.name,
+    });
+    throw new CompilationError({
+      code: 'contract_not_found_in_compiler_output',
+    });
+  }
+  return contract;
 }
 
 export abstract class AbstractCompilation {
@@ -90,6 +120,15 @@ export abstract class AbstractCompilation {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,
       });
+      // The compilers package attaches a machine-readable discriminator on
+      // `.code` when the compiler subprocess dies, so we can surface a
+      // dedicated error code instead of a generic compiler_error (#2880).
+      if (e?.code === COMPILER_TIMEOUT_CODE) {
+        throw new CompilationError({ code: 'compiler_timeout' });
+      }
+      if (e?.code === COMPILER_OOM_CODE) {
+        throw new CompilationError({ code: 'compiler_out_of_memory' });
+      }
       // Depending on the compiler implementation, the errors object could be undefined
       // In this case, we use the error message as a fallback
       // e.g. @ethreum-sourcify/compilers supports the errors object but web-solc does not
@@ -108,6 +147,19 @@ export abstract class AbstractCompilation {
     // We call contractCompilerOutput() before logging because it can throw an error
     const compilationTargetContract = this.contractCompilerOutput;
 
+    // Some compilers don't output the deployedBytecode, e.g. Yul contracts compiled
+    // with solc <0.6.9 or without a deployed subobject, or Solidity <0.1.3.
+    // The rest of the verification flow relies on it being present, so fail here.
+    if (!compilationTargetContract.evm.deployedBytecode) {
+      logWarn('Runtime bytecode not found in compiler output', {
+        path: this.compilationTarget.path,
+        name: this.compilationTarget.name,
+      });
+      throw new CompilationError({
+        code: 'runtime_bytecode_not_found_in_compiler_output',
+      });
+    }
+
     const compilationEndTime = Date.now();
     this.compilationTime = compilationEndTime - compilationStartTime;
     logSilly('Compilation output', { compilerOutput: this.compilerOutput });
@@ -123,35 +175,15 @@ export abstract class AbstractCompilation {
   }
 
   get contractCompilerOutput():
-    | SolidityOutputContract
-    | VyperOutputContract
-    | FeOutputContract {
+    SolidityOutputContract | VyperOutputContract | FeOutputContract {
     if (!this.compilerOutput) {
       logWarn('Compiler output is undefined');
       throw new CompilationError({ code: 'no_compiler_output' });
     }
-    // In solcjs, for solidity versions prior to 0.4.9, the contracts are stored without the source path as a key
-    if (this.compilerOutput.contracts['']?.[this.compilationTarget.name]) {
-      return this.compilerOutput.contracts[''][this.compilationTarget.name];
-    }
-    if (
-      !this.compilerOutput.contracts ||
-      !this.compilerOutput.contracts[this.compilationTarget.path] ||
-      !this.compilerOutput.contracts[this.compilationTarget.path][
-        this.compilationTarget.name
-      ]
-    ) {
-      logWarn('Contract not found in compiler output', {
-        path: this.compilationTarget.path,
-        name: this.compilationTarget.name,
-      });
-      throw new CompilationError({
-        code: 'contract_not_found_in_compiler_output',
-      });
-    }
-    return this.compilerOutput.contracts[this.compilationTarget.path][
-      this.compilationTarget.name
-    ];
+    return findContractInCompilerOutput(
+      this.compilerOutput,
+      this.compilationTarget,
+    );
   }
 
   get creationBytecode() {
@@ -159,10 +191,9 @@ export abstract class AbstractCompilation {
   }
 
   get runtimeBytecode() {
-    // Solidity versions prior to 0.1.3 do not include the deployedBytecode in the compiler output,
-    // instead of handling the runtime bytecode type as optional, we set it to an empty string if it's not present
-    // otherwise the verification process would need to handle the runtime bytecode as optional
-    // and this would add unnecessary complexity to the verification process
+    // The deployedBytecode presence is enforced in compileAndReturnCompilationTarget.
+    // Its object can still be empty, e.g. for abstract contracts, in which case
+    // verification fails with `compiled_bytecode_is_zero`.
     return `0x${this.contractCompilerOutput.evm.deployedBytecode.object || ''}`;
   }
 

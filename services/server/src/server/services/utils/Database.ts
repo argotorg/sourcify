@@ -14,9 +14,12 @@ import type {
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
   CodePrefixMatchResult,
+  GetCompilationsByIdsResult,
 } from "./database-util";
 import {
   bytesFromString,
+  buildStdJsonInputSelector,
+  SIMILARITY_PREFIX_LENGTH_BYTES,
   STORED_PROPERTIES_TO_SELECTORS,
 } from "./database-util";
 import { createHash } from "crypto";
@@ -263,25 +266,87 @@ ${
     );
   }
 
-  async getVerifiedContractsByRuntimeCodePrefix(
+  /**
+   * Returns the ids of up to `limit` compilations whose runtime code shares its
+   * first 75 bytes with the given bytecode.
+   *
+   * Reads the compiled_contracts_runtime_code_prefixes side table: there every
+   * entry is a candidate, so the LIMIT short-circuits after ~limit index
+   * entries. A prefix scan on the code table is too slow -- see the analysis in
+   * https://github.com/argotorg/sourcify/issues/2891.
+   *
+   * The LATERAL keeps only compilations that still have a sourcify_match;
+   * compilations without one are stale. Do NOT rewrite it as EXISTS: Postgres
+   * de-correlates EXISTS into a semi-join and drives the query from sequential
+   * scans over verified_contracts and sourcify_matches (see the issue). The
+   * LIMIT 1 inside the LATERAL blocks that, so the planner drives from the
+   * prefix index.
+   */
+  async getCompilationsByRuntimeCodePrefix(
     runtimeBytecode: Buffer,
     limit: number = 20,
   ): Promise<QueryResult<CodePrefixMatchResult>> {
     return await this.pool.query(
       `
-        SELECT
-          compiled_contracts.id as compilation_id,
-          contract_deployments.chain_id,
-          concat('0x', encode(contract_deployments.address, 'hex')) as address
-        FROM ${this.schema}.code code
-        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
-        JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
-        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-        JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
-        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        SELECT prefixes.compilation_id
+        FROM ${this.schema}.compiled_contracts_runtime_code_prefixes prefixes
+        CROSS JOIN LATERAL (
+          SELECT 1
+          FROM ${this.schema}.verified_contracts
+          JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+          WHERE verified_contracts.compilation_id = prefixes.compilation_id
+          LIMIT 1
+        ) verified
+        WHERE prefixes.runtime_code_prefix = substring($1::bytea FROM 1 FOR ${SIMILARITY_PREFIX_LENGTH_BYTES})
         LIMIT $2
       `,
       [runtimeBytecode, limit],
+    );
+  }
+
+  /**
+   * Fetches the compilation data needed to re-run a compilation, for a batch of
+   * compilation ids in a single round trip.
+   *
+   * - Sources come from a scalar subquery instead of a JOIN + GROUP BY:
+   *   metadata is a `json` column, which cannot be grouped.
+   * - The LATERAL is aliased `sourcify_matches` so the shared selectors that
+   *   reference sourcify_matches.metadata work verbatim.
+   */
+  async getCompilationsByIds(
+    compilationIds: string[],
+  ): Promise<QueryResult<GetCompilationsByIdsResult>> {
+    const stdJsonInputSelector = buildStdJsonInputSelector(`(
+        SELECT json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))
+        FROM ${this.schema}.compiled_contracts_sources
+        LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
+        WHERE compiled_contracts_sources.compilation_id = compiled_contracts.id
+      )`);
+
+    return await this.pool.query(
+      `
+        SELECT
+          compiled_contracts.id as compilation_id,
+          ${STORED_PROPERTIES_TO_SELECTORS["version"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["fully_qualified_name"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["creation_cbor_auxdata"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["runtime_cbor_auxdata"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["metadata"]},
+          ${stdJsonInputSelector},
+          ${STORED_PROPERTIES_TO_SELECTORS["std_json_output"]}
+        FROM ${this.schema}.compiled_contracts
+        LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
+        LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
+        CROSS JOIN LATERAL (
+          SELECT sourcify_matches.metadata
+          FROM ${this.schema}.verified_contracts
+          JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+          WHERE verified_contracts.compilation_id = compiled_contracts.id
+          LIMIT 1
+        ) sourcify_matches
+        WHERE compiled_contracts.id = ANY($1::uuid[])
+      `,
+      [compilationIds],
     );
   }
 
@@ -309,26 +374,6 @@ ${
       WHERE contract_deployments.address = $1
       `,
       [address],
-    );
-  }
-
-  async getCompiledContractSources(
-    compilation_id: string,
-  ): Promise<
-    QueryResult<
-      Tables.CompiledContractsSources & Pick<Tables.Sources, "content">
-    >
-  > {
-    return await this.pool.query(
-      `
-        SELECT
-          compiled_contracts_sources.*,
-          sources.content
-        FROM ${this.schema}.compiled_contracts_sources
-        LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
-        WHERE compilation_id = $1
-      `,
-      [compilation_id],
     );
   }
 
@@ -418,31 +463,6 @@ ${
     );
   }
 
-  async countSourcifyMatchAddresses(chain: number): Promise<
-    QueryResult<
-      Pick<Tables.ContractDeployment, "chain_id"> & {
-        full_total: number;
-        partial_total: number;
-      }
-    >
-  > {
-    return await this.pool.query(
-      `
-  SELECT
-  contract_deployments.chain_id,
-  CAST(SUM(CASE 
-    WHEN COALESCE(sourcify_matches.creation_match, '') = 'perfect' OR sourcify_matches.runtime_match = 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS full_total,
-  CAST(SUM(CASE 
-    WHEN COALESCE(sourcify_matches.creation_match, '') != 'perfect' AND sourcify_matches.runtime_match != 'perfect' THEN 1 ELSE 0 END) AS INTEGER) AS partial_total
-  FROM ${this.schema}.sourcify_matches
-  JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
-  JOIN ${this.schema}.contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
-  WHERE contract_deployments.chain_id = $1
-  GROUP BY contract_deployments.chain_id;`,
-      [chain],
-    );
-  }
-
   async getSourcifyMatchesByChain(
     chain: number,
     limit: number,
@@ -483,55 +503,6 @@ ${
     LIMIT $2
     `,
       values,
-    );
-  }
-
-  async getSourcifyMatchAddressesByChainAndMatch(
-    chain: number,
-    match: "full_match" | "partial_match" | "any_match",
-    page: number,
-    paginationSize: number,
-    descending: boolean = false,
-  ): Promise<QueryResult<{ address: string }>> {
-    let queryWhere: string;
-    switch (match) {
-      case "full_match": {
-        queryWhere =
-          "WHERE COALESCE(sourcify_matches.creation_match, '') = 'perfect' OR sourcify_matches.runtime_match = 'perfect'";
-        break;
-      }
-      case "partial_match": {
-        queryWhere =
-          "WHERE COALESCE(sourcify_matches.creation_match, '') != 'perfect' AND sourcify_matches.runtime_match != 'perfect'";
-        break;
-      }
-      case "any_match": {
-        queryWhere = "";
-        break;
-      }
-      default: {
-        throw new Error("Match type not supported");
-      }
-    }
-
-    const orderBy = descending
-      ? "ORDER BY verified_contracts.id DESC"
-      : "ORDER BY verified_contracts.id ASC";
-
-    return await this.pool.query(
-      `
-    SELECT
-      concat('0x',encode(contract_deployments.address, 'hex')) as address
-    FROM ${this.schema}.sourcify_matches
-    JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
-    JOIN ${this.schema}.contract_deployments ON 
-        contract_deployments.id = verified_contracts.deployment_id
-        AND contract_deployments.chain_id = $1
-    ${queryWhere}
-    ${orderBy}
-    OFFSET $2 LIMIT $3
-    `,
-      [chain, page * paginationSize, paginationSize],
     );
   }
 
@@ -1136,107 +1107,5 @@ ${
         creation_transaction_hash,
       ],
     );
-  }
-
-  async deleteMatch(
-    poolClient: PoolClient,
-    chainId: number | string,
-    address: string,
-  ): Promise<void> {
-    // Safely deletes an existing sourcify match together with all dangling linked rows.
-    // If any of the rows are still referenced elsewhere, the FK constraints will abort the
-    // transaction and propagate an error, allowing the caller to handle it.
-
-    const addressBytes = bytesFromString(address)!;
-
-    // 1. Fetch all ids / hashes we may need later in the cleanup
-    const { rows } = await poolClient.query(
-      `
-        SELECT
-          vc.id  AS verified_contract_id,
-          vc.compilation_id,
-          vc.deployment_id,
-          cd.contract_id,
-          ctr.creation_code_hash  AS contract_creation_code_hash,
-          ctr.runtime_code_hash   AS contract_runtime_code_hash,
-          cc.creation_code_hash   AS compilation_creation_code_hash,
-          cc.runtime_code_hash    AS compilation_runtime_code_hash
-        FROM ${this.schema}.verified_contracts vc
-        JOIN ${this.schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
-        JOIN ${this.schema}.contract_deployments cd ON cd.id = vc.deployment_id
-        JOIN ${this.schema}.contracts ctr          ON ctr.id = cd.contract_id
-        JOIN ${this.schema}.compiled_contracts cc  ON cc.id = vc.compilation_id
-        WHERE cd.chain_id = $1
-          AND cd.address   = $2
-        LIMIT 1;
-        `,
-      [chainId, addressBytes],
-    );
-
-    if (rows.length === 0) {
-      throw new Error("No existing verified contract found to delete");
-    }
-
-    const info = rows[0];
-
-    // 2. Child-first deletions relying on FK safety
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.sourcify_matches WHERE verified_contract_id = $1`,
-      [info.verified_contract_id],
-    );
-    await poolClient.query(
-      `UPDATE ${this.schema}.verification_jobs SET verified_contract_id=NULL WHERE verified_contract_id = $1`,
-      [info.verified_contract_id],
-    );
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.verified_contracts WHERE id = $1`,
-      [info.verified_contract_id],
-    );
-
-    // 3. Compilation side clean-up
-    const { rows: sourceRows } = await poolClient.query(
-      `SELECT source_hash FROM ${this.schema}.compiled_contracts_sources WHERE compilation_id = $1`,
-      [info.compilation_id],
-    );
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.compiled_contracts_sources WHERE compilation_id = $1`,
-      [info.compilation_id],
-    );
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.compiled_contracts WHERE id = $1`,
-      [info.compilation_id],
-    );
-    for (const { source_hash } of sourceRows) {
-      await poolClient.query(
-        `DELETE FROM ${this.schema}.sources
-           WHERE source_hash = $1`,
-        [source_hash],
-      );
-    }
-
-    // 4. Deployment side clean-up
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.contract_deployments WHERE id = $1`,
-      [info.deployment_id],
-    );
-    await poolClient.query(
-      `DELETE FROM ${this.schema}.contracts WHERE id = $1`,
-      [info.contract_id],
-    );
-
-    // 5. Remove now-dangling code rows
-    const codeHashes: Buffer[] = [
-      info.contract_creation_code_hash,
-      info.contract_runtime_code_hash,
-      info.compilation_creation_code_hash,
-      info.compilation_runtime_code_hash,
-    ].filter(Boolean);
-
-    for (const hash of codeHashes) {
-      await poolClient.query(
-        `DELETE FROM ${this.schema}.code WHERE code_hash = $1`,
-        [hash],
-      );
-    }
   }
 }

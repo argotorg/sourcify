@@ -1,11 +1,10 @@
 {
   "name": "sourcify-database",
-  "version": "2.13.3",
+  "version": "2.14.0",
   "private": true,
   "description": "The Sourcify database",
   "main": "index.js",
   "scripts": {
-    "sourcify:database": "node scripts.mjs ",
     "migrate:setup": "TEMP_DIR=migrations-temp-${SERVICE_NAME:-default} && rm -rf $TEMP_DIR && mkdir -p $TEMP_DIR && ln -sf $PWD/database-specs/migrations/* $PWD/$TEMP_DIR/ && ln -sf $PWD/migrations/* $PWD/$TEMP_DIR/",
     "migrate:up": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate up",
     "migrate:up-no-dump": "npm run migrate:setup && DBMATE_MIGRATIONS_DIR=./migrations-temp-${SERVICE_NAME:-default} dbmate --no-dump-schema up",
@@ -21,10 +20,9 @@
   "license": "MIT",
   "dependencies": {
     "commander": "14.0.3",
-    "dbmate": "2.33.0",
+    "dbmate": "2.34.1",
     "dotenv": "16.6.1",
-    "ethers": "6.16.0",
-    "pg": "8.21.0",
-    "readdirp": "3.6.0"
+    "ethers": "6.17.0",
+    "pg": "8.22.0"
   }
 }

@@ -2,7 +2,10 @@ import { describe, it } from 'mocha';
 import { expect, use } from 'chai';
 import path from 'path';
 import fs from 'fs';
-import { SolidityCompilation } from '../../src/Compilation/SolidityCompilation';
+import {
+  SolidityCompilation,
+  DEFAULT_OUTPUT_SELECTION_FIELDS,
+} from '../../src/Compilation/SolidityCompilation';
 import { solc } from '../utils';
 import {
   CompilationError,
@@ -14,6 +17,7 @@ import type {
   Metadata,
 } from '@ethereum-sourcify/compilers-types';
 import chaiAsPromised from 'chai-as-promised';
+import { keccak256, toUtf8Bytes } from 'ethers';
 
 use(chaiAsPromised);
 
@@ -67,6 +71,45 @@ describe('SolidityCompilation', () => {
     expect(compilation.runtimeBytecode).to.equal(
       '0x6080604052348015600f57600080fd5b506004361060325760003560e01c80632e64cec11460375780636057361d146051575b600080fd5b603d6069565b6040516048919060c2565b60405180910390f35b6067600480360381019060639190608f565b6072565b005b60008054905090565b8060008190555050565b60008135905060898160e5565b92915050565b60006020828403121560a057600080fd5b600060ac84828501607c565b91505092915050565b60bc8160db565b82525050565b600060208201905060d5600083018460b5565b92915050565b6000819050919050565b60ec8160db565b811460f657600080fd5b5056fea264697066735822122005183dd5df276b396683ae62d0c96c3a406d6f9dad1ad0923daf492c531124b164736f6c63430008040033',
     );
+  });
+
+  it('should scope outputSelection to the compilation target', () => {
+    const contractPath = path.join(__dirname, '..', 'sources', 'Storage');
+    const metadata = JSON.parse(
+      fs.readFileSync(path.join(contractPath, 'metadata.json'), 'utf8'),
+    );
+    const sources = {
+      'project:/contracts/Storage.sol': {
+        content: fs.readFileSync(
+          path.join(contractPath, 'sources', 'Storage.sol'),
+          'utf8',
+        ),
+      },
+    };
+    const target = getCompilationTargetFromMetadata(metadata);
+
+    const compilation = new SolidityCompilation(
+      solc,
+      metadata.compiler.version,
+      {
+        language: 'Solidity',
+        sources,
+        settings: {
+          ...getSolcSettingsFromMetadata(metadata),
+          // A wildcard selection that the constructor must narrow down. Emitting
+          // heavy artifacts for every contract in every source can OOM the
+          // server on large projects. See issue #2880.
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      },
+      target,
+    );
+
+    expect(compilation.jsonInput.settings.outputSelection).to.deep.equal({
+      [target.path]: {
+        [target.name]: [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+      },
+    });
   });
 
   it('should generate correct CBOR auxdata positions', async () => {
@@ -184,6 +227,60 @@ describe('SolidityCompilation', () => {
           '0xa2646970667358221220eb4312065a8c0fb940ef11ef5853554a447a5325095ee0f8fbbbbfc43dbb1b7464736f6c63430008090033',
       },
     });
+  });
+
+  it('should generate auxdata positions when sources carry a keccak256 integrity hash', async () => {
+    // Regression test: a Standard-JSON input (e.g. imported from Etherscan) can carry a
+    // `keccak256` integrity hash for each source. Generating the cbor auxdata positions for
+    // a contract with multiple auxdatas recompiles an *edited* copy of the sources (a trailing
+    // space is appended to each) to diff the metadata hashes. The stale `keccak256` must be
+    // dropped for that recompilation, otherwise solc rejects the edited source with
+    // "Mismatch between content and supplied hash" and no positions can be generated.
+    const contractPath = path.join(
+      __dirname,
+      '..',
+      'sources',
+      'WithMultipleAuxdatas',
+    );
+    const metadata = JSON.parse(
+      fs.readFileSync(path.join(contractPath, 'metadata.json'), 'utf8'),
+    );
+
+    const sources: { [key: string]: { keccak256: string; content: string } } =
+      {};
+    for (const [sourcePath] of Object.entries(metadata.sources)) {
+      const content = fs.readFileSync(
+        path.join(contractPath, 'sources', path.basename(sourcePath)),
+        'utf8',
+      );
+      // Populate the keccak256 integrity hash the way an Etherscan Standard-JSON input does
+      sources[sourcePath] = {
+        keccak256: keccak256(toUtf8Bytes(content)),
+        content,
+      };
+    }
+
+    const compilation = new SolidityCompilation(
+      solc,
+      metadata.compiler.version,
+      {
+        language: 'Solidity',
+        sources,
+        settings: getSolcSettingsFromMetadata(metadata),
+      },
+      getCompilationTargetFromMetadata(metadata),
+    );
+
+    await compilation.compile();
+    // Before the fix this rejected with "Cannot generate cbor auxdata positions."
+    await compilation.generateCborAuxdataPositions();
+
+    expect(
+      Object.keys(compilation.runtimeBytecodeCborAuxdata),
+    ).to.have.lengthOf(3);
+    expect(
+      Object.keys(compilation.creationBytecodeCborAuxdata),
+    ).to.have.lengthOf(3);
   });
 
   it('should handle case with no auxdata when metadata is disabled', async () => {

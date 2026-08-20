@@ -6,9 +6,17 @@ import type {
 import { useFeCompiler } from "@ethereum-sourcify/compilers";
 
 export class FeLocal implements IFeCompiler {
-  constructor(private feRepoPath: string) {}
+  constructor(
+    private feRepoPath: string,
+    private timeoutMs?: number,
+  ) {}
 
   async compile(version: string, feJsonInput: FeJsonInput): Promise<FeOutput> {
-    return await useFeCompiler(this.feRepoPath, version, feJsonInput);
+    return await useFeCompiler(
+      this.feRepoPath,
+      version,
+      feJsonInput,
+      this.timeoutMs,
+    );
   }
 }

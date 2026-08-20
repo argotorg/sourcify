@@ -31,7 +31,8 @@ export type ErrorCode =
   | "etherscan_limit"
   | "not_etherscan_verified"
   | "malformed_etherscan_response"
-  | "failed_to_get_bytecode";
+  | "failed_to_get_bytecode"
+  | "bytecode_too_short_for_similarity";
 
 export interface GenericErrorResponse {
   customCode: ErrorCode;
@@ -230,6 +231,19 @@ export class GetBytecodeError extends BadGatewayError {
   }
 }
 
+export class BytecodeTooShortForSimilarityError extends BadRequestError {
+  payload: GenericErrorResponse;
+
+  constructor(message: string) {
+    super(message);
+    this.payload = {
+      customCode: "bytecode_too_short_for_similarity",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
 // Maps OpenApiValidator errors to our custom error format
 export function errorHandler(
   err: any,
@@ -266,7 +280,9 @@ export type VerificationErrorCode =
   | "unsupported_language"
   | "already_verified"
   | "internal_error"
-  | "no_similar_match_found";
+  | "no_similar_match_found"
+  | "job_abandoned"
+  | "similarity_search_timeout";
 
 export type VerificationErrorParameters =
   | SourcifyLibErrorParameters
@@ -286,6 +302,10 @@ export function getVerificationErrorMessage(
       return "The server encountered an unexpected error.";
     case "no_similar_match_found":
       return "No similar verified contracts were found in the database.";
+    case "job_abandoned":
+      return "The verification job did not complete in time and was marked as abandoned by the server. This usually happens when the compilation runs out of memory or hangs. You can resubmit the verification.";
+    case "similarity_search_timeout":
+      return "The search for similar verified contracts took too long to complete. This can happen when the contract's bytecode starts with a very common prefix.";
     default:
       return getErrorMessageFromCode(params as SourcifyLibErrorParameters);
   }

@@ -1,5 +1,13 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.14.0 - 2026-08-20
+
+- Speed up delete-sourcify-match orphan checks and add verification_jobs FK index (#2888)
+- refactor(server): remove API v1 (#2877)
+- fix: prevent and auto-recover stuck v2 verification jobs (compiler OOM/hang) (#2880) (#2886)
+- Fix similarity API database load and timeouts (#2918)
+- security: pin CI images and actions by digest (#2915)
+
 ## sourcify-database@2.13.3 - 2026-07-06
 
 - backfill missing Vyper immutableReferences (#2855)

@@ -38,11 +38,27 @@ export interface VerifyFromEtherscanInput extends VerificationWorkerInput {
   etherscanResult: EtherscanResult;
 }
 
+/**
+ * Creation data for the contract being verified, resolved once by the caller.
+ *
+ * Similarity verification tries candidates in batches, i.e. it can call the
+ * worker several times for a single contract. Resolving this in the worker
+ * would repeat the same RPC calls on every batch, so the caller resolves it
+ * once and passes it in.
+ */
+export interface SimilarityCreationData {
+  creationTransactionHash?: string;
+  creationBytecode?: string;
+  deployer?: string;
+  blockNumber?: number;
+  txIndex?: number;
+}
+
 export interface VerifySimilarityInput extends VerificationWorkerInput {
   chainId: string;
   address: string;
   runtimeBytecode: string;
-  creationTransactionHash?: string;
+  creationData: SimilarityCreationData;
   candidates: SimilarityCandidate[];
 }
 

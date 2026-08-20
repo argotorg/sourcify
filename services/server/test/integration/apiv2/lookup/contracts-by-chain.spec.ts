@@ -1,6 +1,9 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
-import { deployAndVerifyContract } from "../../../helpers/helpers";
+import {
+  deployAndVerifyContract,
+  hookIntoVerificationWorkerRun,
+} from "../../../helpers/helpers";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import Sinon from "sinon";
@@ -11,15 +14,18 @@ describe("GET /v2/contracts/:chainId", function () {
   const chainFixture = new LocalChainFixture();
   const serverFixture = new ServerFixture();
   const sandbox = Sinon.createSandbox();
+  const makeWorkersWait = hookIntoVerificationWorkerRun(sandbox, serverFixture);
 
   afterEach(() => {
     sandbox.restore();
   });
 
   it("should list verified contracts per chain", async function () {
+    const { resolveWorkers } = makeWorkersWait();
     const address = await deployAndVerifyContract(
       chainFixture,
       serverFixture,
+      resolveWorkers,
       true, // partial match
     );
 
@@ -42,9 +48,11 @@ describe("GET /v2/contracts/:chainId", function () {
   });
 
   it("should list exact matches", async function () {
+    const { resolveWorkers } = makeWorkersWait();
     const address = await deployAndVerifyContract(
       chainFixture,
       serverFixture,
+      resolveWorkers,
       false, // exact match
     );
 
@@ -69,11 +77,16 @@ describe("GET /v2/contracts/:chainId", function () {
   it(`should handle pagination when listing contracts`, async function () {
     const contractAddresses: string[] = [];
 
+    // One hook for the whole loop: makeWorkersWait stubs the worker pool, which
+    // can only be wrapped once per test.
+    const { resolveWorkers } = makeWorkersWait();
+
     // Deploy 5 contracts
     for (let i = 0; i < 5; i++) {
       const address = await deployAndVerifyContract(
         chainFixture,
         serverFixture,
+        resolveWorkers,
         true,
       );
       contractAddresses.push(address);

@@ -42,7 +42,7 @@ module.exports = {
     process.env.NODE_ENV !== "production" &&
       /^https?:\/\/10(?:\.\d{1,3}){3}(?::\d+)?$/, // local IPs with 10.x.x.x
   ],
-  // verify-deprecated endpoint used in services/database/scripts.mjs. Used when recreating the DB with deprecated chains that don't have an RPC.
+  // Enables the private verify-deprecated endpoint. Used when recreating the DB with deprecated chains that don't have an RPC.
   verifyDeprecated: false,
   replaceContract: false,
   chains: {
@@ -50,9 +50,5 @@ module.exports = {
     // To use a different set of chains, create a sourcify-chains.json override file — it takes priority.
     remoteUrl:
       "https://storage.googleapis.com/sourcifyeth-chains/sourcify-chains-default.json",
-  },
-  brownoutV1: {
-    enabled: false,
-    windows: [],
   },
 };

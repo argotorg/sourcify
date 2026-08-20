@@ -12,17 +12,13 @@ import type {
   StringMap,
   VerificationExport,
 } from "@ethereum-sourcify/lib-sourcify";
-import type {
-  V1MatchLevelWithoutAny,
-  MatchQuality,
-  PathConfig,
-} from "../../types";
+import type { MatchQuality, PathConfig } from "../../types";
 import logger from "../../../common/logger";
 import { getAddress, id as keccak256 } from "ethers";
 import type { WStorageService } from "../StorageService";
 import { WStorageIdentifiers } from "./identifiers";
-import { exists, readFile } from "../utils/util";
-import { getMatchStatus } from "../../apiv1/controllers.common";
+import { exists } from "../utils/util";
+import { getMatchStatus } from "../utils/util";
 
 export interface RepositoryV2ServiceOptions {
   repositoryPath?: string;
@@ -41,15 +37,6 @@ export class RepositoryV2Service implements WStorageService {
       repositoryPath: this.repositoryPath,
     });
     return true;
-  }
-
-  async getFile(
-    chainId: string,
-    address: string,
-    match: V1MatchLevelWithoutAny,
-    path: string,
-  ): Promise<string | false> {
-    return await readFile(this.repositoryPath, match, chainId, address, path);
   }
 
   // /home/user/sourcify/data/repository/contracts/full_match/5/0x00878Ac0D6B8d981ae72BA7cDC967eA0Fae69df4/sources/filename
