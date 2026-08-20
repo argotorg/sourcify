@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
+-- Dumped from database version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
+-- Dumped by pg_dump version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1631,13 +1631,6 @@ CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtim
 
 
 --
--- Name: idx_code_code_first_75; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_code_code_first_75 ON public.code USING btree (SUBSTRING(code FROM 1 FOR 75));
-
-
---
 -- Name: signature_stats_type_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2256,4 +2249,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260723090000'),
     ('20260724100000'),
     ('20260729090000'),
-    ('20260803100000');
+    ('20260803100000'),
+    ('20260820120000');
