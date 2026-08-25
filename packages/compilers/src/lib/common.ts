@@ -90,13 +90,9 @@ export async function asyncExec(
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
 
-  // Run every compiler subprocess in an empty temp directory. Native solc
-  // --standard-json (notably >=0.8.8) resolves missing imports against the cwd
-  // (allowed base path "."). A user-controlled `import "./.env"` would
-  // otherwise let the compiler read host files and leak their contents through
-  // the compiler error (formattedMessage). An empty cwd makes those imports
-  // resolve to nothing. Callers must pass an absolute binary path in `command`,
-  // since a relative path would no longer resolve once cwd changes.
+  // Run in an empty temp cwd so a user-controlled `import "./.env"` cannot make
+  // the compiler read host files (#2920). Callers must pass an absolute binary
+  // path in `command`, since a relative one would break once cwd changes.
   const sandboxCwd = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'sourcify-compiler-'),
   );

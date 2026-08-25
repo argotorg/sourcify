@@ -69,8 +69,7 @@ export async function useVyperCompiler(
   let compiled: string | undefined;
   const inputStringified = stringifyVyperJsonInput(vyperJsonInput);
   const startCompilation = Date.now();
-  // asyncExec runs the compiler in an empty temp cwd (see its comment).
-  // Resolve to an absolute path so the binary still resolves after cwd change.
+  // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
   const absoluteVyperPath = path.resolve(vyperPath);
   try {
     compiled = await asyncExec(

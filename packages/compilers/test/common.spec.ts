@@ -89,12 +89,8 @@ describe('asyncExec robustness (#2880)', () => {
 });
 
 describe('asyncExec compiler cwd sandbox (import path leak)', () => {
-  // Native compilers (solc --standard-json >=0.8.8) resolve missing imports
-  // against the process cwd. A user-controlled `import "./.env"` would let the
-  // compiler read a host file and leak its content through the compiler error.
-  // asyncExec runs every subprocess in an empty temp dir to prevent this. These
-  // tests exercise that generically with `sh`, so they hold for every compiler
-  // that goes through asyncExec (solc, vyper), independent of any binary.
+  // asyncExec runs every compiler in an empty temp cwd so imports cannot read
+  // host files (#2920). Exercised generically here, so it holds for solc/vyper.
   let secretName: string;
   let secretPath: string;
 
@@ -109,16 +105,14 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
   });
 
   it('runs the subprocess in an empty temp dir, not the host cwd', async () => {
-    // `pwd` reports the working directory the subprocess actually ran in. It is
-    // a fresh temp dir, not the host cwd where the secret file lives.
+    // `pwd` reports where the subprocess ran: a temp dir, not the host cwd.
     const cwd = (await asyncExec('pwd', '{}', MAX_BUFFER)).trim();
     expect(cwd).to.not.equal(process.cwd());
     expect(cwd.startsWith(fs.realpathSync(os.tmpdir()))).to.equal(true);
   });
 
   it('cannot read a host cwd file through a relative path', async () => {
-    // Reading the secret by the same relative path a leaking import would use
-    // must fail, because the sandbox cwd does not contain it.
+    // The same relative path a leaking import would use must fail to read.
     let thrown: any;
     try {
       await asyncExec(`cat "./${secretName}"`, '{}', MAX_BUFFER);
@@ -139,7 +133,7 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
     const after = fs
       .readdirSync(os.tmpdir())
       .filter((d) => d.startsWith('sourcify-compiler-'));
-    // No new sourcify-compiler-* dir is left behind after a successful run.
+    // No temp dir left behind after a run.
     expect(after.length).to.be.at.most(before.length);
   });
 });

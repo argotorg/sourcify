@@ -91,8 +91,7 @@ export async function useSolidityCompiler(
   }
   let startCompilation: number;
   if (solcPath && !forceEmscripten) {
-    // asyncExec runs the compiler in an empty temp cwd (see its comment).
-    // Resolve to an absolute path so the binary still resolves after cwd change.
+    // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
     const absoluteSolcPath = path.resolve(solcPath);
     logDebug('Compiling with solc binary', {
       version,
