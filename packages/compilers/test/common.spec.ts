@@ -1,4 +1,7 @@
 import { expect } from 'chai';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { asyncExec } from '../src/lib/common';
 import {
   COMPILER_OOM_CODE,
@@ -82,5 +85,61 @@ describe('asyncExec robustness (#2880)', () => {
     expect(thrown, 'expected asyncExec to reject').to.be.instanceOf(Error);
     expect(thrown.code).to.not.equal(COMPILER_OOM_CODE);
     expect(thrown.code).to.not.equal(COMPILER_TIMEOUT_CODE);
+  });
+});
+
+describe('asyncExec compiler cwd sandbox (import path leak)', () => {
+  // Native compilers (solc --standard-json >=0.8.8) resolve missing imports
+  // against the process cwd. A user-controlled `import "./.env"` would let the
+  // compiler read a host file and leak its content through the compiler error.
+  // asyncExec runs every subprocess in an empty temp dir to prevent this. These
+  // tests exercise that generically with `sh`, so they hold for every compiler
+  // that goes through asyncExec (solc, vyper), independent of any binary.
+  let secretName: string;
+  let secretPath: string;
+
+  beforeEach(() => {
+    secretName = `.sourcify-cwd-leak-test-${process.pid}`;
+    secretPath = path.join(process.cwd(), secretName);
+    fs.writeFileSync(secretPath, 'LEAK_SECRET_VALUE=super-secret\n', 'utf8');
+  });
+
+  afterEach(() => {
+    fs.rmSync(secretPath, { force: true });
+  });
+
+  it('runs the subprocess in an empty temp dir, not the host cwd', async () => {
+    // `pwd` reports the working directory the subprocess actually ran in. It is
+    // a fresh temp dir, not the host cwd where the secret file lives.
+    const cwd = (await asyncExec('pwd', '{}', MAX_BUFFER)).trim();
+    expect(cwd).to.not.equal(process.cwd());
+    expect(cwd.startsWith(fs.realpathSync(os.tmpdir()))).to.equal(true);
+  });
+
+  it('cannot read a host cwd file through a relative path', async () => {
+    // Reading the secret by the same relative path a leaking import would use
+    // must fail, because the sandbox cwd does not contain it.
+    let thrown: any;
+    try {
+      await asyncExec(`cat "./${secretName}"`, '{}', MAX_BUFFER);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the relative read to fail').to.be.instanceOf(
+      Error,
+    );
+    expect(`${thrown?.message ?? ''}`).to.not.contain('super-secret');
+  });
+
+  it('always cleans up the temp dir it created', async () => {
+    const before = fs
+      .readdirSync(os.tmpdir())
+      .filter((d) => d.startsWith('sourcify-compiler-'));
+    await asyncExec('cat', '{}', MAX_BUFFER);
+    const after = fs
+      .readdirSync(os.tmpdir())
+      .filter((d) => d.startsWith('sourcify-compiler-'));
+    // No new sourcify-compiler-* dir is left behind after a successful run.
+    expect(after.length).to.be.at.most(before.length);
   });
 });

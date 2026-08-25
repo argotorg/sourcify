@@ -1,4 +1,7 @@
 import { exec } from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { logDebug, logError, logSilly } from '../logger';
 import type { OutputError } from '@ethereum-sourcify/compilers-types';
 import {
@@ -78,25 +81,46 @@ export function createCompilerTimeoutError(timeoutMs: number): Error & {
   return timeoutError;
 }
 
-export type AsyncExecOptions = {
-  /**
-   * Working directory for the compiler subprocess.
-   * Used by native solc to isolate import resolution from the host process cwd
-   * (solc >=0.8.8 may read relative imports from base path ".").
-   */
-  cwd?: string;
-};
-
-export function asyncExec(
+export async function asyncExec(
   command: string,
   inputStringified: string,
   maxBuffer: number,
   timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
-  options: AsyncExecOptions = {},
 ): Promise<string> {
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
 
+  // Run every compiler subprocess in an empty temp directory. Native solc
+  // --standard-json (notably >=0.8.8) resolves missing imports against the cwd
+  // (allowed base path "."). A user-controlled `import "./.env"` would
+  // otherwise let the compiler read host files and leak their contents through
+  // the compiler error (formattedMessage). An empty cwd makes those imports
+  // resolve to nothing. Callers must pass an absolute binary path in `command`,
+  // since a relative path would no longer resolve once cwd changes.
+  const sandboxCwd = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'sourcify-compiler-'),
+  );
+
+  try {
+    return await runInSandbox(
+      command,
+      inputStringified,
+      maxBuffer,
+      timeoutMs,
+      sandboxCwd,
+    );
+  } finally {
+    await fs.promises.rm(sandboxCwd, { recursive: true, force: true });
+  }
+}
+
+function runInSandbox(
+  command: string,
+  inputStringified: string,
+  maxBuffer: number,
+  timeoutMs: number,
+  sandboxCwd: string,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     // Guard so the promise settles exactly once. Multiple failure signals can
     // race (exec callback, stdin 'error', a thrown write) and double-settling
@@ -131,7 +155,7 @@ export function asyncExec(
         maxBuffer,
         timeout: timeoutMs,
         killSignal: 'SIGKILL',
-        cwd: options.cwd,
+        cwd: sandboxCwd,
       },
       (error, stdout, stderr) => {
         if (error) {

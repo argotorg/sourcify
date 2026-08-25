@@ -1,7 +1,6 @@
 // TODO: Handle nodejs only dependencies
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 import { spawnSync } from 'child_process';
 import semver from 'semver';
 import type { WorkerOptions } from 'worker_threads';
@@ -92,35 +91,26 @@ export async function useSolidityCompiler(
   }
   let startCompilation: number;
   if (solcPath && !forceEmscripten) {
-    // Resolve before changing cwd: a relative solcRepo path would otherwise break.
+    // asyncExec runs the compiler in an empty temp cwd (see its comment).
+    // Resolve to an absolute path so the binary still resolves after cwd change.
     const absoluteSolcPath = path.resolve(solcPath);
     logDebug('Compiling with solc binary', {
       version,
       solcPath: absoluteSolcPath,
     });
     startCompilation = Date.now();
-    // Native solc --standard-json (notably >=0.8.8) resolves missing imports
-    // against cwd (allowed base path "."). Older solc rejects those imports as
-    // outside allowed directories. Run in an empty temp dir so user-controlled
-    // imports cannot open host files and leak contents via formattedMessage.
-    const sandboxCwd = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), 'sourcify-solc-'),
-    );
     try {
       compiled = await asyncExec(
         `${absoluteSolcPath} --standard-json`,
         inputStringified,
         250 * 1024 * 1024,
         timeoutMs,
-        { cwd: sandboxCwd },
       );
     } catch (error: any) {
       if (error?.code === 'ENOBUFS') {
         throw new Error('Compilation output size too large');
       }
       throw error;
-    } finally {
-      await fs.promises.rm(sandboxCwd, { recursive: true, force: true });
     }
   } else {
     // Spawn a dedicated worker so the solcjs compilers is released when the worker exits.
