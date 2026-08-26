@@ -217,6 +217,8 @@ describe("SourcifyDatabaseService", function () {
   });
 
   it("should store metadata once per compilation and keep the first submitter's metadata", async () => {
+    const originalMetadata = MockVerificationExport.compilation.metadata!;
+
     // Store the original contract. This creates a fresh compiled_contracts row
     // together with its compiled_contracts_metadata row.
     await databaseService.storeVerification(MockVerificationExport);
@@ -230,9 +232,9 @@ describe("SourcifyDatabaseService", function () {
     siblingVerification.deploymentInfo.txHash =
       "0x1111111111111111111111111111111111111111111111111111111111111111";
     siblingVerification.compilation.metadata = {
-      ...MockVerificationExport.compilation.metadata,
+      ...originalMetadata,
       output: {
-        ...MockVerificationExport.compilation.metadata.output,
+        ...originalMetadata.output,
         devdoc: { kind: "dev", methods: {}, version: 1 },
       },
     };
@@ -253,7 +255,7 @@ describe("SourcifyDatabaseService", function () {
     );
     expect(compilationMetadataResult.rows).to.have.length(1);
     expect(compilationMetadataResult.rows[0].metadata).to.deep.equal(
-      MockVerificationExport.compilation.metadata,
+      originalMetadata,
     );
   });
 
