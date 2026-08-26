@@ -189,15 +189,15 @@ export async function assertContractSaved(
     }
   }
 
-  // Check if saved to the database
+  // Check if saved to the database. Metadata is stored once per compilation
+  // in compiled_contracts_metadata (issue #2924).
   const res = await sourcifyDatabase.query(
     `SELECT
         cd.address,
         cd.chain_id,
         sm.creation_match,
         sm.runtime_match,
-        sm.metadata,
-        ccm.metadata AS compilation_metadata
+        ccm.metadata
       FROM sourcify_matches sm
       LEFT JOIN verified_contracts vc ON vc.id = sm.verified_contract_id
       LEFT JOIN contract_deployments cd ON cd.id = vc.deployment_id
@@ -218,15 +218,6 @@ export async function assertContractSaved(
   if (expectedMetadataHash) {
     chai
       .expect(id(JSON.stringify(contract.metadata)))
-      .to.equal(expectedMetadataHash);
-
-    // The metadata must also be dual-written once per compilation (#2924)
-    chai.expect(
-      contract.compilation_metadata,
-      "Metadata not stored in compiled_contracts_metadata",
-    ).to.not.be.null;
-    chai
-      .expect(id(JSON.stringify(contract.compilation_metadata)))
       .to.equal(expectedMetadataHash);
   }
 

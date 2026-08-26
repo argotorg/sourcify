@@ -57,7 +57,7 @@ export async function assertDatabase(
           vc.runtime_metadata_match,
           sm.creation_match as sourcify_creation_match,
           sm.runtime_match as sourcify_runtime_match,
-          sm.metadata,
+          ccm.metadata,
           compiled_runtime_code.code as compiled_runtime_code,
           compiled_creation_code.code as compiled_creation_code,
           compiled_runtime_code.code_hash as compiled_runtime_code_hash,
@@ -91,6 +91,7 @@ export async function assertDatabase(
         LEFT JOIN contract_deployments cd ON cd.id = vc.deployment_id
         LEFT JOIN contracts c ON c.id = cd.contract_id
         LEFT JOIN compiled_contracts cc ON cc.id = vc.compilation_id
+        LEFT JOIN compiled_contracts_metadata ccm ON ccm.compilation_id = vc.compilation_id
         LEFT JOIN code compiled_runtime_code ON compiled_runtime_code.code_hash = cc.runtime_code_hash
         LEFT JOIN code compiled_creation_code ON compiled_creation_code.code_hash = cc.creation_code_hash
         LEFT JOIN code onchain_runtime_code ON onchain_runtime_code.code_hash = c.runtime_code_hash

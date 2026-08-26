@@ -248,9 +248,8 @@ describe("SourcifyDatabaseService", function () {
     );
     expect(parseInt(compiledContractsResult.rows[0].count)).to.equal(1);
 
-    // Both sourcify_matches keep their own metadata during the dual-write
-    // phase, but the shared compilation must hold exactly one metadata row:
-    // the original contract's.
+    // The shared compilation must hold exactly one metadata row: the
+    // original contract's.
     const compilationMetadataResult = await databaseService.database.pool.query(
       "SELECT metadata FROM compiled_contracts_metadata",
     );

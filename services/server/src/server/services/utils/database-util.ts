@@ -466,7 +466,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   name: "compiled_contracts.name",
   fully_qualified_name: "compiled_contracts.fully_qualified_name",
   abi: "compiled_contracts.compilation_artifacts->'abi' as abi",
-  metadata: "sourcify_matches.metadata",
+  metadata: "compiled_contracts_metadata.metadata",
   storage_layout:
     "compiled_contracts.compilation_artifacts->'storageLayout' as storage_layout",
   transient_storage_layout:
@@ -488,7 +488,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
       json_build_object(
         split_part(compiled_contracts.fully_qualified_name, ':', -1), json_build_object(
           'abi', compiled_contracts.compilation_artifacts->'abi',
-          'metadata', cast(sourcify_matches.metadata as text),
+          'metadata', cast(compiled_contracts_metadata.metadata as text),
           'userdoc', compiled_contracts.compilation_artifacts->'userdoc',
           'devdoc', compiled_contracts.compilation_artifacts->'devdoc',
           'storageLayout', compiled_contracts.compilation_artifacts->'storageLayout',
