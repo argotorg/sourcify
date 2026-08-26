@@ -534,7 +534,7 @@ export class SourcifyDatabaseService
     },
   ): Promise<{ verifiedContractId: Tables.VerifiedContract["id"] }> {
     try {
-      const { type, verifiedContractId, oldVerifiedContractId } =
+      const { type, verifiedContractId, compilationId, oldVerifiedContractId } =
         await super.insertOrUpdateVerification(verification, poolClient);
 
       if (type === "insert") {
@@ -587,6 +587,16 @@ export class SourcifyDatabaseService
           "insertOrUpdateVerifiedContract returned a type that doesn't exist",
         );
       }
+
+      // Also store the metadata once per compilation. This dual-write is
+      // temporary: reads keep using sourcify_matches.metadata until all
+      // pre-existing compilations are backfilled into
+      // compiled_contracts_metadata, after which the sourcify_matches.metadata
+      // column can be dropped. See https://github.com/argotorg/sourcify/issues/2924
+      await this.database.insertCompiledContractMetadata(poolClient, {
+        compilation_id: compilationId,
+        metadata: verification.compilation.metadata as any,
+      });
 
       // Update the verification job to be successful
       if (jobData) {

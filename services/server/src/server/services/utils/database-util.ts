@@ -157,6 +157,11 @@ export namespace Tables {
     chain_id: string;
   }
 
+  export interface CompiledContractMetadata {
+    compilation_id: string;
+    metadata: Metadata;
+  }
+
   export interface CompilationArtifactsSources {
     [globalName: string]: {
       id: number;

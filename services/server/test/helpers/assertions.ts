@@ -217,6 +217,28 @@ export async function assertContractSaved(
     chai
       .expect(id(JSON.stringify(contract.metadata)))
       .to.equal(expectedMetadataHash);
+
+    // The metadata must also be dual-written once per compilation into
+    // compiled_contracts_metadata (see issue #2924)
+    const compilationMetadataRes = await sourcifyDatabase.query(
+      `SELECT
+          ccm.metadata
+        FROM sourcify_matches sm
+        JOIN verified_contracts vc ON vc.id = sm.verified_contract_id
+        JOIN contract_deployments cd ON cd.id = vc.deployment_id
+        JOIN compiled_contracts_metadata ccm ON ccm.compilation_id = vc.compilation_id
+        WHERE cd.address = $1 AND cd.chain_id = $2`,
+      [Buffer.from(expectedAddress?.substring(2) ?? "", "hex"), expectedChain],
+    );
+    chai
+      .expect(
+        compilationMetadataRes.rows,
+        "Metadata not stored in compiled_contracts_metadata",
+      )
+      .to.have.length(1);
+    chai
+      .expect(id(JSON.stringify(compilationMetadataRes.rows[0].metadata)))
+      .to.equal(expectedMetadataHash);
   }
 
   // When we'll support runtime_match and creation_match as different statuses we can refine this statement
