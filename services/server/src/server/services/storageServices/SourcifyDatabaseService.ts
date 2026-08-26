@@ -588,11 +588,8 @@ export class SourcifyDatabaseService
         );
       }
 
-      // Also store the metadata once per compilation. This dual-write is
-      // temporary: reads keep using sourcify_matches.metadata until all
-      // pre-existing compilations are backfilled into
-      // compiled_contracts_metadata, after which the sourcify_matches.metadata
-      // column can be dropped. See https://github.com/argotorg/sourcify/issues/2924
+      // Temporary dual-write: reads stay on sourcify_matches.metadata until
+      // the backfill completes, then the column gets dropped (issue #2924)
       await this.database.insertCompiledContractMetadata(poolClient, {
         compilation_id: compilationId,
         metadata: verification.compilation.metadata as any,
