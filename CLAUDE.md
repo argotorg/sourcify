@@ -112,6 +112,19 @@ npm run monitor:start
 
 **The authoritative schema is the committed dump at [`services/database/sourcify-database.sql`](services/database/sourcify-database.sql).** Read it to answer schema questions instead of querying a live database. dbmate regenerates it on `npm run migrate:up`, and it must be committed alongside any new migration (see [`services/database/README.md`](services/database/README.md)).
 
+**Never hand-edit `sourcify-database.sql` — always regenerate it with dbmate.** The `validate-database-schema` CI job applies all migrations to a clean postgres, dumps it, and diffs (comment/blank-line-normalized) against the committed file. pg_dump's object ordering is non-obvious (e.g. constraints sort by constraint name, not table name), so hand-edits get the ordering wrong and fail CI. To regenerate, run the migrations against a disposable local database:
+
+```bash
+# throwaway postgres (matches the version the dump was generated with)
+docker run -d --name schema-regen -e POSTGRES_PASSWORD=password -e POSTGRES_USER=postgres -e POSTGRES_DB=test_db -p 127.0.0.1:55432:5432 postgres:16
+
+cd services/database && DATABASE_URL="postgres://postgres:password@127.0.0.1:55432/test_db?sslmode=disable" DBMATE_SCHEMA_FILE=./sourcify-database.sql npm run migrate:up
+
+docker rm -f schema-regen
+```
+
+dbmate shells out to a local `pg_dump`, which must be version 16 (pgdg `postgresql-client-16`): pg_dump 17 emits `SET transaction_timeout` lines that CI's normalizer does not strip, so its dumps fail the diff.
+
 How the tables join:
 
 - `sourcify_matches.verified_contract_id` → `verified_contracts.id` (Sourcify-specific match info: `creation_match`/`runtime_match` quality, `chain_id`, and the contract's `metadata`)
