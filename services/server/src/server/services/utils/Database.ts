@@ -168,7 +168,7 @@ export class Database {
           sourcify_matches.created_at,
           sourcify_matches.creation_match,
           sourcify_matches.runtime_match,
-          sourcify_matches.metadata,
+          compiled_contracts_metadata.metadata,
           verified_contracts.creation_values,
           verified_contracts.runtime_values,
           verified_contracts.compilation_id,
@@ -180,9 +180,10 @@ export class Database {
         FROM ${this.schema}.sourcify_matches
         JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
         JOIN ${this.schema}.compiled_contracts ON compiled_contracts.id = verified_contracts.compilation_id
-        JOIN ${this.schema}.contract_deployments ON 
-          contract_deployments.id = verified_contracts.deployment_id 
-          AND contract_deployments.chain_id = $1 
+        LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = verified_contracts.compilation_id
+        JOIN ${this.schema}.contract_deployments ON
+          contract_deployments.id = verified_contracts.deployment_id
+          AND contract_deployments.chain_id = $1
           AND contract_deployments.address = $2
         JOIN ${this.schema}.contracts ON contracts.id = contract_deployments.contract_id
         JOIN ${this.schema}.code as onchain_runtime_code ON onchain_runtime_code.code_hash = contracts.runtime_code_hash
@@ -209,6 +210,9 @@ ${
       (property) => STORED_PROPERTIES_TO_SELECTORS[property],
     );
 
+    const metadataRequested =
+      properties.includes("metadata") || properties.includes("std_json_output");
+
     const groupByClause =
       properties.includes("sources") ||
       properties.includes("std_json_input") ||
@@ -223,7 +227,12 @@ ${
         onchain_runtime_code.code_hash,
         onchain_creation_code.code_hash,
         recompiled_runtime_code.code_hash,
-        recompiled_creation_code.code_hash`
+        recompiled_creation_code.code_hash${
+          metadataRequested
+            ? `,
+        compiled_contracts_metadata.compilation_id`
+            : ""
+        }`
         : "";
 
     return await this.pool.query(
@@ -242,6 +251,13 @@ ${
         LEFT JOIN ${this.schema}.code as onchain_creation_code ON onchain_creation_code.code_hash = contracts.creation_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
+${
+  metadataRequested
+    ? `
+        LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = verified_contracts.compilation_id
+      `
+    : ""
+}
 ${
   properties.includes("function_signatures") ||
   properties.includes("event_signatures") ||
@@ -306,12 +322,8 @@ ${
 
   /**
    * Fetches the compilation data needed to re-run a compilation, for a batch of
-   * compilation ids in a single round trip.
-   *
-   * - Sources come from a scalar subquery instead of a JOIN + GROUP BY:
-   *   metadata is a `json` column, which cannot be grouped.
-   * - The LATERAL is aliased `sourcify_matches` so the shared selectors that
-   *   reference sourcify_matches.metadata work verbatim.
+   * compilation ids in a single round trip. Sources come from a scalar
+   * subquery to avoid a JOIN + GROUP BY over the source contents.
    */
   async getCompilationsByIds(
     compilationIds: string[],
@@ -337,13 +349,7 @@ ${
         FROM ${this.schema}.compiled_contracts
         LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
         LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
-        CROSS JOIN LATERAL (
-          SELECT sourcify_matches.metadata
-          FROM ${this.schema}.verified_contracts
-          JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-          WHERE verified_contracts.compilation_id = compiled_contracts.id
-          LIMIT 1
-        ) sourcify_matches
+        LEFT JOIN ${this.schema}.compiled_contracts_metadata ON compiled_contracts_metadata.compilation_id = compiled_contracts.id
         WHERE compiled_contracts.id = ANY($1::uuid[])
       `,
       [compilationIds],
@@ -408,14 +414,15 @@ ${
     );
   }
 
+  // sourcify_matches.metadata is no longer written: it lives in
+  // compiled_contracts_metadata, and the column is due to be dropped (#2924)
   async insertSourcifyMatch(
     {
       verified_contract_id,
       runtime_match,
       creation_match,
-      metadata,
       chain_id,
-    }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
+    }: Omit<Tables.SourcifyMatch, "created_at" | "id" | "metadata">,
     poolClient?: PoolClient,
   ) {
     await (poolClient || this.pool).query(
@@ -423,10 +430,9 @@ ${
         verified_contract_id,
         creation_match,
         runtime_match,
-        metadata,
         chain_id
-      ) VALUES ($1, $2, $3, $4, $5)`,
-      [verified_contract_id, creation_match, runtime_match, metadata, chain_id],
+      ) VALUES ($1, $2, $3, $4)`,
+      [verified_contract_id, creation_match, runtime_match, chain_id],
     );
   }
 
@@ -438,9 +444,8 @@ ${
       verified_contract_id,
       runtime_match,
       creation_match,
-      metadata,
       chain_id,
-    }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
+    }: Omit<Tables.SourcifyMatch, "created_at" | "id" | "metadata">,
     oldVerifiedContractId: string,
     poolClient?: PoolClient,
   ) {
@@ -449,14 +454,12 @@ ${
       verified_contract_id = $1,
       creation_match=$2,
       runtime_match=$3,
-      metadata=$4,
-      chain_id=$5
-    WHERE  verified_contract_id = $6`,
+      chain_id=$4
+    WHERE  verified_contract_id = $5`,
       [
         verified_contract_id,
         creation_match,
         runtime_match,
-        metadata,
         chain_id,
         oldVerifiedContractId,
       ],
