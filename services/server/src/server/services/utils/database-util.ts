@@ -152,7 +152,6 @@ export namespace Tables {
     verified_contract_id: string;
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
-    metadata: Metadata;
     created_at: Date;
     chain_id: string;
   }
@@ -251,6 +250,7 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
   Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name" | "version"> &
   Pick<Tables.ContractDeployment, "transaction_hash"> & {
     onchain_runtime_code: string;
+    metadata: Metadata;
   };
 
 export type GetSourcifyMatchesAllChainsResult = Pick<
@@ -289,10 +289,7 @@ export type GetCompilationsByIdsResult = Pick<
 };
 
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
-  Pick<
-    Tables.SourcifyMatch,
-    "id" | "creation_match" | "runtime_match" | "metadata"
-  > &
+  Pick<Tables.SourcifyMatch, "id" | "creation_match" | "runtime_match"> &
     Pick<
       Tables.CompiledContract,
       | "language"
@@ -342,6 +339,7 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       function_signatures: SignatureRepresentations[];
       event_signatures: SignatureRepresentations[];
       error_signatures: SignatureRepresentations[];
+      metadata: Metadata;
     }
 >;
 

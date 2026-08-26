@@ -189,8 +189,7 @@ export async function assertContractSaved(
     }
   }
 
-  // Check if saved to the database. Metadata is stored once per compilation
-  // in compiled_contracts_metadata (issue #2924).
+  // Check if saved to the database
   const res = await sourcifyDatabase.query(
     `SELECT
         cd.address,
