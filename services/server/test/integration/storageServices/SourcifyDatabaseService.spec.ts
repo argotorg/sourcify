@@ -225,7 +225,8 @@ describe("SourcifyDatabaseService", function () {
 
     // A byte-identical sibling: same compiler/version/language and same
     // bytecodes (so it hits the compiled_contracts dedup constraint), but a
-    // different deployment and different metadata (possible with
+    // different deployment and different metadata (possible when the compiler
+    // omits the metadata hash from the bytecode,
     // settings.metadata.bytecodeHash: "none").
     const siblingVerification = structuredClone(MockVerificationExport);
     siblingVerification.address = "0x1111111111111111111111111111111111111111";
