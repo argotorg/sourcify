@@ -414,15 +414,13 @@ ${
     );
   }
 
-  // sourcify_matches.metadata is no longer written: it lives in
-  // compiled_contracts_metadata, and the column is due to be dropped (#2924)
   async insertSourcifyMatch(
     {
       verified_contract_id,
       runtime_match,
       creation_match,
       chain_id,
-    }: Omit<Tables.SourcifyMatch, "created_at" | "id" | "metadata">,
+    }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
     poolClient?: PoolClient,
   ) {
     await (poolClient || this.pool).query(
@@ -445,7 +443,7 @@ ${
       runtime_match,
       creation_match,
       chain_id,
-    }: Omit<Tables.SourcifyMatch, "created_at" | "id" | "metadata">,
+    }: Omit<Tables.SourcifyMatch, "created_at" | "id">,
     oldVerifiedContractId: string,
     poolClient?: PoolClient,
   ) {
