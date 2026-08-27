@@ -37,6 +37,105 @@ describe('SourcifyChain', () => {
     sandbox.restore();
   });
 
+  describe('getContractCreationBytecodeAndReceipt', () => {
+    it('should return the tx input data for a directly deployed contract, matching the address case-insensitively', async () => {
+      sandbox
+        .stub(sourcifyChain, 'getTxReceipt')
+        .resolves({ contractAddress: '0xAddress' } as any);
+      sandbox
+        .stub(sourcifyChain, 'getTx')
+        .resolves({ data: '0xcreationBytecode' } as any);
+
+      const { creationBytecode } =
+        await sourcifyChain.getContractCreationBytecodeAndReceipt(
+          '0xaddress',
+          '0xhash',
+        );
+      expect(creationBytecode).to.equal('0xcreationBytecode');
+    });
+
+    // https://github.com/argotorg/sourcify/issues/2932
+    it('should fall back to traces when the tx deploys another contract whose constructor creates the verified one', async () => {
+      sandbox
+        .stub(sourcifyChain, 'getTxReceipt')
+        .resolves({ contractAddress: '0xtokenAddress' } as any);
+      sandbox
+        .stub(sourcifyChain, 'getTx')
+        .resolves({ data: '0xtokenCreationBytecode' } as any);
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          type: 'create',
+          result: { address: '0xtokenAddress' },
+          action: { init: '0xtokenCreationBytecode' },
+        },
+        {
+          type: 'create',
+          result: { address: '0xpairAddress' },
+          action: { init: '0xpairCreationBytecode' },
+        },
+      ]);
+
+      const { creationBytecode } =
+        await sourcifyChain.getContractCreationBytecodeAndReceipt(
+          '0xpairAddress',
+          '0xhash',
+        );
+      expect(creationBytecode).to.equal('0xpairCreationBytecode');
+      expect(mockProvider.send).to.have.been.calledWith('trace_transaction', [
+        '0xhash',
+      ]);
+    });
+
+    it('should throw on an address mismatch without trace support', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [{ rpc: 'http://localhost:8545' }],
+        supported: true,
+      });
+      sandbox
+        .stub(sourcifyChain, 'getTxReceipt')
+        .resolves({ contractAddress: '0xtokenAddress' } as any);
+      sandbox
+        .stub(sourcifyChain, 'getTx')
+        .resolves({ data: '0xtokenCreationBytecode' } as any);
+
+      await expect(
+        sourcifyChain.getContractCreationBytecodeAndReceipt(
+          '0xpairAddress',
+          '0xhash',
+        ),
+      ).to.be.rejectedWith(
+        "Address of the contract being verified 0xpairAddress doesn't match the address 0xtokenAddress created by this transaction 0xhash, and chain 1 has no trace support to look for internal creations",
+      );
+    });
+
+    it('should throw for a factory-created contract without trace support', async () => {
+      sourcifyChain = new SourcifyChain({
+        name: 'TestChain',
+        chainId: 1,
+        rpcs: [{ rpc: 'http://localhost:8545' }],
+        supported: true,
+      });
+      sandbox
+        .stub(sourcifyChain, 'getTxReceipt')
+        .resolves({ contractAddress: null } as any);
+      sandbox
+        .stub(sourcifyChain, 'getTx')
+        .resolves({ data: '0xfactoryCallData' } as any);
+
+      await expect(
+        sourcifyChain.getContractCreationBytecodeAndReceipt(
+          '0xaddress',
+          '0xhash',
+        ),
+      ).to.be.rejectedWith(
+        'No trace support for chain 1. No other method to get the creation bytecode',
+      );
+    });
+  });
+
   describe('getCreationBytecodeForFactory', () => {
     it('should throw an error if trace support is not available', async () => {
       sourcifyChain = new SourcifyChain({

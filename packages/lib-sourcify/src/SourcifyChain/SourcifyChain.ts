@@ -845,22 +845,28 @@ export class SourcifyChain {
     if (!creatorTx) creatorTx = await this.getTx(transactionHash);
 
     let creationBytecode;
-    // Non null txreceipt.contractAddress means that the contract was created with an EOA
-    if (txReceipt.contractAddress !== null) {
-      // Compare case-insensitively: the receipt's contractAddress is checksummed
-      // on some RPCs, while the caller may pass a lowercase address, and a pure
-      // `!==` would spuriously reject a genuine match.
-      if (txReceipt.contractAddress.toLowerCase() !== address.toLowerCase()) {
-        // we need to check if this contract creation tx actually yields the same contract address https://github.com/argotorg/sourcify/issues/887
-        throw new Error(
-          `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}`,
-        );
-      }
+    // Compare case-insensitively: the receipt's contractAddress is checksummed
+    // on some RPCs, while the caller may pass a lowercase address, and a pure
+    // `!==` would spuriously reject a genuine match.
+    if (
+      txReceipt.contractAddress !== null &&
+      txReceipt.contractAddress.toLowerCase() === address.toLowerCase()
+    ) {
+      // The tx deployed this contract directly, so its input data is the creation bytecode
       creationBytecode = creatorTx.data;
       logDebug(`Contract ${address} created with an EOA`);
     } else {
-      // Else, contract was created with a factory
+      // The contract was created by an internal CREATE: either the tx called a factory
+      // (contractAddress === null), or the tx deployed another contract whose constructor
+      // created this one (contractAddress set but different, https://github.com/argotorg/sourcify/issues/2932).
+      // Both need traces, which also check that the tx actually created this contract
+      // and not a random one (https://github.com/argotorg/sourcify/issues/887).
       if (!this.traceSupport) {
+        if (txReceipt.contractAddress !== null) {
+          throw new Error(
+            `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}, and chain ${this.chainId} has no trace support to look for internal creations`,
+          );
+        }
         throw new Error(
           `No trace support for chain ${this.chainId}. No other method to get the creation bytecode`,
         );
