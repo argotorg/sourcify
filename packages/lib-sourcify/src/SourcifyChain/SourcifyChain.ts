@@ -864,7 +864,7 @@ export class SourcifyChain {
       if (!this.traceSupport) {
         if (txReceipt.contractAddress !== null) {
           throw new Error(
-            `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}, and chain ${this.chainId} has no trace support to look for internal creations`,
+            `Transaction ${transactionHash} directly created contract ${txReceipt.contractAddress}, not the contract being verified ${address}. Either the transaction hash is wrong or the contract was created by an internal transaction, which can't be checked because chain ${this.chainId} doesn't have trace support`,
           );
         }
         throw new Error(

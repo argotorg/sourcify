@@ -87,7 +87,7 @@ describe('SourcifyChain', () => {
       ]);
     });
 
-    it('should throw on an address mismatch without trace support', async () => {
+    it('should throw when the tx directly created a different contract and the chain has no trace support', async () => {
       sourcifyChain = new SourcifyChain({
         name: 'TestChain',
         chainId: 1,
@@ -107,7 +107,7 @@ describe('SourcifyChain', () => {
           '0xhash',
         ),
       ).to.be.rejectedWith(
-        "Address of the contract being verified 0xpairAddress doesn't match the address 0xtokenAddress created by this transaction 0xhash, and chain 1 has no trace support to look for internal creations",
+        "Transaction 0xhash directly created contract 0xtokenAddress, not the contract being verified 0xpairAddress. Either the transaction hash is wrong or the contract was created by an internal transaction, which can't be checked because chain 1 doesn't have trace support",
       );
     });
 
