@@ -7,19 +7,12 @@ import type {
 } from "@ethereum-sourcify/lib-sourcify";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 
-// These tests call the live third-party creation-tx APIs (Blockscout,
-// Routescan, Etherscan, NodeReal, ...). They run in the separate
-// test-creation-tx-apis CI job, which is not required by any other job:
-// a red run means a provider is failing, not that the code is broken.
+// Tests against live third-party APIs, run in the non-blocking test-creation-tx-apis CI job.
 describe("creation-tx APIs (live)", function () {
   let sourcifyChainsMap: SourcifyChainMap;
 
-  // Build the chain map manually instead of calling initializeSourcifyChains.
-  // The real loader requires API keys (DRPC, QuickNode, etc.) that aren't
-  // available in CI, but getCreatorTx itself only needs the
-  // fetchContractCreationTxUsing / etherscanApi config — the RPCs aren't
-  // exercised. A dummy http://localhost/ entry satisfies SourcifyChain's
-  // "at least one RPC" requirement without hitting the network.
+  // The dummy RPC satisfies SourcifyChain's "at least one RPC" requirement; only
+  // the fetchContractCreationTxUsing / etherscanApi config is exercised.
   before(async () => {
     const dummyRpcs = [{ rpc: "http://localhost/" }];
     sourcifyChainsMap = {

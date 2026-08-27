@@ -9,14 +9,11 @@ import sinon from "sinon";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
 
-// Tests that call the live creation-tx APIs (Blockscout, NodeReal, ...) live
-// in test/creation-tx-apis/ and run in the separate test-creation-tx-apis CI
-// job, so a provider outage doesn't fail test-server.
+// Tests hitting the live creation-tx APIs are in test/creation-tx-apis/.
 describe("contract creation util", function () {
   let sourcifyChainsMap: SourcifyChainMap;
 
-  // A dummy http://localhost/ RPC satisfies SourcifyChain's "at least one RPC"
-  // requirement without hitting the network.
+  // The dummy RPC satisfies SourcifyChain's "at least one RPC" requirement.
   before(async () => {
     const dummyRpcs = [{ rpc: "http://localhost/" }];
     sourcifyChainsMap = {

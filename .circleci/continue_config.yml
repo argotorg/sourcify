@@ -170,8 +170,6 @@ workflows:
           requires: [build-and-lint]
       - test-4byte:
           requires: [build-and-lint]
-      # Live third-party API tests. Not required by any other job: a red run
-      # means a provider is down, not that the code is broken.
       - test-creation-tx-apis:
           requires: [build-and-lint]
       # TODO: run-build options are not taking affect. We build them always.
@@ -237,8 +235,6 @@ workflows:
           requires: [build-and-lint]
       - test-4byte:
           requires: [build-and-lint]
-      # Live third-party API tests. Not required by any other job: a red run
-      # means a provider is down, not that the code is broken.
       - test-creation-tx-apis:
           requires: [build-and-lint]
   database-schema-validation:
