@@ -8,6 +8,7 @@ import type {
   VyperJsonInput,
   VyperOutput,
 } from '@ethereum-sourcify/compilers-types';
+import { COMPILER_TIMEOUT_CODE } from '@ethereum-sourcify/compilers-types';
 import { runIsolatedVyper } from './vyperStorageLayout';
 
 const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
@@ -61,6 +62,8 @@ export function findVyperPlatform(): string | false {
  * @param version the version of vyper to be used for compilation
  * @param input a JSON object of the standard-json format compatible with vyper
  * @param log the logger
+ * @param timeoutMs wall-clock limit for the vyper subprocess. Defaults to
+ *   DEFAULT_COMPILE_TIMEOUT_MS.
  * @returns stringified vyper output
  */
 
@@ -68,6 +71,7 @@ export async function useVyperCompiler(
   vyperRepoPath: string,
   version: string,
   vyperJsonInput: VyperJsonInput,
+  timeoutMs?: number,
 ): Promise<VyperOutput> {
   const vyperPlatform = findVyperPlatform();
   let compiled: string | undefined;
@@ -94,11 +98,14 @@ export async function useVyperCompiler(
   }
 
   if (vyperPath) {
+    // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
+    const absoluteVyperPath = path.resolve(vyperPath);
     try {
       compiled = await asyncExec(
-        `${vyperPath} --standard-json`,
+        `${absoluteVyperPath} --standard-json`,
         inputStringified,
         250 * 1024 * 1024,
+        timeoutMs,
       );
     } catch (error: any) {
       if (error?.code === 'ENOBUFS') {
@@ -118,9 +125,13 @@ export async function useVyperCompiler(
         ['vyper', '--standard-json'],
         inputStringified,
         250 * 1024 * 1024,
+        timeoutMs,
       );
       logInfo('Using isolated Python Vyper compiler', { version });
     } catch (fallbackError: any) {
+      if (fallbackError?.code === COMPILER_TIMEOUT_CODE) {
+        throw fallbackError;
+      }
       const executableMessage =
         executableError instanceof Error
           ? executableError.message

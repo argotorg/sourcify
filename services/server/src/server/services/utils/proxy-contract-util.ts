@@ -10,6 +10,7 @@ export type ProxyType =
   | "DiamondProxy"
   | "PROXIABLEProxy"
   | "ZeppelinOSProxy"
+  | "MaticProxy"
   | "SequenceWalletProxy";
 
 export type Implementation = { address: string; name?: string };

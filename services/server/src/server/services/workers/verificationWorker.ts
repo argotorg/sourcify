@@ -64,9 +64,16 @@ const initWorker = () => {
   solc = new SolcLocal(
     Piscina.workerData.solcRepoPath,
     Piscina.workerData.solJsonRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
   );
-  vyper = new VyperLocal(Piscina.workerData.vyperRepoPath);
-  fe = new FeLocal(Piscina.workerData.feRepoPath);
+  vyper = new VyperLocal(
+    Piscina.workerData.vyperRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
+  );
+  fe = new FeLocal(
+    Piscina.workerData.feRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
+  );
 };
 
 async function runWorkerFunctionWithContext<T extends VerificationWorkerInput>(
@@ -271,51 +278,10 @@ async function _verifySimilarity({
   chainId,
   address,
   runtimeBytecode,
-  creationTransactionHash,
+  creationData,
   candidates,
 }: VerifySimilarityInput): Promise<VerifyOutput> {
-  const sourcifyChain = chainRepository.sourcifyChainMap[chainId];
-
-  let resolvedCreatorTxHash = creationTransactionHash || undefined;
-  if (!resolvedCreatorTxHash) {
-    resolvedCreatorTxHash =
-      (await getCreatorTx(sourcifyChain, address)) || undefined;
-  }
-
-  // Fetch creation data to be used in the SourcifyChainMock
-  let creationData: {
-    creationBytecode?: string;
-    deployer?: string;
-    blockNumber?: number;
-    txIndex?: number;
-  } = {};
-  if (resolvedCreatorTxHash) {
-    try {
-      const creatorTx = await sourcifyChain.getTx(resolvedCreatorTxHash);
-      const { creationBytecode, txReceipt } =
-        await sourcifyChain.getContractCreationBytecodeAndReceipt(
-          address,
-          resolvedCreatorTxHash,
-          creatorTx,
-        );
-      creationData = {
-        creationBytecode,
-        deployer: creatorTx.from,
-        blockNumber: creatorTx.blockNumber ?? undefined,
-        txIndex: txReceipt.index ?? undefined,
-      };
-    } catch (error: any) {
-      logger.debug(
-        "Failed to fetch creation data for similarity verification",
-        {
-          chainId,
-          address: address,
-          creatorTxHash: resolvedCreatorTxHash,
-          error: error?.message,
-        },
-      );
-    }
-  }
+  const resolvedCreatorTxHash = creationData.creationTransactionHash;
 
   const mockChain = new SourcifyChainMock(
     {

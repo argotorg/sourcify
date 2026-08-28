@@ -23,27 +23,23 @@ import {
 } from './auxdataUtils';
 import { logWarn } from '../logger';
 
-export const DEFAULT_OUTPUT_SELECTION = {
-  '*': {
-    '*': [
-      'abi',
-      'devdoc',
-      'userdoc',
-      'storageLayout',
-      'transientStorageLayout',
-      'evm.legacyAssembly',
-      'evm.bytecode.object',
-      'evm.bytecode.sourceMap',
-      'evm.bytecode.linkReferences',
-      'evm.bytecode.generatedSources',
-      'evm.deployedBytecode.object',
-      'evm.deployedBytecode.sourceMap',
-      'evm.deployedBytecode.linkReferences',
-      'evm.deployedBytecode.immutableReferences',
-      'metadata',
-    ],
-  },
-} as const;
+export const DEFAULT_OUTPUT_SELECTION_FIELDS = [
+  'abi',
+  'devdoc',
+  'userdoc',
+  'storageLayout',
+  'transientStorageLayout',
+  'evm.legacyAssembly',
+  'evm.bytecode.object',
+  'evm.bytecode.sourceMap',
+  'evm.bytecode.linkReferences',
+  'evm.bytecode.generatedSources',
+  'evm.deployedBytecode.object',
+  'evm.deployedBytecode.sourceMap',
+  'evm.deployedBytecode.linkReferences',
+  'evm.deployedBytecode.immutableReferences',
+  'metadata',
+] as const;
 
 /**
  * Abstraction of a solidity compilation
@@ -78,7 +74,11 @@ export class SolidityCompilation extends AbstractCompilation {
   }
 
   initSolidityJsonInput() {
-    this.jsonInput.settings.outputSelection = DEFAULT_OUTPUT_SELECTION;
+    this.jsonInput.settings.outputSelection = {
+      [this.compilationTarget.path]: {
+        [this.compilationTarget.name]: [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+      },
+    };
   }
 
   /** Generates an edited contract with a space at the end of each source file to create a different source file hash and consequently a different metadata hash.

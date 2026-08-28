@@ -7,6 +7,7 @@ import type {
   VyperStorageLayout,
   VyperStorageLayouts,
 } from '@ethereum-sourcify/compilers-types';
+import { createCompilerTimeoutError } from './common';
 
 const FIRST_SUPPORTED_VYPER_LAYOUT = '0.1.0-beta.16';
 const FIRST_STANDARD_JSON_VYPER_LAYOUT = '0.4.1-beta.4';
@@ -143,10 +144,7 @@ function executeWithInput(
     };
 
     const timeout = setTimeout(
-      () =>
-        stopProcess(
-          new Error(`Vyper compiler process timed out after ${timeoutMs}ms`),
-        ),
+      () => stopProcess(createCompilerTimeoutError(timeoutMs)),
       timeoutMs,
     );
 
@@ -219,6 +217,7 @@ export async function runIsolatedVyper(
   command: string[],
   input: string,
   maxOutputSize: number,
+  timeoutMs?: number,
 ): Promise<string> {
   const cacheRoot = path.join(vyperRepoPath, 'python-cache');
   fs.mkdirSync(cacheRoot, { recursive: true });
@@ -247,7 +246,7 @@ export async function runIsolatedVyper(
       UV_NO_PROGRESS: '1',
     },
     maxOutputSize,
-    vyperProcessTimeout(),
+    timeoutMs ?? vyperProcessTimeout(),
   );
 }
 

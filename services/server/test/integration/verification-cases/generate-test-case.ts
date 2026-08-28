@@ -33,7 +33,7 @@ import type {
 import {
   Verification,
   SolidityCompilation,
-  DEFAULT_OUTPUT_SELECTION,
+  DEFAULT_OUTPUT_SELECTION_FIELDS,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import { toMatchLevel } from "../../../src/server/services/utils/util";
@@ -398,8 +398,12 @@ async function main() {
     console.log("-".repeat(80));
     console.log("Compiling verification contract...");
 
-    verificationStdJsonInput.settings.outputSelection =
-      DEFAULT_OUTPUT_SELECTION;
+    // The generator compiles directly via useSolidityCompiler (bypassing the
+    // SolidityCompilation class, which scopes output to the target), so it
+    // requests full output for every contract to build a complete fixture, hence the "*": "*" selection.
+    verificationStdJsonInput.settings.outputSelection = {
+      "*": { "*": [...DEFAULT_OUTPUT_SELECTION_FIELDS] },
+    };
 
     const verificationOutput = await useSolidityCompiler(
       solcRepoPath,

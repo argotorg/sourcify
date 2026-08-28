@@ -7,6 +7,13 @@ import type {
 import type { VyperJsonInput, VyperOutputError } from "./VyperTypes";
 import type { FeJsonInput } from "./FeTypes";
 
+// Machine-readable discriminators set on the `.code` of the Error thrown when a
+// native compiler subprocess dies. Shared here so both the compilers package
+// (which sets them) and lib-sourcify (which maps them to a CompilationErrorCode)
+// reference the same value instead of duplicating the magic string. See #2880.
+export const COMPILER_TIMEOUT_CODE = "COMPILER_TIMEOUT";
+export const COMPILER_OOM_CODE = "COMPILER_OOM";
+
 export interface LinkReferences {
   [filePath: string]: {
     [libraryName: string]: [

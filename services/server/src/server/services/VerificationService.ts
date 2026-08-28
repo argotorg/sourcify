@@ -6,7 +6,6 @@ import type {
   FeJsonInput,
   PathBuffer,
   SourcifyChainMap,
-  VerificationExport,
   SourcifyChainInstance,
   CompilationTarget,
   Metadata,
@@ -22,7 +21,11 @@ import {
   getSolcExecutable,
   getSolcJs,
 } from "@ethereum-sourcify/compilers";
-import type { S3Config, VerificationJobId } from "../types";
+import type {
+  S3Config,
+  SimilarityCandidate,
+  VerificationJobId,
+} from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
 import path from "path";
@@ -40,12 +43,32 @@ import {
   type VerifyFromMetadataInput,
   type VerifyOutput,
   type VerifySimilarityInput,
+  type SimilarityCreationData,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
-import { ContractNotDeployedError, GetBytecodeError } from "../apiv2/errors";
+import {
+  BytecodeTooShortForSimilarityError,
+  ContractNotDeployedError,
+  GetBytecodeError,
+} from "../apiv2/errors";
+import type { VerificationErrorCode } from "../apiv2/errors";
+import {
+  isStatementTimeoutError,
+  SIMILARITY_PREFIX_LENGTH_BYTES,
+} from "./utils/database-util";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
+const SIMILARITY_CANDIDATE_BATCH_SIZE = 5;
+
+/**
+ * Service-side input for similarity verification: additionally carries the
+ * candidate compilation ids so the worker can be run batch by batch. The
+ * worker only ever sees the `candidates` of the current batch.
+ */
+type VerifySimilarityServiceInput = VerifySimilarityInput & {
+  candidateIds: string[];
+};
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -54,6 +77,7 @@ export interface VerificationServiceOptions {
   solJsonRepoPath: string;
   vyperRepoPath: string;
   feRepoPath: string;
+  compilerTimeoutMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
@@ -134,6 +158,7 @@ export class VerificationService {
         solJsonRepoPath: options.solJsonRepoPath,
         vyperRepoPath: options.vyperRepoPath,
         feRepoPath: options.feRepoPath,
+        compilerTimeoutMs: options.compilerTimeoutMs,
       },
       minThreads,
       maxThreads,
@@ -361,68 +386,237 @@ export class VerificationService {
       );
     }
 
+    // Similarity candidates are indexed by their first 75 bytes of runtime
+    // code. The index only holds prefixes of exactly 75 bytes, so shorter
+    // bytecodes (e.g. EIP-1167 minimal proxies) are deliberately not
+    // supported and are rejected upfront.
+    const runtimeBytecodeLengthBytes = (runtimeBytecode.length - 2) / 2;
+    if (runtimeBytecodeLengthBytes < SIMILARITY_PREFIX_LENGTH_BYTES) {
+      throw new BytecodeTooShortForSimilarityError(
+        `The bytecode at address ${address} on chain ${chainId} is only ${runtimeBytecodeLengthBytes} bytes long. Similarity verification requires at least ${SIMILARITY_PREFIX_LENGTH_BYTES} bytes.`,
+      );
+    }
+
     const verificationId = await this.storageService.performServiceOperation(
       "storeVerificationJob",
       [new Date(), chainId, address, verificationEndpoint],
     );
 
     this.runInBackground(
-      (async () => {
-        try {
-          const candidates = await this.storageService.performServiceOperation(
-            "getSimilarityCandidatesByRuntimeCode",
-            [runtimeBytecode, DEFAULT_SIMILARITY_CANDIDATE_LIMIT],
-          );
-
-          if (candidates.length === 0) {
-            logger.info("No similarity candidates found", {
-              chainId,
-              address,
-            });
-            await this.storeJobError([
-              verificationId,
-              new Date(),
-              {
-                customCode: "no_similar_match_found",
-                errorId: uuidv4(),
-                errorData: undefined,
-              },
-            ]);
-            return;
-          }
-
-          const input: VerifySimilarityInput = {
-            chainId,
-            address,
-            runtimeBytecode,
-            creationTransactionHash,
-            candidates,
-            traceId: asyncLocalStorage.getStore()?.traceId,
-          };
-
-          await this.verifyViaWorker(verificationId, "verifySimilarity", input);
-        } catch (error) {
-          logger.error("Failed to fetch similarity candidates", {
-            chainId,
-            address,
-            error,
-          });
-          await this.storeJobError([
-            verificationId,
-            new Date(),
-            {
-              customCode: "internal_error",
-              errorId: uuidv4(),
-            },
-          ]);
-        }
-      })(),
+      this.processSimilarityVerification(
+        verificationId,
+        chainId,
+        address,
+        runtimeBytecode,
+        creationTransactionHash,
+      ),
     );
 
     return verificationId;
   }
 
-  private verifyViaWorker(
+  /**
+   * Background part of similarity verification: finds candidate compilation
+   * ids for the contract's runtime bytecode and runs the worker over them
+   * batch by batch. All failures are recorded on the verification job.
+   */
+  private async processSimilarityVerification(
+    verificationId: VerificationJobId,
+    chainId: string,
+    address: string,
+    runtimeBytecode: string,
+    creationTransactionHash?: string,
+  ): Promise<void> {
+    let candidateIds: string[] = [];
+    let errorCode: VerificationErrorCode | undefined;
+    try {
+      candidateIds = await this.storageService.performServiceOperation(
+        "getSimilarityCandidateIdsByRuntimeCode",
+        [runtimeBytecode, DEFAULT_SIMILARITY_CANDIDATE_LIMIT],
+      );
+      if (candidateIds.length === 0) {
+        logger.info("No similarity candidates found", {
+          chainId,
+          address,
+        });
+        errorCode = "no_similar_match_found";
+      }
+    } catch (error) {
+      logger.error("Failed to fetch similarity candidates", {
+        chainId,
+        address,
+        error,
+      });
+      // The prefix scan is the query that can exceed the database's
+      // statement_timeout, so surface that as its own error instead of an
+      // opaque internal error.
+      errorCode = isStatementTimeoutError(error)
+        ? "similarity_search_timeout"
+        : "internal_error";
+    }
+
+    if (errorCode) {
+      await this.storeJobError([
+        verificationId,
+        new Date(),
+        {
+          customCode: errorCode,
+          errorId: uuidv4(),
+        },
+      ]);
+      return;
+    }
+
+    const creationData = await this.resolveSimilarityCreationData(
+      chainId,
+      address,
+      creationTransactionHash,
+    );
+
+    const input: VerifySimilarityServiceInput = {
+      chainId,
+      address,
+      runtimeBytecode,
+      creationData,
+      candidateIds,
+      // Filled batch by batch in runSimilarityWorkerBatches
+      candidates: [],
+      traceId: asyncLocalStorage.getStore()?.traceId,
+    };
+
+    await this.storeVerificationOutcome(
+      verificationId,
+      input,
+      this.runSimilarityWorkerBatches(input),
+    );
+  }
+
+  /**
+   * Resolves the creation transaction data for the contract being verified.
+   *
+   * This used to happen inside the verification worker, but similarity
+   * verification now calls the worker once per candidate batch, and repeating
+   * these RPC calls per batch would be wasteful. Failures are non-fatal: without
+   * creation data only a runtime match is possible.
+   */
+  private async resolveSimilarityCreationData(
+    chainId: string,
+    address: string,
+    creationTransactionHash?: string,
+  ): Promise<SimilarityCreationData> {
+    const sourcifyChain = this.sourcifyChainMap[chainId];
+    let resolvedCreatorTxHash = creationTransactionHash;
+
+    try {
+      resolvedCreatorTxHash =
+        creationTransactionHash ||
+        (await getCreatorTx(sourcifyChain, address)) ||
+        undefined;
+
+      if (!resolvedCreatorTxHash) {
+        return {};
+      }
+
+      const creatorTx = await sourcifyChain.getTx(resolvedCreatorTxHash);
+      const { creationBytecode, txReceipt } =
+        await sourcifyChain.getContractCreationBytecodeAndReceipt(
+          address,
+          resolvedCreatorTxHash,
+          creatorTx,
+        );
+      return {
+        creationTransactionHash: resolvedCreatorTxHash,
+        creationBytecode,
+        deployer: creatorTx.from,
+        blockNumber: creatorTx.blockNumber ?? undefined,
+        txIndex: txReceipt.index ?? undefined,
+      };
+    } catch (error: any) {
+      logger.debug(
+        "Failed to fetch creation data for similarity verification",
+        {
+          chainId,
+          address,
+          creatorTxHash: resolvedCreatorTxHash,
+          error: error?.message,
+        },
+      );
+      return { creationTransactionHash: resolvedCreatorTxHash };
+    }
+  }
+
+  /**
+   * Runs similarity verification batch by batch: fetches the payloads for the
+   * next slice of candidate compilation ids and hands them to the worker,
+   * stopping at the first batch that yields a match or a real error.
+   *
+   * Candidate payloads carry the full standard JSON input and output, so
+   * fetching all of them up front would pull ~20 large payloads out of the
+   * database to use one of them.
+   */
+  private async runSimilarityWorkerBatches(
+    input: VerifySimilarityServiceInput,
+  ): Promise<VerifyOutput> {
+    const { candidateIds, ...workerInput } = input;
+
+    for (
+      let offset = 0;
+      offset < candidateIds.length;
+      offset += SIMILARITY_CANDIDATE_BATCH_SIZE
+    ) {
+      const batchIds = candidateIds.slice(
+        offset,
+        offset + SIMILARITY_CANDIDATE_BATCH_SIZE,
+      );
+
+      let candidates: SimilarityCandidate[];
+      try {
+        candidates = await this.storageService.performServiceOperation(
+          "getSimilarityCandidatesByCompilationIds",
+          [batchIds],
+        );
+      } catch (error) {
+        if (isStatementTimeoutError(error)) {
+          return {
+            errorExport: {
+              customCode: "similarity_search_timeout",
+              errorId: uuidv4(),
+            },
+          };
+        }
+        // Will be mapped to an internal_error by storeVerificationOutcome
+        throw error;
+      }
+
+      if (candidates.length === 0) {
+        continue;
+      }
+
+      const output = await this.workerPool.run(
+        { ...workerInput, candidates },
+        { name: "verifySimilarity" },
+      );
+
+      // Anything other than "this batch had no match" is terminal: either we
+      // verified, or we hit a real error.
+      if (
+        output.verificationExport ||
+        output.errorExport?.customCode !== "no_similar_match_found"
+      ) {
+        return output;
+      }
+    }
+
+    return {
+      errorExport: {
+        customCode: "no_similar_match_found",
+        errorId: uuidv4(),
+        errorData: undefined,
+      },
+    };
+  }
+
+  private async verifyViaWorker(
     verificationId: VerificationJobId,
     functionName: string,
     input:
@@ -431,71 +625,94 @@ export class VerificationService {
       | VerifyFromEtherscanInput
       | VerifySimilarityInput,
   ): Promise<void> {
-    return this.workerPool
-      .run(input, { name: functionName })
-      .then((output: VerifyOutput) => {
-        if (output.verificationExport) {
-          return output.verificationExport;
-        } else if (output.errorExport) {
-          throw new VerifyError(output.errorExport);
-        }
-        const errorMessage = `The worker did not return a verification export nor an error export. This should never happen.`;
-        logger.error(errorMessage, { output });
-        throw new Error(errorMessage);
-      })
-      .then((verification: VerificationExport) => {
-        return this.storageService.storeVerification(verification, {
+    return this.storeVerificationOutcome(
+      verificationId,
+      input,
+      this.workerPool.run(input, { name: functionName }),
+    );
+  }
+
+  /**
+   * Persists the outcome of a verification attempt exactly once: stores the
+   * verification on success, or records the job error on failure.
+   *
+   * Takes the pending worker output rather than running the worker itself so
+   * that similarity verification, which produces its final output over several
+   * batched worker runs, shares the same outcome handling. Rejections of the
+   * pending output are classified here as well.
+   */
+  private async storeVerificationOutcome(
+    verificationId: VerificationJobId,
+    input:
+      | VerifyFromJsonInput
+      | VerifyFromMetadataInput
+      | VerifyFromEtherscanInput
+      | VerifySimilarityInput,
+    pendingOutput: Promise<VerifyOutput>,
+  ): Promise<void> {
+    try {
+      const output = await pendingOutput;
+
+      if (output.verificationExport) {
+        await this.storageService.storeVerification(output.verificationExport, {
           verificationId,
           finishTime: new Date(),
         });
-      })
-      .catch((error) => {
-        let errorExport: VerifyErrorExport;
-        if (error instanceof VerifyError) {
-          // error comes from the verification worker
-          logger.debug("Received verification error from worker", {
-            verificationId,
-            errorExport: {
-              ...error.errorExport,
-              // Don't log the full bytecodes because it's too long
-              onchainRuntimeCode: error.errorExport?.onchainRuntimeCode
-                ? error.errorExport.onchainRuntimeCode.slice(0, 200) + "..."
-                : error.errorExport?.onchainRuntimeCode,
-              recompiledRuntimeCode: error.errorExport?.recompiledRuntimeCode
-                ? error.errorExport.recompiledRuntimeCode.slice(0, 200) + "..."
-                : error.errorExport?.recompiledRuntimeCode,
-              onchainCreationCode: error.errorExport?.onchainCreationCode
-                ? error.errorExport.onchainCreationCode.slice(0, 200) + "..."
-                : error.errorExport?.onchainCreationCode,
-              recompiledCreationCode: error.errorExport?.recompiledCreationCode
-                ? error.errorExport.recompiledCreationCode.slice(0, 200) + "..."
-                : error.errorExport?.recompiledCreationCode,
-            },
-          });
-          errorExport = error.errorExport;
-        } else if (error instanceof ConflictError) {
-          // returned by StorageService if match already exists and new one is not better
-          errorExport = {
-            customCode: "already_verified",
-            errorId: uuidv4(),
-          };
-        } else {
-          errorExport = {
-            customCode: "internal_error",
-            errorId: uuidv4(),
-          };
-          logger.error("Unexpected verification error", {
-            verificationId,
-            error,
-            errorId: errorExport.errorId,
-          });
-        }
+        return;
+      } else if (output.errorExport) {
+        throw new VerifyError(output.errorExport);
+      }
 
-        return this.storeJobError(
-          [verificationId, new Date(), errorExport],
-          input,
-        );
-      });
+      const errorMessage = `The worker did not return a verification export nor an error export. This should never happen.`;
+      logger.error(errorMessage, { output });
+      throw new Error(errorMessage);
+    } catch (error) {
+      let errorExport: VerifyErrorExport;
+      if (error instanceof VerifyError) {
+        // error comes from the verification worker
+        logger.debug("Received verification error from worker", {
+          verificationId,
+          errorExport: {
+            ...error.errorExport,
+            // Don't log the full bytecodes because it's too long
+            onchainRuntimeCode: error.errorExport?.onchainRuntimeCode
+              ? error.errorExport.onchainRuntimeCode.slice(0, 200) + "..."
+              : error.errorExport?.onchainRuntimeCode,
+            recompiledRuntimeCode: error.errorExport?.recompiledRuntimeCode
+              ? error.errorExport.recompiledRuntimeCode.slice(0, 200) + "..."
+              : error.errorExport?.recompiledRuntimeCode,
+            onchainCreationCode: error.errorExport?.onchainCreationCode
+              ? error.errorExport.onchainCreationCode.slice(0, 200) + "..."
+              : error.errorExport?.onchainCreationCode,
+            recompiledCreationCode: error.errorExport?.recompiledCreationCode
+              ? error.errorExport.recompiledCreationCode.slice(0, 200) + "..."
+              : error.errorExport?.recompiledCreationCode,
+          },
+        });
+        errorExport = error.errorExport;
+      } else if (error instanceof ConflictError) {
+        // returned by StorageService if match already exists and new one is not better
+        errorExport = {
+          customCode: "already_verified",
+          errorId: uuidv4(),
+        };
+      } else {
+        errorExport = {
+          customCode: "internal_error",
+          errorId: uuidv4(),
+        };
+        logger.error("Unexpected verification error", {
+          verificationId,
+          error,
+          errorId: errorExport.errorId,
+        });
+      }
+
+      await this.storeJobError(
+        [verificationId, new Date(), errorExport],
+        input,
+      );
+    }
   }
 
   private async storeInputDataToS3(

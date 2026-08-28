@@ -233,7 +233,7 @@ update_changelog() {
 }
 
 commit_changelogs() {
-  git commit -m "Update changelogs"
+  git commit -m "Update changelogs and clear release TODOs"
 }
 
 ###

@@ -137,6 +137,11 @@ export function findAuxdataPositions(
 
   // 3.  For every bytecodeDiffPosition, see if it hosts an compilerAuxdataDiff
   const resultAuxdatas: CompiledContractCborAuxdata = {};
+  // An auxdata from `legacyAssembly` can occur more than one time in the bytecode,
+  // e.g. when a contract embeds the same child bytecode in more than one location.
+  // We record each occurrence. Occurrences that go beyond the `legacyAssembly`
+  // entries get the next free keys.
+  let nextExtraAuxdataKey = compilerAuxdataDiffs.length + 1;
   let prevPos = -Infinity;
   for (const pos of bytecodeDiffPositions) {
     // Skip positions that are immediately consecutive to the previous one,
@@ -146,16 +151,17 @@ export function findAuxdataPositions(
       continue;
     }
 
-    // For each bytecodeDiffPosition, test every compilerAuxdataDiff that we haven't already mapped
+    // Test every compilerAuxdataDiff at this position. A diff that is not mapped
+    // gets its own key (i + 1). A diff that is already mapped shows one more
+    // occurrence of the same auxdata. That occurrence gets the next free key.
+    let alreadyMappedMatch: CompilerAuxdataDiff | undefined;
+    let foundUnmappedMatch = false;
     for (let i = 0; i < compilerAuxdataDiffs.length; i++) {
       // Get the current compilerAuxdataDiff
       const compilerAuxdataDiff = compilerAuxdataDiffs[i];
       // The CompiledContractCborAuxdata element keys start from '1'.
       // So key is effectively i + 1
       const auxdataKey = i + 1;
-
-      // If we already mapped this compilerAuxdataDiff, skip
-      if (resultAuxdatas[auxdataKey] !== undefined) continue;
 
       // If in position `pos` of the originalBytecode we find the `compilerAuxdataDiff.real` value
       if (
@@ -165,16 +171,34 @@ export function findAuxdataPositions(
           pos,
         )
       ) {
+        if (resultAuxdatas[auxdataKey] !== undefined) {
+          // Keep as candidate for one more occurrence of this auxdata.
+          if (alreadyMappedMatch === undefined) {
+            alreadyMappedMatch = compilerAuxdataDiff;
+          }
+          continue;
+        }
+
         // Store the CompiledContractCborAuxdata element
         resultAuxdatas[auxdataKey] = {
           offset: (pos - compilerAuxdataDiff.diffStart - 2) / 2,
           value: `0x${compilerAuxdataDiff.real}`,
         };
+        foundUnmappedMatch = true;
         // Match the first auxdata for each bytecodeDiffPosition. If there are multiple identical cborAuxdata,
         // without the break it will always match the last one. With first, it will be "mapped" in the `result[resultIndex]`
         // See https://github.com/argotorg/sourcify/issues/1980
         break;
       }
+    }
+
+    // This position holds one more occurrence of an auxdata that is already mapped.
+    if (!foundUnmappedMatch && alreadyMappedMatch !== undefined) {
+      resultAuxdatas[nextExtraAuxdataKey] = {
+        offset: (pos - alreadyMappedMatch.diffStart - 2) / 2,
+        value: `0x${alreadyMappedMatch.real}`,
+      };
+      nextExtraAuxdataKey++;
     }
 
     prevPos = pos;

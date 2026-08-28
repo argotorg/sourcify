@@ -48,7 +48,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(runTaskStub.calledOnce).to.be.true;
     const [workerInput] = runTaskStub.firstCall.args;
-    chai.expect(workerInput).to.include({
+    chai.expect(workerInput.creationData).to.include({
       creationTransactionHash: customCreationHash,
     });
   });
@@ -81,6 +81,81 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       match: null,
       creationMatch: null,
       runtimeMatch: null,
+    });
+  });
+
+  it("should store a similarity_search_timeout error when the candidate id query times out", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const timeoutError = new Error(
+      "canceling statement due to statement timeout",
+    );
+    (timeoutError as any).code = "57014";
+    sandbox
+      .stub(databaseService, "getSimilarityCandidateIdsByRuntimeCode")
+      .rejects(timeoutError);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body.isJobCompleted).to.be.true;
+    chai.expect(jobRes.body.error).to.deep.include({
+      customCode: "similarity_search_timeout",
+    });
+  });
+
+  it("should store a similarity_search_timeout error when the candidate batch query times out", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    // Seed a verified contract so that candidate ids are found
+    const verification = structuredClone(MockVerificationExport);
+    verification.address = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF";
+    await databaseService.storeVerification(verification);
+
+    const timeoutError = new Error(
+      "canceling statement due to statement timeout",
+    );
+    (timeoutError as any).code = "57014";
+    sandbox
+      .stub(databaseService, "getSimilarityCandidatesByCompilationIds")
+      .rejects(timeoutError);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(verifyRes.status).to.equal(202);
+
+    await resolveWorkers();
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${verifyRes.body.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body.isJobCompleted).to.be.true;
+    chai.expect(jobRes.body.error).to.deep.include({
+      customCode: "similarity_search_timeout",
     });
   });
 
@@ -131,6 +206,32 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .to.equal(
         `There is no bytecode at address ${chainFixture.defaultContractAddress} on chain ${chainFixture.chainId}.`,
       );
+    chai.expect(verifyRes.body).to.not.have.property("verificationId");
+  });
+
+  it("should return a 400 when the bytecode is shorter than the similarity prefix", async () => {
+    const getBytecodeStub = sandbox
+      .stub(
+        serverFixture.sourcifyChainsMap[chainFixture.chainId],
+        "getBytecode",
+      )
+      // 45-byte EIP-1167 style bytecode, below the 75-byte prefix length
+      .resolves("0x" + "ff".repeat(45));
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({});
+
+    chai.expect(getBytecodeStub.calledOnce).to.be.true;
+    chai.expect(verifyRes.status).to.equal(400);
+    chai
+      .expect(verifyRes.body.customCode)
+      .to.equal("bytecode_too_short_for_similarity");
+    chai.expect(verifyRes.body).to.have.property("errorId");
+    chai.expect(verifyRes.body).to.have.property("message");
     chai.expect(verifyRes.body).to.not.have.property("verificationId");
   });
 

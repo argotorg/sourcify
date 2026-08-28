@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.7.0 - 2026-08-20
+
+- fix(lib-sourcify): drop stale keccak256 when generating auxdata positions (#2876)
+- fix(lib-sourcify): compare creation-tx contractAddress case-insensitively (#2883)
+- fix(lib-sourcify): throw specific error when compiler does not output deployedBytecode (#2890)
+- fix(lib-sourcify): don't store sources unused by the compilation target (#2901)
+- fix: prevent and auto-recover stuck v2 verification jobs (compiler OOM/hang) (#2880) (#2886)
+
 ## @ethereum-sourcify/lib-sourcify@3.6.1 - 2026-07-06
 
 - update dependencies

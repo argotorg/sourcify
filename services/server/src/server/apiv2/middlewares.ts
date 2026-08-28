@@ -1,3 +1,5 @@
+import path from "path";
+import { resolveFeSourcePath } from "@ethereum-sourcify/compilers";
 import type { Request, Response, NextFunction } from "express";
 import type { ChainRepository } from "../../sourcify-chain-repository";
 import logger from "../../common/logger";
@@ -248,6 +250,24 @@ export function validateAndNormalizeFeInput(
       normalized[`src/${k}`] = v;
     }
     req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
+  }
+
+  // Same rules as resolveFeSourcePath in the compiler write loop. The
+  // root is only used to classify the key; nothing is written here.
+  // Kept so the API returns 400 before a verification job starts.
+  const jailedSources = req.body.stdJsonInput.sources as Record<
+    string,
+    { content: string }
+  >;
+  const keyCheckRoot = path.resolve("sourcify-fe-key-check");
+  for (const sourcePath of Object.keys(jailedSources)) {
+    try {
+      resolveFeSourcePath(keyCheckRoot, sourcePath);
+    } catch {
+      throw new InvalidParametersError(
+        "Fe source paths must stay under the compilation directory.",
+      );
+    }
   }
 
   // Normalize contractIdentifier for Fe:

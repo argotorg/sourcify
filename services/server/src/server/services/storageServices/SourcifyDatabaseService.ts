@@ -17,6 +17,7 @@ import type {
 } from "../utils/database-util";
 import {
   bytesFromString,
+  normalizeCallProtection,
   FIELDS_TO_STORED_PROPERTIES,
   createPreRunCompilationFromStoredCandidate,
 } from "../utils/database-util";
@@ -648,10 +649,18 @@ export class SourcifyDatabaseService
     });
   }
 
-  async getSimilarityCandidatesByRuntimeCode(
+  /**
+   * Returns the ids of compilations whose runtime code looks similar to the
+   * given bytecode, most-to-least nothing in particular -- the order is
+   * whatever the prefix scan produces.
+   *
+   * Only ids are returned so the caller can fetch the (large) compilation
+   * payloads in batches and stop as soon as one of them verifies.
+   */
+  async getSimilarityCandidateIdsByRuntimeCode(
     runtimeBytecode: string,
     limit: number,
-  ): Promise<SimilarityCandidate[]> {
+  ): Promise<string[]> {
     await this.init();
 
     const runtimeBuffer = bytesFromString(runtimeBytecode);
@@ -660,59 +669,41 @@ export class SourcifyDatabaseService
     }
 
     const prefixMatches =
-      await this.database.getVerifiedContractsByRuntimeCodePrefix(
-        runtimeBuffer,
+      await this.database.getCompilationsByRuntimeCodePrefix(
+        // Deployed libraries carry their own address in the call protection at
+        // the start of the runtime code; stored prefixes have zeros there.
+        normalizeCallProtection(runtimeBuffer),
         limit,
       );
 
-    if (prefixMatches.rows.length === 0) {
+    return prefixMatches.rows.map((row) => row.compilation_id);
+  }
+
+  /**
+   * Fetches the compilation payloads for a batch of candidate ids in a single
+   * query. Each payload carries the full standard JSON input and output, so
+   * batches are kept small and only fetched when the previous batch failed to
+   * verify.
+   */
+  async getSimilarityCandidatesByCompilationIds(
+    compilationIds: string[],
+  ): Promise<SimilarityCandidate[]> {
+    await this.init();
+
+    if (compilationIds.length === 0) {
       return [];
     }
 
-    const results: GetSourcifyMatchByChainAddressWithPropertiesResult[] = [];
+    const result = await this.database.getCompilationsByIds(compilationIds);
 
-    const matchRows = await Promise.all(
-      prefixMatches.rows.map(async (row) => {
-        const addressBuffer = bytesFromString(row.address);
-        if (!addressBuffer) {
-          return null;
-        }
-        const matchResult =
-          await this.database.getSourcifyMatchByChainAddressWithProperties(
-            parseInt(row.chain_id),
-            addressBuffer,
-            [
-              "std_json_input",
-              "std_json_output",
-              "fully_qualified_name",
-              "version",
-              "creation_cbor_auxdata",
-              "runtime_cbor_auxdata",
-              "metadata",
-            ],
-          );
-
-        if (matchResult.rows.length === 0) {
-          logger.warn("Prefix match found but no sourcify match for contract", {
-            chainId: row.chain_id,
-            address: row.address,
-          });
-          return null;
-        }
-
-        return matchResult.rows[0];
-      }),
-    );
-
-    for (const matchRow of matchRows) {
-      if (!matchRow) {
-        continue;
-      }
-
-      results.push(matchRow);
+    if (result.rows.length < compilationIds.length) {
+      logger.warn("Some similarity candidates could not be fetched", {
+        requested: compilationIds.length,
+        fetched: result.rows.length,
+      });
     }
 
-    return results as SimilarityCandidate[];
+    return result.rows as SimilarityCandidate[];
   }
 
   async getPreRunCompilationFromDatabase(

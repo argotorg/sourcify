@@ -13,12 +13,14 @@ source "${SCRIPT_DIR}/logging_utils.sh"
 source "${SCRIPT_DIR}/git_utils.sh"
 source "${SCRIPT_DIR}/release_data_utils.sh"
 source "${SCRIPT_DIR}/release.sh"
+source "${SCRIPT_DIR}/release_todos.sh"
 
 ###
 ### Main
 ###
 prompt_execute_or_skip "checking current branch" is_on_staging_branch
 prompt_execute_or_skip "checking if branches are in sync" check_branch_sync
+prompt_execute_or_skip "checking for open release TODOs (migrations, .release-todos/, TODO_RELEASE markers)" check_release_todos
 prompt_execute_or_skip "creating GitHub PR" create_gh_deploy_pr
 
 # Needed if the user skips creating the PR
@@ -27,6 +29,7 @@ if [ -z "$OPEN_PR_NUMBER" ]; then
 fi
 
 prompt_execute_or_skip "creating new branch because we can't commit to staging directly" create_new_branch "release-$(date +'%Y-%m-%d-%H-%M')" # Add hour and minute to the branch name if we do multiple releases in the same day
+prompt_execute_or_skip "removing the done .release-todos files (committed with the changelogs)" clear_release_todo_files
 prompt_execute_or_skip "choosing versions for each package and writing changelogs" update_packages_and_changelog
 prompt_execute_or_skip "commiting the changelogs" commit_changelogs
 
@@ -39,6 +42,8 @@ prompt_execute_or_skip "pushing the tags to GitHub" push_tags_in_order
 prompt_execute_or_skip "creating GitHub releases" create_github_releases
 
 prompt_execute_or_skip "asking if 'Deploy latest to production' PR is merged" ask_if_master_pr_merged
+prompt_execute_or_skip "showing release TODOs for after the deploy" show_release_todos_after
 
 # Clean up the temporary package data file
 prompt_execute_or_skip "cleaning up temporary release data" cleanup_package_data_file
+prompt_execute_or_skip "cleaning up temporary release TODO data" cleanup_release_todos_file

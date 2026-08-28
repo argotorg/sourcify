@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.0.0 - 2026-08-20
+
+- refactor(server): remove API v1 (#2877)
+- fix(lib-sourcify): don't store sources unused by the compilation target (#2901)
+- fix: prevent and auto-recover stuck v2 verification jobs (compiler OOM/hang) (#2880) (#2886)
+- Fix similarity API database load and timeouts (#2918)
+- fix(compilers): jail Fe source writes to the compilation temp dir (#2933)
+- refactor(server): remove unused validateCompilerVersion middleware (#2879)
+- fix(server): detect EIP-1167 clones with immutable args (#2874)
+- fix: detect Polygon (Matic) UpgradableProxy in proxyResolution (#2931)
+
 ## sourcify-server@3.17.1 - 2026-07-06
 
 - fix(server): don't insert sources on compiled_contracts dedup conflict (#2859)

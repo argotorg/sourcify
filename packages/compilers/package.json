@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/compilers",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "description": "Wrapper around multiple compilers to download the right version and invoke the compilation with a common interface.",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
@@ -47,11 +47,11 @@
   },
   "homepage": "https://github.com/argotorg/sourcify#readme",
   "dependencies": {
+    "@ethereum-sourcify/compilers-types": "^1.3.2",
     "semver": "7.8.5",
     "solc": "0.8.36"
   },
   "devDependencies": {
-    "@ethereum-sourcify/compilers-types": "^1.3.1",
     "@types/chai": "4.3.20",
     "@types/mocha": "10.0.10",
     "@types/node": "22.20.1",
