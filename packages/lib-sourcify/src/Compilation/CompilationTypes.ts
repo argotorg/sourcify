@@ -44,6 +44,8 @@ export type CompilationErrorCode =
   | 'contract_not_found_in_compiler_output'
   | 'runtime_bytecode_not_found_in_compiler_output'
   | 'compiler_error'
+  | 'compiler_timeout'
+  | 'compiler_out_of_memory'
   | 'no_compiler_output'
   | 'metadata_not_set'
   | 'creation_bytecode_cbor_auxdata_not_set'

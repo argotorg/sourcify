@@ -14,6 +14,7 @@ export class SolcLocal implements ISolidityCompiler {
   constructor(
     private solcRepoPath: string,
     private solJsonRepoPath: string,
+    private timeoutMs?: number,
   ) {}
 
   async compile(
@@ -27,6 +28,7 @@ export class SolcLocal implements ISolidityCompiler {
       version,
       solcJsonInput,
       forceEmscripten,
+      this.timeoutMs,
     );
   }
 

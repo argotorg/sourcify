@@ -23,6 +23,10 @@ import type {
   FeOutput,
   FeOutputContract,
 } from '@ethereum-sourcify/compilers-types';
+import {
+  COMPILER_TIMEOUT_CODE,
+  COMPILER_OOM_CODE,
+} from '@ethereum-sourcify/compilers-types';
 import { logDebug, logInfo, logSilly, logWarn } from '../logger';
 
 function cleanCompilerVersion(version: string): string {
@@ -116,6 +120,15 @@ export abstract class AbstractCompilation {
       logWarn('Compiler error', {
         error: e.errors ? e.errors : e.message,
       });
+      // The compilers package attaches a machine-readable discriminator on
+      // `.code` when the compiler subprocess dies, so we can surface a
+      // dedicated error code instead of a generic compiler_error (#2880).
+      if (e?.code === COMPILER_TIMEOUT_CODE) {
+        throw new CompilationError({ code: 'compiler_timeout' });
+      }
+      if (e?.code === COMPILER_OOM_CODE) {
+        throw new CompilationError({ code: 'compiler_out_of_memory' });
+      }
       // Depending on the compiler implementation, the errors object could be undefined
       // In this case, we use the error message as a fallback
       // e.g. @ethreum-sourcify/compilers supports the errors object but web-solc does not

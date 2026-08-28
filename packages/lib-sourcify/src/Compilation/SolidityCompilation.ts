@@ -23,27 +23,23 @@ import {
 } from './auxdataUtils';
 import { logWarn } from '../logger';
 
-export const DEFAULT_OUTPUT_SELECTION = {
-  '*': {
-    '*': [
-      'abi',
-      'devdoc',
-      'userdoc',
-      'storageLayout',
-      'transientStorageLayout',
-      'evm.legacyAssembly',
-      'evm.bytecode.object',
-      'evm.bytecode.sourceMap',
-      'evm.bytecode.linkReferences',
-      'evm.bytecode.generatedSources',
-      'evm.deployedBytecode.object',
-      'evm.deployedBytecode.sourceMap',
-      'evm.deployedBytecode.linkReferences',
-      'evm.deployedBytecode.immutableReferences',
-      'metadata',
-    ],
-  },
-} as const;
+export const DEFAULT_OUTPUT_SELECTION_FIELDS = [
+  'abi',
+  'devdoc',
+  'userdoc',
+  'storageLayout',
+  'transientStorageLayout',
+  'evm.legacyAssembly',
+  'evm.bytecode.object',
+  'evm.bytecode.sourceMap',
+  'evm.bytecode.linkReferences',
+  'evm.bytecode.generatedSources',
+  'evm.deployedBytecode.object',
+  'evm.deployedBytecode.sourceMap',
+  'evm.deployedBytecode.linkReferences',
+  'evm.deployedBytecode.immutableReferences',
+  'metadata',
+] as const;
 
 export function supportsHistoricalSolidityStorageLayoutExtraction(
   version: string,
@@ -87,15 +83,17 @@ export class SolidityCompilation extends AbstractCompilation {
   }
 
   initSolidityJsonInput() {
-    const outputSelection = structuredClone(
-      DEFAULT_OUTPUT_SELECTION,
-    ) as unknown as Record<string, Record<string, string[]>>;
+    const outputSelection: Record<string, Record<string, string[]>> = {
+      [this.compilationTarget.path]: {
+        [this.compilationTarget.name]: [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+      },
+    };
     if (
       supportsHistoricalSolidityStorageLayoutExtraction(this.compilerVersion)
     ) {
-      outputSelection['*'][''] = [
-        semver.gte(this.compilerVersion, '0.4.12') ? 'ast' : 'legacyAST',
-      ];
+      outputSelection['*'] = {
+        '': [semver.gte(this.compilerVersion, '0.4.12') ? 'ast' : 'legacyAST'],
+      };
     }
     this.jsonInput.settings.outputSelection = outputSelection;
   }

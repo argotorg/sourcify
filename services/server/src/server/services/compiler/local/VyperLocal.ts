@@ -6,12 +6,20 @@ import type {
 import { useVyperCompiler } from "@ethereum-sourcify/compilers";
 
 export class VyperLocal implements IVyperCompiler {
-  constructor(private vyperRepoPath: string) {}
+  constructor(
+    private vyperRepoPath: string,
+    private timeoutMs?: number,
+  ) {}
 
   async compile(
     version: string,
     vyperJsonInput: VyperJsonInput,
   ): Promise<VyperOutput> {
-    return await useVyperCompiler(this.vyperRepoPath, version, vyperJsonInput);
+    return await useVyperCompiler(
+      this.vyperRepoPath,
+      version,
+      vyperJsonInput,
+      this.timeoutMs,
+    );
   }
 }

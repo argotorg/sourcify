@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.6.1 - 2026-08-20
+
+- update dependencies
+- security: pin CI images and actions by digest (#2915)
+
 ## sourcify-monitor@1.6.0 - 2026-07-06
 
 - feat(monitor): submit contracts via Sourcify API v2 (#2840)

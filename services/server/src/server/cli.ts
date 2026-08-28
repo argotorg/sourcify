@@ -62,6 +62,12 @@ const logLevel =
   process.env.NODE_LOG_LEVEL ||
   (process.env.NODE_ENV === "production" ? "info" : "debug");
 
+// Wall-clock limit for a single compiler subprocess. Left undefined the
+// compilers package applies its own default.
+const compilerTimeoutMs = process.env.COMPILER_TIMEOUT_MS
+  ? parseInt(process.env.COMPILER_TIMEOUT_MS)
+  : undefined;
+
 // Solidity Compiler
 
 const solcRepoPath =
@@ -70,19 +76,23 @@ const solJsonRepoPath =
   (config.get("solJsonRepo") as string) || path.join("/tmp", "soljson-repo");
 
 logger.info("Using local solidity compiler");
-const selectedSolidityCompiler = new SolcLocal(solcRepoPath, solJsonRepoPath);
+const selectedSolidityCompiler = new SolcLocal(
+  solcRepoPath,
+  solJsonRepoPath,
+  compilerTimeoutMs,
+);
 
 export const solc = selectedSolidityCompiler;
 
 logger.info("Using local vyper compiler");
 const vyperRepoPath =
   (config.get("vyperRepo") as string) || path.join("/tmp", "vyper-repo");
-export const vyper = new VyperLocal(vyperRepoPath);
+export const vyper = new VyperLocal(vyperRepoPath, compilerTimeoutMs);
 
 logger.info("Using local Fe compiler");
 const feRepoPath =
   (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
-export const fe = new FeLocal(feRepoPath);
+export const fe = new FeLocal(feRepoPath, compilerTimeoutMs);
 
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
@@ -124,6 +134,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solJsonRepoPath,
       vyperRepoPath,
       feRepoPath,
+      compilerTimeoutMs,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,

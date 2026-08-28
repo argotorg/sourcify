@@ -288,4 +288,63 @@ describe("GET /v2/verify/:verificationId", function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal(mockJob);
   });
+
+  // The reaper runs in production as a pg_cron job (every 15 min, 3h
+  // threshold). pg_cron isn't available in the test database, so we call the
+  // scheduled function directly with a zero threshold. See #2880.
+  it("should mark a stale job as abandoned and release the address lock", async function () {
+    const mockJob = await createMockJob();
+    const verifyEndpoint = `/v2/verify/metadata/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`;
+    const verifyBody = {
+      sources: {
+        [Object.keys(chainFixture.defaultContractMetadataObject.sources)[0]]:
+          chainFixture.defaultContractSource.toString(),
+      },
+      metadata: chainFixture.defaultContractMetadataObject,
+      creationTransactionHash: chainFixture.defaultContractCreatorTx,
+    };
+
+    // Don't let the resubmission at the end actually compile
+    makeWorkersWait();
+
+    // The unfinished job holds the lock on this chain+address
+    const blockedRes = await chai
+      .request(serverFixture.server.app)
+      .post(verifyEndpoint)
+      .send(verifyBody);
+
+    chai.expect(blockedRes.status).to.equal(429);
+    chai
+      .expect(blockedRes.body.customCode)
+      .to.equal("duplicate_verification_request");
+
+    const reapResult = await serverFixture.sourcifyDatabase.query(
+      "SELECT public.reap_stale_verification_jobs('0 seconds') AS reaped",
+    );
+    chai.expect(Number(reapResult.rows[0].reaped)).to.be.at.least(1);
+
+    const jobRes = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${mockJob.verificationId}`);
+
+    chai.expect(jobRes.status).to.equal(200);
+    chai.expect(jobRes.body.isJobCompleted).to.equal(true);
+    chai.expect(jobRes.body).to.have.property("jobFinishTime");
+    // Requires the reaper to set error_id as well as error_code: the API only
+    // builds an error object when both are present
+    chai.expect(jobRes.body.error).to.exist;
+    chai.expect(jobRes.body.error.customCode).to.equal("job_abandoned");
+    chai.expect(jobRes.body.error).to.have.property("errorId");
+    chai
+      .expect(jobRes.body.error.message)
+      .to.equal(getVerificationErrorMessage({ code: "job_abandoned" }));
+
+    // Lock released: the same contract can be submitted again
+    const retryRes = await chai
+      .request(serverFixture.server.app)
+      .post(verifyEndpoint)
+      .send(verifyBody);
+
+    chai.expect(retryRes.status).to.equal(202);
+  });
 });

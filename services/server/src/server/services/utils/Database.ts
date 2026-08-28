@@ -14,9 +14,12 @@ import type {
   GetSourcifyMatchesAllChainsResult,
   ExternalVerification,
   CodePrefixMatchResult,
+  GetCompilationsByIdsResult,
 } from "./database-util";
 import {
   bytesFromString,
+  buildStdJsonInputSelector,
+  SIMILARITY_PREFIX_LENGTH_BYTES,
   STORED_PROPERTIES_TO_SELECTORS,
 } from "./database-util";
 import { createHash } from "crypto";
@@ -263,25 +266,87 @@ ${
     );
   }
 
-  async getVerifiedContractsByRuntimeCodePrefix(
+  /**
+   * Returns the ids of up to `limit` compilations whose runtime code shares its
+   * first 75 bytes with the given bytecode.
+   *
+   * Reads the compiled_contracts_runtime_code_prefixes side table: there every
+   * entry is a candidate, so the LIMIT short-circuits after ~limit index
+   * entries. A prefix scan on the code table is too slow -- see the analysis in
+   * https://github.com/argotorg/sourcify/issues/2891.
+   *
+   * The LATERAL keeps only compilations that still have a sourcify_match;
+   * compilations without one are stale. Do NOT rewrite it as EXISTS: Postgres
+   * de-correlates EXISTS into a semi-join and drives the query from sequential
+   * scans over verified_contracts and sourcify_matches (see the issue). The
+   * LIMIT 1 inside the LATERAL blocks that, so the planner drives from the
+   * prefix index.
+   */
+  async getCompilationsByRuntimeCodePrefix(
     runtimeBytecode: Buffer,
     limit: number = 20,
   ): Promise<QueryResult<CodePrefixMatchResult>> {
     return await this.pool.query(
       `
-        SELECT
-          compiled_contracts.id as compilation_id,
-          contract_deployments.chain_id,
-          concat('0x', encode(contract_deployments.address, 'hex')) as address
-        FROM ${this.schema}.code code
-        JOIN ${this.schema}.compiled_contracts ON compiled_contracts.runtime_code_hash = code.code_hash
-        JOIN ${this.schema}.verified_contracts ON verified_contracts.compilation_id = compiled_contracts.id
-        JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
-        JOIN ${this.schema}.contract_deployments ON verified_contracts.deployment_id = contract_deployments.id
-        WHERE substring(code.code FROM 1 FOR 75) = substring($1::bytea FROM 1 FOR 75)
+        SELECT prefixes.compilation_id
+        FROM ${this.schema}.compiled_contracts_runtime_code_prefixes prefixes
+        CROSS JOIN LATERAL (
+          SELECT 1
+          FROM ${this.schema}.verified_contracts
+          JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+          WHERE verified_contracts.compilation_id = prefixes.compilation_id
+          LIMIT 1
+        ) verified
+        WHERE prefixes.runtime_code_prefix = substring($1::bytea FROM 1 FOR ${SIMILARITY_PREFIX_LENGTH_BYTES})
         LIMIT $2
       `,
       [runtimeBytecode, limit],
+    );
+  }
+
+  /**
+   * Fetches the compilation data needed to re-run a compilation, for a batch of
+   * compilation ids in a single round trip.
+   *
+   * - Sources come from a scalar subquery instead of a JOIN + GROUP BY:
+   *   metadata is a `json` column, which cannot be grouped.
+   * - The LATERAL is aliased `sourcify_matches` so the shared selectors that
+   *   reference sourcify_matches.metadata work verbatim.
+   */
+  async getCompilationsByIds(
+    compilationIds: string[],
+  ): Promise<QueryResult<GetCompilationsByIdsResult>> {
+    const stdJsonInputSelector = buildStdJsonInputSelector(`(
+        SELECT json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))
+        FROM ${this.schema}.compiled_contracts_sources
+        LEFT JOIN ${this.schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
+        WHERE compiled_contracts_sources.compilation_id = compiled_contracts.id
+      )`);
+
+    return await this.pool.query(
+      `
+        SELECT
+          compiled_contracts.id as compilation_id,
+          ${STORED_PROPERTIES_TO_SELECTORS["version"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["fully_qualified_name"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["creation_cbor_auxdata"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["runtime_cbor_auxdata"]},
+          ${STORED_PROPERTIES_TO_SELECTORS["metadata"]},
+          ${stdJsonInputSelector},
+          ${STORED_PROPERTIES_TO_SELECTORS["std_json_output"]}
+        FROM ${this.schema}.compiled_contracts
+        LEFT JOIN ${this.schema}.code as recompiled_runtime_code ON recompiled_runtime_code.code_hash = compiled_contracts.runtime_code_hash
+        LEFT JOIN ${this.schema}.code as recompiled_creation_code ON recompiled_creation_code.code_hash = compiled_contracts.creation_code_hash
+        CROSS JOIN LATERAL (
+          SELECT sourcify_matches.metadata
+          FROM ${this.schema}.verified_contracts
+          JOIN ${this.schema}.sourcify_matches ON sourcify_matches.verified_contract_id = verified_contracts.id
+          WHERE verified_contracts.compilation_id = compiled_contracts.id
+          LIMIT 1
+        ) sourcify_matches
+        WHERE compiled_contracts.id = ANY($1::uuid[])
+      `,
+      [compilationIds],
     );
   }
 

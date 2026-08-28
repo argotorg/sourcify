@@ -264,9 +264,24 @@ export type GetSourcifyMatchesByChainResult = Pick<
 
 export interface CodePrefixMatchResult {
   compilation_id: Tables.VerifiedContract["compilation_id"];
-  chain_id: Tables.ContractDeployment["chain_id"];
-  address: string;
 }
+
+/**
+ * Compilation-level data needed to re-run a compilation, keyed on the
+ * compilation itself rather than on a (chain, address) deployment.
+ */
+export type GetCompilationsByIdsResult = Pick<
+  GetSourcifyMatchByChainAddressWithPropertiesResult,
+  | "std_json_input"
+  | "std_json_output"
+  | "version"
+  | "fully_qualified_name"
+  | "creation_cbor_auxdata"
+  | "runtime_cbor_auxdata"
+  | "metadata"
+> & {
+  compilation_id: Tables.VerifiedContract["compilation_id"];
+};
 
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
   Pick<
@@ -362,6 +377,23 @@ export type GetVerificationJobsByChainAndAddressResult = {
 const sourcesAggregation =
   "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
 
+/**
+ * Builds the `std_json_input` selector around a caller-provided SQL expression
+ * yielding the `sources` object.
+ *
+ * Deployment-keyed queries aggregate sources via a JOIN + GROUP BY
+ * (`sourcesAggregation`), while compilation-keyed batch queries use a scalar
+ * subquery so they don't need a GROUP BY at all. Both must produce the same
+ * standard JSON input, so the surrounding structure lives here only once.
+ */
+export function buildStdJsonInputSelector(sourcesExpression: string) {
+  return `json_build_object(
+      'language', INITCAP(compiled_contracts.language),
+      'sources', ${sourcesExpression},
+      'settings', compiled_contracts.compiler_settings
+    )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`;
+}
+
 function generateSignaturesSelector(type: SignatureType) {
   // Use jsonb_agg(DISTINCT ...) to avoid duplicate signatures caused by the
   // Cartesian product when both compiled_contracts_sources and
@@ -439,11 +471,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   source_ids:
     "compiled_contracts.compilation_artifacts->'sources' as source_ids",
   additional_input: "compiled_contracts.additional_input",
-  std_json_input: `json_build_object(
-      'language', INITCAP(compiled_contracts.language),
-      'sources', ${sourcesAggregation},
-      'settings', compiled_contracts.compiler_settings
-    )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`,
+  std_json_input: buildStdJsonInputSelector(sourcesAggregation),
   std_json_output: `json_build_object(
     'sources', compiled_contracts.compilation_artifacts->'sources',
     'contracts', json_build_object(
@@ -592,6 +620,48 @@ export type Field =
   | `runtimeBytecode.${runtimeBytecodeSubfields}`
   | `deployment.${deploymentSubfields}`
   | `compilation.${compilationSubfields}`;
+
+/**
+ * Length of the runtime code prefixes used for similarity search. Must stay
+ * consistent with the compiled_contracts_runtime_code_prefixes table, its
+ * insert trigger, and the backfill script in services/database.
+ */
+export const SIMILARITY_PREFIX_LENGTH_BYTES = 75;
+
+/**
+ * Solidity libraries start their runtime code with a call protection: PUSH20
+ * (0x73) followed by the library's own address. In compiled bytecode the
+ * address is all zeros; onchain it is the real deployed address (see
+ * lib-sourcify's CallProtectionTransformation). Similarity prefixes are stored
+ * from compiled bytecode, so the onchain input must have the address bytes
+ * zeroed for deployed libraries to match their compilations.
+ *
+ * Unlike lib-sourcify, which detects the call protection via the zeroed
+ * placeholder in the compiled bytecode, this has to key on the onchain first
+ * byte alone: at similarity-search time the compiled bytecode is exactly what
+ * is being searched for. That is safe because non-library bytecode never
+ * starts with PUSH20 (solc and Vyper emit a memory-setup preamble first).
+ */
+export function normalizeCallProtection(runtimeBytecode: Buffer): Buffer {
+  if (runtimeBytecode[0] !== 0x73) {
+    return runtimeBytecode;
+  }
+  const normalized = Buffer.from(runtimeBytecode);
+  normalized.fill(0, 1, 21);
+  return normalized;
+}
+
+/**
+ * Postgres cancels a statement that exceeds statement_timeout with SQLSTATE
+ * 57014 (query_canceled). node-postgres exposes it as `code` on the error.
+ */
+export function isStatementTimeoutError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "57014"
+  );
+}
 
 // Function overloads
 export function bytesFromString<T extends BytesTypes>(str: string): T;

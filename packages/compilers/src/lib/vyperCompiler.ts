@@ -44,6 +44,8 @@ export function findVyperPlatform(): string | false {
  * @param version the version of vyper to be used for compilation
  * @param input a JSON object of the standard-json format compatible with vyper
  * @param log the logger
+ * @param timeoutMs wall-clock limit for the vyper subprocess. Defaults to
+ *   DEFAULT_COMPILE_TIMEOUT_MS.
  * @returns stringified vyper output
  */
 
@@ -51,6 +53,7 @@ export async function useVyperCompiler(
   vyperRepoPath: string,
   version: string,
   vyperJsonInput: VyperJsonInput,
+  timeoutMs?: number,
 ): Promise<VyperOutput> {
   const vyperPlatform = findVyperPlatform();
   if (!vyperPlatform) {
@@ -66,11 +69,14 @@ export async function useVyperCompiler(
   let compiled: string | undefined;
   const inputStringified = stringifyVyperJsonInput(vyperJsonInput);
   const startCompilation = Date.now();
+  // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
+  const absoluteVyperPath = path.resolve(vyperPath);
   try {
     compiled = await asyncExec(
-      `${vyperPath} --standard-json`,
+      `${absoluteVyperPath} --standard-json`,
       inputStringified,
       250 * 1024 * 1024,
+      timeoutMs,
     );
   } catch (error: any) {
     if (error?.code === 'ENOBUFS') {

@@ -1,3 +1,8 @@
+## sourcify-4byte@1.1.16 - 2026-08-20
+
+- update dependencies
+- security: pin CI images and actions by digest (#2915)
+
 ## sourcify-4byte@1.1.15 - 2026-07-06
 
 - update dependencies

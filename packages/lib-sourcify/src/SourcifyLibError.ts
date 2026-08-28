@@ -97,6 +97,10 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
     // Compilation errors
     case 'compiler_error':
       return `Compiler error. ${params.compilerErrors ? JSON.stringify(params.compilerErrors) : params.compilerErrorMessage}`;
+    case 'compiler_timeout':
+      return 'The compiler timed out while compiling the contract. The compilation took too long and was aborted.';
+    case 'compiler_out_of_memory':
+      return 'The compiler process was killed unexpectedly, likely because it ran out of memory while compiling the contract.';
     case 'no_compiler_output':
       return 'Compiler output is undefined.';
     case 'contract_not_found_in_compiler_output':

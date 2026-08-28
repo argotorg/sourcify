@@ -1,5 +1,8 @@
 import { expect } from "chai";
-import { getDatabaseColumnsFromVerification } from "../../../src/server/services/utils/database-util";
+import {
+  getDatabaseColumnsFromVerification,
+  normalizeCallProtection,
+} from "../../../src/server/services/utils/database-util";
 
 describe("database-util", () => {
   it("stores non-empty Vyper immutable references in runtime code artifacts", async () => {
@@ -92,5 +95,27 @@ describe("database-util", () => {
       databaseColumns.compiledContract.runtime_code_artifacts
         .immutableReferences,
     ).to.deep.equal(immutableReferences);
+  });
+
+  describe("normalizeCallProtection", () => {
+    it("zeroes the address bytes of library bytecode starting with PUSH20", () => {
+      const address = "ee".repeat(20);
+      const rest = "5f80fd5b50";
+      const bytecode = Buffer.from(`73${address}${rest}`, "hex");
+
+      const normalized = normalizeCallProtection(bytecode);
+
+      expect(normalized.toString("hex")).to.equal(
+        `73${"00".repeat(20)}${rest}`,
+      );
+      // The input must not be mutated
+      expect(bytecode.toString("hex")).to.equal(`73${address}${rest}`);
+    });
+
+    it("returns non-library bytecode unchanged", () => {
+      const bytecode = Buffer.from("6080604052348015600e575f80fd", "hex");
+
+      expect(normalizeCallProtection(bytecode)).to.equal(bytecode);
+    });
   });
 });

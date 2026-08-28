@@ -1,3 +1,7 @@
+## @ethereum-sourcify/compilers-types@1.3.2 - 2026-08-20
+
+- fix: prevent and auto-recover stuck v2 verification jobs (compiler OOM/hang) (#2880) (#2886)
+
 ## @ethereum-sourcify/compilers-types@1.3.1 - 2026-07-06
 
 - update dependencies
