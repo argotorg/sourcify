@@ -595,11 +595,12 @@ export class SourcifyDatabaseService
 
       // Temporary dual-write: reads stay on sourcify_matches.metadata until
       // the backfill completes, then the column gets dropped (issue #2924).
-      // Existing compilations already have their row (dual-write or backfill).
-      if (isNewCompilation) {
+      // Existing compilations already have their row; Vyper has no metadata.
+      const metadata = verification.compilation.metadata;
+      if (isNewCompilation && metadata) {
         await this.database.insertCompiledContractMetadata(poolClient, {
           compilation_id: compilationId,
-          metadata: verification.compilation.metadata,
+          metadata,
         });
       }
 

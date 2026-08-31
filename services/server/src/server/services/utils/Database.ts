@@ -800,10 +800,6 @@ ${
     poolClient: PoolClient,
     { compilation_id, metadata }: Tables.CompiledContractMetadata,
   ) {
-    if (!metadata) {
-      return;
-    }
-
     // ON CONFLICT DO NOTHING keeps the first submitter's metadata when a
     // compilation is shared by several verified contracts, consistent with how
     // compiled_contracts_sources are deduplicated
