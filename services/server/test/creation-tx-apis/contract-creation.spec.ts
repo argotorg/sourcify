@@ -86,25 +86,6 @@ describe("creation-tx APIs (live)", function () {
     };
   });
 
-  // Commenting out as fails way too often
-  // it("should run getCreatorTx with chainId 51", async function () {
-  //   const sourcifyChain = sourcifyChainsArray.find(
-  //     (sourcifyChain) => sourcifyChain.chainId === 51
-  //   );
-  //   if (!sourcifyChain) {
-  //     chai.assert.fail("No chain for chainId 51 configured");
-  //   }
-  //   const creatorTx = await getCreatorTx(
-  //     sourcifyChain,
-  //     "0x8C3FA94eb5b07c9AF7dBFcC53ea3D2BF7FdF3617"
-  //   );
-  //   chai
-  //     .expect(creatorTx)
-  //     .equals(
-  //       "0xb1af0ec1283551480ae6e6ce374eb4fa7d1803109b06657302623fc65c987420"
-  //     );
-  // });
-
   it("should run getCreatorTx with nexusApi for Nexus", async function () {
     const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
       .sourcifyChainsArray;
