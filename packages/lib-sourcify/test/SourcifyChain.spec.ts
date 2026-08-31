@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
-import { RpcFailure, SourcifyChain } from '../src';
+import { DefinitiveError, RpcFailure, SourcifyChain } from '../src';
 import { JsonRpcProvider } from 'ethers';
 import {
   startHardhatNetwork,
@@ -85,6 +85,53 @@ describe('SourcifyChain', () => {
       expect(mockProvider.send).to.have.been.calledWith('trace_transaction', [
         '0xhash',
       ]);
+    });
+
+    // https://github.com/argotorg/sourcify/issues/887
+    it('should reject after a single trace fetch when the traces show the tx did not create the verified contract', async () => {
+      (sourcifyChain as any).rpcs = [
+        {
+          rpc: 'http://localhost:8545',
+          traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8545'),
+        },
+        {
+          rpc: 'http://localhost:8546',
+          traceSupport: 'trace_transaction',
+          provider: new JsonRpcProvider('http://localhost:8546'),
+        },
+      ];
+      sandbox
+        .stub(sourcifyChain, 'getTxReceipt')
+        .resolves({ contractAddress: '0xtokenAddress' } as any);
+      sandbox
+        .stub(sourcifyChain, 'getTx')
+        .resolves({ data: '0xtokenCreationBytecode' } as any);
+      const traceWithoutPair = [
+        {
+          type: 'create',
+          result: { address: '0xtokenAddress' },
+          action: { init: '0xtokenCreationBytecode' },
+        },
+      ];
+      const sendStub1 = sandbox
+        .stub(sourcifyChain.rpcs[0].provider!, 'send')
+        .resolves(traceWithoutPair);
+      const sendStub2 = sandbox
+        .stub(sourcifyChain.rpcs[1].provider!, 'send')
+        .resolves(traceWithoutPair);
+
+      await expect(
+        sourcifyChain.getContractCreationBytecodeAndReceipt(
+          '0xpairAddress',
+          '0xhash',
+        ),
+      ).to.be.rejectedWith(
+        'Provided tx 0xhash does not create the expected contract 0xpairAddress',
+      );
+      // The answer is definitive, so the second trace RPC is never asked
+      expect(sendStub1).to.have.been.calledOnce;
+      expect(sendStub2).to.not.have.been.called;
     });
 
     it('should throw when the tx directly created a different contract and the chain has no trace support', async () => {
@@ -181,9 +228,12 @@ describe('SourcifyChain', () => {
         .stub(mockProvider, 'send')
         .resolves([{ type: 'call' }, { type: 'suicide' }]);
 
+      // The definitive error surfaces directly instead of a generic "All RPCs failed"
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
-      ).to.be.rejected;
+      ).to.be.rejectedWith(
+        'Provided tx 0xhash does not create the expected contract 0xaddress',
+      );
     });
 
     it('should try multiple trace-supported RPCs if the first one fails', async () => {
@@ -231,6 +281,8 @@ describe('SourcifyChain', () => {
       ];
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CALL',
+        to: '0xfactoryAddress',
         calls: [
           {
             type: 'CREATE',
@@ -261,6 +313,8 @@ describe('SourcifyChain', () => {
       ];
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CALL',
+        to: '0xcalledAddress',
         calls: [
           {
             type: 'CALL',
@@ -285,6 +339,8 @@ describe('SourcifyChain', () => {
       ];
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CALL',
+        to: '0xfactoryAddress',
         calls: [
           {
             type: 'CREATE',
@@ -294,9 +350,12 @@ describe('SourcifyChain', () => {
         ],
       });
 
+      // The definitive error surfaces directly instead of a generic "All RPCs failed"
       await expect(
         sourcifyChain.getCreationBytecodeForFactory('0xhash', '0xaddress'),
-      ).to.be.rejected;
+      ).to.be.rejectedWith(
+        'No CREATE or CREATE2 call found for the address 0xaddress',
+      );
     });
   });
 
@@ -369,6 +428,30 @@ describe('SourcifyChain', () => {
         'debug_traceBlockByNumber',
         ['0x3039', { tracer: 'callTracer' }],
       );
+    });
+
+    it('should skip reverted creates in parity block traces', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          type: 'create',
+          error: 'Reverted',
+          result: { address: '0xrevertedAddress' },
+          transactionHash: '0xhash1',
+          traceAddress: [0],
+        },
+        {
+          // Same traceAddress in another tx must not be seen as the failed frame above
+          type: 'create',
+          result: { address: '0xaddress' },
+          transactionHash: '0xhash2',
+          traceAddress: [0],
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal({ '0xhash2': ['0xaddress'] });
     });
 
     it('should throw an error if parity traces are empty', async () => {
@@ -487,13 +570,78 @@ describe('SourcifyChain', () => {
       ).to.be.rejectedWith('.action.init not found');
     });
 
-    // Add more tests for extractFromParityTraceProvider here if needed
+    it('should skip reverted creates and tolerate a failed create without result', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          // A reverted create for the same would-be address must not match
+          type: 'create',
+          error: 'Reverted',
+          result: { address: '0xaddress' },
+          action: { init: '0xrevertedCreationBytecode' },
+          traceAddress: [0],
+        },
+        {
+          // Old OpenEthereum shape: failed create without `result`
+          type: 'create',
+          error: 'Reverted',
+          action: { init: '0xnoResultCreationBytecode' },
+          traceAddress: [1],
+        },
+        {
+          type: 'create',
+          result: { address: '0xaddress' },
+          action: { init: '0xcreationBytecode' },
+          traceAddress: [2],
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.extractCreationBytecodeFromParityTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        );
+      expect(result).to.equal('0xcreationBytecode');
+    });
+
+    it('should skip a create under a reverted parent frame', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          type: 'call',
+          error: 'Reverted',
+          action: {},
+          traceAddress: [0],
+        },
+        {
+          // No own `error`, but discarded by the parent's revert
+          type: 'create',
+          result: { address: '0xaddress' },
+          action: { init: '0xcreationBytecode' },
+          traceAddress: [0, 0],
+        },
+      ]);
+
+      await expect(
+        sourcifyChain.extractCreationBytecodeFromParityTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        ),
+      ).to.be.rejectedWith(
+        DefinitiveError,
+        'Provided tx 0xhash does not create the expected contract 0xaddress',
+      );
+    });
   });
 
   describe('extractFromGethTraceProvider', () => {
     it('should extract creation bytecode from geth traces', async () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CALL',
+        to: '0xfactoryAddress',
         calls: [
           {
             type: 'CREATE',
@@ -515,6 +663,8 @@ describe('SourcifyChain', () => {
     it('should handle nested CREATE calls in geth traces', async () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CALL',
+        to: '0xrouterAddress',
         calls: [
           {
             type: 'CALL',
@@ -525,6 +675,89 @@ describe('SourcifyChain', () => {
                 input: '0xcreationBytecode',
               },
             ],
+          },
+        ],
+      });
+
+      const result =
+        await sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        );
+      expect(result).to.equal('0xcreationBytecode');
+    });
+
+    it('should find the root CREATE frame of a direct deployment', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CREATE',
+        to: '0xaddress',
+        input: '0xcreationBytecode',
+      });
+
+      const result =
+        await sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        );
+      expect(result).to.equal('0xcreationBytecode');
+    });
+
+    it('should give a definitive error when a direct deployment creates a different contract', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CREATE',
+        to: '0xdifferentaddress',
+        input: '0xcreationBytecode',
+      });
+
+      await expect(
+        sourcifyChain.extractCreationBytecodeFromGethTraceProvider(
+          sourcifyChain.rpcs[0],
+          '0xhash',
+          '0xaddress',
+        ),
+      ).to.be.rejectedWith(
+        DefinitiveError,
+        'No CREATE or CREATE2 call found for the address 0xaddress',
+      );
+    });
+
+    it('should skip reverted CREATE frames, frames under a reverted parent, and frames without a `to`', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves({
+        type: 'CREATE',
+        to: '0xtokenAddress',
+        input: '0xtokenCreationBytecode',
+        calls: [
+          {
+            type: 'CREATE2',
+            to: '0x0000000000000000000000000000000000000000',
+            input: '0xrevertedCreationBytecode',
+            error: 'execution reverted',
+          },
+          {
+            type: 'CALL',
+            error: 'execution reverted',
+            calls: [
+              {
+                type: 'CREATE',
+                to: '0xaddress',
+                input: '0xdiscardedCreationBytecode',
+              },
+            ],
+          },
+          {
+            // A frame without a `to` must not crash the lookup
+            type: 'CREATE',
+            input: '0xnoToCreationBytecode',
+          },
+          {
+            type: 'CREATE',
+            to: '0xaddress',
+            input: '0xcreationBytecode',
           },
         ],
       });
