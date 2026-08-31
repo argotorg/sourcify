@@ -159,7 +159,8 @@ export namespace Tables {
 
   export interface CompiledContractMetadata {
     compilation_id: string;
-    metadata: Metadata;
+    // Not every compilation has metadata (e.g. Vyper contracts)
+    metadata?: Metadata;
   }
 
   export interface CompilationArtifactsSources {

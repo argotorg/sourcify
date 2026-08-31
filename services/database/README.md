@@ -98,6 +98,22 @@ Please follow these steps:
 Important: Since the schema dump should be committed, ensure that the connected database does not contain any custom schema changes that are not part of the migrations.
 If you are unsure whether your local database has custom schema changes, run the process against a fresh database.
 
+#### Regenerating `sourcify-database.sql`
+
+Never hand-edit `sourcify-database.sql`; always regenerate it with dbmate. The `validate-database-schema` CI job applies all migrations to a clean PostgreSQL, dumps it, and diffs (comment/blank-line-normalized) against the committed file. pg_dump's object ordering is non-obvious (e.g. constraints sort by constraint name, not table name), so hand-edits get the ordering wrong and fail CI.
+
+To regenerate against a disposable local database, from the repository root:
+
+```bash
+docker run -d --name schema-regen -e POSTGRES_PASSWORD=password -e POSTGRES_USER=postgres -e POSTGRES_DB=test_db -p 127.0.0.1:55432:5432 postgres:15
+
+cd services/database && DATABASE_URL="postgres://postgres:password@127.0.0.1:55432/test_db?sslmode=disable" DBMATE_SCHEMA_FILE=./sourcify-database.sql npm run migrate:up
+
+docker rm -f schema-regen
+```
+
+dbmate shells out to a local `pg_dump`, which should be version 15 to match CI (pgdg `postgresql-client-15`). Do not use pg_dump 17: it emits `SET transaction_timeout` lines that CI's normalizer does not strip, so its dumps fail the diff.
+
 ## Schema upgrade scripts
 
 Some schema changes cannot be completed inside a single dbmate migration; for example, data backfills that touch millions of rows and need to run in small batches outside a long transaction. For these cases we keep one-off Node scripts under [`./schema-updates/`](./schema-updates/) that complement the migrations.
@@ -113,6 +129,7 @@ The scripts are idempotent, resumable and they only touch rows that still need w
 | [`post-v0-to-v1-upgrade.mjs`](./schema-updates/post-v0-to-v1-upgrade.mjs)                                                         | After upgrading to the v1 schema, once the `sources` table is populated.                                                                                                  | Backfills `sources.source_hash_keccak` with the keccak256 hash of each source.                                                                                                |
 | [`post-v2.12-to-v2.13-upgrade.mjs`](./schema-updates/post-v2.12-to-v2.13-upgrade.mjs)                                             | After applying the v2.13 migration that adds the nullable `sourcify_matches.chain_id` column, and before applying the follow-up migration that promotes it to `NOT NULL`. | Backfills `sourcify_matches.chain_id` from `contract_deployments.chain_id` in batches.                                                                                        |
 | [`backfill-compiled-contracts-runtime-code-prefixes.mjs`](./schema-updates/backfill-compiled-contracts-runtime-code-prefixes.mjs) | After applying the migration that adds the `compiled_contracts_runtime_code_prefixes` table, and before deploying server version 3.18.0.                                  | Backfills `compiled_contracts_runtime_code_prefixes` (first 75 bytes of each compilation's runtime code) for compilations that existed before the migration's insert trigger. |
+| [`backfill-compiled-contracts-metadata.mjs`](./schema-updates/backfill-compiled-contracts-metadata.mjs)                           | After applying the migration that adds `compiled_contracts_metadata`, on a server that already dual-writes to it. Run `--verify` before switching reads to the table.     | Backfills `compiled_contracts_metadata` from `sourcify_matches.metadata`, one row per compilation (first current match by `verified_contracts.id`).                           |
 
 Run a script with:
 

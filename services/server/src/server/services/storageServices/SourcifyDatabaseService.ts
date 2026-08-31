@@ -534,8 +534,13 @@ export class SourcifyDatabaseService
     },
   ): Promise<{ verifiedContractId: Tables.VerifiedContract["id"] }> {
     try {
-      const { type, verifiedContractId, compilationId, oldVerifiedContractId } =
-        await super.insertOrUpdateVerification(verification, poolClient);
+      const {
+        type,
+        verifiedContractId,
+        compilationId,
+        isNewCompilation,
+        oldVerifiedContractId,
+      } = await super.insertOrUpdateVerification(verification, poolClient);
 
       if (type === "insert") {
         if (!verifiedContractId) {
@@ -589,11 +594,14 @@ export class SourcifyDatabaseService
       }
 
       // Temporary dual-write: reads stay on sourcify_matches.metadata until
-      // the backfill completes, then the column gets dropped (issue #2924)
-      await this.database.insertCompiledContractMetadata(poolClient, {
-        compilation_id: compilationId,
-        metadata: verification.compilation.metadata as any,
-      });
+      // the backfill completes, then the column gets dropped (issue #2924).
+      // Existing compilations already have their row (dual-write or backfill).
+      if (isNewCompilation) {
+        await this.database.insertCompiledContractMetadata(poolClient, {
+          compilation_id: compilationId,
+          metadata: verification.compilation.metadata,
+        });
+      }
 
       // Update the verification job to be successful
       if (jobData) {

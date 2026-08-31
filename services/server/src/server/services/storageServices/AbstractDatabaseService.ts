@@ -54,6 +54,7 @@ export default abstract class AbstractDatabaseService {
   ): Promise<{
     verifiedContractId: Tables.VerifiedContract["id"];
     compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
   }> {
     try {
       let recompiledCreationCodeInsertResult:
@@ -132,6 +133,7 @@ export default abstract class AbstractDatabaseService {
       return {
         verifiedContractId: verifiedContractInsertResult.rows[0].id,
         compilationId: compiledContractId,
+        isNewCompilation,
       };
     } catch (e) {
       throw new Error(
@@ -146,6 +148,7 @@ export default abstract class AbstractDatabaseService {
   ): Promise<{
     verifiedContractId: Tables.VerifiedContract["id"];
     compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
   }> {
     // runtime bytecodes must exist
     if (databaseColumns.recompiledRuntimeCode.bytecode === undefined) {
@@ -236,6 +239,7 @@ export default abstract class AbstractDatabaseService {
       return {
         verifiedContractId: verifiedContractInsertResult.rows[0].id,
         compilationId: compiledContractId,
+        isNewCompilation,
       };
     } catch (e) {
       if (e instanceof ConflictError) {
@@ -254,6 +258,7 @@ export default abstract class AbstractDatabaseService {
     type: "update" | "insert";
     verifiedContractId: Tables.VerifiedContract["id"];
     compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
     oldVerifiedContractId?: Tables.VerifiedContract["id"];
   }> {
     this.validateVerificationBeforeStoring(verification);
@@ -272,20 +277,22 @@ export default abstract class AbstractDatabaseService {
       );
 
     if (existingVerifiedContractResult.rowCount === 0) {
-      const { verifiedContractId, compilationId } =
+      const { verifiedContractId, compilationId, isNewCompilation } =
         await this.insertNewVerifiedContract(databaseColumns, poolClient);
       return {
         type: "insert",
         verifiedContractId,
         compilationId,
+        isNewCompilation,
       };
     } else {
-      const { verifiedContractId, compilationId } =
+      const { verifiedContractId, compilationId, isNewCompilation } =
         await this.updateExistingVerifiedContract(databaseColumns, poolClient);
       return {
         type: "update",
         verifiedContractId,
         compilationId,
+        isNewCompilation,
         oldVerifiedContractId: existingVerifiedContractResult.rows[0].id,
       };
     }

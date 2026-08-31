@@ -800,7 +800,6 @@ ${
     poolClient: PoolClient,
     { compilation_id, metadata }: Tables.CompiledContractMetadata,
   ) {
-    // Not every compilation has metadata (e.g. Vyper contracts)
     if (!metadata) {
       return;
     }
@@ -813,7 +812,7 @@ ${
         compilation_id,
         metadata
       ) VALUES ($1, $2)
-      ON CONFLICT (compilation_id) DO NOTHING`,
+      ON CONFLICT ON CONSTRAINT compiled_contracts_metadata_pkey DO NOTHING`,
       [compilation_id, metadata],
     );
   }

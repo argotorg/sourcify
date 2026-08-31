@@ -173,10 +173,23 @@ export const replaceMetadata: CustomReplaceMethod = async (
   const matchId = existingSourcifyMatch.rows[0].id;
 
   await sourcifyDatabaseService.database.pool.query(
-    `UPDATE sourcify_matches 
-       SET 
+    `UPDATE sourcify_matches
+       SET
          metadata = $2
        WHERE id = $1`,
+    [matchId, verification.compilation.metadata],
+  );
+
+  // Also repair the side table; DO UPDATE because the dual-write inserts are
+  // DO NOTHING (#2924). Affects every contract sharing the compilation.
+  await sourcifyDatabaseService.database.pool.query(
+    `INSERT INTO compiled_contracts_metadata (compilation_id, metadata)
+       SELECT vc.compilation_id, $2::json
+       FROM sourcify_matches sm
+       JOIN verified_contracts vc ON vc.id = sm.verified_contract_id
+       WHERE sm.id = $1
+     ON CONFLICT ON CONSTRAINT compiled_contracts_metadata_pkey
+       DO UPDATE SET metadata = EXCLUDED.metadata`,
     [matchId, verification.compilation.metadata],
   );
 };

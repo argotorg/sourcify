@@ -91,6 +91,14 @@ const firstMatchMetadataLateral = `
     LIMIT 1
   ) first_match`;
 
+// Makes re-runs skip already-filled compilations. Filters batch_metadata, not
+// batch, so the cursor still advances through completed ranges.
+const skipExistingRows = `
+  WHERE NOT EXISTS (
+    SELECT 1 FROM ${schema}.compiled_contracts_metadata ccm
+    WHERE ccm.compilation_id = batch.id
+  )`;
+
 program
   .description(
     "Backfill compiled_contracts_metadata from sourcify_matches.metadata.\n" +
@@ -134,7 +142,7 @@ program
     // the end of a normal run. Use it before switching reads over to the side
     // table.
     "--verify",
-    "Only compare the number of compilations expecting metadata against the side table, then exit.",
+    "Only count compilations still missing their side table row, then exit.",
     false,
   )
   .action(async (options) => {
@@ -148,20 +156,19 @@ program
 
     if (options.verify) {
       logger.info("Verifying compiled_contracts_metadata completeness");
+      // Counts the gap directly: comparing totals instead could hide gaps,
+      // because the side table also keeps rows for compilations that no
+      // current match points to anymore.
       const result = await activePool.query(
-        `SELECT
-           (SELECT count(DISTINCT vc.compilation_id)
-            FROM ${schema}.verified_contracts vc
-            JOIN ${schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
-            WHERE sm.metadata IS NOT NULL) AS expected_rows,
-           (SELECT count(*) FROM ${schema}.compiled_contracts_metadata) AS actual_rows`,
+        `SELECT count(DISTINCT vc.compilation_id) AS missing_rows
+         FROM ${schema}.verified_contracts vc
+         JOIN ${schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
+         WHERE sm.metadata IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM ${schema}.compiled_contracts_metadata ccm
+                           WHERE ccm.compilation_id = vc.compilation_id)`,
       );
-      const expectedRows = parseInt(result.rows[0].expected_rows, 10);
-      const actualRows = parseInt(result.rows[0].actual_rows, 10);
       logger.info("Verification finished", {
-        expectedRows,
-        actualRows,
-        missingRows: expectedRows - actualRows,
+        missingRows: parseInt(result.rows[0].missing_rows, 10),
       });
       await closePool();
       return;
@@ -206,6 +213,7 @@ program
              SELECT batch.id AS compilation_id
              FROM batch
              ${firstMatchMetadataLateral}
+             ${skipExistingRows}
            )
            SELECT (SELECT count(*) FROM batch) AS batch_rows,
                   (SELECT count(*) FROM batch_metadata) AS insertable_rows,
@@ -231,6 +239,7 @@ program
              SELECT batch.id AS compilation_id, first_match.metadata
              FROM batch
              ${firstMatchMetadataLateral}
+             ${skipExistingRows}
            ),
            inserted AS (
              INSERT INTO ${schema}.compiled_contracts_metadata (compilation_id, metadata)
@@ -307,4 +316,8 @@ program
     await closePool();
   });
 
-program.parse();
+program.parseAsync().catch(async (err) => {
+  logger.error("Fatal error", { error: err.message, stack: err.stack });
+  await closePool();
+  process.exit(1);
+});
