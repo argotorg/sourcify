@@ -152,7 +152,6 @@ export namespace Tables {
     verified_contract_id: string;
     runtime_match: VerificationStatus | null;
     creation_match: VerificationStatus | null;
-    metadata: Metadata;
     created_at: Date;
     chain_id: string;
   }
@@ -251,6 +250,7 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
   Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name" | "version"> &
   Pick<Tables.ContractDeployment, "transaction_hash"> & {
     onchain_runtime_code: string;
+    metadata: Metadata;
   };
 
 export type GetSourcifyMatchesAllChainsResult = Pick<
@@ -289,10 +289,7 @@ export type GetCompilationsByIdsResult = Pick<
 };
 
 export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
-  Pick<
-    Tables.SourcifyMatch,
-    "id" | "creation_match" | "runtime_match" | "metadata"
-  > &
+  Pick<Tables.SourcifyMatch, "id" | "creation_match" | "runtime_match"> &
     Pick<
       Tables.CompiledContract,
       | "language"
@@ -342,6 +339,7 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       function_signatures: SignatureRepresentations[];
       event_signatures: SignatureRepresentations[];
       error_signatures: SignatureRepresentations[];
+      metadata: Metadata;
     }
 >;
 
@@ -466,7 +464,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   name: "compiled_contracts.name",
   fully_qualified_name: "compiled_contracts.fully_qualified_name",
   abi: "compiled_contracts.compilation_artifacts->'abi' as abi",
-  metadata: "sourcify_matches.metadata",
+  metadata: "compiled_contracts_metadata.metadata",
   storage_layout:
     "compiled_contracts.compilation_artifacts->'storageLayout' as storage_layout",
   transient_storage_layout:
@@ -488,7 +486,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
       json_build_object(
         split_part(compiled_contracts.fully_qualified_name, ':', -1), json_build_object(
           'abi', compiled_contracts.compilation_artifacts->'abi',
-          'metadata', cast(sourcify_matches.metadata as text),
+          'metadata', cast(compiled_contracts_metadata.metadata as text),
           'userdoc', compiled_contracts.compilation_artifacts->'userdoc',
           'devdoc', compiled_contracts.compilation_artifacts->'devdoc',
           'storageLayout', compiled_contracts.compilation_artifacts->'storageLayout',
