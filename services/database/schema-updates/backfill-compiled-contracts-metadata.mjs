@@ -3,22 +3,23 @@
  *
  * Required after applying the migration that adds the metadata side table
  * (20260826100000_add_compiled_contracts_metadata.sql): the server only writes
- * metadata for verifications stored after the migration, so compilations
+ * metadata for compilations created after the migration, so compilations
  * verified before it are filled out-of-band by this script. Until it has
  * finished, reads keep using sourcify_matches.metadata, so nothing is missing
  * in the meantime.
  *
- * For each compilation the metadata of its earliest current sourcify_match
- * (lowest verified_contracts.id) is stored -- the first submitter wins,
- * consistent with how sources are deduplicated for a shared compilation.
- * Compilations without any match, or whose matches all have NULL metadata,
- * get no row.
+ * Two phases:
+ *   1. Work list: one set-based pass picks each compilation's metadata donor,
+ *      the earliest current match (lowest verified_contracts.id) -- the first
+ *      submitter wins, consistent with how sources are deduplicated for a
+ *      shared compilation. Compilations that already have a row are excluded,
+ *      so re-runs only do the remaining work.
+ *   2. Copy: the donors' metadata blobs are inserted in batches, walking
+ *      sourcify_matches in id order for I/O locality, with a throttle sleep
+ *      between batches. Inserts are ON CONFLICT DO NOTHING, so rows written
+ *      concurrently by the live server are left untouched.
  *
- * The script is idempotent and resumable: inserts use ON CONFLICT DO NOTHING
- * and the table is walked in primary-key order with a keyset cursor
- * (compiled_contracts.id is a uuid, so ranges are cursor-based rather than
- * numeric). Safe to Ctrl+C and re-run. Rows written concurrently by the live
- * server are left untouched.
+ * Idempotent and resumable: safe to Ctrl+C and re-run at any point.
  *
  * See: https://github.com/argotorg/sourcify/issues/2924
  *
@@ -43,11 +44,19 @@ dotenv.config({ path: "../.env" });
 
 const schema = process.env.POSTGRES_SCHEMA || "public";
 
-const UUID_ZERO = "00000000-0000-0000-0000-000000000000";
-
 let activePool = null;
+// The work list is a TEMP table, so every query must run on this one session
+let activeClient = null;
 
 const closePool = async () => {
+  if (activeClient) {
+    try {
+      activeClient.release();
+    } catch {
+      // already released
+    }
+    activeClient = null;
+  }
   if (activePool) {
     try {
       await activePool.end();
@@ -76,29 +85,6 @@ const parsePositiveInt = (value, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-// The LATERAL picks each compilation's first-submitted metadata; both hops
-// (verified_contracts by compilation_id, sourcify_matches by
-// verified_contract_id) are index-driven. Ordering by verified_contracts.id
-// makes the picked variant deterministic across re-runs.
-const firstMatchMetadataLateral = `
-  CROSS JOIN LATERAL (
-    SELECT sm.metadata
-    FROM ${schema}.verified_contracts vc
-    JOIN ${schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
-    WHERE vc.compilation_id = batch.id
-      AND sm.metadata IS NOT NULL
-    ORDER BY vc.id
-    LIMIT 1
-  ) first_match`;
-
-// Makes re-runs skip already-filled compilations. Filters batch_metadata, not
-// batch, so the cursor still advances through completed ranges.
-const skipExistingRows = `
-  WHERE NOT EXISTS (
-    SELECT 1 FROM ${schema}.compiled_contracts_metadata ccm
-    WHERE ccm.compilation_id = batch.id
-  )`;
-
 program
   .description(
     "Backfill compiled_contracts_metadata from sourcify_matches.metadata.\n" +
@@ -108,7 +94,7 @@ program
   )
   .option(
     "-b, --batch-size <number>",
-    "Number of compilations to process per batch",
+    "Number of metadata rows to copy per batch",
     (v) => parsePositiveInt(v, 5000),
     5000,
   )
@@ -127,13 +113,8 @@ program
     50,
   )
   .option(
-    "--start-id <uuid>",
-    "Resume from this compiled_contracts.id (exclusive). Defaults to the zero uuid.",
-    UUID_ZERO,
-  )
-  .option(
     "--dry-run",
-    "Report what would be inserted without writing anything.",
+    "Only build the work list and report how many rows would be inserted, then exit.",
     false,
   )
   .option(
@@ -152,6 +133,7 @@ program
       database: process.env.POSTGRES_DB,
       user: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
+      keepAlive: true,
     });
 
     if (options.verify) {
@@ -177,101 +159,87 @@ program
     logger.info("Starting backfill of compiled_contracts_metadata", {
       batchSize: options.batchSize,
       sleepMs: options.sleepMs,
-      startId: options.startId,
       dryRun: options.dryRun,
     });
 
-    const estimate = await activePool.query(
-      `SELECT GREATEST(reltuples, 0)::bigint AS estimated_rows
-       FROM pg_class
-       WHERE oid = '${schema}.compiled_contracts'::regclass`,
-    );
-    const estimatedRows = parseInt(estimate.rows[0].estimated_rows, 10);
-    logger.info("Estimated compiled_contracts rows", { estimatedRows });
+    activeClient = await activePool.connect();
 
-    let cursor = options.startId;
+    // Phase 1: sequential scans and an ids-only sort; no metadata is read here
+    const workListStart = Date.now();
+    logger.info("Building work list (first current match per compilation)");
+    await activeClient.query(
+      `CREATE TEMP TABLE metadata_winners AS
+       SELECT DISTINCT ON (vc.compilation_id) vc.compilation_id, sm.id AS match_id
+       FROM ${schema}.verified_contracts vc
+       JOIN ${schema}.sourcify_matches sm ON sm.verified_contract_id = vc.id
+       WHERE sm.metadata IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM ${schema}.compiled_contracts_metadata ccm
+                         WHERE ccm.compilation_id = vc.compilation_id)
+       ORDER BY vc.compilation_id, vc.id`,
+    );
+    await activeClient.query(`CREATE INDEX ON metadata_winners (match_id)`);
+    const workList = await activeClient.query(
+      `SELECT count(*) AS insertable FROM metadata_winners`,
+    );
+    const totalRows = parseInt(workList.rows[0].insertable, 10);
+    logger.info("Work list ready", {
+      insertableRows: totalRows,
+      buildMs: Date.now() - workListStart,
+    });
+
+    if (options.dryRun) {
+      logger.info("[dry-run] exiting without writing");
+      await closePool();
+      return;
+    }
+
+    // Phase 2: copy the blobs in match id order
+    let cursor = "0";
     let totalProcessed = 0;
     let totalInserted = 0;
     const startTime = Date.now();
 
     for (;;) {
       const batchStart = Date.now();
-      let batchRows;
-      let insertedRows;
-      let lastId;
-
-      if (options.dryRun) {
-        const result = await activePool.query(
-          `WITH batch AS (
-             SELECT compiled_contracts.id
-             FROM ${schema}.compiled_contracts
-             WHERE compiled_contracts.id > $1::uuid
-             ORDER BY compiled_contracts.id
-             LIMIT $2
-           ),
-           batch_metadata AS (
-             SELECT batch.id AS compilation_id
-             FROM batch
-             ${firstMatchMetadataLateral}
-             ${skipExistingRows}
-           )
-           SELECT (SELECT count(*) FROM batch) AS batch_rows,
-                  (SELECT count(*) FROM batch_metadata) AS insertable_rows,
-                  (SELECT id FROM batch ORDER BY id DESC LIMIT 1) AS last_id`,
-          [cursor, options.batchSize],
-        );
-        batchRows = parseInt(result.rows[0].batch_rows, 10);
-        insertedRows = 0;
-        lastId = result.rows[0].last_id;
-        logger.debug("[dry-run] insertable rows in batch", {
-          insertableRows: parseInt(result.rows[0].insertable_rows, 10),
-        });
-      } else {
-        const result = await activePool.query(
-          `WITH batch AS (
-             SELECT compiled_contracts.id
-             FROM ${schema}.compiled_contracts
-             WHERE compiled_contracts.id > $1::uuid
-             ORDER BY compiled_contracts.id
-             LIMIT $2
-           ),
-           batch_metadata AS (
-             SELECT batch.id AS compilation_id, first_match.metadata
-             FROM batch
-             ${firstMatchMetadataLateral}
-             ${skipExistingRows}
-           ),
-           inserted AS (
-             INSERT INTO ${schema}.compiled_contracts_metadata (compilation_id, metadata)
-             SELECT compilation_id, metadata FROM batch_metadata
-             ON CONFLICT (compilation_id) DO NOTHING
-             RETURNING 1
-           )
-           SELECT (SELECT count(*) FROM batch) AS batch_rows,
-                  (SELECT count(*) FROM inserted) AS inserted_rows,
-                  (SELECT id FROM batch ORDER BY id DESC LIMIT 1) AS last_id`,
-          [cursor, options.batchSize],
-        );
-        batchRows = parseInt(result.rows[0].batch_rows, 10);
-        insertedRows = parseInt(result.rows[0].inserted_rows, 10);
-        lastId = result.rows[0].last_id;
-      }
+      const result = await activeClient.query(
+        `WITH batch AS (
+           SELECT compilation_id, match_id
+           FROM metadata_winners
+           WHERE match_id > $1
+           ORDER BY match_id
+           LIMIT $2
+         ),
+         inserted AS (
+           INSERT INTO ${schema}.compiled_contracts_metadata (compilation_id, metadata)
+           SELECT batch.compilation_id, sm.metadata
+           FROM batch
+           JOIN ${schema}.sourcify_matches sm ON sm.id = batch.match_id
+           ON CONFLICT ON CONSTRAINT compiled_contracts_metadata_pkey DO NOTHING
+           RETURNING 1
+         )
+         SELECT (SELECT count(*) FROM batch) AS batch_rows,
+                (SELECT count(*) FROM inserted) AS inserted_rows,
+                (SELECT max(match_id) FROM batch) AS last_id`,
+        [cursor, options.batchSize],
+      );
+      const batchRows = parseInt(result.rows[0].batch_rows, 10);
+      const insertedRows = parseInt(result.rows[0].inserted_rows, 10);
 
       if (batchRows === 0) {
         break;
       }
 
-      cursor = lastId;
+      cursor = result.rows[0].last_id;
       totalProcessed += batchRows;
       totalInserted += insertedRows;
 
       const elapsedSec = (Date.now() - startTime) / 1000;
       const rowsPerSec = elapsedSec > 0 ? totalProcessed / elapsedSec : 0;
-      const remaining = Math.max(0, estimatedRows - totalProcessed);
+      const remaining = Math.max(0, totalRows - totalProcessed);
       const etaSec = rowsPerSec > 0 ? remaining / rowsPerSec : 0;
 
-      logger.info(options.dryRun ? "[dry-run] batch" : "Batch complete", {
-        lastId,
+      logger.info("Batch complete", {
+        lastMatchId: cursor,
         batchRows,
         insertedRows,
         totalProcessed,
@@ -291,26 +259,24 @@ program
       elapsedMinutes: Math.round((Date.now() - startTime) / 60000),
     });
 
-    if (!options.dryRun) {
-      const counts = await activePool.query(
-        `SELECT count(*) AS metadata_rows
-         FROM ${schema}.compiled_contracts_metadata`,
-      );
-      logger.info("Metadata table row count", {
-        metadataRows: counts.rows[0].metadata_rows,
-      });
+    const counts = await activeClient.query(
+      `SELECT count(*) AS metadata_rows
+       FROM ${schema}.compiled_contracts_metadata`,
+    );
+    logger.info("Metadata table row count", {
+      metadataRows: counts.rows[0].metadata_rows,
+    });
 
-      // A freshly filled table has no statistics; without them the planner
-      // falls back to default estimates for the primary key joins.
-      try {
-        await activePool.query(`ANALYZE ${schema}.compiled_contracts_metadata`);
-        logger.info("ANALYZE completed on compiled_contracts_metadata");
-      } catch (err) {
-        logger.warn(
-          "ANALYZE failed (needs table owner); run it manually before switching reads to the new table",
-          { error: err.message },
-        );
-      }
+    // A freshly filled table has no statistics; without them the planner
+    // falls back to default estimates for the primary key joins.
+    try {
+      await activeClient.query(`ANALYZE ${schema}.compiled_contracts_metadata`);
+      logger.info("ANALYZE completed on compiled_contracts_metadata");
+    } catch (err) {
+      logger.warn(
+        "ANALYZE failed (needs table owner); run it manually before switching reads to the new table",
+        { error: err.message },
+      );
     }
 
     await closePool();
