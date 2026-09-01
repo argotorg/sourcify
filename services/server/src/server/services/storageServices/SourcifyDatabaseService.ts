@@ -534,8 +534,13 @@ export class SourcifyDatabaseService
     },
   ): Promise<{ verifiedContractId: Tables.VerifiedContract["id"] }> {
     try {
-      const { type, verifiedContractId, oldVerifiedContractId } =
-        await super.insertOrUpdateVerification(verification, poolClient);
+      const {
+        type,
+        verifiedContractId,
+        compilationId,
+        isNewCompilation,
+        oldVerifiedContractId,
+      } = await super.insertOrUpdateVerification(verification, poolClient);
 
       if (type === "insert") {
         if (!verifiedContractId) {
@@ -586,6 +591,17 @@ export class SourcifyDatabaseService
         throw new Error(
           "insertOrUpdateVerifiedContract returned a type that doesn't exist",
         );
+      }
+
+      // Temporary dual-write: reads stay on sourcify_matches.metadata until
+      // the backfill completes, then the column gets dropped (issue #2924).
+      // Existing compilations already have their row; Vyper has no metadata.
+      const metadata = verification.compilation.metadata;
+      if (isNewCompilation && metadata) {
+        await this.database.insertCompiledContractMetadata(poolClient, {
+          compilation_id: compilationId,
+          metadata,
+        });
       }
 
       // Update the verification job to be successful

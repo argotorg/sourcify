@@ -216,6 +216,67 @@ describe("SourcifyDatabaseService", function () {
     );
   });
 
+  it("should store metadata once per compilation and keep the first submitter's metadata", async () => {
+    const originalMetadata = MockVerificationExport.compilation.metadata!;
+
+    // Store the original contract. This creates a fresh compiled_contracts row
+    // together with its compiled_contracts_metadata row.
+    await databaseService.storeVerification(MockVerificationExport);
+
+    // A byte-identical sibling: same compiler/version/language and same
+    // bytecodes (so it hits the compiled_contracts dedup constraint), but a
+    // different deployment and different metadata (possible when the compiler
+    // omits the metadata hash from the bytecode,
+    // settings.metadata.bytecodeHash: "none").
+    const siblingVerification = structuredClone(MockVerificationExport);
+    siblingVerification.address = "0x1111111111111111111111111111111111111111";
+    siblingVerification.deploymentInfo.txHash =
+      "0x1111111111111111111111111111111111111111111111111111111111111111";
+    siblingVerification.compilation.metadata = {
+      ...originalMetadata,
+      output: {
+        ...originalMetadata.output,
+        devdoc: { kind: "dev", methods: {}, version: 1 },
+      },
+    };
+
+    await databaseService.storeVerification(siblingVerification);
+
+    // The two verifications must share the single deduplicated compilation.
+    const compiledContractsResult = await databaseService.database.pool.query(
+      "SELECT COUNT(*) as count FROM compiled_contracts",
+    );
+    expect(parseInt(compiledContractsResult.rows[0].count)).to.equal(1);
+
+    // Both sourcify_matches keep their own metadata during the dual-write
+    // phase, but the shared compilation must hold exactly one metadata row:
+    // the original contract's.
+    const compilationMetadataResult = await databaseService.database.pool.query(
+      "SELECT metadata FROM compiled_contracts_metadata",
+    );
+    expect(compilationMetadataResult.rows).to.have.length(1);
+    expect(compilationMetadataResult.rows[0].metadata).to.deep.equal(
+      originalMetadata,
+    );
+  });
+
+  it("should not store a compiled_contracts_metadata row when the compilation has no metadata", async () => {
+    const noMetadataVerification = structuredClone(MockVerificationExport);
+    (noMetadataVerification.compilation as any).metadata = undefined;
+
+    await databaseService.storeVerification(noMetadataVerification);
+
+    const verifiedContractsResult = await databaseService.database.pool.query(
+      "SELECT COUNT(*) as count FROM verified_contracts",
+    );
+    expect(parseInt(verifiedContractsResult.rows[0].count)).to.equal(1);
+
+    const compilationMetadataResult = await databaseService.database.pool.query(
+      "SELECT COUNT(*) as count FROM compiled_contracts_metadata",
+    );
+    expect(parseInt(compilationMetadataResult.rows[0].count)).to.equal(0);
+  });
+
   it("should still store verification even if signature storage fails", async () => {
     sandbox
       .stub(signatureUtil, "extractSignaturesFromAbi")

@@ -29,9 +29,6 @@ export interface FetchContractCreationTxMethods {
     type: 'mainnet' | 'testnet';
   };
   etherscanApi?: boolean;
-  blocksScanApi?: {
-    url: string;
-  };
   avalancheApi?: boolean;
   nexusApi?: {
     url: string;

@@ -112,11 +112,14 @@ npm run monitor:start
 
 **The authoritative schema is the committed dump at [`services/database/sourcify-database.sql`](services/database/sourcify-database.sql).** Read it to answer schema questions instead of querying a live database. dbmate regenerates it on `npm run migrate:up`, and it must be committed alongside any new migration (see [`services/database/README.md`](services/database/README.md)).
 
+**Never hand-edit `sourcify-database.sql` — always regenerate it with dbmate.** The `validate-database-schema` CI job applies all migrations to a clean postgres, dumps it, and diffs (comment/blank-line-normalized) against the committed file; pg_dump's object ordering is non-obvious (e.g. constraints sort by constraint name, not table name), so hand-edits get the ordering wrong and fail CI. The regeneration recipe (throwaway `postgres:15` container + `DBMATE_SCHEMA_FILE`) is in [`services/database/README.md`](services/database/README.md) under "Adding a new migration"; pg_dump must be version 15 to match CI (pgdg `postgresql-client-15`), not 17.
+
 How the tables join:
 
 - `sourcify_matches.verified_contract_id` → `verified_contracts.id` (Sourcify-specific match info: `creation_match`/`runtime_match` quality, `chain_id`, and the contract's `metadata`)
 - `verified_contracts.compilation_id` → `compiled_contracts.id`, and `verified_contracts.deployment_id` → `contract_deployments.id`
 - `compiled_contracts_sources` (`compilation_id`, `path`, `source_hash`) is the source set stored for a compilation; join `source_hash` → `sources.source_hash` for the actual content
+- `compiled_contracts_metadata.compilation_id` → `compiled_contracts.id`: one metadata blob per compilation (`sourcify_matches.metadata` is kept only until reads switch over, #2924)
 - `code` holds bytecode, referenced via `creation_code_hash`/`runtime_code_hash` by both `compiled_contracts` (compiled) and `contracts` (onchain); reach the latter through `contract_deployments.contract_id` → `contracts.id`
 
 ### Storage Services
@@ -160,6 +163,7 @@ The server supports multiple storage backends:
 
 - For Sourcify-specific changes: Add migration in `services/database/migrations/`
 - For Verifier Alliance changes: Update submodule in `services/database/database-specs/`
+- Every PR that adds a migration must add a file `.release-todos/<pr-number>-<short-name>.md`. The same applies to any manual step around a production deploy (load balancer, Cloud Run settings, secrets, follow-up scripts). Format and examples: `.release-todos/README.md`. The release script shows these files and deletes them.
 
 ### API and Documentation Maintenance
 
@@ -208,6 +212,7 @@ The `FIELDS_TO_STORED_PROPERTIES` map is the authoritative source used by the va
 When reviewing PRs as an automated agent:
 
 - Check database migration safety (services/database/) — flag destructive operations
+- Flag a PR that adds a migration or needs a manual deploy step but adds no `.release-todos/` file
 - Verify API changes maintain backwards compatibility for the v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
 - Verify the OpenAPI/Swagger spec (`apiv2.yaml`) is updated if API endpoints or response fields change — including the **Available fields** section and the `fields` query parameter description

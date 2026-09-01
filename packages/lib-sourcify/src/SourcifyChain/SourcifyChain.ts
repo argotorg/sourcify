@@ -35,6 +35,9 @@ export function createFetchRequest(rpc: FetchRequestRPC): FetchRequest {
 
 export class RpcFailure extends Error {}
 
+/** A conclusive negative answer that no other RPC can change, e.g. the tx provably doesn't create the expected contract. Stops the RPC retry loop. */
+export class DefinitiveError extends Error {}
+
 export type SourcifyChainMap = {
   [chainId: string]: SourcifyChain;
 };
@@ -215,6 +218,9 @@ export class SourcifyChain {
           return result;
         }
       } catch (error) {
+        if (error instanceof DefinitiveError) {
+          throw error;
+        }
         if (error instanceof RpcFailure) {
           logWarn('RPC operation failed, marking as unhealthy', {
             operation: operationName,
@@ -415,7 +421,7 @@ export class SourcifyChain {
           const result = await parityStyleMethod(rpc, ...args);
           return { result };
         } catch (e: any) {
-          if (e instanceof RpcFailure) {
+          if (e instanceof RpcFailure || e instanceof DefinitiveError) {
             throw e;
           }
           logInfo('Failed to fetch from parity traces', {
@@ -438,7 +444,7 @@ export class SourcifyChain {
           const result = await gethStyleMethod(rpc, ...args);
           return { result };
         } catch (e: any) {
-          if (e instanceof RpcFailure) {
+          if (e instanceof RpcFailure || e instanceof DefinitiveError) {
             throw e;
           }
           logInfo('Failed to fetch from geth traces', {
@@ -454,6 +460,29 @@ export class SourcifyChain {
       return { tryNext: true };
     }, operationName);
   };
+
+  /**
+   * Returns a predicate telling whether a Parity style trace reverted, either itself
+   * or through an ancestor frame (a `traceAddress` prefix), whose revert also discards it.
+   */
+  private buildParityRevertedCheck(traces: any[]) {
+    const failedFrames = new Set(
+      traces
+        .filter((trace) => trace.error)
+        .map(
+          (trace) =>
+            `${trace.transactionHash ?? ''}:${(trace.traceAddress ?? []).join('.')}`,
+        ),
+    );
+    return (trace: any): boolean => {
+      const traceAddress: number[] = trace.traceAddress ?? [];
+      for (let i = 0; i <= traceAddress.length; i++) {
+        const frameKey = `${trace.transactionHash ?? ''}:${traceAddress.slice(0, i).join('.')}`;
+        if (failedFrames.has(frameKey)) return true;
+      }
+      return false;
+    };
+  }
 
   /**
    * For Parity style traces `trace_transaction`
@@ -484,16 +513,24 @@ export class SourcifyChain {
       );
     }
 
-    const createTraces = traces.filter((trace: any) => trace.type === 'create');
+    const isReverted = this.buildParityRevertedCheck(traces);
+    // Reverted creates never deployed anything; old OpenEthereum nodes also omit `result` on them
+    const createTraces = traces.filter(
+      (trace: any) => trace.type === 'create' && !isReverted(trace),
+    );
     // This line makes sure the tx in question is indeed for the contract being verified and not a random tx.
     const contractTrace = createTraces.find(
       (trace) =>
-        (trace.result.address as string).toLowerCase() ===
+        (trace.result?.address as string | undefined)?.toLowerCase() ===
         address.toLowerCase(),
     );
     if (!contractTrace) {
-      throw new Error(
-        `Provided tx ${creatorTxHash} does not create the expected contract ${address}. Created contracts by this tx: ${createTraces.map((t) => t.result.address).join(', ')}`,
+      // The trace is immutable, so no other RPC can answer differently
+      throw new DefinitiveError(
+        `Provided tx ${creatorTxHash} does not create the expected contract ${address}. Created contracts by this tx: ${createTraces
+          .map((t) => t.result?.address)
+          .filter(Boolean)
+          .join(', ')}`,
       );
     }
     logDebug('Found contract bytecode in traces', {
@@ -536,9 +573,11 @@ export class SourcifyChain {
       );
     }
 
+    const isReverted = this.buildParityRevertedCheck(traces);
     const createdAddresses: Record<string, string[]> = {};
     for (const trace of traces) {
       if (trace.type !== 'create') continue;
+      if (isReverted(trace)) continue;
       if (!trace.result || !trace.result.address || !trace.transactionHash) {
         logWarn('Found create trace with missing data, skipping.', {
           blockNumber,
@@ -582,7 +621,7 @@ export class SourcifyChain {
       rpc.maskedUrl,
     );
 
-    if (traces?.calls instanceof Array && traces.calls.length > 0) {
+    if (traces?.type) {
       logDebug('Fetched tx traces for creation tx hash', {
         creatorTxHash,
         maskedProviderUrl: rpc.maskedUrl,
@@ -594,9 +633,10 @@ export class SourcifyChain {
       );
     }
 
+    // The root frame is included: for a direct deployment it is itself the CREATE of the contract
     const createCalls: CallFrame[] = [];
     this.findCreateInDebugTraceTransactionCalls(
-      traces.calls as CallFrame[],
+      [traces as CallFrame],
       createCalls,
     );
 
@@ -608,11 +648,12 @@ export class SourcifyChain {
 
     // A call can have multiple contracts created. We need the one that matches the address we are verifying.
     const ourCreateCall = createCalls.find(
-      (createCall) => createCall.to.toLowerCase() === address.toLowerCase(),
+      (createCall) => createCall.to?.toLowerCase() === address.toLowerCase(),
     );
 
     if (!ourCreateCall) {
-      throw new Error(
+      // The trace is immutable, so no other RPC can answer differently
+      throw new DefinitiveError(
         `No CREATE or CREATE2 call found for the address ${address} in the traces of ${creatorTxHash} on RPC ${rpc.maskedUrl} and chain ${this.chainId}`,
       );
     }
@@ -695,9 +736,13 @@ export class SourcifyChain {
     createCalls: CallFrame[],
   ) {
     calls.forEach((call) => {
+      // A reverted frame deployed nothing, including in its subcalls
+      if (call?.error) return;
       if (call?.type === 'CREATE' || call?.type === 'CREATE2') {
         createCalls.push(call);
-      } else if (call?.calls?.length > 0) {
+      }
+      // A created contract's constructor can itself create contracts
+      if (call?.calls?.length > 0) {
         this.findCreateInDebugTraceTransactionCalls(call.calls, createCalls);
       }
     });
@@ -845,27 +890,35 @@ export class SourcifyChain {
     if (!creatorTx) creatorTx = await this.getTx(transactionHash);
 
     let creationBytecode;
-    // Non null txreceipt.contractAddress means that the contract was created with an EOA
-    if (txReceipt.contractAddress !== null) {
-      // Compare case-insensitively: the receipt's contractAddress is checksummed
-      // on some RPCs, while the caller may pass a lowercase address, and a pure
-      // `!==` would spuriously reject a genuine match.
-      if (txReceipt.contractAddress.toLowerCase() !== address.toLowerCase()) {
-        // we need to check if this contract creation tx actually yields the same contract address https://github.com/argotorg/sourcify/issues/887
-        throw new Error(
-          `Address of the contract being verified ${address} doesn't match the address ${txReceipt.contractAddress} created by this transaction ${transactionHash}`,
-        );
-      }
+    // Compare case-insensitively: the receipt's contractAddress is checksummed
+    // on some RPCs, while the caller may pass a lowercase address, and a pure
+    // `!==` would spuriously reject a genuine match.
+    if (
+      txReceipt.contractAddress !== null &&
+      txReceipt.contractAddress.toLowerCase() === address.toLowerCase()
+    ) {
+      // The tx deployed this contract directly, so its input data is the creation bytecode
       creationBytecode = creatorTx.data;
-      logDebug(`Contract ${address} created with an EOA`);
+      logDebug(`Contract ${address} created directly by the transaction`);
     } else {
-      // Else, contract was created with a factory
+      // The contract was created by an internal CREATE: either the tx called a factory
+      // (contractAddress === null), or the tx deployed another contract whose constructor
+      // created this one (contractAddress set but different, https://github.com/argotorg/sourcify/issues/2932).
+      // Both need traces, which also check that the tx actually created this contract
+      // and not a random one (https://github.com/argotorg/sourcify/issues/887).
       if (!this.traceSupport) {
+        if (txReceipt.contractAddress !== null) {
+          throw new Error(
+            `Transaction ${transactionHash} directly created contract ${txReceipt.contractAddress}, not the contract being verified ${address}. Either the transaction hash is wrong or the contract was created by an internal transaction, which can't be checked because chain ${this.chainId} doesn't have trace support`,
+          );
+        }
         throw new Error(
           `No trace support for chain ${this.chainId}. No other method to get the creation bytecode`,
         );
       }
-      logDebug(`Contract ${address} created with a factory. Fetching traces`);
+      logDebug(
+        `Contract ${address} not created directly by the transaction, fetching traces`,
+      );
       creationBytecode = await this.getCreationBytecodeForFactory(
         transactionHash,
         address,

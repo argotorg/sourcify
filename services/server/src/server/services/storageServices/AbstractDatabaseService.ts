@@ -51,7 +51,11 @@ export default abstract class AbstractDatabaseService {
   async insertNewVerifiedContract(
     databaseColumns: DatabaseUtil.DatabaseColumns,
     client: PoolClient,
-  ): Promise<Tables.VerifiedContract["id"]> {
+  ): Promise<{
+    verifiedContractId: Tables.VerifiedContract["id"];
+    compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
+  }> {
     try {
       let recompiledCreationCodeInsertResult:
         | QueryResult<Pick<DatabaseUtil.Tables.Code, "bytecode_hash">>
@@ -126,7 +130,11 @@ export default abstract class AbstractDatabaseService {
           compilation_id: compiledContractId,
           deployment_id: contractDeploymentInsertResult.rows[0].id,
         });
-      return verifiedContractInsertResult.rows[0].id;
+      return {
+        verifiedContractId: verifiedContractInsertResult.rows[0].id,
+        compilationId: compiledContractId,
+        isNewCompilation,
+      };
     } catch (e) {
       throw new Error(
         `cannot insert verified_contract address=0x${databaseColumns.contractDeployment.address.toString("hex")} chainId=${databaseColumns.contractDeployment.chain_id}\n${e}`,
@@ -137,7 +145,11 @@ export default abstract class AbstractDatabaseService {
   async updateExistingVerifiedContract(
     databaseColumns: DatabaseUtil.DatabaseColumns,
     client: PoolClient,
-  ): Promise<Tables.VerifiedContract["id"]> {
+  ): Promise<{
+    verifiedContractId: Tables.VerifiedContract["id"];
+    compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
+  }> {
     // runtime bytecodes must exist
     if (databaseColumns.recompiledRuntimeCode.bytecode === undefined) {
       throw new Error("Missing normalized runtime bytecode");
@@ -220,11 +232,15 @@ export default abstract class AbstractDatabaseService {
       const verifiedContractInsertResult =
         await this.database.insertVerifiedContract(client, {
           ...databaseColumns.verifiedContract,
-          compilation_id: compiledContractsInsertResult.rows[0].id,
+          compilation_id: compiledContractId,
           deployment_id: contractDeploymentId,
         });
 
-      return verifiedContractInsertResult.rows[0].id;
+      return {
+        verifiedContractId: verifiedContractInsertResult.rows[0].id,
+        compilationId: compiledContractId,
+        isNewCompilation,
+      };
     } catch (e) {
       if (e instanceof ConflictError) {
         throw e;
@@ -241,6 +257,8 @@ export default abstract class AbstractDatabaseService {
   ): Promise<{
     type: "update" | "insert";
     verifiedContractId: Tables.VerifiedContract["id"];
+    compilationId: Tables.CompiledContract["id"];
+    isNewCompilation: boolean;
     oldVerifiedContractId?: Tables.VerifiedContract["id"];
   }> {
     this.validateVerificationBeforeStoring(verification);
@@ -259,20 +277,22 @@ export default abstract class AbstractDatabaseService {
       );
 
     if (existingVerifiedContractResult.rowCount === 0) {
+      const { verifiedContractId, compilationId, isNewCompilation } =
+        await this.insertNewVerifiedContract(databaseColumns, poolClient);
       return {
         type: "insert",
-        verifiedContractId: await this.insertNewVerifiedContract(
-          databaseColumns,
-          poolClient,
-        ),
+        verifiedContractId,
+        compilationId,
+        isNewCompilation,
       };
     } else {
+      const { verifiedContractId, compilationId, isNewCompilation } =
+        await this.updateExistingVerifiedContract(databaseColumns, poolClient);
       return {
         type: "update",
-        verifiedContractId: await this.updateExistingVerifiedContract(
-          databaseColumns,
-          poolClient,
-        ),
+        verifiedContractId,
+        compilationId,
+        isNewCompilation,
         oldVerifiedContractId: existingVerifiedContractResult.rows[0].id,
       };
     }

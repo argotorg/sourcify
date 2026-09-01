@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.1.0 - 2026-09-01
+
+- ci: split live creation-tx API tests into their own CI job (#2947)
+- feat: store metadata once per compilation in compiled_contracts_metadata (#2941)
+- Remove blocksScanApi creation-tx fetcher (#2948)
+
 ## sourcify-server@4.0.0 - 2026-08-20
 
 - refactor(server): remove API v1 (#2877)

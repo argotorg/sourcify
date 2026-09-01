@@ -251,8 +251,17 @@ class BigQueryClient implements DatabaseClient {
   }
 
   async close(): Promise<void> {
-    // Session cleanup is handled by BigQuery automatically
-    // when the connection/job completes
+    if (!this.sessionId) return;
+    // BigQuery sessions aren't auto-closed; an open one with an uncommitted
+    // transaction locks the table and blocks later deletes. Abort it explicitly
+    // (also rolls back any in-progress transaction).
+    try {
+      await this.query("CALL BQ.ABORT_SESSION()");
+    } catch {
+      // best-effort; the session otherwise expires on its own idle timeout
+    } finally {
+      this.sessionId = null;
+    }
   }
 }
 
@@ -446,6 +455,20 @@ async function deleteVerifiedContracts(
   dbType: DatabaseType,
 ): Promise<DeleteStats> {
   const client = await createDatabaseClient(dbType);
+
+  // Ctrl-C/SIGTERM skip the try/finally below, which would leave the BigQuery
+  // session's transaction open and holding a lock. Roll back / close on signal.
+  const handleSignal = (signal: NodeJS.Signals) => {
+    console.error(
+      `\n⚠️  Received ${signal} — rolling back and closing the session before exit...`,
+    );
+    client
+      .close()
+      .catch(() => undefined)
+      .finally(() => process.exit(130));
+  };
+  process.once("SIGINT", handleSignal);
+  process.once("SIGTERM", handleSignal);
 
   const stats: DeleteStats = {
     verifiedContractsFound: 0,
@@ -797,6 +820,8 @@ async function deleteVerifiedContracts(
     console.error("\n❌ Transaction rolled back due to error\n");
     throw error;
   } finally {
+    process.removeListener("SIGINT", handleSignal);
+    process.removeListener("SIGTERM", handleSignal);
     await client.close();
   }
 }

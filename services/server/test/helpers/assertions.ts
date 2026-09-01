@@ -196,11 +196,13 @@ export async function assertContractSaved(
         cd.chain_id,
         sm.creation_match,
         sm.runtime_match,
-        sm.metadata
+        sm.metadata,
+        ccm.metadata AS compilation_metadata
       FROM sourcify_matches sm
       LEFT JOIN verified_contracts vc ON vc.id = sm.verified_contract_id
       LEFT JOIN contract_deployments cd ON cd.id = vc.deployment_id
-      LEFT JOIN compiled_contracts cc ON cc.id = vc.compilation_id 
+      LEFT JOIN compiled_contracts cc ON cc.id = vc.compilation_id
+      LEFT JOIN compiled_contracts_metadata ccm ON ccm.compilation_id = vc.compilation_id
       LEFT JOIN code compiled_runtime_code ON compiled_runtime_code.code_hash = cc.runtime_code_hash
       LEFT JOIN code compiled_creation_code ON compiled_creation_code.code_hash = cc.creation_code_hash
       WHERE cd.address = $1 AND cd.chain_id = $2`,
@@ -216,6 +218,15 @@ export async function assertContractSaved(
   if (expectedMetadataHash) {
     chai
       .expect(id(JSON.stringify(contract.metadata)))
+      .to.equal(expectedMetadataHash);
+
+    // The metadata must also be dual-written once per compilation (#2924)
+    chai.expect(
+      contract.compilation_metadata,
+      "Metadata not stored in compiled_contracts_metadata",
+    ).to.not.be.null;
+    chai
+      .expect(id(JSON.stringify(contract.compilation_metadata)))
       .to.equal(expectedMetadataHash);
   }
 

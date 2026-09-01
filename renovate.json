@@ -27,6 +27,11 @@
       "description": "No routine digest churn. A new upstream digest is not evidence that ours is bad, and a rebuilt base image is not reviewable — a weekly stream of opaque hash bumps trains people to rubber-stamp them. We bump a pin deliberately when something tells us the pinned image is actually vulnerable. Note this only stops refreshes of existing pins: pinDigests still adds a digest to any newly introduced image.",
       "matchUpdateTypes": ["digest"],
       "enabled": false
+    },
+    {
+      "description": "Never digest-pin our own images. docker-compose.yml points self-hosters at server:latest on purpose, so a pinned digest would freeze them on one build.",
+      "matchPackageNames": ["ghcr.io/argotorg/sourcify/**"],
+      "pinDigests": false
     }
   ],
   "pinDigests": true,

@@ -5,7 +5,6 @@ import { deriveEtherscanApiKey } from "./etherscan-util";
 
 const ETHERSCAN_API =
   "https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}&apikey=";
-const BLOCKSSCAN_SUFFIX = "api/accounts/${ADDRESS}";
 const BLOCKSCOUT_API_SUFFIX = "/api/v2/addresses/${ADDRESS}";
 const AVALANCHE_SUBNET_SUFFIX =
   "contracts/${ADDRESS}/transactions:getDeployment";
@@ -79,17 +78,6 @@ function getRoutescanApiContractCreatorFetcher(
   return getApiContractCreationFetcher(
     url,
     (response: any) => response?.result?.[0]?.txHash,
-  );
-}
-
-function getBlocksScanApiContractCreatorFetcher(
-  apiURL: string,
-): ContractCreationFetcher {
-  return getApiContractCreationFetcher(
-    apiURL + BLOCKSSCAN_SUFFIX,
-    (response: any) => {
-      if (response.fromTxn) return response.fromTxn as string;
-    },
   );
 }
 
@@ -293,15 +281,6 @@ export const getCreatorTx = async (
     }
   }
 
-  if (sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi) {
-    const fetcher = getBlocksScanApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blocksScanApi.url,
-    );
-    const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
-    if (result) {
-      return result;
-    }
-  }
   if (sourcifyChain.fetchContractCreationTxUsing?.nexusApi) {
     const fetcher = getNexusApiContractCreatorFetcher(
       sourcifyChain.fetchContractCreationTxUsing?.nexusApi.url,

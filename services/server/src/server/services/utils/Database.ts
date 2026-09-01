@@ -796,6 +796,23 @@ ${
     );
   }
 
+  async insertCompiledContractMetadata(
+    poolClient: PoolClient,
+    { compilation_id, metadata }: Tables.CompiledContractMetadata,
+  ) {
+    // ON CONFLICT DO NOTHING keeps the first submitter's metadata when a
+    // compilation is shared by several verified contracts, consistent with how
+    // compiled_contracts_sources are deduplicated
+    await poolClient.query(
+      `INSERT INTO ${this.schema}.compiled_contracts_metadata (
+        compilation_id,
+        metadata
+      ) VALUES ($1, $2)
+      ON CONFLICT ON CONSTRAINT compiled_contracts_metadata_pkey DO NOTHING`,
+      [compilation_id, metadata],
+    );
+  }
+
   async insertSignatures(
     signatures: Omit<Tables.Signatures, "signature_hash_4">[],
     poolClient?: PoolClient,

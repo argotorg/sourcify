@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.14 (Ubuntu 16.14-1.pgdg24.04+1)
+-- Dumped from database version 15.19 (Debian 15.19-1.pgdg13+2)
+-- Dumped by pg_dump version 15.19 (Debian 15.19-1.pgdg13+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1029,6 +1029,16 @@ CREATE TABLE public.compiled_contracts (
 
 
 --
+-- Name: compiled_contracts_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compiled_contracts_metadata (
+    compilation_id uuid NOT NULL,
+    metadata json NOT NULL
+);
+
+
+--
 -- Name: compiled_contracts_runtime_code_prefixes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1331,6 +1341,14 @@ ALTER TABLE ONLY public.code
 
 
 --
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_pkey PRIMARY KEY (compilation_id);
+
+
+--
 -- Name: compiled_contracts compiled_contracts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1628,13 +1646,6 @@ CREATE INDEX contracts_creation_code_hash_runtime_code_hash ON public.contracts 
 --
 
 CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtime_code_hash);
-
-
---
--- Name: idx_code_code_first_75; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_code_code_first_75 ON public.code USING btree (SUBSTRING(code FROM 1 FOR 75));
 
 
 --
@@ -2108,6 +2119,14 @@ ALTER TABLE ONLY public.compiled_contracts
 
 
 --
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_compilation_id_fkey FOREIGN KEY (compilation_id) REFERENCES public.compiled_contracts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: compiled_contracts compiled_contracts_runtime_code_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2256,4 +2275,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260723090000'),
     ('20260724100000'),
     ('20260729090000'),
-    ('20260803100000');
+    ('20260803100000'),
+    ('20260820120000'),
+    ('20260826100000');

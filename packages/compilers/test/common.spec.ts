@@ -1,4 +1,7 @@
 import { expect } from 'chai';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { asyncExec } from '../src/lib/common';
 import {
   COMPILER_OOM_CODE,
@@ -82,5 +85,55 @@ describe('asyncExec robustness (#2880)', () => {
     expect(thrown, 'expected asyncExec to reject').to.be.instanceOf(Error);
     expect(thrown.code).to.not.equal(COMPILER_OOM_CODE);
     expect(thrown.code).to.not.equal(COMPILER_TIMEOUT_CODE);
+  });
+});
+
+describe('asyncExec compiler cwd sandbox (import path leak)', () => {
+  // asyncExec runs every compiler in an empty temp cwd so imports cannot read
+  // host files (#2920). Exercised generically here, so it holds for solc/vyper.
+  let secretName: string;
+  let secretPath: string;
+
+  beforeEach(() => {
+    secretName = `.sourcify-cwd-leak-test-${process.pid}`;
+    secretPath = path.join(process.cwd(), secretName);
+    fs.writeFileSync(secretPath, 'LEAK_SECRET_VALUE=super-secret\n', 'utf8');
+  });
+
+  afterEach(() => {
+    fs.rmSync(secretPath, { force: true });
+  });
+
+  it('runs the subprocess in an empty temp dir, not the host cwd', async () => {
+    // `pwd` reports where the subprocess ran: a temp dir, not the host cwd.
+    const cwd = (await asyncExec('pwd', '{}', MAX_BUFFER)).trim();
+    expect(cwd).to.not.equal(process.cwd());
+    expect(cwd.startsWith(fs.realpathSync(os.tmpdir()))).to.equal(true);
+  });
+
+  it('cannot read a host cwd file through a relative path', async () => {
+    // The same relative path a leaking import would use must fail to read.
+    let thrown: any;
+    try {
+      await asyncExec(`cat "./${secretName}"`, '{}', MAX_BUFFER);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the relative read to fail').to.be.instanceOf(
+      Error,
+    );
+    expect(`${thrown?.message ?? ''}`).to.not.contain('super-secret');
+  });
+
+  it('always cleans up the temp dir it created', async () => {
+    const before = fs
+      .readdirSync(os.tmpdir())
+      .filter((d) => d.startsWith('sourcify-compiler-'));
+    await asyncExec('cat', '{}', MAX_BUFFER);
+    const after = fs
+      .readdirSync(os.tmpdir())
+      .filter((d) => d.startsWith('sourcify-compiler-'));
+    // No temp dir left behind after a run.
+    expect(after.length).to.be.at.most(before.length);
   });
 });

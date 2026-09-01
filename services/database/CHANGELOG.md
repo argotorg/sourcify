@@ -1,5 +1,11 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.15.0 - 2026-09-01
+
+- Drop the obsolete idx_code_code_first_75 index (#2937)
+- feat: store metadata once per compilation in compiled_contracts_metadata (#2941)
+- perf(scripts): two-phase rewrite of the compiled_contracts_metadata backfill (#2952)
+
 ## sourcify-database@2.14.0 - 2026-08-20
 
 - Speed up delete-sourcify-match orphan checks and add verification_jobs FK index (#2888)
