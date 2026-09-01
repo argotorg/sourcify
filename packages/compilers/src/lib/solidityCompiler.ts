@@ -91,11 +91,16 @@ export async function useSolidityCompiler(
   }
   let startCompilation: number;
   if (solcPath && !forceEmscripten) {
-    logDebug('Compiling with solc binary', { version, solcPath });
+    // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
+    const absoluteSolcPath = path.resolve(solcPath);
+    logDebug('Compiling with solc binary', {
+      version,
+      solcPath: absoluteSolcPath,
+    });
     startCompilation = Date.now();
     try {
       compiled = await asyncExec(
-        `${solcPath} --standard-json`,
+        `${absoluteSolcPath} --standard-json`,
         inputStringified,
         250 * 1024 * 1024,
         timeoutMs,

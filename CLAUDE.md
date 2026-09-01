@@ -160,6 +160,7 @@ The server supports multiple storage backends:
 
 - For Sourcify-specific changes: Add migration in `services/database/migrations/`
 - For Verifier Alliance changes: Update submodule in `services/database/database-specs/`
+- Every PR that adds a migration must add a file `.release-todos/<pr-number>-<short-name>.md`. The same applies to any manual step around a production deploy (load balancer, Cloud Run settings, secrets, follow-up scripts). Format and examples: `.release-todos/README.md`. The release script shows these files and deletes them.
 
 ### API and Documentation Maintenance
 
@@ -208,6 +209,7 @@ The `FIELDS_TO_STORED_PROPERTIES` map is the authoritative source used by the va
 When reviewing PRs as an automated agent:
 
 - Check database migration safety (services/database/) — flag destructive operations
+- Flag a PR that adds a migration or needs a manual deploy step but adds no `.release-todos/` file
 - Verify API changes maintain backwards compatibility for the v2 endpoints
 - Check that changes to packages/ don't break dependent services (server, monitor)
 - Verify the OpenAPI/Swagger spec (`apiv2.yaml`) is updated if API endpoints or response fields change — including the **Available fields** section and the `fields` query parameter description

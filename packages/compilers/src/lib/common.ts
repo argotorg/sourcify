@@ -1,4 +1,7 @@
 import { exec } from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { logDebug, logError, logSilly } from '../logger';
 import type { OutputError } from '@ethereum-sourcify/compilers-types';
 import {
@@ -78,7 +81,7 @@ export function createCompilerTimeoutError(timeoutMs: number): Error & {
   return timeoutError;
 }
 
-export function asyncExec(
+export async function asyncExec(
   command: string,
   inputStringified: string,
   maxBuffer: number,
@@ -87,6 +90,33 @@ export function asyncExec(
   // check if input is valid JSON. The input is untrusted and potentially cause arbitrary execution.
   JSON.parse(inputStringified);
 
+  // Run in an empty temp cwd so a user-controlled `import "./.env"` cannot make
+  // the compiler read host files (#2920). Callers must pass an absolute binary
+  // path in `command`, since a relative one would break once cwd changes.
+  const sandboxCwd = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'sourcify-compiler-'),
+  );
+
+  try {
+    return await runInSandbox(
+      command,
+      inputStringified,
+      maxBuffer,
+      timeoutMs,
+      sandboxCwd,
+    );
+  } finally {
+    await fs.promises.rm(sandboxCwd, { recursive: true, force: true });
+  }
+}
+
+function runInSandbox(
+  command: string,
+  inputStringified: string,
+  maxBuffer: number,
+  timeoutMs: number,
+  sandboxCwd: string,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     // Guard so the promise settles exactly once. Multiple failure signals can
     // race (exec callback, stdin 'error', a thrown write) and double-settling
@@ -121,6 +151,7 @@ export function asyncExec(
         maxBuffer,
         timeout: timeoutMs,
         killSignal: 'SIGKILL',
+        cwd: sandboxCwd,
       },
       (error, stdout, stderr) => {
         if (error) {

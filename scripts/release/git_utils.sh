@@ -65,7 +65,8 @@ create_gh_deploy_pr() {
 
   if $CREATE_PR; then
     echo "Creating a PR for the staging branch"
-    gh pr create --title "Deploy latest to production" --body "" --head staging --base master
+    # RELEASE_TODO_TEXT is collected by check_release_todos (release_todos.sh)
+    gh pr create --title "Deploy latest to production" --body "${RELEASE_TODO_TEXT:-}" --head staging --base master
     if [ $? -ne 0 ]; then
       error_exit "Failed to create PR. Exiting."
     fi
@@ -97,7 +98,7 @@ create_new_branch() {
 }
 
 commit_changelogs() {
-  git commit -m "Update changelogs"
+  git commit -m "Update changelogs and clear release TODOs"
 }
 
 # Function to select a branch name

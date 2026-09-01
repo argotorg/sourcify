@@ -31,6 +31,8 @@ After updating the submodule, the schema dump `sourcify-database.sql` should be 
 
 Any new migration should be capable of updating the live Sourcify staging and production databases.
 
+Migrations are applied by hand, not by CI. Every PR that adds a migration must also add a file in [`.release-todos/`](../../.release-todos/README.md), so the release script reminds the person who releases to apply it on staging and production.
+
 Please also see the section on [schema upgrade scripts](#schema-upgrade-scripts) as some migrations on a live database might require running a follow-up script to complete the schema change.
 
 ### Prerequisites
@@ -106,11 +108,11 @@ The scripts are idempotent, resumable and they only touch rows that still need w
 
 ### Available upgrade scripts
 
-| Script                                                                                | When to run                                                                                                                                                               | What it does                                                                           |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| [`post-v0-to-v1-upgrade.mjs`](./schema-updates/post-v0-to-v1-upgrade.mjs)             | After upgrading to the v1 schema, once the `sources` table is populated.                                                                                                  | Backfills `sources.source_hash_keccak` with the keccak256 hash of each source.         |
-| [`post-v2.12-to-v2.13-upgrade.mjs`](./schema-updates/post-v2.12-to-v2.13-upgrade.mjs) | After applying the v2.13 migration that adds the nullable `sourcify_matches.chain_id` column, and before applying the follow-up migration that promotes it to `NOT NULL`. | Backfills `sourcify_matches.chain_id` from `contract_deployments.chain_id` in batches. |
-| [`backfill-compiled-contracts-runtime-code-prefixes.mjs`](./schema-updates/backfill-compiled-contracts-runtime-code-prefixes.mjs) | After applying the migration that adds the `compiled_contracts_runtime_code_prefixes` table, and before deploying server version 3.18.0. | Backfills `compiled_contracts_runtime_code_prefixes` (first 75 bytes of each compilation's runtime code) for compilations that existed before the migration's insert trigger. |
+| Script                                                                                                                            | When to run                                                                                                                                                               | What it does                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`post-v0-to-v1-upgrade.mjs`](./schema-updates/post-v0-to-v1-upgrade.mjs)                                                         | After upgrading to the v1 schema, once the `sources` table is populated.                                                                                                  | Backfills `sources.source_hash_keccak` with the keccak256 hash of each source.                                                                                                |
+| [`post-v2.12-to-v2.13-upgrade.mjs`](./schema-updates/post-v2.12-to-v2.13-upgrade.mjs)                                             | After applying the v2.13 migration that adds the nullable `sourcify_matches.chain_id` column, and before applying the follow-up migration that promotes it to `NOT NULL`. | Backfills `sourcify_matches.chain_id` from `contract_deployments.chain_id` in batches.                                                                                        |
+| [`backfill-compiled-contracts-runtime-code-prefixes.mjs`](./schema-updates/backfill-compiled-contracts-runtime-code-prefixes.mjs) | After applying the migration that adds the `compiled_contracts_runtime_code_prefixes` table, and before deploying server version 3.18.0.                                  | Backfills `compiled_contracts_runtime_code_prefixes` (first 75 bytes of each compilation's runtime code) for compilations that existed before the migration's insert trigger. |
 
 Run a script with:
 

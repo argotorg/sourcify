@@ -69,9 +69,11 @@ export async function useVyperCompiler(
   let compiled: string | undefined;
   const inputStringified = stringifyVyperJsonInput(vyperJsonInput);
   const startCompilation = Date.now();
+  // Absolute path: asyncExec runs in a temp cwd (#2920), breaking relative paths.
+  const absoluteVyperPath = path.resolve(vyperPath);
   try {
     compiled = await asyncExec(
-      `${vyperPath} --standard-json`,
+      `${absoluteVyperPath} --standard-json`,
       inputStringified,
       250 * 1024 * 1024,
       timeoutMs,
