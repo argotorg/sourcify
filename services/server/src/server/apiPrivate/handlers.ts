@@ -323,7 +323,7 @@ export async function replaceContract(
     try {
       rpcFailedFetchingCreationBytecode =
         verification.onchainCreationBytecode === undefined;
-    } catch (error) {
+    } catch {
       // verification.onchainCreationBytecode throws if not available
       rpcFailedFetchingCreationBytecode = true;
     }
@@ -338,6 +338,7 @@ export async function replaceContract(
       rpcFailedFetchingCreationBytecode,
     });
   } catch (error: any) {
+    if (typeof error?.statusCode === "number") throw error;
     throw new InternalServerError(error.message);
   }
 }
