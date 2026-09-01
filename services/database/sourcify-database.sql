@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
--- Dumped by pg_dump version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
+-- Dumped from database version 15.19 (Debian 15.19-1.pgdg13+2)
+-- Dumped by pg_dump version 15.19 (Debian 15.19-1.pgdg13+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1029,6 +1029,16 @@ CREATE TABLE public.compiled_contracts (
 
 
 --
+-- Name: compiled_contracts_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compiled_contracts_metadata (
+    compilation_id uuid NOT NULL,
+    metadata json NOT NULL
+);
+
+
+--
 -- Name: compiled_contracts_runtime_code_prefixes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1328,6 +1338,14 @@ ALTER TABLE ONLY public.verified_contracts ALTER COLUMN id SET DEFAULT nextval('
 
 ALTER TABLE ONLY public.code
     ADD CONSTRAINT code_pkey PRIMARY KEY (code_hash);
+
+
+--
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_pkey PRIMARY KEY (compilation_id);
 
 
 --
@@ -2101,6 +2119,14 @@ ALTER TABLE ONLY public.compiled_contracts
 
 
 --
+-- Name: compiled_contracts_metadata compiled_contracts_metadata_compilation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compiled_contracts_metadata
+    ADD CONSTRAINT compiled_contracts_metadata_compilation_id_fkey FOREIGN KEY (compilation_id) REFERENCES public.compiled_contracts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: compiled_contracts compiled_contracts_runtime_code_hash_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2250,4 +2276,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260724100000'),
     ('20260729090000'),
     ('20260803100000'),
-    ('20260820120000');
+    ('20260820120000'),
+    ('20260826100000');
