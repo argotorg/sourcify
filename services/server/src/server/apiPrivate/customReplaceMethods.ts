@@ -5,6 +5,7 @@ import type {
 import {
   bytesFromString,
   getDatabaseColumnsFromVerification,
+  prepareCompilerSettingsFromVerification,
 } from "../services/utils/database-util";
 import type { SourcifyDatabaseService } from "../services/storageServices/SourcifyDatabaseService";
 import { BadRequestError } from "../../common/errors";
@@ -194,6 +195,76 @@ export const replaceMetadata: CustomReplaceMethod = async (
   );
 };
 
+async function getSingleVyperCompilationId(
+  sourcifyDatabaseService: SourcifyDatabaseService,
+  verification: VerificationExport,
+  artifact: string,
+): Promise<string> {
+  const existingResult = await sourcifyDatabaseService.database.pool.query(
+    `SELECT vc.compilation_id
+       FROM verified_contracts vc
+       JOIN contract_deployments cd ON cd.id = vc.deployment_id
+       INNER JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id
+       WHERE cd.chain_id = $1 AND cd.address = $2`,
+    [verification.chainId.toString(), bytesFromString(verification.address)],
+  );
+  if (existingResult.rows.length === 0) {
+    throw new Error(
+      `No existing verified contract found for address ${verification.address} on chain ${verification.chainId}`,
+    );
+  }
+  if (existingResult.rows.length > 1) {
+    throw new Error(
+      `Multiple verified contracts found for address ${verification.address} on chain ${verification.chainId}; cannot safely backfill ${artifact}`,
+    );
+  }
+  return existingResult.rows[0].compilation_id;
+}
+
+async function replaceStorageLayoutForMatchingVyperCompilation(
+  sourcifyDatabaseService: SourcifyDatabaseService,
+  verification: VerificationExport,
+  compilationId: string,
+  storageLayout: unknown,
+): Promise<void> {
+  const { path, name } = verification.compilation.compilationTarget;
+  const settings = prepareCompilerSettingsFromVerification(verification);
+  const additionalInput = verification.compilation.additionalInput ?? null;
+  const result = await sourcifyDatabaseService.database.pool.query(
+    `UPDATE compiled_contracts cc
+       SET compilation_artifacts = jsonb_set(
+         COALESCE(cc.compilation_artifacts, '{}'::jsonb),
+         '{storageLayout}', $7::jsonb, true)
+       WHERE cc.id = $1
+         AND cc.language = 'vyper'
+         AND cc.version = $2
+         AND cc.fully_qualified_name = $3
+         AND cc.compiler_settings = $4::jsonb
+         AND cc.additional_input IS NOT DISTINCT FROM $5::jsonb
+         AND (
+           SELECT jsonb_object_agg(ccs.path, sources.content)
+           FROM compiled_contracts_sources ccs
+           JOIN sources ON sources.source_hash = ccs.source_hash
+           WHERE ccs.compilation_id = cc.id
+         ) = $6::jsonb
+       RETURNING cc.id`,
+    [
+      compilationId,
+      verification.compilation.compilerVersion,
+      `${path}:${name}`,
+      JSON.stringify(settings),
+      additionalInput === null ? null : JSON.stringify(additionalInput),
+      JSON.stringify(verification.compilation.sources),
+      JSON.stringify(storageLayout),
+    ],
+  );
+  if (result.rows.length !== 1) {
+    throw new BadRequestError(
+      "Fresh Vyper compilation identity does not match the stored compilation; refusing to replace storageLayout",
+    );
+  }
+}
+
 /**
  * Backfills the `immutableReferences` of an already-verified Vyper contract by
  * writing the references recomputed during this re-verification into the
@@ -243,34 +314,11 @@ export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
     return { reason, replaced: false };
   }
 
-  // Find the compiled_contracts row backing this verified contract.
-  const existingVerifiedContractQuery = `
-        SELECT vc.compilation_id
-        FROM verified_contracts vc
-        JOIN contract_deployments cd ON cd.id = vc.deployment_id
-        INNER JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id
-        WHERE cd.chain_id = $1 AND cd.address = $2
-      `;
-  const existingResult = await sourcifyDatabaseService.database.pool.query(
-    existingVerifiedContractQuery,
-    [verification.chainId.toString(), bytesFromString(verification.address)],
+  const compilationId = await getSingleVyperCompilationId(
+    sourcifyDatabaseService,
+    verification,
+    "immutableReferences",
   );
-
-  if (existingResult.rows.length === 0) {
-    throw new Error(
-      `No existing verified contract found for address ${verification.address} on chain ${verification.chainId}`,
-    );
-  }
-
-  // If multiple verified contracts point to the same deployment we can't tell
-  // which compilation to backfill, so refuse rather than guess.
-  if (existingResult.rows.length > 1) {
-    throw new Error(
-      `Multiple verified contracts found for address ${verification.address} on chain ${verification.chainId}; cannot safely backfill immutableReferences`,
-    );
-  }
-
-  const compilationId = existingResult.rows[0].compilation_id;
 
   // Update only the immutableReferences key to avoid clobbering the other
   // runtime_code_artifacts (sourceMap, linkReferences, cborAuxdata). Updating
@@ -285,8 +333,56 @@ export const replaceVyperImmutableReferences: CustomReplaceMethod = async (
   );
 };
 
+/** Backfills only `compilation_artifacts.storageLayout` on a verified Vyper compilation. */
+export const replaceVyperStorageLayout: CustomReplaceMethod = async (
+  sourcifyDatabaseService: SourcifyDatabaseService,
+  verification: VerificationExport,
+) => {
+  if (verification.compilation.language !== "Vyper") {
+    throw new BadRequestError(
+      `replace-vyper-storage-layout only supports Vyper contracts, got ${verification.compilation.language}`,
+    );
+  }
+
+  const { runtimeMatch, creationMatch } = verification.status;
+  if (
+    ![runtimeMatch, creationMatch].some(
+      (match) => match === "perfect" || match === "partial",
+    )
+  ) {
+    throw new BadRequestError(
+      "Cannot backfill a Vyper storage layout from a compilation that did not match the deployment",
+    );
+  }
+
+  const storageLayout =
+    verification.compilation.contractCompilerOutput.storageLayout;
+  if (storageLayout === undefined) {
+    const reason = "Historical Vyper storage layout could not be recovered";
+    logger.info(reason, {
+      chainId: verification.chainId,
+      address: verification.address,
+      compilerVersion: verification.compilation.compilerVersion,
+    });
+    return { reason, replaced: false };
+  }
+
+  const compilationId = await getSingleVyperCompilationId(
+    sourcifyDatabaseService,
+    verification,
+    "storageLayout",
+  );
+  await replaceStorageLayoutForMatchingVyperCompilation(
+    sourcifyDatabaseService,
+    verification,
+    compilationId,
+    storageLayout,
+  );
+};
+
 export const REPLACE_METHODS: Record<string, CustomReplaceMethod> = {
   "replace-creation-information": replaceCreationInformation,
   "replace-metadata": replaceMetadata,
   "replace-vyper-immutable-references": replaceVyperImmutableReferences,
+  "replace-vyper-storage-layout": replaceVyperStorageLayout,
 };

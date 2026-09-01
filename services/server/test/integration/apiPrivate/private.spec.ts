@@ -12,7 +12,12 @@ import {
 import { assertVerification } from "../../helpers/assertions";
 import chaiHttp from "chai-http";
 import { StatusCodes } from "http-status-codes";
-import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
+import {
+  SourcifyChain,
+  type VyperJsonInput,
+} from "@ethereum-sourcify/lib-sourcify";
+import { useVyperCompiler } from "@ethereum-sourcify/compilers";
+import config from "config";
 import { LOCAL_CHAINS } from "../../../src/sourcify-chains";
 import Sinon from "sinon";
 
@@ -203,35 +208,46 @@ describe("/private/replace-contract", function () {
       .to.deep.equal(originalMatchResult.rows[0].creation_values);
   });
 
-  it("should backfill missing Vyper immutableReferences with the replace-vyper-immutable-references method", async () => {
-    // Load Vyper-with-immutables test contract artifacts and source
-    const vyperArtifact = (
-      await import("../../sources/vyper/withImmutables/artifact.json")
-    ).default;
-    const vyperSourcePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "sources",
-      "vyper",
-      "withImmutables",
-      "test.vy",
-    );
-    const vyperSource = fs.readFileSync(vyperSourcePath, "utf8");
-
+  it("should backfill missing Vyper compiler artifacts without changing verification data", async function () {
+    this.timeout(15 * 60 * 1000);
     const compilerVersion = "0.4.0+commit.e9db8d9f";
+    const vyperSource = `# pragma version ^0.4.0
+
+OWNER: public(immutable(address))
+MY_IMMUTABLE: public(immutable(uint256))
+stored: public(uint256)
+values: uint256[3]
+
+@deploy
+def __init__(val: uint256):
+    OWNER = msg.sender
+    MY_IMMUTABLE = val
+    self.stored = val
+    self.values[0] = 1
+`;
     const compilerSettings = {
       evmVersion: "london",
       optimize: "codesize",
-      outputSelection: { "*": ["evm.bytecode"] },
+      outputSelection: { "test.vy": ["abi", "evm.bytecode.object"] },
+    } satisfies VyperJsonInput["settings"];
+    const compilerInput: VyperJsonInput = {
+      language: "Vyper",
+      sources: { "test.vy": { content: vyperSource } },
+      settings: compilerSettings,
     };
+    const compilerOutput = await useVyperCompiler(
+      config.get<string>("vyperRepo"),
+      compilerVersion,
+      compilerInput,
+    );
+    const outputContract = compilerOutput.contracts["test.vy"].test;
 
     // Deploy the Vyper contract (constructor sets an immutable uint256 value)
     const { contractAddress, txHash } =
       await deployFromAbiAndBytecodeForCreatorTxHash(
         chainFixture.localSigner,
-        vyperArtifact.abi,
-        vyperArtifact.bytecode,
+        outputContract.abi,
+        outputContract.evm.bytecode.object,
         [5],
       );
 
@@ -248,12 +264,21 @@ describe("/private/replace-contract", function () {
       compilerSettings,
     );
 
-    // Capture the freshly stored runtime_code_artifacts (with immutableReferences)
+    // Capture the freshly stored compiler artifacts.
     const originalArtifactsResult = await serverFixture.sourcifyDatabase.query(
-      "SELECT fully_qualified_name, runtime_code_artifacts FROM compiled_contracts",
+      `SELECT fully_qualified_name, compilation_artifacts,
+              creation_code_artifacts, runtime_code_artifacts
+         FROM compiled_contracts`,
     );
     const compiledContract = originalArtifactsResult.rows[0];
     const originalArtifacts = compiledContract.runtime_code_artifacts;
+    const expectedStorageLayout = {
+      stored: { type: "uint256", slot: 1, n_slots: 1 },
+      values: { type: "uint256[3]", slot: 2, n_slots: 3 },
+    };
+    chai
+      .expect(compiledContract.compilation_artifacts.storageLayout)
+      .to.deep.equal(expectedStorageLayout);
 
     // Sanity check: the fix stores non-empty immutableReferences for this contract
     chai.expect(originalArtifacts.immutableReferences).to.not.be.null;
@@ -288,7 +313,7 @@ describe("/private/replace-contract", function () {
         jsonInput: {
           language: "Vyper",
           sources: { "test.vy": { content: vyperSource } },
-          settings: compilerSettings,
+          settings: compilerInput.settings,
         },
         compilerVersion,
         compilationTarget: compiledContract.fully_qualified_name,
@@ -316,6 +341,83 @@ describe("/private/replace-contract", function () {
     chai
       .expect(restoredArtifacts.linkReferences)
       .to.deep.equal(originalArtifacts.linkReferences);
+
+    const originalMatchResult = await serverFixture.sourcifyDatabase.query(
+      `SELECT sm.runtime_match AS sourcify_runtime_match,
+              sm.creation_match AS sourcify_creation_match,
+              vc.runtime_match, vc.creation_match,
+              vc.runtime_transformations, vc.creation_transformations,
+              vc.runtime_values, vc.creation_values
+         FROM sourcify_matches sm
+         JOIN verified_contracts vc ON sm.verified_contract_id = vc.id`,
+    );
+
+    // Simulate historical rows stored before Vyper layout extraction existed.
+    await serverFixture.sourcifyDatabase.query(
+      `UPDATE compiled_contracts
+          SET compilation_artifacts = jsonb_set(
+            compilation_artifacts, '{storageLayout}', 'null'::jsonb)`,
+    );
+
+    const replaceLayoutRes = await chai
+      .request(serverFixture.server.app)
+      .post("/private/replace-contract")
+      .set("authorization", `Bearer sourcify-test-token`)
+      .send({
+        address: contractAddress,
+        chainId: chainFixture.chainId,
+        forceCompilation: true,
+        jsonInput: {
+          language: "Vyper",
+          sources: { "test.vy": { content: vyperSource } },
+          settings: compilerInput.settings,
+        },
+        compilerVersion,
+        compilationTarget: compiledContract.fully_qualified_name,
+        forceRPCRequest: false,
+        customReplaceMethod: "replace-vyper-storage-layout",
+      });
+
+    chai.expect(replaceLayoutRes.status).to.equal(StatusCodes.OK);
+    chai.expect(replaceLayoutRes.body.replaced).to.be.true;
+
+    const finalArtifactsResult = await serverFixture.sourcifyDatabase.query(
+      `SELECT compilation_artifacts, creation_code_artifacts,
+              runtime_code_artifacts
+         FROM compiled_contracts`,
+    );
+    chai
+      .expect(finalArtifactsResult.rows[0].compilation_artifacts)
+      .to.deep.equal(compiledContract.compilation_artifacts);
+    chai
+      .expect(finalArtifactsResult.rows[0].creation_code_artifacts)
+      .to.deep.equal(compiledContract.creation_code_artifacts);
+    chai
+      .expect(finalArtifactsResult.rows[0].runtime_code_artifacts)
+      .to.deep.equal(compiledContract.runtime_code_artifacts);
+
+    const finalMatchResult = await serverFixture.sourcifyDatabase.query(
+      `SELECT sm.runtime_match AS sourcify_runtime_match,
+              sm.creation_match AS sourcify_creation_match,
+              vc.runtime_match, vc.creation_match,
+              vc.runtime_transformations, vc.creation_transformations,
+              vc.runtime_values, vc.creation_values
+         FROM sourcify_matches sm
+         JOIN verified_contracts vc ON sm.verified_contract_id = vc.id`,
+    );
+    chai.expect(finalMatchResult.rows).to.deep.equal(originalMatchResult.rows);
+
+    for (const fields of ["storageLayout", "all"]) {
+      const lookupRes = await chai
+        .request(serverFixture.server.app)
+        .get(
+          `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=${fields}`,
+        );
+      chai.expect(lookupRes.status).to.equal(StatusCodes.OK);
+      chai
+        .expect(lookupRes.body.storageLayout)
+        .to.deep.equal(expectedStorageLayout);
+    }
   });
 
   it("should skip (replaced=false) when a Vyper contract has no immutables", async () => {

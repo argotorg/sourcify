@@ -14,6 +14,7 @@ interface ReplaceConfig {
   ) => Promise<pg.QueryResult>;
   buildRequestBody: (contract: any) => any;
   excludeContract?: (contract: any) => boolean;
+  validateResult?: (result: any, contract: any) => void;
   description?: string;
 }
 
@@ -157,6 +158,7 @@ async function processContract(
 
     const requestBody = config.buildRequestBody(contract);
     const result = await callReplaceContractAPI(requestBody);
+    config.validateResult?.(result, contract);
 
     console.log(`✅ Successfully processed contract ${address}:`, result);
     totalReplacedContracts++;

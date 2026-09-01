@@ -216,6 +216,13 @@ paths:
                       whose `immutableReferences` were never persisted; use with
                       `forceCompilation: true`. Only Vyper is supported (throws otherwise);
                       contracts without immutables are left untouched.
+                    - "replace-vyper-storage-layout": Recomputes a Vyper contract's
+                      storage layout with its verified compiler input and backfills only
+                      `compiled_contracts.compilation_artifacts.storageLayout`. Use with
+                      `forceCompilation: true`. An unavailable supplemental layout leaves
+                      the existing row untouched. The compiler version, target, settings,
+                      additional input, and complete source set must exactly match the stored
+                      compilation identity.
                   example: "replace-creation-information"
       responses:
         "200":
