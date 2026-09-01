@@ -170,6 +170,8 @@ workflows:
           requires: [build-and-lint]
       - test-4byte:
           requires: [build-and-lint]
+      - test-creation-tx-apis:
+          requires: [build-and-lint]
       # TODO: run-build options are not taking affect. We build them always.
       - build-push-monitor-amd64:
           run-build: << pipeline.parameters.run-build-monitor >>
@@ -232,6 +234,8 @@ workflows:
       - test-server:
           requires: [build-and-lint]
       - test-4byte:
+          requires: [build-and-lint]
+      - test-creation-tx-apis:
           requires: [build-and-lint]
   database-schema-validation:
     when: << pipeline.parameters.run-validate-database-schema >>
@@ -441,6 +445,18 @@ jobs:
           name: create lcov report
           command: npx lerna run cov:lcov --scope=sourcify-server
       - codecov/upload
+  test-creation-tx-apis:
+    docker:
+      - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
+    resource_class: small
+    working_directory: ~/sourcify
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/sourcify
+      - run:
+          name: test live creation-tx APIs
+          command: cd services/server && npm run test:creation-tx-apis
   test-4byte:
     docker:
       - image: cimg/node:22.22.0@sha256:2c1320ee6a256628f698938038700911276310d40cc9887cfc8f66ec0daa4343
