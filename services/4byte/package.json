@@ -35,7 +35,7 @@
     "ethers": "6.17.0",
     "express": "5.2.1",
     "http-status-codes": "2.3.0",
-    "pg": "8.22.0",
+    "pg": "8.23.0",
     "swagger-ui-express": "5.0.1",
     "winston": "3.19.0",
     "yamljs": "0.3.0"
@@ -46,16 +46,16 @@
     "@types/express": "5.0.6",
     "@types/mocha": "10.0.10",
     "@types/node": "22.20.1",
-    "@types/pg": "8.20.0",
+    "@types/pg": "8.23.1",
     "@types/swagger-ui-express": "4.1.8",
     "@types/yamljs": "0.2.34",
     "c8": "11.0.0",
     "chai": "4.5.0",
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
-    "csv-parse": "7.0.1",
-    "dbmate": "2.34.1",
+    "csv-parse": "7.0.2",
+    "dbmate": "2.35.0",
     "mocha": "10.8.2",
-    "npm-run-all2": "9.0.2"
+    "npm-run-all2": "9.0.3"
   }
 }

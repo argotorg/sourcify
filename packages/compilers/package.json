@@ -23,7 +23,7 @@
     "cov:check": "c8 report && c8 check-coverage --lines 100 --functions 100 --branches 100"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "v26.8.1"
   },
   "repository": {
     "type": "git",
@@ -53,11 +53,11 @@
     "@types/chai": "4.3.20",
     "@types/mocha": "10.0.10",
     "@types/node": "22.20.1",
-    "@types/semver": "7.7.1",
+    "@types/semver": "7.8.0",
     "c8": "11.0.0",
     "chai": "4.5.0",
     "mocha": "10.8.2",
-    "npm-run-all2": "9.0.2"
+    "npm-run-all2": "9.0.3"
   },
   "files": [
     "build/main",
