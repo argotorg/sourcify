@@ -7,28 +7,42 @@
 #      the release, "after" items once the deploy PR is merged.
 #   2. New migration files under services/database/ (always a "before" item).
 #   3. Added lines containing TODO_RELEASE anywhere in the diff (safety net).
+#
+# Files are read from the local staging branch, so deleting them on the release branch loses nothing.
 
 source "${SCRIPT_DIR}/logging_utils.sh"
 
 RELEASE_TODOS_DIR=".release-todos"
-# Persists "after" items across script steps, like .release_package_data.tmp does for packages.
-RELEASE_TODOS_AFTER_FILE="${SCRIPT_DIR}/.release_todos_after.tmp"
 # Collected "before" text; used as the body of the deploy PR.
 RELEASE_TODO_TEXT=""
 
-# Prints the given section of a release-todo file ("before" or "after").
+# Release-todo files on the local staging branch.
+release_todo_files() {
+  git ls-tree --name-only staging "$RELEASE_TODOS_DIR/" | grep '\.md$' | grep -v '/README\.md$'
+}
+
+# Prints the given section ("before" or "after") of a release-todo file, as committed on staging.
 # A file with no "## before"/"## after" headings counts as "before".
 todo_section() {
-  local file=$1
-  local section=$2
-  if ! grep -qiE '^## *(before|after) *$' "$file"; then
-    [ "$section" = "before" ] && cat "$file"
+  local content section=$2
+  content=$(git show "staging:$1")
+  if ! grep -qiE '^## *(before|after) *$' <<<"$content"; then
+    [ "$section" = "before" ] && echo "$content"
     return
   fi
   awk -v want="$section" '
     /^## / { on = (tolower($2) == want); next }
     on { print }
-  ' "$file"
+  ' <<<"$content"
+}
+
+# "after" items of all release-todo files, under one "### <file>" heading each.
+release_todos_after() {
+  local file after
+  for file in $(release_todo_files); do
+    after=$(todo_section "$file" after)
+    [ -n "$after" ] && printf '### %s\n%s\n\n' "$(basename "$file")" "$after"
+  done
 }
 
 confirm_or_exit() {
@@ -49,31 +63,26 @@ check_new_migrations() {
 }
 
 check_release_todo_files() {
-  local file
-  >"$RELEASE_TODOS_AFTER_FILE"
-  for file in "$RELEASE_TODOS_DIR"/*.md; do
-    [ -f "$file" ] || continue
-    [ "$(basename "$file")" = "README.md" ] && continue
-    local before after
+  local file before after
+  # A for loop, not while-read: confirm_or_exit reads stdin.
+  for file in $(release_todo_files); do
     before=$(todo_section "$file" before)
-    after=$(todo_section "$file" after)
-    if [ -n "$after" ]; then
-      printf '### %s\n%s\n\n' "$(basename "$file")" "$after" >>"$RELEASE_TODOS_AFTER_FILE"
-    fi
     [ -z "$before" ] && continue
     warn "Release TODO ($file), before the deploy:"
     echo "$before"
     RELEASE_TODO_TEXT+=$'\n## Before deploy: '"$(basename "$file")"$'\n'"$before"$'\n'
     confirm_or_exit "Done?"
   done
-  if [ -s "$RELEASE_TODOS_AFTER_FILE" ]; then
-    RELEASE_TODO_TEXT+=$'\n## After deploy\n'"$(cat "$RELEASE_TODOS_AFTER_FILE")"$'\n'
+  after=$(release_todos_after)
+  if [ -n "$after" ]; then
+    RELEASE_TODO_TEXT+=$'\n## After deploy\n'"$after"$'\n'
   fi
 }
 
 check_release_todo_markers() {
   local hits
-  hits=$(git diff master...staging -U0 | awk '
+  # The release tooling mentions TODO_RELEASE itself.
+  hits=$(git diff master...staging -U0 -- ":(exclude)scripts/release" ":(exclude)$RELEASE_TODOS_DIR" | awk '
     /^\+\+\+ / { file = substr($2, 3); next }
     /^\+/ && /TODO_RELEASE/ { print file ": " substr($0, 2) }
   ')
@@ -97,26 +106,21 @@ check_release_todos() {
 # Deletes the release-todo files and stages the deletion for the release branch commit.
 clear_release_todo_files() {
   local file
-  for file in "$RELEASE_TODOS_DIR"/*.md; do
-    [ -f "$file" ] || continue
-    [ "$(basename "$file")" = "README.md" ] && continue
-    git rm -q "$file"
+  for file in $(release_todo_files); do
+    git rm -q --ignore-unmatch "$file"
     echo "Removed $file"
   done
 }
 
 # Runs at the end of the release, after the deploy PR is merged.
 show_release_todos_after() {
-  if [ ! -s "$RELEASE_TODOS_AFTER_FILE" ]; then
+  local after
+  after=$(release_todos_after)
+  if [ -z "$after" ]; then
     echo "No release TODOs for after the deploy."
     return
   fi
   warn "Release TODOs to do now, after the deploy:"
-  cat "$RELEASE_TODOS_AFTER_FILE"
+  echo "$after"
   confirm_or_exit "All done?"
-}
-
-cleanup_release_todos_file() {
-  [ -f "$RELEASE_TODOS_AFTER_FILE" ] && rm "$RELEASE_TODOS_AFTER_FILE"
-  return 0
 }
