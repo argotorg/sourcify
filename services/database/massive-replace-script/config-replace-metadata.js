@@ -1,4 +1,4 @@
-// Configuration for replacing metadata in sourcify_matches table
+// Configuration for replacing the metadata stored in compiled_contracts_metadata
 // This configuration targets contracts with partial runtime matches where metadata needs to be updated
 // because it does not match the sources in the database.
 // Only processes contracts where source hashes don't match the existing metadata
@@ -21,17 +21,18 @@ module.exports = {
           ) as std_json_input,
           cc.version as compiler_version,
           cc.fully_qualified_name,
-          sm.metadata
+          ccm.metadata
       FROM ${sourcifySchema}.sourcify_matches sm
       JOIN ${sourcifySchema}.verified_contracts vc ON sm.verified_contract_id = vc.id
       JOIN ${sourcifySchema}.contract_deployments cd ON vc.deployment_id = cd.id
       JOIN ${sourcifySchema}.compiled_contracts cc ON vc.compilation_id = cc.id
+      LEFT JOIN ${sourcifySchema}.compiled_contracts_metadata ccm ON ccm.compilation_id = cc.id
       JOIN ${sourcifySchema}.compiled_contracts_sources ON compiled_contracts_sources.compilation_id = cc.id
       LEFT JOIN ${sourcifySchema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
       WHERE sm.created_at < '2024-08-29 08:58:57 +0200'
           AND sm.runtime_match ='partial'
           AND sm.id >= $1
-      GROUP BY sm.id, vc.id, cc.id, cd.id
+      GROUP BY sm.id, vc.id, cc.id, cd.id, ccm.compilation_id
       ORDER BY sm.id ASC
       LIMIT $2
     `,
@@ -97,5 +98,5 @@ module.exports = {
     return true; // All sources match the metadata, exclude this contract
   },
   description:
-    "Replaces metadata in sourcify_matches table for contracts where source content hashes don't match the existing metadata hashes.",
+    "Replaces the compilation metadata for contracts where source content hashes don't match the existing metadata hashes.",
 };
