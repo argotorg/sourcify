@@ -4,9 +4,10 @@
  * Required after applying the migration that adds the metadata side table
  * (20260826100000_add_compiled_contracts_metadata.sql): the server only writes
  * metadata for compilations created after the migration, so compilations
- * verified before it are filled out-of-band by this script. Until it has
- * finished, reads keep using sourcify_matches.metadata, so nothing is missing
- * in the meantime.
+ * verified before it are filled out-of-band by this script. Server 4.1.0
+ * keeps reading sourcify_matches.metadata, so nothing is missing while it
+ * runs; the next version reads only the side table and its release drops the
+ * source column, so run --verify before deploying it.
  *
  * Two phases:
  *   1. Work list: one set-based pass picks each compilation's metadata donor,

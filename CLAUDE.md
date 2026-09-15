@@ -116,10 +116,10 @@ npm run monitor:start
 
 How the tables join:
 
-- `sourcify_matches.verified_contract_id` → `verified_contracts.id` (Sourcify-specific match info: `creation_match`/`runtime_match` quality, `chain_id`, and the contract's `metadata`)
+- `sourcify_matches.verified_contract_id` → `verified_contracts.id` (Sourcify-specific match info: `creation_match`/`runtime_match` quality and `chain_id`)
 - `verified_contracts.compilation_id` → `compiled_contracts.id`, and `verified_contracts.deployment_id` → `contract_deployments.id`
 - `compiled_contracts_sources` (`compilation_id`, `path`, `source_hash`) is the source set stored for a compilation; join `source_hash` → `sources.source_hash` for the actual content
-- `compiled_contracts_metadata.compilation_id` → `compiled_contracts.id`: one metadata blob per compilation (`sourcify_matches.metadata` is kept only until reads switch over, #2924)
+- `compiled_contracts_metadata.compilation_id` → `compiled_contracts.id`: one metadata blob per compilation (#2924)
 - `code` holds bytecode, referenced via `creation_code_hash`/`runtime_code_hash` by both `compiled_contracts` (compiled) and `contracts` (onchain); reach the latter through `contract_deployments.contract_id` → `contracts.id`
 
 ### Storage Services
