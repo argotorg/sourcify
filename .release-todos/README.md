@@ -37,6 +37,6 @@ Two optional sections. `before` is shown at the start of the release, before the
 The release script also, without any file here:
 
 - lists new files under `services/database/migrations/` since the last deploy
-- lists added lines that contain `TODO_RELEASE` since the last deploy
+- lists added lines that contain `TODO_RELEASE` since the last deploy (outside `scripts/release/` and this directory)
 
 Both only look at `git diff master...staging`, so an item shows up for exactly one release.
