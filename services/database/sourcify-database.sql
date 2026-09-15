@@ -1,7 +1,7 @@
 \restrict dbmate
 
--- Dumped from database version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
--- Dumped by pg_dump version 16.15 (Ubuntu 16.15-1.pgdg24.04+2)
+-- Dumped from database version 15.19 (Debian 15.19-1.pgdg13+2)
+-- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1185,7 +1185,6 @@ CREATE TABLE public.sourcify_matches (
     runtime_match character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json,
     chain_id bigint NOT NULL
 );
 
@@ -2300,4 +2299,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260803100000'),
     ('20260820120000'),
     ('20260826100000'),
-    ('20260908145004');
+    ('20260908145004'),
+    ('20260915115359');
