@@ -312,7 +312,8 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
     Pick<
       Tables.ContractDeployment,
       "block_number" | "transaction_index" | "chain_id"
-    > & {
+    > &
+    Pick<Tables.CompiledContractMetadata, "metadata"> & {
       verified_at: string;
       address: string;
       onchain_creation_code: string;
@@ -338,7 +339,6 @@ export type GetSourcifyMatchByChainAddressWithPropertiesResult = Partial<
       function_signatures: SignatureRepresentations[];
       event_signatures: SignatureRepresentations[];
       error_signatures: SignatureRepresentations[];
-      metadata: Metadata;
     }
 >;
 
