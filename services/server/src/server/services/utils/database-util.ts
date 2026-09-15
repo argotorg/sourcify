@@ -250,7 +250,6 @@ export type GetSourcifyMatchByChainAddressResult = Tables.SourcifyMatch &
   Pick<Tables.CompiledContract, "runtime_code_artifacts" | "name" | "version"> &
   Pick<Tables.ContractDeployment, "transaction_hash"> & {
     onchain_runtime_code: string;
-    metadata: Metadata;
   };
 
 export type GetSourcifyMatchesAllChainsResult = Pick<
