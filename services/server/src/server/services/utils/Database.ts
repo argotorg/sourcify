@@ -208,8 +208,9 @@ ${
       (property) => STORED_PROPERTIES_TO_SELECTORS[property],
     );
 
-    const metadataRequested =
-      properties.includes("metadata") || properties.includes("std_json_output");
+    const metadataRequested = selectors.some((selector) =>
+      selector.includes("compiled_contracts_metadata."),
+    );
 
     const groupByClause =
       properties.includes("sources") ||
@@ -226,6 +227,7 @@ ${
         onchain_creation_code.code_hash,
         recompiled_runtime_code.code_hash,
         recompiled_creation_code.code_hash${
+          // grouping by the PK is what makes the json metadata column selectable
           metadataRequested
             ? `,
         compiled_contracts_metadata.compilation_id`
