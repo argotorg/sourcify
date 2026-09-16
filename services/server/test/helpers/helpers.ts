@@ -345,7 +345,11 @@ export function hookIntoVerificationWorkerRun(
       }
       // Wait for workers to complete
       await Promise.all(
-        serverFixture.server.services.verification["runningTasks"],
+        [
+          ...serverFixture.server.services.verification[
+            "runningTasks"
+          ].values(),
+        ].map((task) => task.promise),
       );
     };
     fakeResolvers.push(resolveWorkers);
