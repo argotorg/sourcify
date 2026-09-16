@@ -8,24 +8,42 @@
 #   2. New migration files under services/database/ (always a "before" item).
 #   3. Added lines containing TODO_RELEASE anywhere in the diff (safety net).
 #
-# Files are read from the local staging branch, so deleting them on the release branch loses nothing.
+# The notes are read from the staging commit recorded at the start of the release, so
+# deleting them on the release branch or pulling staging in between loses nothing.
 
 source "${SCRIPT_DIR}/logging_utils.sh"
 
 RELEASE_TODOS_DIR=".release-todos"
+# Holds that staging commit; a branch moves when it is pulled, a commit does not.
+RELEASE_TODOS_REF_FILE="${SCRIPT_DIR}/.release_todos_ref.tmp"
 # Collected "before" text; used as the body of the deploy PR.
 RELEASE_TODO_TEXT=""
 
-# Release-todo files on the local staging branch.
-release_todo_files() {
-  git ls-tree --name-only staging "$RELEASE_TODOS_DIR/" | grep '\.md$' | grep -v '/README\.md$'
+# Release-todo files at the given commit or branch.
+todo_files_at() {
+  git ls-tree --name-only "$1" "$RELEASE_TODOS_DIR/" | grep '\.md$' | grep -v '/README\.md$'
 }
 
-# Prints the given section ("before" or "after") of a release-todo file, as committed on staging.
+# The recorded commit, or the staging branch if nothing was recorded.
+release_todos_ref() {
+  [ -s "$RELEASE_TODOS_REF_FILE" ] && cat "$RELEASE_TODOS_REF_FILE" || echo staging
+}
+
+# Records the staging commit, unless staging has no notes left (a re-run after the release deleted them).
+pin_release_todos_ref() {
+  [ -n "$(todo_files_at staging)" ] && git rev-parse staging >"$RELEASE_TODOS_REF_FILE"
+  return 0
+}
+
+release_todo_files() {
+  todo_files_at "$(release_todos_ref)"
+}
+
+# Prints the given section ("before" or "after") of a release-todo file.
 # A file with no "## before"/"## after" headings counts as "before".
 todo_section() {
   local content section=$2
-  content=$(git show "staging:$1")
+  content=$(git show "$(release_todos_ref):$1")
   if ! grep -qiE '^## *(before|after) *$' <<<"$content"; then
     [ "$section" = "before" ] && echo "$content"
     return
@@ -95,6 +113,7 @@ check_release_todo_markers() {
 
 # Runs at the start of the release, before the deploy PR is created.
 check_release_todos() {
+  pin_release_todos_ref
   check_new_migrations
   check_release_todo_files
   check_release_todo_markers
@@ -118,10 +137,15 @@ show_release_todos_after() {
   local after
   after=$(release_todos_after)
   if [ -z "$after" ]; then
-    echo "No release TODOs for after the deploy."
+    echo "No release TODOs for after the deploy. If you expected some, see the body of the 'Deploy latest to production' PR."
     return
   fi
   warn "Release TODOs to do now, after the deploy:"
   echo "$after"
   confirm_or_exit "All done?"
+}
+
+cleanup_release_todos_file() {
+  [ -f "$RELEASE_TODOS_REF_FILE" ] && rm "$RELEASE_TODOS_REF_FILE"
+  return 0
 }

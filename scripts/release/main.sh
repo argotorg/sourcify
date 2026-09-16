@@ -46,3 +46,4 @@ prompt_execute_or_skip "showing release TODOs for after the deploy" show_release
 
 # Clean up the temporary package data file
 prompt_execute_or_skip "cleaning up temporary release data" cleanup_package_data_file
+prompt_execute_or_skip "cleaning up temporary release TODO data" cleanup_release_todos_file
