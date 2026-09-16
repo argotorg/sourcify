@@ -41,7 +41,7 @@
   },
   "homepage": "https://github.com/argotorg/sourcify/tree/main/packages/compilers-types#readme",
   "devDependencies": {
-    "npm-run-all2": "9.0.2",
+    "npm-run-all2": "9.0.3",
     "typescript": "5.9.3"
   },
   "publishConfig": {
