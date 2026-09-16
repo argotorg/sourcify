@@ -122,6 +122,10 @@ function buildNextLevel(currentLevel: Link[]) {
 }
 
 function groupChunksBottomUp(currentLevel: Link[]) {
+  if (currentLevel.length === 0) {
+    throw new Error('Cannot group an empty list of chunks');
+  }
+
   while (currentLevel.length !== 1) {
     currentLevel = buildNextLevel(currentLevel);
   }
@@ -131,7 +135,8 @@ function groupChunksBottomUp(currentLevel: Link[]) {
 
 function ipfsHashData(data: Uint8Array) {
   const maxChunkSize = 1024 * 256;
-  const chunkCount = Math.ceil(data.length / maxChunkSize);
+  // Empty data must produce one empty chunk.
+  const chunkCount = Math.max(1, Math.ceil(data.length / maxChunkSize));
 
   const allChunks = [];
 

@@ -6,6 +6,12 @@ export function swarmBzzr1Hash(file: string) {
   const encoder = new TextEncoder();
   const fileBytes = encoder.encode(file);
 
+  // solc returns 32 zero bytes for empty input
+  // https://github.com/argotorg/solidity/blob/develop/libsolutil/SwarmHash.cpp
+  if (fileBytes.length === 0) {
+    return '0'.repeat(64);
+  }
+
   // Binary Merkle Tree on the file
   const chunkedFile = makeChunkedFile(fileBytes);
 
