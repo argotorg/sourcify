@@ -30,4 +30,5 @@ workspace/
 
 # Sourcify release script temporary file
 .release_package_data.tmp
+.release_todos_ref.tmp
 .claude/
