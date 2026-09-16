@@ -281,7 +281,13 @@ export class VerificationService {
       threadId: task.threadId,
     });
     task.timedOut = true;
-    worker?.terminate();
+    worker?.terminate().catch((error) => {
+      logger.warn("Failed to terminate timed out worker thread", {
+        verificationId: task.verificationId,
+        threadId: task.threadId,
+        error,
+      });
+    });
   }
 
   /**
@@ -385,7 +391,10 @@ export class VerificationService {
           // Sum of the ELU of the listed worker threads
           taskElu: Math.round(taskElu * 1000) / 1000,
           // CPU in none of the event loops: V8 or libuv threads, or a
-          // nested thread outside of a task
+          // nested thread outside of a task. A thread blocked in a
+          // synchronous call (e.g. spawnSync) counts as busy in its ELU
+          // although it burns no CPU, so taskElu can be higher than the
+          // real CPU of the workers and outsideLoops can undershoot.
           outsideLoops:
             Math.round(Math.max(0, cores - mainElu - taskElu) * 1000) / 1000,
         },

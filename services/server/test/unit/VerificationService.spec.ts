@@ -546,6 +546,67 @@ describe("VerificationService", function () {
     ).to.deep.include({ customCode: "no_match" });
   });
 
+  it("should log a warning when the timed out thread cannot be terminated", async function () {
+    const verificationId = "terminate-fails-job";
+    const mockStorageService = createMockStorageService(verificationId);
+    const warnSpy: sinon.SinonSpy = sandbox.spy(logger, "warn");
+    verificationService = createVerificationService(mockStorageService, {
+      workerTaskTimeoutMs: 50,
+    });
+    let rejectRun!: (error: Error) => void;
+    sandbox.stub(verificationService["workerPool"], "run").returns(
+      new Promise((_, reject) => {
+        rejectRun = reject;
+      }),
+    );
+    const worker = verificationService["workerPool"].threads[0];
+    sandbox.stub(worker, "terminate").rejects(new Error("terminate failed"));
+
+    await verificationService.verifyFromEtherscanViaWorker(
+      "test-endpoint",
+      "1",
+      testAddress,
+      mockEtherscanResult,
+    );
+    verificationService["workerPool"].emit("message", {
+      type: "task-start",
+      threadId: worker.threadId,
+      verificationId,
+    });
+
+    await waitFor(
+      () =>
+        warnSpy
+          .getCalls()
+          .some(
+            (call) =>
+              call.args[0] === "Failed to terminate timed out worker thread",
+          ),
+      2000,
+    );
+    const warnLog = warnSpy
+      .getCalls()
+      .find(
+        (call) =>
+          call.args[0] === "Failed to terminate timed out worker thread",
+      )!;
+    expect(warnLog.args[1]).to.deep.include({
+      verificationId,
+      threadId: worker.threadId,
+    });
+
+    // Piscina rejects the task once the thread is gone
+    rejectRun(new Error("worker exited with code: 1"));
+    await waitFor(
+      () =>
+        getSetJobErrorArgs(mockStorageService, verificationId) !== undefined,
+      2000,
+    );
+    expect(
+      getSetJobErrorArgs(mockStorageService, verificationId)[2],
+    ).to.deep.include({ customCode: "job_timeout" });
+  });
+
   // Runs the pool with a worker that finishes its task and leaves a nested thread spinning
   it("should report CPU outside of running tasks in the stats line", async function () {
     this.timeout(30_000);
