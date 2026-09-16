@@ -107,7 +107,8 @@ check_release_todos() {
 clear_release_todo_files() {
   local file
   for file in $(release_todo_files); do
-    git rm -q --ignore-unmatch "$file"
+    [ -f "$file" ] || continue
+    git rm -q "$file"
     echo "Removed $file"
   done
 }

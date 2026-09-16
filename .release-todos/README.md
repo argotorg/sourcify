@@ -7,7 +7,9 @@ A release TODO is a manual step that a person must do around a production deploy
 - add a secret or an environment variable
 - run a follow-up script after a migration (see `services/database/README.md`, "schema upgrade scripts")
 
-The release script (`scripts/release/main.sh`) reads every `.md` file in this directory except this README, shows the items at the right time, and deletes the files on the release branch. So the directory only ever holds the open items for the next release.
+The release script (`scripts/release/main.sh`) reads every `.md` file in this directory except this README, as committed on your local `staging` branch, shows the items at the right time, and deletes the files on the release branch. So the directory only ever holds the open items for the next release.
+
+Do not update your local `staging` branch during a release (with `git pull`, for example). The script reads the notes from it until the very last step, so moving it loses the items that are shown after the deploy.
 
 ## When to add a file
 
