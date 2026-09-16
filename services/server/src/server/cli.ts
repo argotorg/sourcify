@@ -135,6 +135,12 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       vyperRepoPath,
       feRepoPath,
       compilerTimeoutMs,
+      workerTaskTimeoutMs: process.env.WORKER_TASK_TIMEOUT_MS
+        ? parseInt(process.env.WORKER_TASK_TIMEOUT_MS)
+        : undefined,
+      runtimeStatsIntervalMs: process.env.RUNTIME_STATS_INTERVAL_MS
+        ? parseInt(process.env.RUNTIME_STATS_INTERVAL_MS)
+        : undefined,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,

@@ -31,6 +31,8 @@ import type {
 } from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
+import { monitorEventLoopDelay, performance } from "node:perf_hooks";
+import type { EventLoopUtilization } from "node:perf_hooks";
 import path from "path";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
 import { v4 as uuidv4 } from "uuid";
@@ -47,6 +49,7 @@ import {
   type VerifyOutput,
   type VerifySimilarityInput,
   type SimilarityCreationData,
+  type WorkerTaskStartMessage,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
 import {
@@ -62,6 +65,10 @@ import {
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
+// Must be larger than the compiler timeout, so that a slow compile fails
+// with compiler_timeout and not with job_timeout.
+const DEFAULT_WORKER_TASK_TIMEOUT_MS = 60 * 60 * 1000;
+const DEFAULT_RUNTIME_STATS_INTERVAL_MS = 60 * 1000;
 const SIMILARITY_CANDIDATE_BATCH_SIZE = 5;
 
 /**
@@ -81,9 +88,30 @@ export interface VerificationServiceOptions {
   vyperRepoPath: string;
   feRepoPath: string;
   compilerTimeoutMs?: number;
+  // Wall-clock limit for one running worker task. 0 disables it.
+  workerTaskTimeoutMs?: number;
+  // Interval of the "Worker runtime stats" log line. 0 disables it.
+  runtimeStatsIntervalMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
+}
+
+/**
+ * A verification job that was handed to the worker pool and did not finish
+ * yet. `threadId` and `timeoutTimer` are set once the worker thread announced
+ * the job with a `task-start` message.
+ */
+interface RunningTask {
+  verificationId: VerificationJobId;
+  functionName: string;
+  chainId: string;
+  address: string;
+  startedAt: Date;
+  threadId?: number;
+  timeoutTimer?: NodeJS.Timeout;
+  timedOut?: boolean;
+  promise: Promise<void>;
 }
 
 export class VerificationService {
@@ -98,7 +126,14 @@ export class VerificationService {
   } = {};
 
   private workerPool: Piscina;
-  private runningTasks: Set<Promise<void>> = new Set();
+  private workerTaskTimeoutMs?: number;
+  private runningTasks: Map<VerificationJobId, RunningTask> = new Map();
+  private runtimeStatsTimer?: NodeJS.Timeout;
+  private prevWorkerElu: Map<number, EventLoopUtilization> = new Map();
+  private prevMainElu = performance.eventLoopUtilization();
+  private mainLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+  private prevCpuUsage = process.cpuUsage();
+  private prevStatsAt = Date.now();
 
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
@@ -112,6 +147,22 @@ export class VerificationService {
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
+    this.workerTaskTimeoutMs =
+      (options.workerTaskTimeoutMs ?? DEFAULT_WORKER_TASK_TIMEOUT_MS) ||
+      undefined;
+    if (
+      this.workerTaskTimeoutMs &&
+      options.compilerTimeoutMs &&
+      this.workerTaskTimeoutMs <= options.compilerTimeoutMs
+    ) {
+      logger.warn(
+        "The worker task timeout is not larger than the compiler timeout, slow compilations will fail with job_timeout instead of compiler_timeout",
+        {
+          workerTaskTimeoutMs: this.workerTaskTimeoutMs,
+          compilerTimeoutMs: options.compilerTimeoutMs,
+        },
+      );
+    }
 
     if (options.debugDataS3Config) {
       const s3Config = options.debugDataS3Config;
@@ -170,6 +221,179 @@ export class VerificationService {
       idleTimeout: options.workerIdleTimeout || 30000,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
     });
+    this.workerPool.on("message", (message: unknown) =>
+      this.onWorkerMessage(message),
+    );
+
+    const runtimeStatsIntervalMs =
+      options.runtimeStatsIntervalMs ?? DEFAULT_RUNTIME_STATS_INTERVAL_MS;
+    if (runtimeStatsIntervalMs > 0) {
+      this.mainLoopDelay.enable();
+      this.runtimeStatsTimer = setInterval(
+        () => this.logRuntimeStats(),
+        runtimeStatsIntervalMs,
+      );
+      // Must not keep the process alive
+      this.runtimeStatsTimer.unref();
+    }
+  }
+
+  private onWorkerMessage(message: unknown) {
+    const taskStart = message as WorkerTaskStartMessage | null;
+    if (taskStart?.type !== "task-start") {
+      return;
+    }
+    // The job is registered in the same tick as its dispatch, so it exists here
+    const task = this.runningTasks.get(taskStart.verificationId);
+    if (!task) {
+      return;
+    }
+    task.threadId = taskStart.threadId;
+    // Similarity verification runs one worker task per candidate batch
+    clearTimeout(task.timeoutTimer);
+    if (this.workerTaskTimeoutMs) {
+      task.timeoutTimer = setTimeout(
+        () => this.terminateTimedOutTask(task),
+        this.workerTaskTimeoutMs,
+      );
+      task.timeoutTimer.unref();
+    }
+  }
+
+  /**
+   * Terminates the worker thread of a task that runs for too long. Piscina
+   * replaces the thread and rejects the tasks that ran on it. The job of the
+   * timed out task is then failed with job_timeout by storeVerificationOutcome,
+   * which also stores its input for debugging. Other tasks on the same thread
+   * fail with internal_error, as for any other worker crash.
+   */
+  private terminateTimedOutTask(task: RunningTask) {
+    const worker = this.workerPool.threads.find(
+      (thread) => thread.threadId === task.threadId,
+    );
+    logger.error("Verification worker task timed out", {
+      verificationId: task.verificationId,
+      functionName: task.functionName,
+      chainId: task.chainId,
+      address: task.address,
+      runningForMs: Date.now() - task.startedAt.getTime(),
+      timeoutMs: this.workerTaskTimeoutMs,
+      threadId: task.threadId,
+    });
+    task.timedOut = true;
+    worker?.terminate();
+  }
+
+  /**
+   * Logs the event loop utilization (ELU) of the main thread and of every
+   * worker thread that runs a task, together with the jobs on it, and the
+   * CPU of the whole process. A worker at ELU 1.0 over several intervals
+   * next to one job id points at the input of that job. `cpu.outsideLoops`
+   * near one core means the CPU is in none of the event loops: V8 or libuv
+   * threads, or outside of the Node process. Compiler child processes are
+   * not part of `cpu.cores`.
+   *
+   * Threads without a task are not listed: they block in Atomics.wait()
+   * while waiting for a task, which their ELU reports as busy.
+   */
+  private logRuntimeStats() {
+    try {
+      const now = Date.now();
+      const intervalMs = now - this.prevStatsAt;
+      this.prevStatsAt = now;
+
+      const tasksByThread = new Map<number, RunningTask[]>();
+      for (const task of this.runningTasks.values()) {
+        if (task.threadId !== undefined) {
+          const tasks = tasksByThread.get(task.threadId) ?? [];
+          tasks.push(task);
+          tasksByThread.set(task.threadId, tasks);
+        }
+      }
+
+      const workers = [];
+      let threadsWithoutTask = 0;
+      let taskElu = 0;
+      const seenThreadIds = new Set<number>();
+      for (const worker of this.workerPool.threads) {
+        const { threadId } = worker;
+        seenThreadIds.add(threadId);
+        const elu = worker.performance.eventLoopUtilization();
+        const prevElu = this.prevWorkerElu.get(threadId);
+        this.prevWorkerElu.set(threadId, elu);
+        const tasks = tasksByThread.get(threadId);
+        if (!tasks) {
+          threadsWithoutTask++;
+          continue;
+        }
+        // Null on the first interval of a thread
+        const eluDelta = prevElu
+          ? worker.performance.eventLoopUtilization(elu, prevElu).utilization
+          : null;
+        taskElu += eluDelta ?? 0;
+        workers.push({
+          threadId,
+          elu: eluDelta === null ? null : Math.round(eluDelta * 1000) / 1000,
+          tasks: tasks.map((task) => ({
+            verificationId: task.verificationId,
+            functionName: task.functionName,
+            chainId: task.chainId,
+            address: task.address,
+            runningForMs: now - task.startedAt.getTime(),
+          })),
+        });
+      }
+      for (const threadId of this.prevWorkerElu.keys()) {
+        if (!seenThreadIds.has(threadId)) {
+          this.prevWorkerElu.delete(threadId);
+        }
+      }
+
+      const mainElu = performance.eventLoopUtilization(
+        this.prevMainElu,
+      ).utilization;
+      this.prevMainElu = performance.eventLoopUtilization();
+      // The delay histogram is in nanoseconds
+      const mainLoopDelayP99Ms = this.mainLoopDelay.percentile(99) / 1e6;
+      this.mainLoopDelay.reset();
+
+      const cpuUsage = process.cpuUsage(this.prevCpuUsage);
+      this.prevCpuUsage = process.cpuUsage();
+      // cpuUsage is in microseconds
+      const cores = (cpuUsage.user + cpuUsage.system) / (intervalMs * 1000);
+
+      logger.info("Worker runtime stats", {
+        intervalMs,
+        main: {
+          elu: Math.round(mainElu * 1000) / 1000,
+          // High ELU with a low delay means many short callbacks, a high
+          // delay means blocking work
+          loopDelayP99Ms: Math.round(mainLoopDelayP99Ms * 1000) / 1000,
+        },
+        workers,
+        pool: {
+          threads: this.workerPool.threads.length,
+          threadsWithoutTask,
+          queueSize: this.workerPool.queueSize,
+          completed: this.workerPool.completed,
+        },
+        cpu: {
+          userMs: Math.round(cpuUsage.user / 1000),
+          systemMs: Math.round(cpuUsage.system / 1000),
+          // Average number of cores the process used since the last line
+          cores: Math.round(cores * 1000) / 1000,
+          // Sum of the ELU of the listed worker threads
+          taskElu: Math.round(taskElu * 1000) / 1000,
+          // CPU in none of the event loops: V8 or libuv threads, or a
+          // nested thread outside of a task
+          outsideLoops:
+            Math.round(Math.max(0, cores - mainElu - taskElu) * 1000) / 1000,
+        },
+        rss: process.memoryUsage().rss,
+      });
+    } catch (error) {
+      logger.warn("Failed to log worker runtime stats", { error });
+    }
   }
 
   // All of the solidity compilation actually run outside the VerificationService but this is an OK place to init everything.
@@ -228,10 +452,14 @@ export class VerificationService {
 
   public async close() {
     logger.info("Gracefully closing all in-process verifications");
+    clearInterval(this.runtimeStatsTimer);
+    this.mainLoopDelay.disable();
     // Immediately abort all workers. Tasks that still run will have their Promises rejected.
     await this.workerPool.destroy();
     // Here, we wait for the rejected tasks which also waits for writing the failed status to the database.
-    await Promise.all(this.runningTasks);
+    await Promise.all(
+      [...this.runningTasks.values()].map((task) => task.promise),
+    );
   }
 
   private throwErrorIfContractIsAlreadyBeingVerified(
@@ -296,6 +524,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromJsonInput = {
+      verificationId,
       chainId,
       address,
       jsonInput,
@@ -306,6 +535,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromJsonInput", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
     );
 
@@ -326,6 +556,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromMetadataInput = {
+      verificationId,
       chainId,
       address,
       metadata,
@@ -335,6 +566,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromMetadata", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromMetadata", input),
     );
     return verificationId;
@@ -352,6 +584,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromEtherscanInput = {
+      verificationId,
       chainId,
       address,
       etherscanResult,
@@ -359,6 +592,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromEtherscan", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromEtherscan", input),
     );
 
@@ -408,6 +642,7 @@ export class VerificationService {
     );
 
     this.runInBackground(
+      { verificationId, functionName: "verifySimilarity", chainId, address },
       this.processSimilarityVerification(
         verificationId,
         chainId,
@@ -479,6 +714,7 @@ export class VerificationService {
     );
 
     const input: VerifySimilarityServiceInput = {
+      verificationId,
       chainId,
       address,
       runtimeBytecode,
@@ -701,6 +937,12 @@ export class VerificationService {
           customCode: "already_verified",
           errorId: uuidv4(),
         };
+      } else if (this.runningTasks.get(verificationId)?.timedOut) {
+        // The worker thread was terminated by terminateTimedOutTask
+        errorExport = {
+          customCode: "job_timeout",
+          errorId: uuidv4(),
+        };
       } else {
         errorExport = {
           customCode: "internal_error",
@@ -781,10 +1023,21 @@ export class VerificationService {
     await Promise.all(promises);
   }
 
-  private runInBackground(promise: Promise<void>): void {
-    const task = promise.finally(() => {
-      this.runningTasks.delete(task);
-    });
-    this.runningTasks.add(task);
+  private runInBackground(
+    info: Pick<
+      RunningTask,
+      "verificationId" | "functionName" | "chainId" | "address"
+    >,
+    promise: Promise<void>,
+  ): void {
+    const task: RunningTask = {
+      ...info,
+      startedAt: new Date(),
+      promise: promise.finally(() => {
+        clearTimeout(task.timeoutTimer);
+        this.runningTasks.delete(info.verificationId);
+      }),
+    };
+    this.runningTasks.set(info.verificationId, task);
   }
 }
