@@ -15,6 +15,7 @@ import {
   EtherscanUtils,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
+import { parentPort, threadId } from "node:worker_threads";
 import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
@@ -29,6 +30,7 @@ import type {
   VerifyOutput,
   VerificationWorkerInput,
   VerifySimilarityInput,
+  WorkerTaskMessage,
 } from "./workerTypes";
 import logger, { setLogLevel } from "../../../common/logger";
 import { asyncLocalStorage } from "../../../common/async-context";
@@ -82,14 +84,30 @@ const initWorker = () => {
   );
 };
 
+// Tells the main thread which job this thread runs. A task that blocks the
+// thread can never send anything later, so this must go out before any work.
+// parentPort is null when the functions are called outside of a worker.
+function postTaskMessage(
+  type: WorkerTaskMessage["type"],
+  verificationId: string,
+) {
+  const message: WorkerTaskMessage = { type, threadId, verificationId };
+  parentPort?.postMessage(message);
+}
+
 async function runWorkerFunctionWithContext<T extends VerificationWorkerInput>(
   workerFunction: (input: T) => Promise<VerifyOutput>,
   input: T,
 ): Promise<VerifyOutput> {
-  initWorker();
-  // We need to inject the traceId for the logger here since the worker is running in its own thread.
-  const context = { traceId: input.traceId };
-  return asyncLocalStorage.run(context, workerFunction, input);
+  postTaskMessage("task-start", input.verificationId);
+  try {
+    initWorker();
+    // We need to inject the traceId for the logger here since the worker is running in its own thread.
+    const context = { traceId: input.traceId };
+    return await asyncLocalStorage.run(context, workerFunction, input);
+  } finally {
+    postTaskMessage("task-end", input.verificationId);
+  }
 }
 
 export async function verifyFromJsonInput(
@@ -254,6 +272,7 @@ async function _verifyFromMetadata({
 }
 
 async function _verifyFromEtherscan({
+  verificationId,
   chainId,
   address,
   etherscanResult,
@@ -272,6 +291,7 @@ async function _verifyFromEtherscan({
   }
 
   return _verifyFromJsonInput({
+    verificationId,
     chainId,
     address,
     jsonInput: compilation.jsonInput,

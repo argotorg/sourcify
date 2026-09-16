@@ -20,6 +20,7 @@ import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
+import type { RuntimeStatsOptions } from "./services/utils/RuntimeStats";
 
 export const getEtherscanApiKeyForEachChain = (
   chainsMap: SourcifyChainMap,
@@ -62,11 +63,76 @@ const logLevel =
   process.env.NODE_LOG_LEVEL ||
   (process.env.NODE_ENV === "production" ? "info" : "debug");
 
+const readNumberEnv = (name: string, defaultValue: number): number => {
+  const value = process.env[name] ? Number(process.env[name]) : NaN;
+  if (Number.isNaN(value)) {
+    return defaultValue;
+  }
+  return value;
+};
+
 // Wall-clock limit for a single compiler subprocess. Left undefined the
 // compilers package applies its own default.
 const compilerTimeoutMs = process.env.COMPILER_TIMEOUT_MS
   ? parseInt(process.env.COMPILER_TIMEOUT_MS)
   : undefined;
+// Same value as DEFAULT_COMPILE_TIMEOUT_MS of @ethereum-sourcify/compilers
+const DEFAULT_COMPILER_TIMEOUT_MS = 2_700_000;
+const effectiveCompilerTimeoutMs =
+  compilerTimeoutMs ?? DEFAULT_COMPILER_TIMEOUT_MS;
+
+// Wall-clock limit for one worker task. The compiler timeout only bounds
+// the compiler subprocess; this bounds everything else that runs on the
+// worker thread. It must stay above the compiler timeout so that a slow
+// compile fails with compiler_timeout and not with job_timeout. 0 disables.
+const workerTaskTimeoutMs = readNumberEnv(
+  "WORKER_TASK_TIMEOUT_MS",
+  effectiveCompilerTimeoutMs + 15 * 60 * 1000,
+);
+if (
+  workerTaskTimeoutMs > 0 &&
+  workerTaskTimeoutMs <= effectiveCompilerTimeoutMs
+) {
+  logger.warn(
+    "WORKER_TASK_TIMEOUT_MS is not larger than the compiler timeout, slow compilations will fail with job_timeout instead of compiler_timeout",
+    { workerTaskTimeoutMs, compilerTimeoutMs: effectiveCompilerTimeoutMs },
+  );
+}
+
+// Periodic "Runtime stats" log line and, if enabled, the automatic CPU
+// profile of a busy worker thread. 0 disables both.
+const runtimeStatsIntervalMs = readNumberEnv(
+  "RUNTIME_STATS_INTERVAL_MS",
+  60_000,
+);
+const runtimeStatsOptions: RuntimeStatsOptions | undefined =
+  runtimeStatsIntervalMs > 0
+    ? {
+        intervalMs: runtimeStatsIntervalMs,
+        cpuProfile:
+          process.env.WORKER_CPU_PROFILE_ENABLED === "true"
+            ? {
+                eluThreshold: readNumberEnv(
+                  "WORKER_CPU_PROFILE_ELU_THRESHOLD",
+                  0.9,
+                ),
+                sustainTicks: readNumberEnv(
+                  "WORKER_CPU_PROFILE_SUSTAIN_TICKS",
+                  3,
+                ),
+                durationMs: readNumberEnv(
+                  "WORKER_CPU_PROFILE_DURATION_MS",
+                  30_000,
+                ),
+                cooldownMs: readNumberEnv(
+                  "WORKER_CPU_PROFILE_COOLDOWN_MS",
+                  30 * 60 * 1000,
+                ),
+                topN: readNumberEnv("WORKER_CPU_PROFILE_TOP_N", 20),
+              }
+            : undefined,
+      }
+    : undefined;
 
 // Solidity Compiler
 
@@ -126,6 +192,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       libSourcifyConfig,
       sourcifyVerifyUi: process.env.SOURCIFY_VERIFY_UI,
       sourcifyRepoUi: process.env.SOURCIFY_REPO_UI,
+      runtimeStatsOptions,
     },
     {
       initCompilers: config.get("initCompilers") || false,
@@ -135,6 +202,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       vyperRepoPath,
       feRepoPath,
       compilerTimeoutMs,
+      workerTaskTimeoutMs,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,

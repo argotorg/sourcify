@@ -200,6 +200,7 @@ describe("verificationWorker", function () {
         )[0],
       };
       const result = await verifyFromJsonInput({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         jsonInput: chainFixture.defaultContractJsonInput,
@@ -222,6 +223,7 @@ describe("verificationWorker", function () {
         )[0],
       };
       const result = await verifyFromJsonInput({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         jsonInput: chainFixture.defaultContractJsonInput,
@@ -250,6 +252,7 @@ describe("verificationWorker", function () {
       ].content.replace("contract", "contrat");
 
       const result = await verifyFromJsonInput({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         jsonInput,
@@ -288,6 +291,7 @@ describe("verificationWorker", function () {
           chainFixture.defaultContractSource.toString(),
       };
       const result = await verifyFromMetadata({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         metadata: chainFixture.defaultContractMetadataObject,
@@ -304,6 +308,7 @@ describe("verificationWorker", function () {
           chainFixture.defaultContractSource.toString(),
       };
       const result = await verifyFromMetadata({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         metadata: chainFixture.defaultContractMetadataObject,
@@ -315,6 +320,7 @@ describe("verificationWorker", function () {
 
     it("should fetch a missing file from IPFS", async () => {
       const result = await verifyFromMetadata({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         metadata: chainFixture.defaultContractMetadataObject,
@@ -340,6 +346,7 @@ describe("verificationWorker", function () {
         chainFixture.defaultContractModifiedSource.toString();
 
       const result = await verifyFromMetadata({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         metadata,
@@ -355,6 +362,7 @@ describe("verificationWorker", function () {
 
     it("should return an errorResponse if missing sources cannot be fetched", async () => {
       const result = await verifyFromMetadata({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         // This metadata includes a modified IPFS hash that cannot be fetched
@@ -403,6 +411,7 @@ describe("verificationWorker", function () {
           ].LendingPool.metadata,
         );
         const result = await verifyFromMetadata({
+          verificationId: "test-verification-id",
           chainId: chainFixture.chainId,
           address: deploymentInfo.contractAddress,
           metadata,
@@ -430,6 +439,7 @@ describe("verificationWorker", function () {
           ].LendingPool.metadata,
         );
         const result = await verifyFromMetadata({
+          verificationId: "test-verification-id",
           chainId: chainFixture.chainId,
           address: deploymentInfo.contractAddress,
           metadata,
@@ -504,6 +514,7 @@ describe("verificationWorker", function () {
 
     it("should verify using a matching candidate", async () => {
       const result = await verifySimilarity({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
@@ -531,6 +542,7 @@ describe("verificationWorker", function () {
       failingContract.evm.deployedBytecode.object = flippedRuntimeObject;
 
       const result = await verifySimilarity({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,
@@ -552,6 +564,7 @@ describe("verificationWorker", function () {
 
     it("should return no_similar_match_found when no candidates compile", async () => {
       const result = await verifySimilarity({
+        verificationId: "test-verification-id",
         chainId: chainFixture.chainId,
         address: chainFixture.defaultContractAddress,
         runtimeBytecode: chainFixture.defaultContractArtifact.deployedBytecode,

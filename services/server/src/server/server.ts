@@ -18,6 +18,8 @@ import genericErrorHandler from "../common/errors/GenericErrorHandler";
 import { Services } from "./services/services";
 import type { StorageServiceOptions } from "./services/StorageService";
 import type { VerificationServiceOptions } from "./services/VerificationService";
+import type { RuntimeStatsOptions } from "./services/utils/RuntimeStats";
+import { RuntimeStats } from "./services/utils/RuntimeStats";
 import type {
   ISolidityCompiler,
   IVyperCompiler,
@@ -63,6 +65,8 @@ export interface ServerOptions {
   logLevel?: string;
   sourcifyVerifyUi?: string;
   sourcifyRepoUi?: string;
+  // Undefined keeps the periodic "Runtime stats" log line off
+  runtimeStatsOptions?: RuntimeStatsOptions;
 }
 
 export class Server {
@@ -71,6 +75,7 @@ export class Server {
   services: Services;
   chainRepository: ChainRepository;
   httpServer?: http.Server;
+  runtimeStats?: RuntimeStats;
 
   constructor(
     options: ServerOptions,
@@ -121,6 +126,14 @@ export class Server {
       logger.warn(
         "No database configured. The database is recommended as storage service. API v2 is disabled without database.",
       );
+    }
+
+    if (options.runtimeStatsOptions) {
+      this.runtimeStats = new RuntimeStats(
+        this.services.verification,
+        options.runtimeStatsOptions,
+      );
+      this.runtimeStats.start();
     }
 
     const handleShutdownSignal = async () => {
@@ -281,6 +294,7 @@ export class Server {
 
   async shutdown() {
     logger.info("Shutting down server");
+    this.runtimeStats?.stop();
     if (this.httpServer) {
       await new Promise<void>((resolve) => {
         this.httpServer!.close((error?: Error) => {

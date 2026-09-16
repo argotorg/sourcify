@@ -31,6 +31,7 @@ import type {
 } from "../types";
 import type { StorageService, WStorageService } from "./StorageService";
 import Piscina from "piscina";
+import type { Worker } from "node:worker_threads";
 import path from "path";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
 import { v4 as uuidv4 } from "uuid";
@@ -47,6 +48,7 @@ import {
   type VerifyOutput,
   type VerifySimilarityInput,
   type SimilarityCreationData,
+  type WorkerTaskMessage,
 } from "./workers/workerTypes";
 import { asyncLocalStorage } from "../../common/async-context";
 import {
@@ -81,9 +83,58 @@ export interface VerificationServiceOptions {
   vyperRepoPath: string;
   feRepoPath: string;
   compilerTimeoutMs?: number;
+  // Wall-clock limit for one worker task. 0 or undefined disables it.
+  workerTaskTimeoutMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
+}
+
+/**
+ * What the main thread knows about a verification job that is in progress.
+ * `candidateIds` is only set for similarity verification. `threadId` is set
+ * once the worker thread has announced the job with a `task-start` message.
+ * A thread that is stuck never sends `task-end`, but Piscina rejects the
+ * tasks of a thread it terminates, which removes the job from the registry.
+ */
+export interface RunningTaskInfo {
+  verificationId: VerificationJobId;
+  functionName: string;
+  chainId: string;
+  address: string;
+  candidateIds?: string[];
+  startedAt: Date;
+  threadId?: number;
+}
+
+interface RunningTask extends RunningTaskInfo {
+  promise: Promise<void>;
+}
+
+/**
+ * Snapshot of the worker pool counters, taken from Piscina's public getters.
+ * Durations are in milliseconds.
+ */
+export interface WorkerPoolStats {
+  utilization: number;
+  queueSize: number;
+  completed: number;
+  threads: number;
+  runTime: { p50: number; p99: number };
+  waitTime: { p50: number; p99: number };
+}
+
+/**
+ * Piscina rejects an aborted task with its own `AbortError` whose `cause` is
+ * the signal's reason. For `AbortSignal.timeout()` the reason is a
+ * `TimeoutError`. A pool shutdown also aborts tasks, but with a string reason.
+ */
+export function isWorkerTaskTimeoutError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.name === "AbortError" &&
+    (error as { cause?: { name?: string } }).cause?.name === "TimeoutError"
+  );
 }
 
 export class VerificationService {
@@ -98,7 +149,9 @@ export class VerificationService {
   } = {};
 
   private workerPool: Piscina;
-  private runningTasks: Set<Promise<void>> = new Set();
+  private workerTaskTimeoutMs?: number;
+  // Jobs dispatched to the worker pool that did not finish yet, by job id
+  private runningTasks: Map<VerificationJobId, RunningTask> = new Map();
 
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
@@ -112,6 +165,7 @@ export class VerificationService {
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
+    this.workerTaskTimeoutMs = options.workerTaskTimeoutMs || undefined;
 
     if (options.debugDataS3Config) {
       const s3Config = options.debugDataS3Config;
@@ -169,7 +223,74 @@ export class VerificationService {
       maxThreads,
       idleTimeout: options.workerIdleTimeout || 30000,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
+      // With the default "sync", an idle worker blocks in Atomics.wait(),
+      // which its event loop utilization reports as 100 % busy. Plain
+      // message events keep the utilization meaningful for RuntimeStats.
+      atomics: "disabled",
     });
+
+    this.workerPool.on("message", (message: unknown) =>
+      this.onWorkerMessage(message),
+    );
+  }
+
+  private onWorkerMessage(message: unknown) {
+    const taskMessage = message as Partial<WorkerTaskMessage> | null;
+    if (
+      !taskMessage ||
+      typeof taskMessage.threadId !== "number" ||
+      typeof taskMessage.verificationId !== "string"
+    ) {
+      return;
+    }
+    // The job is registered synchronously at dispatch, so it exists here
+    const task = this.runningTasks.get(taskMessage.verificationId);
+    if (!task) {
+      return;
+    }
+    if (taskMessage.type === "task-start") {
+      task.threadId = taskMessage.threadId;
+    } else if (taskMessage.type === "task-end") {
+      task.threadId = undefined;
+    }
+  }
+
+  /**
+   * The worker threads of the pool. Threads come and go with Piscina's idle
+   * timeout and with task aborts.
+   */
+  public getWorkerThreads(): Worker[] {
+    return this.workerPool.threads;
+  }
+
+  public getWorkerPoolStats(): WorkerPoolStats {
+    const { runTime, waitTime } = this.workerPool.histogram;
+    return {
+      utilization: this.workerPool.utilization,
+      queueSize: this.workerPool.queueSize,
+      completed: this.workerPool.completed,
+      threads: this.workerPool.threads.length,
+      runTime: { p50: runTime.p50, p99: runTime.p99 },
+      waitTime: { p50: waitTime.p50, p99: waitTime.p99 },
+    };
+  }
+
+  /**
+   * The jobs that a worker thread has announced and that did not finish yet.
+   * More than one job is possible with `concurrentVerificationsPerWorker` > 1
+   * and no task timeout. With the timeout, Piscina gives each abortable task
+   * its own thread.
+   */
+  public getRunningTasksByThread(threadId: number): RunningTaskInfo[] {
+    const tasks: RunningTaskInfo[] = [];
+    for (const task of this.runningTasks.values()) {
+      if (task.threadId === threadId) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { promise, ...info } = task;
+        tasks.push(info);
+      }
+    }
+    return tasks;
   }
 
   // All of the solidity compilation actually run outside the VerificationService but this is an OK place to init everything.
@@ -231,7 +352,9 @@ export class VerificationService {
     // Immediately abort all workers. Tasks that still run will have their Promises rejected.
     await this.workerPool.destroy();
     // Here, we wait for the rejected tasks which also waits for writing the failed status to the database.
-    await Promise.all(this.runningTasks);
+    await Promise.all(
+      [...this.runningTasks.values()].map((task) => task.promise),
+    );
   }
 
   private throwErrorIfContractIsAlreadyBeingVerified(
@@ -296,6 +419,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromJsonInput = {
+      verificationId,
       chainId,
       address,
       jsonInput,
@@ -306,6 +430,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromJsonInput", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromJsonInput", input),
     );
 
@@ -326,6 +451,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromMetadataInput = {
+      verificationId,
       chainId,
       address,
       metadata,
@@ -335,6 +461,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromMetadata", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromMetadata", input),
     );
     return verificationId;
@@ -352,6 +479,7 @@ export class VerificationService {
     );
 
     const input: VerifyFromEtherscanInput = {
+      verificationId,
       chainId,
       address,
       etherscanResult,
@@ -359,6 +487,7 @@ export class VerificationService {
     };
 
     this.runInBackground(
+      { verificationId, functionName: "verifyFromEtherscan", chainId, address },
       this.verifyViaWorker(verificationId, "verifyFromEtherscan", input),
     );
 
@@ -408,6 +537,7 @@ export class VerificationService {
     );
 
     this.runInBackground(
+      { verificationId, functionName: "verifySimilarity", chainId, address },
       this.processSimilarityVerification(
         verificationId,
         chainId,
@@ -479,6 +609,7 @@ export class VerificationService {
     );
 
     const input: VerifySimilarityServiceInput = {
+      verificationId,
       chainId,
       address,
       runtimeBytecode,
@@ -488,6 +619,10 @@ export class VerificationService {
       candidates: [],
       traceId: asyncLocalStorage.getStore()?.traceId,
     };
+    const runningTask = this.runningTasks.get(verificationId);
+    if (runningTask) {
+      runningTask.candidateIds = candidateIds;
+    }
 
     await this.storeVerificationOutcome(
       verificationId,
@@ -599,7 +734,7 @@ export class VerificationService {
 
       const output = await this.workerPool.run(
         { ...workerInput, candidates },
-        { name: "verifySimilarity" },
+        { name: "verifySimilarity", signal: this.createTaskTimeoutSignal() },
       );
 
       // Anything other than "this batch had no match" is terminal: either we
@@ -633,8 +768,23 @@ export class VerificationService {
     return this.storeVerificationOutcome(
       verificationId,
       input,
-      this.workerPool.run(input, { name: functionName }),
+      this.workerPool.run(input, {
+        name: functionName,
+        signal: this.createTaskTimeoutSignal(),
+      }),
     );
+  }
+
+  /**
+   * When the signal fires while the task runs, Piscina terminates the worker
+   * thread, replaces it and rejects the task with an `AbortError`. Note that
+   * Piscina runs an abortable task alone on its thread, i.e. with a timeout
+   * `concurrentVerificationsPerWorker` has no effect.
+   */
+  private createTaskTimeoutSignal(): AbortSignal | undefined {
+    return this.workerTaskTimeoutMs
+      ? AbortSignal.timeout(this.workerTaskTimeoutMs)
+      : undefined;
   }
 
   /**
@@ -701,6 +851,22 @@ export class VerificationService {
           customCode: "already_verified",
           errorId: uuidv4(),
         };
+      } else if (isWorkerTaskTimeoutError(error)) {
+        errorExport = {
+          customCode: "job_timeout",
+          errorId: uuidv4(),
+        };
+        const runningTask = this.runningTasks.get(verificationId);
+        logger.error("Verification worker task timed out", {
+          verificationId,
+          functionName: runningTask?.functionName,
+          chainId: input.chainId,
+          address: input.address,
+          candidateIds: runningTask?.candidateIds,
+          timeoutMs: this.workerTaskTimeoutMs,
+          threadId: runningTask?.threadId,
+          errorId: errorExport.errorId,
+        });
       } else {
         errorExport = {
           customCode: "internal_error",
@@ -781,10 +947,18 @@ export class VerificationService {
     await Promise.all(promises);
   }
 
-  private runInBackground(promise: Promise<void>): void {
-    const task = promise.finally(() => {
-      this.runningTasks.delete(task);
-    });
-    this.runningTasks.add(task);
+  private runInBackground(
+    info: Omit<RunningTaskInfo, "startedAt">,
+    promise: Promise<void>,
+  ): void {
+    const { verificationId } = info;
+    const task: RunningTask = {
+      ...info,
+      startedAt: new Date(),
+      promise: promise.finally(() => {
+        this.runningTasks.delete(verificationId);
+      }),
+    };
+    this.runningTasks.set(verificationId, task);
   }
 }
