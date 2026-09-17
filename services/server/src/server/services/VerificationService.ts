@@ -87,6 +87,15 @@ type VerifySimilarityServiceInput = VerifySimilarityInput & {
   candidateIds: string[];
 };
 
+export function getWorkerPoolThreadCounts(availableParallelism: number) {
+  const minThreads = Math.max(1, Math.floor(availableParallelism * 0.5));
+  const maxThreads = Math.max(
+    minThreads,
+    Math.ceil(availableParallelism * 1.5),
+  );
+  return { minThreads, maxThreads };
+}
+
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
   sourcifyChainMap: SourcifyChainMap;
@@ -236,9 +245,16 @@ export class VerificationService {
       // Therefore, we set it to the number of vCPUs which our resource class uses.
       availableParallelism = 4;
     }
-    // Default values of Piscina
-    const minThreads = availableParallelism * 0.5;
-    const maxThreads = availableParallelism * 1.5;
+    // Default values of Piscina. They must be integers: with a fraction,
+    // Piscina stops and starts an idle worker again and again.
+    const { minThreads, maxThreads } =
+      getWorkerPoolThreadCounts(availableParallelism);
+    logger.info("Verification worker pool settings", {
+      availableParallelism,
+      minThreads,
+      maxThreads,
+      idleTimeoutMs: options.workerIdleTimeout || 30000,
+    });
 
     this.workerPool = new Piscina({
       filename: path.resolve(__dirname, "./workers/workerWrapper.js"),

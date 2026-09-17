@@ -5,10 +5,12 @@ import {
 import nock from "nock";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { expect } from "chai";
 import { findSolcPlatform } from "@ethereum-sourcify/compilers";
 import config from "config";
 import { rimrafSync } from "rimraf";
+import { getWorkerPoolThreadCounts } from "../../src/server/services/VerificationService";
 import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import sinon from "sinon";
@@ -156,6 +158,53 @@ describe("VerificationService", function () {
     Object.values(releases).forEach((release) => {
       expect(fs.existsSync(path.join(downloadDir, release))).to.be.true;
     });
+  });
+
+  it("should compute integer thread counts for the worker pool", function () {
+    for (const availableParallelism of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const { minThreads, maxThreads } =
+        getWorkerPoolThreadCounts(availableParallelism);
+      expect(Number.isInteger(minThreads)).to.be.true;
+      expect(Number.isInteger(maxThreads)).to.be.true;
+      expect(minThreads).to.be.at.least(1);
+      expect(maxThreads).to.be.at.least(minThreads);
+    }
+    expect(getWorkerPoolThreadCounts(1)).to.deep.equal({
+      minThreads: 1,
+      maxThreads: 2,
+    });
+    expect(getWorkerPoolThreadCounts(5)).to.deep.equal({
+      minThreads: 2,
+      maxThreads: 8,
+    });
+  });
+
+  it("should not stop and start idle workers with an odd number of CPUs", async function () {
+    sandbox.stub(os, "availableParallelism").returns(5);
+    // The constructor uses 4 CPUs in CI
+    sandbox.stub(process, "env").value({ ...process.env, CI: "false" });
+    verificationService = new VerificationService(
+      {
+        initCompilers: false,
+        sourcifyChainMap: {},
+        solcRepoPath: config.get("solcRepo"),
+        solJsonRepoPath: config.get("solJsonRepo"),
+        vyperRepoPath: config.get("vyperRepo"),
+        feRepoPath: config.get("feRepo"),
+        workerIdleTimeout: 20,
+      },
+      createMockStorageService("no-job"),
+    );
+    const workerPool = verificationService["workerPool"];
+    let workersCreated = 0;
+    let workersDestroyed = 0;
+    workerPool.on("workerCreate", () => workersCreated++);
+    workerPool.on("workerDestroy", () => workersDestroyed++);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(workersDestroyed).to.equal(0);
+    expect(workersCreated).to.equal(workerPool.options.minThreads);
   });
 
   it("should handle workerPool.run errors and set job error as internal_error", async function () {
