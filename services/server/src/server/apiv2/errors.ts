@@ -282,7 +282,6 @@ export type VerificationErrorCode =
   | "internal_error"
   | "no_similar_match_found"
   | "job_abandoned"
-  | "job_timeout"
   | "similarity_search_timeout";
 
 export type VerificationErrorParameters =
@@ -305,8 +304,6 @@ export function getVerificationErrorMessage(
       return "No similar verified contracts were found in the database.";
     case "job_abandoned":
       return "The verification job did not complete in time and was marked as abandoned by the server. This usually happens when the compilation runs out of memory or hangs. You can resubmit the verification.";
-    case "job_timeout":
-      return "The verification task exceeded the server's execution limit and was aborted. You can resubmit the verification.";
     case "similarity_search_timeout":
       return "The search for similar verified contracts took too long to complete. This can happen when the contract's bytecode starts with a very common prefix.";
     default:

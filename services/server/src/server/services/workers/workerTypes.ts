@@ -12,20 +12,7 @@ import type { JobErrorData } from "../utils/database-util";
 import type { SimilarityCandidate } from "../../types";
 
 export interface VerificationWorkerInput {
-  // Id of the verification job. The worker reports it together with its
-  // thread id so the main thread knows which job runs on which thread.
-  verificationId: string;
   traceId?: string;
-}
-
-/**
- * Posted by a worker on `parentPort` when it starts a task. Piscina re-emits
- * it on the pool as a `message` event.
- */
-export interface WorkerTaskStartMessage {
-  type: "task-start";
-  threadId: number;
-  verificationId: string;
 }
 
 export interface VerifyFromJsonInput extends VerificationWorkerInput {
