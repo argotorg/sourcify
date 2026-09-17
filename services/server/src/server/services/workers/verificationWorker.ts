@@ -15,7 +15,8 @@ import {
   EtherscanUtils,
 } from "@ethereum-sourcify/lib-sourcify";
 import { resolve } from "path";
-import { parentPort, threadId } from "node:worker_threads";
+import { writeFileSync } from "fs";
+import { isMainThread, parentPort, threadId } from "node:worker_threads";
 import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
@@ -39,6 +40,19 @@ import { createPreRunCompilationFromStoredCandidate } from "../utils/database-ut
 import { createCompilationFromJsonInput } from "../utils/compilation";
 
 export const filename = resolve(__filename);
+
+function setThreadName(name: string) {
+  try {
+    writeFileSync("/proc/thread-self/comm", name.slice(0, 15));
+  } catch {
+    // Not Linux or not permitted. The name is only a diagnostic aid.
+  }
+}
+
+// The main thread also imports this module for `filename`
+if (!isMainThread) {
+  setThreadName(`sfy-pool-${threadId}`);
+}
 
 let chainRepository: ChainRepository;
 let solc: SolcLocal;

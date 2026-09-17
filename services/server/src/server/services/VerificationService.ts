@@ -34,6 +34,7 @@ import Piscina from "piscina";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import type { EventLoopUtilization } from "node:perf_hooks";
 import path from "path";
+import fs from "fs";
 import { filename as verificationWorkerFilename } from "./workers/verificationWorker";
 import { v4 as uuidv4 } from "uuid";
 import { ConflictError } from "../../common/errors/ConflictError";
@@ -70,6 +71,12 @@ const DEFAULT_SIMILARITY_CANDIDATE_LIMIT = 20;
 const DEFAULT_WORKER_TASK_TIMEOUT_MS = 60 * 60 * 1000;
 const DEFAULT_RUNTIME_STATS_INTERVAL_MS = 60 * 1000;
 const SIMILARITY_CANDIDATE_BATCH_SIZE = 5;
+// Clock ticks per second (USER_HZ) of the times in /proc. Fixed to 100 on
+// Linux x86-64 and arm64.
+const PROC_CLOCK_TICKS_PER_SECOND = 100;
+const RUNTIME_STATS_MIN_THREAD_CORES = 0.05;
+const RUNTIME_STATS_MAX_THREADS = 8;
+const WORKER_ATOMICS_VALUES = ["sync", "async", "disabled"] as const;
 
 /**
  * Service-side input for similarity verification: additionally carries the
@@ -92,6 +99,8 @@ export interface VerificationServiceOptions {
   workerTaskTimeoutMs?: number;
   // Interval of the "Worker runtime stats" log line. 0 disables it.
   runtimeStatsIntervalMs?: number;
+  // Piscina `atomics` option: sync | async | disabled. Piscina default if not set.
+  workerAtomics?: string;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
   debugDataS3Config?: S3Config;
@@ -114,6 +123,25 @@ interface RunningTask {
   promise: Promise<void>;
 }
 
+interface ThreadCpuTimes {
+  utime: number;
+  stime: number;
+  starttime: number;
+}
+
+/**
+ * Parses the CPU times, in clock ticks, from /proc/<pid>/task/<tid>/stat.
+ * The thread name is in parentheses and can contain spaces and ")".
+ */
+export function parseThreadStat(stat: string): ThreadCpuTimes {
+  const fields = stat.slice(stat.lastIndexOf(") ") + 2).split(" ");
+  return {
+    utime: parseInt(fields[11]),
+    stime: parseInt(fields[12]),
+    starttime: parseInt(fields[19]),
+  };
+}
+
 export class VerificationService {
   initCompilers: boolean;
   solcRepoPath: string;
@@ -134,6 +162,8 @@ export class VerificationService {
   private mainLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private prevCpuUsage = process.cpuUsage();
   private prevStatsAt = Date.now();
+  private prevThreadCpu: Map<number, ThreadCpuTimes> = new Map();
+  private threadCpuUnavailable = false;
 
   private readonly debugDataS3Client?: S3Client;
   private readonly debugDataS3Bucket?: string;
@@ -161,6 +191,15 @@ export class VerificationService {
           workerTaskTimeoutMs: this.workerTaskTimeoutMs,
           compilerTimeoutMs: options.compilerTimeoutMs,
         },
+      );
+    }
+
+    const workerAtomics = WORKER_ATOMICS_VALUES.find(
+      (value) => value === options.workerAtomics,
+    );
+    if (options.workerAtomics !== undefined && !workerAtomics) {
+      throw new Error(
+        `Invalid WORKER_ATOMICS value "${options.workerAtomics}", must be one of: ${WORKER_ATOMICS_VALUES.join(", ")}`,
       );
     }
 
@@ -220,6 +259,13 @@ export class VerificationService {
       maxThreads,
       idleTimeout: options.workerIdleTimeout || 30000,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
+      // Piscina uses "sync" if the option is not passed
+      ...(workerAtomics && { atomics: workerAtomics }),
+    });
+    logger.info("Initialized the verification worker pool", {
+      minThreads,
+      maxThreads,
+      atomics: workerAtomics ?? "sync",
     });
     this.workerPool.on("message", (message: unknown) =>
       this.onWorkerMessage(message),
@@ -229,6 +275,8 @@ export class VerificationService {
       options.runtimeStatsIntervalMs ?? DEFAULT_RUNTIME_STATS_INTERVAL_MS;
     if (runtimeStatsIntervalMs > 0) {
       this.mainLoopDelay.enable();
+      // The first stats line must not count the CPU before this point
+      this.readThreadCpu(0);
       this.runtimeStatsTimer = setInterval(
         () => this.logRuntimeStats(),
         runtimeStatsIntervalMs,
@@ -291,13 +339,86 @@ export class VerificationService {
   }
 
   /**
+   * Reads the CPU of every thread of the process from /proc and returns the
+   * usage since the last read. Linux only: returns undefined if /proc is not
+   * available.
+   */
+  private readThreadCpu(intervalMs: number) {
+    if (this.threadCpuUnavailable) {
+      return undefined;
+    }
+    try {
+      const tids = fs.readdirSync("/proc/self/task");
+      const uptimeS = parseFloat(fs.readFileSync("/proc/uptime", "utf8"));
+      const threads = [];
+      const seenTids = new Set<number>();
+      for (const tidString of tids) {
+        const tid = parseInt(tidString);
+        let cpu: ThreadCpuTimes;
+        let name: string;
+        try {
+          const taskPath = `/proc/self/task/${tid}`;
+          cpu = parseThreadStat(fs.readFileSync(`${taskPath}/stat`, "utf8"));
+          name = fs.readFileSync(`${taskPath}/comm`, "utf8").trim();
+        } catch {
+          // The thread ended after the readdir
+          continue;
+        }
+        seenTids.add(tid);
+        let prev = this.prevThreadCpu.get(tid);
+        if (prev?.starttime !== cpu.starttime) {
+          // New thread, or a reused tid
+          prev = undefined;
+        }
+        this.prevThreadCpu.set(tid, cpu);
+        const userTicks = cpu.utime - (prev?.utime ?? 0);
+        const systemTicks = cpu.stime - (prev?.stime ?? 0);
+        const cores =
+          (userTicks + systemTicks) /
+          PROC_CLOCK_TICKS_PER_SECOND /
+          (intervalMs / 1000);
+        if (cores >= RUNTIME_STATS_MIN_THREAD_CORES) {
+          threads.push({
+            tid,
+            name: tid === process.pid ? "main" : name,
+            cores: Math.round(cores * 1000) / 1000,
+            userMs: (userTicks * 1000) / PROC_CLOCK_TICKS_PER_SECOND,
+            systemMs: (systemTicks * 1000) / PROC_CLOCK_TICKS_PER_SECOND,
+            ageS: Math.round(
+              uptimeS - cpu.starttime / PROC_CLOCK_TICKS_PER_SECOND,
+            ),
+          });
+        }
+      }
+      for (const tid of this.prevThreadCpu.keys()) {
+        if (!seenTids.has(tid)) {
+          this.prevThreadCpu.delete(tid);
+        }
+      }
+      return {
+        threadCount: tids.length,
+        threads: threads
+          .sort((a, b) => b.cores - a.cores)
+          .slice(0, RUNTIME_STATS_MAX_THREADS),
+      };
+    } catch (error) {
+      this.threadCpuUnavailable = true;
+      logger.warn("Per-thread CPU is not available for the runtime stats", {
+        error,
+      });
+      return undefined;
+    }
+  }
+
+  /**
    * Logs the event loop utilization (ELU) of the main thread and of every
    * worker thread that runs a task, together with the jobs on it, and the
    * CPU of the whole process. A worker at ELU 1.0 over several intervals
    * next to one job id points at the input of that job. `cpu.outsideLoops`
    * near one core means the CPU is in none of the event loops: V8 or libuv
    * threads, or outside of the Node process. Compiler child processes are
-   * not part of `cpu.cores`.
+   * not part of `cpu.cores`. On Linux, `threads` lists the threads that used
+   * the most CPU, by their Linux thread id and name.
    *
    * Threads without a task are not listed: they block in Atomics.wait()
    * while waiting for a task, which their ELU reports as busy.
@@ -368,6 +489,8 @@ export class VerificationService {
       // cpuUsage is in microseconds
       const cores = (cpuUsage.user + cpuUsage.system) / (intervalMs * 1000);
 
+      const threadCpu = this.readThreadCpu(intervalMs);
+
       logger.info("Worker runtime stats", {
         intervalMs,
         main: {
@@ -398,6 +521,8 @@ export class VerificationService {
           outsideLoops:
             Math.round(Math.max(0, cores - mainElu - taskElu) * 1000) / 1000,
         },
+        // Only on Linux
+        ...threadCpu,
         rss: process.memoryUsage().rss,
       });
     } catch (error) {
