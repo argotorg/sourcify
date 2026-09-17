@@ -249,12 +249,7 @@ export class VerificationService {
     // Piscina stops and starts an idle worker again and again.
     const { minThreads, maxThreads } =
       getWorkerPoolThreadCounts(availableParallelism);
-    logger.info("Verification worker pool settings", {
-      availableParallelism,
-      minThreads,
-      maxThreads,
-      idleTimeoutMs: options.workerIdleTimeout || 30000,
-    });
+    const idleTimeout = options.workerIdleTimeout || 30000;
 
     this.workerPool = new Piscina({
       filename: path.resolve(__dirname, "./workers/workerWrapper.js"),
@@ -273,14 +268,16 @@ export class VerificationService {
       },
       minThreads,
       maxThreads,
-      idleTimeout: options.workerIdleTimeout || 30000,
+      idleTimeout,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
       // Piscina uses "sync" if the option is not passed
       ...(workerAtomics && { atomics: workerAtomics }),
     });
     logger.info("Initialized the verification worker pool", {
+      availableParallelism,
       minThreads,
       maxThreads,
+      idleTimeoutMs: idleTimeout,
       atomics: workerAtomics ?? "sync",
     });
     this.workerPool.on("message", (message: unknown) =>
