@@ -351,6 +351,7 @@ export class VerificationService {
       const tids = fs.readdirSync("/proc/self/task");
       const uptimeS = parseFloat(fs.readFileSync("/proc/uptime", "utf8"));
       const threads = [];
+      const threadNames: Record<string, number> = {};
       const seenTids = new Set<number>();
       for (const tidString of tids) {
         const tid = parseInt(tidString);
@@ -359,12 +360,14 @@ export class VerificationService {
         try {
           const taskPath = `/proc/self/task/${tid}`;
           cpu = parseThreadStat(fs.readFileSync(`${taskPath}/stat`, "utf8"));
-          name = fs.readFileSync(`${taskPath}/comm`, "utf8").trim();
+          const comm = fs.readFileSync(`${taskPath}/comm`, "utf8").trim();
+          name = tid === process.pid ? "main" : comm;
         } catch {
           // The thread ended after the readdir
           continue;
         }
         seenTids.add(tid);
+        threadNames[name] = (threadNames[name] ?? 0) + 1;
         let prev = this.prevThreadCpu.get(tid);
         if (prev?.starttime !== cpu.starttime) {
           // New thread, or a reused tid
@@ -380,7 +383,7 @@ export class VerificationService {
         if (cores >= RUNTIME_STATS_MIN_THREAD_CORES) {
           threads.push({
             tid,
-            name: tid === process.pid ? "main" : name,
+            name,
             cores: Math.round(cores * 1000) / 1000,
             userMs: (userTicks * 1000) / PROC_CLOCK_TICKS_PER_SECOND,
             systemMs: (systemTicks * 1000) / PROC_CLOCK_TICKS_PER_SECOND,
@@ -397,6 +400,7 @@ export class VerificationService {
       }
       return {
         threadCount: tids.length,
+        threadNames,
         threads: threads
           .sort((a, b) => b.cores - a.cores)
           .slice(0, RUNTIME_STATS_MAX_THREADS),
@@ -418,7 +422,10 @@ export class VerificationService {
    * near one core means the CPU is in none of the event loops: V8 or libuv
    * threads, or outside of the Node process. Compiler child processes are
    * not part of `cpu.cores`. On Linux, `threads` lists the threads that used
-   * the most CPU, by their Linux thread id and name.
+   * the most CPU, by their Linux thread id and name, and `threadNames` counts
+   * all threads by name. A new thread inherits the name of its creator thread
+   * on Linux, so a thread that a pool worker starts is named `sfy-pool-N`
+   * until it sets its own name.
    *
    * Threads without a task are not listed: they block in Atomics.wait()
    * while waiting for a task, which their ELU reports as busy.

@@ -707,6 +707,10 @@ describe("VerificationService", function () {
       .getCalls()
       .filter((call) => call.args[0] === "Worker runtime stats")[1].args[1];
     expect(stats.threadCount).to.be.at.least(2);
+    expect(stats.threadNames.main).to.equal(1);
+    expect(
+      Object.values<number>(stats.threadNames).reduce((a, b) => a + b, 0),
+    ).to.equal(stats.threadCount);
     expect(stats.threads[0]).to.include({ tid: process.pid, name: "main" });
     expect(stats.threads[0].cores).to.be.above(0.5);
     expect(stats.threads[0]).to.have.all.keys(
@@ -739,7 +743,11 @@ describe("VerificationService", function () {
       .getCalls()
       .filter((call) => call.args[0] === "Worker runtime stats");
     expect(statsLogs).to.have.length(2);
-    expect(statsLogs[1].args[1]).to.not.have.any.keys("threads", "threadCount");
+    expect(statsLogs[1].args[1]).to.not.have.any.keys(
+      "threads",
+      "threadCount",
+      "threadNames",
+    );
     expect(statsLogs[1].args[1].cpu).to.be.an("object");
     expect(
       warnSpy
