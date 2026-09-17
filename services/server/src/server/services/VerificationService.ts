@@ -399,7 +399,8 @@ export class VerificationService {
         }
       }
       return {
-        threadCount: tids.length,
+        // Without the threads that ended after the readdir
+        threadCount: seenTids.size,
         threadNames,
         threads: threads
           .sort((a, b) => b.cores - a.cores)
