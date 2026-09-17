@@ -693,8 +693,14 @@ describe("VerificationService", function () {
       this.skip();
     }
     const mockStorageService = createMockStorageService("no-job");
+    // The start-up of the real worker uses as much CPU as the main thread
+    sandbox
+      .stub(verificationWorkerModule, "filename")
+      .value(path.resolve(__dirname, "../helpers/spinningWorker.js"));
     const infoSpy: sinon.SinonSpy = sandbox.spy(logger, "info");
     verificationService = createVerificationService(mockStorageService);
+    // Lets the pool threads complete their start-up
+    await wait(300);
     verificationService["logRuntimeStats"]();
 
     const loopEnd = Date.now() + 300;
@@ -711,9 +717,13 @@ describe("VerificationService", function () {
     expect(
       Object.values<number>(stats.threadNames).reduce((a, b) => a + b, 0),
     ).to.equal(stats.threadCount);
-    expect(stats.threads[0]).to.include({ tid: process.pid, name: "main" });
-    expect(stats.threads[0].cores).to.be.above(0.5);
-    expect(stats.threads[0]).to.have.all.keys(
+    // Other threads, for example of V8, can use as much CPU as the main thread
+    const mainThread = stats.threads.find(
+      (thread: { tid: number }) => thread.tid === process.pid,
+    );
+    expect(mainThread.name).to.equal("main");
+    expect(mainThread.cores).to.be.above(0.5);
+    expect(mainThread).to.have.all.keys(
       "tid",
       "name",
       "cores",
