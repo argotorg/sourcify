@@ -141,7 +141,6 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       runtimeStatsIntervalMs: process.env.RUNTIME_STATS_INTERVAL_MS
         ? parseInt(process.env.RUNTIME_STATS_INTERVAL_MS)
         : undefined,
-      workerAtomics: process.env.WORKER_ATOMICS || undefined,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,

@@ -1,7 +1,4 @@
-import {
-  VerificationService,
-  parseThreadStat,
-} from "../../src/server/services/VerificationService";
+import { VerificationService } from "../../src/server/services/VerificationService";
 import nock from "nock";
 import fs from "fs";
 import path from "path";
@@ -393,7 +390,6 @@ describe("VerificationService", function () {
     options: {
       workerTaskTimeoutMs?: number;
       runtimeStatsIntervalMs?: number;
-      workerAtomics?: string;
       withS3?: boolean;
     } = {},
   ) {
@@ -407,7 +403,6 @@ describe("VerificationService", function () {
         feRepoPath: config.get("feRepo"),
         workerTaskTimeoutMs: options.workerTaskTimeoutMs,
         runtimeStatsIntervalMs: options.runtimeStatsIntervalMs,
-        workerAtomics: options.workerAtomics,
         debugDataS3Config: options.withS3
           ? {
               bucket: testS3Bucket,
@@ -725,127 +720,5 @@ describe("VerificationService", function () {
     expect(stats.main.elu).to.be.above(0.9);
     expect(stats.main.loopDelayP99Ms).to.be.below(50);
     expect(stats.cpu.cores).to.be.above(0.5);
-  });
-
-  it("should parse a thread stat line with a space and a parenthesis in the name", function () {
-    const stat =
-      "1234 (my ) thread) S 1 1234 1234 0 -1 4194368 100 0 0 0 250 50 0 0 20 0 12 0 98765 1000000 200 18446744073709551615 0 0 0 0 0 0 0 0 0 0 0 0 17 3 0 0 0 0 0";
-    expect(parseThreadStat(stat)).to.deep.equal({
-      utime: 250,
-      stime: 50,
-      starttime: 98765,
-    });
-  });
-
-  it("should list the threads that use CPU in the stats line", async function () {
-    if (process.platform !== "linux") {
-      this.skip();
-    }
-    const mockStorageService = createMockStorageService("no-job");
-    // The start-up of the real worker uses as much CPU as the main thread
-    sandbox
-      .stub(verificationWorkerModule, "filename")
-      .value(path.resolve(__dirname, "../helpers/spinningWorker.js"));
-    const infoSpy: sinon.SinonSpy = sandbox.spy(logger, "info");
-    verificationService = createVerificationService(mockStorageService);
-    // Lets the pool threads complete their start-up
-    await wait(300);
-    verificationService["logRuntimeStats"]();
-
-    const loopEnd = Date.now() + 300;
-    while (Date.now() < loopEnd) {
-      // Keeps the main thread busy
-    }
-    verificationService["logRuntimeStats"]();
-
-    const stats = infoSpy
-      .getCalls()
-      .filter((call) => call.args[0] === "Worker runtime stats")[1].args[1];
-    expect(stats.threadCount).to.be.at.least(2);
-    expect(stats.threadNames.main).to.equal(1);
-    expect(
-      Object.values<number>(stats.threadNames).reduce((a, b) => a + b, 0),
-    ).to.equal(stats.threadCount);
-    // Other threads, for example of V8, can use as much CPU as the main thread
-    const mainThread = stats.threads.find(
-      (thread: { tid: number }) => thread.tid === process.pid,
-    );
-    expect(mainThread.name).to.equal("main");
-    expect(mainThread.cores).to.be.above(0.5);
-    expect(mainThread).to.have.all.keys(
-      "tid",
-      "name",
-      "cores",
-      "userMs",
-      "systemMs",
-      "ageS",
-    );
-  });
-
-  it("should log the stats line without the thread CPU and warn once when /proc is not available", async function () {
-    const mockStorageService = createMockStorageService("no-job");
-    const infoSpy: sinon.SinonSpy = sandbox.spy(logger, "info");
-    const warnSpy: sinon.SinonSpy = sandbox.spy(logger, "warn");
-    verificationService = createVerificationService(mockStorageService);
-    // Also overrides a previous failure on a platform without /proc
-    verificationService["threadCpuUnavailable"] = false;
-    const readdirStub = sandbox.stub(fs, "readdirSync");
-    readdirStub.callThrough();
-    readdirStub
-      .withArgs("/proc/self/task")
-      .throws(new Error("ENOENT: no such file or directory"));
-
-    verificationService["logRuntimeStats"]();
-    verificationService["logRuntimeStats"]();
-
-    const statsLogs = infoSpy
-      .getCalls()
-      .filter((call) => call.args[0] === "Worker runtime stats");
-    expect(statsLogs).to.have.length(2);
-    expect(statsLogs[1].args[1]).to.not.have.any.keys(
-      "threads",
-      "threadCount",
-      "threadNames",
-    );
-    expect(statsLogs[1].args[1].cpu).to.be.an("object");
-    expect(
-      warnSpy
-        .getCalls()
-        .filter(
-          (call) =>
-            call.args[0] ===
-            "Per-thread CPU is not available for the runtime stats",
-        ),
-    ).to.have.length(1);
-  });
-
-  it("should fail for an invalid worker atomics value", function () {
-    const mockStorageService = createMockStorageService("no-job");
-    expect(() =>
-      createVerificationService(mockStorageService, {
-        workerAtomics: "invalid",
-      }),
-    ).to.throw('Invalid WORKER_ATOMICS value "invalid"');
-  });
-
-  it("should keep the Piscina default when the worker atomics value is not set", function () {
-    const mockStorageService = createMockStorageService("no-job");
-    const infoSpy: sinon.SinonSpy = sandbox.spy(logger, "info");
-    verificationService = createVerificationService(mockStorageService);
-    expect(verificationService["workerPool"].options.atomics).to.equal("sync");
-    const poolLog = infoSpy
-      .getCalls()
-      .find(
-        (call) => call.args[0] === "Initialized the verification worker pool",
-      )!;
-    expect(poolLog.args[1].atomics).to.equal("sync");
-  });
-
-  it("should pass the worker atomics value to the pool", function () {
-    const mockStorageService = createMockStorageService("no-job");
-    verificationService = createVerificationService(mockStorageService, {
-      workerAtomics: "async",
-    });
-    expect(verificationService["workerPool"].options.atomics).to.equal("async");
   });
 });
