@@ -60,8 +60,8 @@ docker build -f services/4byte/Dockerfile -t sourcify-4byte .
 
 ```bash
 docker run -p 4445:80 \
-  -e POSTGRES_HOST=your-db-host \
-  -e POSTGRES_USER=your-db-user \
-  -e POSTGRES_PASSWORD=your-db-password \
+  -e FOURBYTES_POSTGRES_HOST=your-db-host \
+  -e FOURBYTES_POSTGRES_USER=your-db-user \
+  -e FOURBYTES_POSTGRES_PASSWORD=your-db-password \
   sourcify-4byte
 ```
