@@ -19,6 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@ethereum-sourcify/compilers": "^1.2.0",
     "commander": "14.0.3",
     "dbmate": "2.34.1",
     "dotenv": "16.6.1",

@@ -77,8 +77,31 @@ export interface VyperSourceMap {
   pc_pos_map_compressed: string;
 }
 
+export interface VyperStorageTypeDefinitionMember {
+  name: string;
+  type: string;
+  slot: number;
+  n_slots: number;
+}
+
+export interface VyperStorageTypeDefinition {
+  members: VyperStorageTypeDefinitionMember[];
+  n_slots: number;
+}
+
 export interface VyperStorageLayout {
-  [variableName: string]: { type: string; slot: number; n_slots: number };
+  [variableName: string]: {
+    type: string;
+    slot: number;
+    n_slots: number;
+    /** Structured historical Vyper types reachable from this storage leaf. */
+    type_definitions?: Record<string, VyperStorageTypeDefinition>;
+  };
+}
+
+export interface VyperStorageLayouts {
+  storageLayout: VyperStorageLayout;
+  transientStorageLayout?: VyperStorageLayout;
 }
 
 /**
@@ -103,6 +126,7 @@ export interface VyperOutputContract {
   ir: VyperIROutput;
   layout?: {
     storage_layout: VyperStorageLayout;
+    transient_storage_layout?: VyperStorageLayout;
   };
   evm: {
     bytecode: {

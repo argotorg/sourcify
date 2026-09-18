@@ -10,6 +10,14 @@ orbs:
 # From https://github.com/jtreutel/circleci-gcp-oidc-test/blob/master/.circleci/config.yml
 # And from the tutorial https://circleci.com/blog/openid-connect-identity-tokens/
 commands:
+  install-uv:
+    description: "Install uv for exact-version historical Vyper tests."
+    steps:
+      - run:
+          name: Install uv
+          command: |
+            curl -LsSf https://astral.sh/uv/0.11.21/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
   gcp-oidc-generate-cred-config-file:
     description: "Authenticate with GCP using a CircleCI OIDC token."
     parameters:
@@ -374,9 +382,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/sourcify
+      - install-uv
       - run:
-          name: test
+          name: test exact compiler matrix
           command: npx lerna run test --scope=@ethereum-sourcify/compilers --stream
+          no_output_timeout: 20m
+          environment:
+            VYPER_LAYOUT_COMPILER_TESTS: "1"
       - run:
           name: create lcov report
           command: npx lerna run cov:lcov --scope=@ethereum-sourcify/compilers
@@ -428,12 +440,14 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/sourcify
+      - install-uv
       - run:
           name: init the database submodule
           command: git submodule update --init
       - run:
           name: test
           command: npx lerna run test --scope=sourcify-server --stream
+          no_output_timeout: 20m
           environment:
             DOCKER_HOST_POSTGRES_TEST_PORT: 5432
             SOURCIFY_POSTGRES_HOST: "sourcify-db"

@@ -4,9 +4,14 @@ import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import fs from 'fs';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
-import type { ImmutableReferences } from '@ethereum-sourcify/compilers-types';
+import type {
+  ImmutableReferences,
+  VyperOutputContract,
+} from '@ethereum-sourcify/compilers-types';
 import {
+  returnFixedVyperVersion,
   returnImmutableReferences,
+  supportsHistoricalStorageLayoutExtraction,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
 import { PreRunCompilation } from '../../src/Compilation/PreRunCompilation';
@@ -777,6 +782,223 @@ describe('VyperCompilation outputSelection version gating', () => {
     expect(outputs).to.include('devdoc');
     expect(outputs).to.include('layout');
     expect(outputs).to.include('evm.bytecode.sourceMap');
+  });
+});
+
+describe('VyperCompilation historical storage layouts', () => {
+  it('normalizes prerelease tags that have no binary commit suffix', () => {
+    expect(returnFixedVyperVersion('0.4.0b2')).to.equal('0.4.0');
+    expect(returnFixedVyperVersion('0.3.10rc1')).to.equal('0.3.10');
+  });
+
+  it('selects only the AST for non-target Vyper sources', () => {
+    const compilation = new VyperCompilation(
+      { compile: async () => ({}) } as any,
+      '0.3.2+commit.3f0d7e17',
+      {
+        language: 'Vyper',
+        sources: {
+          'Main.vy': { content: 'owner: address\n' },
+          'Dependency.vy': { content: 'interface Dependency:\n    pass\n' },
+        },
+        settings: { outputSelection: { '*': ['evm.bytecode'] } },
+      },
+      { path: 'Main.vy', name: 'Main' },
+    );
+
+    expect(
+      compilation.jsonInput.settings.outputSelection['Dependency.vy'],
+    ).to.deep.equal(['ast']);
+    expect(
+      compilation.jsonInput.settings.outputSelection['Main.vy'],
+    ).to.include('evm.bytecode.object');
+    expect(
+      compilation.jsonInput.settings.outputSelection['Main.vy'],
+    ).not.to.include('layout');
+  });
+
+  function compilationWithExtractor({
+    version,
+    nativeLayout,
+    extractStorageLayout,
+    extractStorageLayouts,
+  }: {
+    version: string;
+    nativeLayout?: unknown;
+    extractStorageLayout?: () => Promise<
+      Record<string, { type: string; slot: number; n_slots: number }>
+    >;
+    extractStorageLayouts?: () => Promise<{
+      storageLayout: Record<
+        string,
+        { type: string; slot: number; n_slots: number }
+      >;
+      transientStorageLayout?: Record<
+        string,
+        { type: string; slot: number; n_slots: number }
+      >;
+    }>;
+  }) {
+    const contract = {
+      abi: [],
+      userdoc: { kind: 'user', methods: {}, version: 1 },
+      devdoc: { kind: 'dev', methods: {}, version: 1 },
+      ir: '',
+      ...(nativeLayout !== undefined
+        ? { layout: { storage_layout: nativeLayout } }
+        : {}),
+      evm: {
+        bytecode: { object: '0x01', opcodes: '' },
+        deployedBytecode: { object: '0x01', opcodes: '', sourceMap: '' },
+        methodIdentifiers: {},
+      },
+    };
+    const compiler = {
+      compile: async () => ({
+        compiler: `vyper-${version}`,
+        sources: { 'Fixture.vy': { id: 0, ast: {} } },
+        contracts: { 'Fixture.vy': { Fixture: contract } },
+      }),
+      extractStorageLayout,
+      extractStorageLayouts,
+    };
+    return new VyperCompilation(
+      compiler as any,
+      version,
+      {
+        language: 'Vyper',
+        sources: { 'Fixture.vy': { content: 'owner: address\n' } },
+        settings: { outputSelection: { 'Fixture.vy': [] } },
+      },
+      { path: 'Fixture.vy', name: 'Fixture' },
+    );
+  }
+
+  it('attaches a supplemental layout when historical Standard JSON omits it', async () => {
+    let extractionCalls = 0;
+    const compilation = compilationWithExtractor({
+      version: '0.2.15+commit.6e7dba7',
+      extractStorageLayout: async () => {
+        extractionCalls += 1;
+        return { owner: { type: 'address', slot: 0, n_slots: 1 } };
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout
+        ?.storage_layout,
+    ).to.deep.equal({ owner: { type: 'address', slot: 0, n_slots: 1 } });
+  });
+
+  it('replaces a historical null-array layout sentinel', async () => {
+    let extractionCalls = 0;
+    const compilation = compilationWithExtractor({
+      version: '0.4.0+commit.e9db8d9f',
+      nativeLayout: [null],
+      extractStorageLayout: async () => {
+        extractionCalls += 1;
+        return {};
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout
+        ?.storage_layout,
+    ).to.deep.equal({});
+  });
+
+  it('attaches supplemental persistent and transient layouts together', async () => {
+    let extractionCalls = 0;
+    const compilation = compilationWithExtractor({
+      version: '0.4.0+commit.e9db8d9f',
+      nativeLayout: [null],
+      extractStorageLayouts: async () => {
+        extractionCalls += 1;
+        return {
+          storageLayout: {
+            persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+          },
+          transientStorageLayout: {
+            temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+          },
+        };
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(1);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout,
+    ).to.deep.equal({
+      storage_layout: {
+        persistent_value: { type: 'uint256', slot: 0, n_slots: 1 },
+      },
+      transient_storage_layout: {
+        temporary_value: { type: 'uint256', slot: 1, n_slots: 1 },
+      },
+    });
+  });
+
+  it('falls back for 0.4.1 betas before b4', async () => {
+    expect(
+      supportsHistoricalStorageLayoutExtraction(
+        '0.4.1b3+commit.537313b0',
+        '0.4.1+commit.537313b0',
+      ),
+    ).to.equal(true);
+    const compilation = compilationWithExtractor({
+      version: '0.4.1b3+commit.537313b0',
+      extractStorageLayout: async () => ({}),
+    });
+    await compilation.compile();
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout
+        ?.storage_layout,
+    ).to.deep.equal({});
+  });
+
+  it('keeps a native layout without invoking the supplemental extractor', async () => {
+    let extractionCalls = 0;
+    const nativeLayout = {
+      owner: { type: 'address', slot: 0, n_slots: 1 },
+    };
+    const compilation = compilationWithExtractor({
+      version: '0.4.1b4+commit.4507d2a6',
+      nativeLayout,
+      extractStorageLayout: async () => {
+        extractionCalls += 1;
+        return {};
+      },
+    });
+
+    await compilation.compile();
+
+    expect(extractionCalls).to.equal(0);
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout
+        ?.storage_layout,
+    ).to.equal(nativeLayout);
+  });
+
+  it('does not fail compilation when supplemental extraction fails', async () => {
+    const compilation = compilationWithExtractor({
+      version: '0.2.12+commit.0e1bfbf',
+      extractStorageLayout: async () => {
+        throw new Error('layout unavailable');
+      },
+    });
+
+    await expect(compilation.compile()).to.eventually.be.fulfilled;
+    expect(
+      (compilation.contractCompilerOutput as VyperOutputContract).layout,
+    ).to.equal(undefined);
   });
 });
 
