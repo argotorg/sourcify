@@ -553,7 +553,6 @@ export class SourcifyDatabaseService
             verified_contract_id: verifiedContractId,
             creation_match: verification.status.creationMatch,
             runtime_match: verification.status.runtimeMatch,
-            metadata: verification.compilation.metadata as any,
             chain_id: verification.chainId.toString(),
           },
           poolClient,
@@ -575,7 +574,6 @@ export class SourcifyDatabaseService
             verified_contract_id: verifiedContractId,
             creation_match: verification.status.creationMatch,
             runtime_match: verification.status.runtimeMatch,
-            metadata: verification.compilation.metadata as any,
             chain_id: verification.chainId.toString(),
           },
           oldVerifiedContractId,
@@ -593,8 +591,7 @@ export class SourcifyDatabaseService
         );
       }
 
-      // Temporary dual-write: reads stay on sourcify_matches.metadata until
-      // the backfill completes, then the column gets dropped (issue #2924).
+      // Metadata is stored once per compilation, first submitter wins (#2924).
       // Existing compilations already have their row; Vyper has no metadata.
       const metadata = verification.compilation.metadata;
       if (isNewCompilation && metadata) {

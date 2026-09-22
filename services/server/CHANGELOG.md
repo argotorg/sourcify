@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.1.1 - 2026-09-22
+
+- fix: detect Livepeer ManagerProxy in proxyResolution (#2959)\
+- feat: switch metadata reads to compiled_contracts_metadata (#2942)
+- chore(server): disable the S3Repository storage service (#2976)
+- fix(server): integer worker pool thread counts (#2979)
+- fix: log errorId in server errors (#2841) (#2927)
+
 ## sourcify-server@4.1.0 - 2026-09-01
 
 - ci: split live creation-tx API tests into their own CI job (#2947)

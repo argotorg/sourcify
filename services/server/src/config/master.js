@@ -13,7 +13,7 @@ module.exports = {
     writeOrWarn: [
       WStorageIdentifiers.AllianceDatabase,
       // RWStorageIdentifiers.RepositoryV1, // We no longer write to the repositoryV1
-      WStorageIdentifiers.S3Repository,
+      // WStorageIdentifiers.S3Repository, // Currently disabled
       WStorageIdentifiers.EtherscanVerify,
       WStorageIdentifiers.BlockscoutVerify,
       WStorageIdentifiers.RoutescanVerify,

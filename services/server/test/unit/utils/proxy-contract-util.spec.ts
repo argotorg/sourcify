@@ -7,6 +7,8 @@ import { LOCAL_CHAINS } from "../../../src/sourcify-chains";
 describe("proxy contract util", function () {
   const mockSourcifyChain = LOCAL_CHAINS[0];
   const sandbox = sinon.createSandbox();
+  const LIVEPEER_MANAGER_PROXY_ADDRESS =
+    "0x35Bcf3c30594191d53231E4FF333E8A770453e40";
 
   afterEach(() => {
     sandbox.restore();
@@ -167,6 +169,48 @@ describe("proxy contract util", function () {
       proxyType: "MaticProxy",
       implementations: [
         { address: "0x490e379c9cff64944be82b849f8fd5972c7999a7" },
+      ],
+    });
+  });
+
+  it("should detect LivepeerManagerProxy", async function () {
+    // Livepeer's protocol contracts sit behind ManagerProxy, which keeps no
+    // implementation pointer in a namespaced slot. Slot 0 is the Controller,
+    // slot 1 is the target's registry key, and the fallback delegates to
+    // controller.getContract(targetContractId). The fixture is creation
+    // bytecode, the form lookup.handlers.ts passes. Based on Livepeer
+    // BondingManager (chain 42161) 0x35Bcf3c30594191d53231E4FF333E8A770453e40.
+    const getStorageAt = sandbox.stub();
+    // Key on the slot, not call order, so a reordered read fails rather than
+    // silently getting the other slot's word.
+    getStorageAt
+      .withArgs(LIVEPEER_MANAGER_PROXY_ADDRESS, 0)
+      .resolves(
+        "0x000000000000000000000000d8e8328501e9645d16cf49539efc04f734606ee4",
+      );
+    getStorageAt
+      .withArgs(LIVEPEER_MANAGER_PROXY_ADDRESS, 1)
+      .resolves(
+        "0xfc6f6f33d2bb065ac61cbdd4dbe4b7adf6f3e7e6c6a3d1fe297cbf9a187092e4",
+      );
+    mockSourcifyChain.getStorageAt = getStorageAt;
+    mockSourcifyChain.call = sandbox
+      .stub()
+      .resolves(
+        "0x000000000000000000000000be197fcbfe74de8f10460ea61644b006cc0f0bd2",
+      );
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.LivepeerManagerProxy,
+      LIVEPEER_MANAGER_PROXY_ADDRESS,
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "LivepeerManagerProxy",
+      implementations: [
+        { address: "0xbe197fcbfe74de8f10460ea61644b006cc0f0bd2" },
       ],
     });
   });

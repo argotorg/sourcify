@@ -12,7 +12,7 @@ module.exports = {
     read: RWStorageIdentifiers.SourcifyDatabase,
     writeOrWarn: [
       WStorageIdentifiers.AllianceDatabase,
-      WStorageIdentifiers.S3Repository,
+      // WStorageIdentifiers.S3Repository, // Currently disabled
       // RWStorageIdentifiers.RepositoryV1, // We no longer write to the repositoryV1
       WStorageIdentifiers.EtherscanVerify,
       WStorageIdentifiers.BlockscoutVerify,

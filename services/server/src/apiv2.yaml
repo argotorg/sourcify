@@ -1826,6 +1826,7 @@ components:
         - ZeppelinOSProxy
         - MaticProxy
         - SequenceWalletProxy
+        - LivepeerManagerProxy
         - null
       title: ProxyType
     VerificationJob:

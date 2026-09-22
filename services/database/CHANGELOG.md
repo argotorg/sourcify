@@ -1,5 +1,10 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.15.1 - 2026-09-22
+
+- feat(database): add created_at to compiled_contracts_metadata (#2963)
+- feat: switch metadata reads to compiled_contracts_metadata (#2942)
+
 ## sourcify-database@2.15.0 - 2026-09-01
 
 - Drop the obsolete idx_code_code_first_75 index (#2937)

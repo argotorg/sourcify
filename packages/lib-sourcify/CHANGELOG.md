@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.7.2 - 2026-09-22
+
+- fix(lib-sourcify): fix infinite loop in ipfsHash for empty input (#2975)
+
 ## @ethereum-sourcify/lib-sourcify@3.7.1 - 2026-09-01
 
 - fix(lib-sourcify): find all occurrences of repeated auxdata in bytecode (#2934)

@@ -16,7 +16,11 @@ import {
 } from "@ethereum-sourcify/test-helpers";
 import type { ChildProcess } from "child_process";
 import storageContractArtifact from "./sources/Storage/1_Storage.json";
+import storageContractMetadata from "./sources/Storage/1_Storage.metadata.json";
 import nock from "nock";
+import fs from "fs";
+import path from "path";
+import { AuxdataStyle, decode } from "@ethereum-sourcify/bytecode-utils";
 import type { RpcObject } from "../src/types";
 import type { FetchRequestRPC } from "@ethereum-sourcify/lib-sourcify";
 
@@ -25,11 +29,51 @@ const HARDHAT_PORT = 8546;
 const HARDHAT_BLOCK_TIME_IN_SEC = 3;
 const MOCK_SOURCIFY_SERVER = "http://mocksourcifyserver.dev/server/";
 const MOCK_SIMILARITY_SERVER = "http://mocksimilarity.dev/server/";
+const MOCK_IPFS_ORIGIN = "http://mockipfs.dev";
+const MOCK_IPFS_GATEWAY = `${MOCK_IPFS_ORIGIN}/ipfs/`;
+const IPFS_URL_PREFIX = "dweb:/ipfs/";
 const localChain = {
   chainId: 1337,
   rpc: [`http://localhost:${HARDHAT_PORT}`],
   name: "Localhost Hardhat Network",
 };
+
+/**
+ * Mocks the IPFS gateway with nock so that the test does not depend on a live
+ * gateway. Serves the metadata of the Storage contract and its source file.
+ */
+function nockIpfsGatewayForStorageContract() {
+  const cborData = decode(
+    storageContractArtifact.bytecode,
+    AuxdataStyle.SOLIDITY,
+  );
+  const metadataCid = cborData.ipfs;
+  expect(metadataCid, "No IPFS CID in the test contract bytecode").to.be.a(
+    "string",
+  );
+
+  const sourceUrls: string[] = Object.values(storageContractMetadata.sources)[0]
+    .urls;
+  const sourceIpfsUrl = sourceUrls.find((url) =>
+    url.startsWith(IPFS_URL_PREFIX),
+  );
+  expect(sourceIpfsUrl, "No IPFS url in the test metadata").to.be.a("string");
+  const sourceCid = sourceIpfsUrl!.slice(IPFS_URL_PREFIX.length);
+  // The compiled source has no trailing newline. Remove it to match the
+  // keccak256 in the metadata.
+  const sourceContent = fs
+    .readFileSync(
+      path.join(__dirname, "sources", "Storage", "1_Storage.sol"),
+      "utf8",
+    )
+    .replace(/\n$/, "");
+
+  return nock(MOCK_IPFS_ORIGIN)
+    .get(`/ipfs/${metadataCid}`)
+    .reply(200, JSON.stringify(storageContractMetadata))
+    .get(`/ipfs/${sourceCid}`)
+    .reply(200, sourceContent);
+}
 
 describe("Monitor", function () {
   let sandbox: SinonSandbox;
@@ -63,6 +107,7 @@ describe("Monitor", function () {
     await stopHardhatNetwork(hardhatNodeProcess);
     if (monitor) monitor.stop();
     sandbox.restore();
+    nock.cleanAll();
   });
 
   describe("authenticateRpcs", () => {
@@ -204,8 +249,15 @@ describe("Monitor", function () {
   });
 
   it("should successfully catch a deployed contract, assemble, and send to Sourcify", async () => {
+    const ipfsScope = nockIpfsGatewayForStorageContract();
     monitor = new Monitor([localChain], {
       sourcifyServerURLs: [MOCK_SOURCIFY_SERVER],
+      decentralizedStorages: {
+        ipfs: {
+          enabled: true,
+          gateways: [MOCK_IPFS_GATEWAY],
+        },
+      },
       chainConfigs: {
         [localChain.chainId]: {
           startBlock: 0,
@@ -237,6 +289,8 @@ describe("Monitor", function () {
           nockInterceptor.isDone(),
           `Server ${MOCK_SOURCIFY_SERVER} not called`,
         ).to.be.true;
+        expect(ipfsScope.isDone(), "IPFS gateway not called for all files").to
+          .be.true;
         resolve();
       });
     });

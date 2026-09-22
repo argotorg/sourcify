@@ -13,11 +13,15 @@ export default function genericErrorHandler(
   try {
     const errorCode =
       +err.statusCode || err.status || StatusCodes.INTERNAL_SERVER_ERROR;
+    const errorId = err.payload?.errorId;
     if (errorCode === StatusCodes.INTERNAL_SERVER_ERROR) {
-      logger.error(`Unexpected server error: ${err.message}`, { error: err });
+      logger.error(`Unexpected server error: ${err.message}`, {
+        error: err,
+        errorId,
+      });
     }
 
-    logger.debug("❌ Error in genericErrorHandler", { error: err });
+    logger.debug("❌ Error in genericErrorHandler", { error: err, errorId });
 
     if (err.payload) {
       // APIv2 errors include the response payload

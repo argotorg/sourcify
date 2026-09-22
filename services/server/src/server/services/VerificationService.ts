@@ -12,7 +12,10 @@ import type {
   EtherscanResult,
   AnyCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
-import { Verification } from "@ethereum-sourcify/lib-sourcify";
+import {
+  SolidityMetadataContract,
+  Verification,
+} from "@ethereum-sourcify/lib-sourcify";
 import { getCreatorTx } from "./utils/contract-creation-util";
 import { ContractIsAlreadyBeingVerifiedError } from "../../common/errors/ContractIsAlreadyBeingVerifiedError";
 import logger from "../../common/logger";
@@ -69,6 +72,15 @@ const SIMILARITY_CANDIDATE_BATCH_SIZE = 5;
 type VerifySimilarityServiceInput = VerifySimilarityInput & {
   candidateIds: string[];
 };
+
+export function getWorkerPoolThreadCounts(availableParallelism: number) {
+  const minThreads = Math.max(1, Math.floor(availableParallelism * 0.5));
+  const maxThreads = Math.max(
+    minThreads,
+    Math.ceil(availableParallelism * 1.5),
+  );
+  return { minThreads, maxThreads };
+}
 
 export interface VerificationServiceOptions {
   initCompilers?: boolean;
@@ -143,9 +155,11 @@ export class VerificationService {
       // Therefore, we set it to the number of vCPUs which our resource class uses.
       availableParallelism = 4;
     }
-    // Default values of Piscina
-    const minThreads = availableParallelism * 0.5;
-    const maxThreads = availableParallelism * 1.5;
+    // Default values of Piscina. They must be integers: with a fraction,
+    // Piscina stops and starts an idle worker again and again.
+    const { minThreads, maxThreads } =
+      getWorkerPoolThreadCounts(availableParallelism);
+    const idleTimeout = options.workerIdleTimeout || 30000;
 
     this.workerPool = new Piscina({
       filename: path.resolve(__dirname, "./workers/workerWrapper.js"),
@@ -154,6 +168,8 @@ export class VerificationService {
         // We can use the environment variable because it is overwritten by setLogLevel at server startup
         logLevel: process.env.NODE_LOG_LEVEL,
         sourcifyChainInstanceMap,
+        // Workers run in separate threads and do not share this global
+        ipfsGateway: SolidityMetadataContract.getGlobalIpfsGateway(),
         solcRepoPath: options.solcRepoPath,
         solJsonRepoPath: options.solJsonRepoPath,
         vyperRepoPath: options.vyperRepoPath,
@@ -162,8 +178,14 @@ export class VerificationService {
       },
       minThreads,
       maxThreads,
-      idleTimeout: options.workerIdleTimeout || 30000,
+      idleTimeout,
       concurrentTasksPerWorker: options.concurrentVerificationsPerWorker || 5,
+    });
+    logger.info("Initialized the verification worker pool", {
+      availableParallelism,
+      minThreads,
+      maxThreads,
+      idleTimeoutMs: idleTimeout,
     });
   }
 

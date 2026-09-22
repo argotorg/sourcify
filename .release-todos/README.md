@@ -7,7 +7,9 @@ A release TODO is a manual step that a person must do around a production deploy
 - add a secret or an environment variable
 - run a follow-up script after a migration (see `services/database/README.md`, "schema upgrade scripts")
 
-The release script (`scripts/release/main.sh`) reads every `.md` file in this directory except this README, shows the items at the right time, and deletes the files on the release branch. So the directory only ever holds the open items for the next release.
+The release script (`scripts/release/main.sh`) reads every `.md` file in this directory except this README, as committed on the `staging` branch, shows the items at the right time, and deletes the files on the release branch. So the directory only ever holds the open items for the next release.
+
+At the start of a release the script records the `staging` commit it reads the files from, so the items shown after the deploy are still found once the files are deleted, and also if `staging` is pulled in the meantime.
 
 ## When to add a file
 
@@ -37,6 +39,6 @@ Two optional sections. `before` is shown at the start of the release, before the
 The release script also, without any file here:
 
 - lists new files under `services/database/migrations/` since the last deploy
-- lists added lines that contain `TODO_RELEASE` since the last deploy
+- lists added lines that contain `TODO_RELEASE` since the last deploy (outside `scripts/release/` and this directory)
 
 Both only look at `git diff master...staging`, so an item shows up for exactly one release.

@@ -49,6 +49,12 @@ const initWorker = () => {
 
   setLogLevel(Piscina.workerData.logLevel || "info");
 
+  if (Piscina.workerData.ipfsGateway) {
+    SolidityMetadataContract.setGlobalIpfsGateway(
+      Piscina.workerData.ipfsGateway,
+    );
+  }
+
   const sourcifyChainInstanceMap = Piscina.workerData
     .sourcifyChainInstanceMap as { [chainId: string]: SourcifyChainInstance };
 

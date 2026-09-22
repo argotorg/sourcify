@@ -1,14 +1,11 @@
 import path from "path";
 import fs from "fs";
 import type { DeploymentInfo } from "./helpers";
-import {
-  deployFromAbiAndBytecodeForCreatorTxHash,
-  readFilesFromDirectory,
-} from "./helpers";
+import { deployFromAbiAndBytecodeForCreatorTxHash } from "./helpers";
 import type { JsonRpcSigner } from "ethers";
 import { JsonRpcProvider, Network } from "ethers";
 import { LOCAL_CHAINS } from "../../src/sourcify-chains";
-import nock from "nock";
+import { getIpfsMockGatewayUrl } from "./IpfsMockServer";
 import storageContractArtifact from "../testcontracts/Storage/Storage.json";
 import storageContractMetadata from "../testcontracts/Storage/metadata.json";
 import storageContractMetadataModified from "../testcontracts/Storage/metadataModified.json";
@@ -19,7 +16,7 @@ import {
   stopHardhatNetwork,
 } from "@ethereum-sourcify/test-helpers";
 import { SolidityMetadataContract } from "@ethereum-sourcify/lib-sourcify";
-import type { Metadata } from "@ethereum-sourcify/lib-sourcify";
+import type { IpfsGateway, Metadata } from "@ethereum-sourcify/lib-sourcify";
 
 const storageContractSourcePath = path.join(
   __dirname,
@@ -73,6 +70,7 @@ export class LocalChainFixture {
   private _defaultContractTxIndex?: number;
 
   private hardhatNodeProcess?: ChildProcess;
+  private originalIpfsGateway?: IpfsGateway;
 
   // Getters for type safety
   // Can be safely accessed in "it" blocks
@@ -123,18 +121,12 @@ export class LocalChainFixture {
     this._port = options.port ?? HARDHAT_PORT;
 
     before(async () => {
-      // Init IPFS mock with all the necessary pinned files
-      const mockContent = await readFilesFromDirectory(
-        path.join(__dirname, "..", "mocks", "ipfs"),
-      );
-      for (const ipfsKey of Object.keys(mockContent)) {
-        nock(SolidityMetadataContract.getGlobalIpfsGateway().url || "")
-          .persist()
-          .get("/" + ipfsKey)
-          .reply(function () {
-            return [200, mockContent[ipfsKey]];
-          });
-      }
+      // Point the IPFS gateway of the main thread to the local mock server
+      this.originalIpfsGateway =
+        SolidityMetadataContract.getGlobalIpfsGateway();
+      SolidityMetadataContract.setGlobalIpfsGateway({
+        url: await getIpfsMockGatewayUrl(),
+      });
 
       this.hardhatNodeProcess = await startHardhatNetwork(this._port);
 
@@ -167,7 +159,9 @@ export class LocalChainFixture {
       if (this.hardhatNodeProcess) {
         await stopHardhatNetwork(this.hardhatNodeProcess);
       }
-      nock.cleanAll();
+      if (this.originalIpfsGateway) {
+        SolidityMetadataContract.setGlobalIpfsGateway(this.originalIpfsGateway);
+      }
     });
   }
 }

@@ -113,29 +113,6 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Mocha - Etherscan Instances",
-      "runtimeVersion": "22.22.0",
-      "program": "${workspaceRoot}/node_modules/.bin/mocha",
-      "cwd": "${workspaceFolder}/services/server",
-      "env": {
-        // "TEST_CHAIN": "84532",
-      },
-      "preLaunchTask": "server:database-test:up",
-      "postDebugTask": "server:database-test:down",
-      "args": [
-        "${workspaceFolder}/services/server/test/chains/etherscan-instances.spec.ts",
-        "-r",
-        "${workspaceFolder}/services/server/test/load-env.js",
-        "--no-timeout",
-        "--exit"
-      ],
-      "smartStep": true,
-      "console": "integratedTerminal"
-      // "internalConsoleOptions": "neverOpen"
-    },
-    {
-      "type": "node",
-      "request": "launch",
       "name": "Mocha - lib-sourcify",
       "runtimeVersion": "22.22.0",
       "cwd": "${workspaceFolder}/packages/lib-sourcify",
@@ -241,28 +218,6 @@
       "smartStep": true,
       "console": "integratedTerminal"
       // "internalConsoleOptions": "neverOpen"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Mocha - Chains",
-      "runtimeVersion": "22.22.0",
-      "program": "${workspaceRoot}/node_modules/.bin/mocha",
-      "cwd": "${workspaceFolder}/services/server",
-      "env": {
-        // "NEW_CHAIN_ID": "333000333"
-      },
-      "preLaunchTask": "server:database-test:up",
-      "postDebugTask": "server:database-test:down",
-      "args": [
-        "${workspaceFolder}/services/server/test/chains/chain-tests.spec.ts",
-        "-r",
-        "${workspaceFolder}/services/server/test/load-env.js",
-        "--exit"
-      ],
-      "smartStep": true,
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
     }
   ]
 }

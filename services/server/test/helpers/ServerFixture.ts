@@ -13,6 +13,7 @@ import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal"
 import { FeLocal } from "../../src/server/services/compiler/local/FeLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
+import { getIpfsMockGatewayUrl } from "./IpfsMockServer";
 import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 
 export type ServerFixtureOptions = {
@@ -97,6 +98,10 @@ export class ServerFixture {
         replaceContract: true,
         sourcifyPrivateToken: "sourcify-test-token",
         logLevel: "debug",
+        libSourcifyConfig: {
+          // The verification workers fetch missing sources from this gateway
+          ipfsGateway: { url: await getIpfsMockGatewayUrl() },
+        },
       };
 
       this._server = new Server(

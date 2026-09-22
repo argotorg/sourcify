@@ -502,6 +502,37 @@ describe('SolidityMetadataContract', () => {
     });
   });
 
+  describe('tryToFindPerfectMetadata', () => {
+    it('should not hang on a whitespace-only source', async () => {
+      const whitespaceContent = '\n';
+      const metadata = {
+        ...validMetadata,
+        sources: {
+          [validSourcePath]: {
+            keccak256: keccak256str(whitespaceContent),
+            urls: ['dweb:/ipfs/QmPlaceholder'],
+          },
+        },
+      };
+      const contract = new SolidityMetadataContract(metadata, [
+        { path: validSourcePath, content: whitespaceContent },
+      ]);
+      expect(contract.foundSources[validSourcePath]).to.equal(
+        whitespaceContent,
+      );
+
+      // Any runtime bytecode with a Solidity cbor auxdata works.
+      // The ipfs hash in it does not need to match.
+      const runtimeBytecode =
+        '0x6080604052' +
+        `a2646970667358221220${'11'.repeat(32)}64736f6c63430008110033`;
+
+      await expect(
+        contract.tryToFindPerfectMetadata(runtimeBytecode),
+      ).to.eventually.equal(false);
+    });
+  });
+
   describe('assembleContract', () => {
     it('should find sources after generating variations', () => {
       // Create source with different line endings than expected

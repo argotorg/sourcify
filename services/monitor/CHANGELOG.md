@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.6.3 - 2026-09-22
+
+- test: remove the live ipfs.io dependency from monitor and server tests (#2967)
+
 ## sourcify-monitor@1.6.2 - 2026-09-01
 
 - Update dependencies
