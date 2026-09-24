@@ -406,7 +406,7 @@ describe('SolidityMetadataContract', () => {
       ipfsMetadata.sources[validSourcePath].urls = [`dweb:/ipfs/${ipfsHash}`];
 
       // Setup mock IPFS response
-      nock('https://ipfs.io')
+      nock('https://ipfs.filebase.io')
         .get(`/ipfs/${ipfsHash}`)
         .reply(200, validSourceContent);
 
@@ -473,7 +473,7 @@ describe('SolidityMetadataContract', () => {
       const ipfsHash = 'QmTest';
       ipfsMetadata.sources[validSourcePath].urls = [`dweb:/ipfs/${ipfsHash}`];
 
-      nock('https://ipfs.io')
+      nock('https://ipfs.filebase.io')
         .get(`/ipfs/${ipfsHash}`)
         .reply(200, validSourceContent);
 
@@ -491,7 +491,7 @@ describe('SolidityMetadataContract', () => {
       const contract = new SolidityMetadataContract(validMetadata, []);
       expect(Object.keys(contract.missingSources)).to.have.lengthOf(1);
 
-      nock('https://ipfs.io').get(/.*/).reply(404);
+      nock('https://ipfs.filebase.io').get(/.*/).reply(404);
 
       await expect(contract.fetchMissing()).to.be.eventually.rejectedWith(
         getErrorMessageFromCode({

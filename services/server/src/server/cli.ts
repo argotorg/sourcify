@@ -39,7 +39,7 @@ const libSourcifyConfig: LibSourcifyConfig = {};
 if (process.env.IPFS_GATEWAY || process.env.IPFS_GATEWAY_HEADERS) {
   try {
     libSourcifyConfig.ipfsGateway = {
-      url: process.env.IPFS_GATEWAY || "https://ipfs.io/ipfs/",
+      url: process.env.IPFS_GATEWAY || "https://ipfs.filebase.io/ipfs/",
       headers: JSON.parse(process.env.IPFS_GATEWAY_HEADERS || "{}"),
     };
   } catch (error) {

@@ -50,7 +50,7 @@ export class SolidityMetadataContract {
 
   // Static IPFS gateway configuration
   private static ipfsGateway: IpfsGateway = {
-    url: 'https://ipfs.io/ipfs/',
+    url: 'https://ipfs.filebase.io/ipfs/',
   };
 
   // Static method to set the IPFS gateway

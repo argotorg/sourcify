@@ -44,7 +44,7 @@ The structure of the file is as such:
       enabled: true,
       gateways: [
         // Passing gateway as a string will use default settings
-        "https://ipfs.io/ipfs/",
+        "https://ipfs.filebase.io/ipfs/",
         // If you need gateways specific settings you can pass them in an object
         {
           url: "http://localhost:8080/ipfs/",
