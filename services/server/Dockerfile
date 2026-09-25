@@ -17,6 +17,11 @@ RUN npx lerna run build --scope sourcify-server
 ######################
 FROM node:22.22.0-trixie-slim@sha256:465a8c8f0f4103861bcbcf3e512608394b7155eccb1955425f4ea3f672ddc53e as production
 
+# Historical Vyper storage layouts are recovered in exact-version, isolated
+# Python environments. uv manages the matching Python runtime and compiler
+# package while caching them beside the existing Vyper binaries.
+COPY --from=ghcr.io/astral-sh/uv:0.11.21 /uv /uvx /bin/
+
 # Fe compiler (v26.0.0-alpha.12+) requires libssl3 and glibc >= 2.39
 RUN apt-get update && apt-get install -y --no-install-recommends libssl3 && rm -rf /var/lib/apt/lists/*
 
