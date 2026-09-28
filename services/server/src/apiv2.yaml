@@ -188,6 +188,8 @@ paths:
 
         To get other details one can either list the fields requested in the `fields` query param or ask all fields but omit several with `omit`. To get everything just pass `fields=all`.
 
+        **Request only the fields that you need.** `fields=all` returns every field, including all source files and the full standard JSON input and output. It is the most expensive request on this endpoint. Do not use `fields=all` or `stdJsonInput` in loops. To collect data for many contracts, use the [Parquet export](https://docs.sourcify.dev/docs/repository/download-dataset/) or the [BigQuery dataset](https://docs.sourcify.dev/docs/bigquery/) instead.
+
         **Available fields:**
 
         - `matchId` – unique match ID
@@ -218,14 +220,14 @@ paths:
       parameters:
         - name: fields
           in: query
-          description: Comma-separated list of fields to include in the response. Can also be `all` to return every available field. See the endpoint description for the full list of available fields.
+          description: Comma-separated list of fields to include in the response. Can also be `all` to return every available field. See the endpoint description for the full list of available fields. `all` includes all source files and the full standard JSON input and output, so it is expensive. Do not use `all` in loops. Request only the fields that you need.
           allowReserved: true
           schema:
             type: string
             example: "abi,metadata,creationBytecode.onchainBytecode,deployment.blockNumber,compilation"
         - name: omit
           in: query
-          description: Comma seperated fields to NOT include in the response. All fields except matching ones will be returned. Can't be used simultanously with `fields`.
+          description: Comma seperated fields to NOT include in the response. All fields except matching ones will be returned. Can't be used simultanously with `fields`. A short `omit` list returns almost every field, so it costs almost as much as `fields=all`. Do not use `omit` in loops. Use `fields` to request only what you need.
           allowReserved: true
           schema:
             type: string

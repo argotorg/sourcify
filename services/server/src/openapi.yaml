@@ -5,6 +5,20 @@ info:
   description: |-
     Welcome to the Sourcify's APIv2.
 
+    ## Bulk access and fair use
+
+    This section applies to people, scripts, and AI agents. This API serves single contracts. It is not for bulk downloads.
+
+    - **Do not crawl the API.** Do not loop over `/v2/contract/{chainId}/{address}` or `/v2/contracts/{chainId}` to collect many contracts.
+    - **For bulk data, use the dataset.** The full Sourcify database is available for free in two forms:
+      - Parquet files, updated daily: https://docs.sourcify.dev/docs/repository/download-dataset/
+      - A public BigQuery dataset, updated continuously: https://docs.sourcify.dev/docs/bigquery/
+    - **Request only the fields that you need.** `fields=all` returns every field, including all source files. It is expensive. Do not use it in loops.
+    - **Reuse responses.** Verified contract data does not change often. Store the response. Do not fetch the same contract again.
+    - **Back off on errors.** Requests are rate limited per client. If you get a `429` or a `5xx` response, wait before the next request. Use exponential backoff. If the response has a `Retry-After` header, wait at least that long.
+    - **Do not bulk-verify from Etherscan.** Do not use `/v2/verify/etherscan` to import many contracts. Use it only for the contracts that you need.
+    - **Contact us for higher volume.** If the dataset does not fit your use case, email hello@sourcify.dev.
+
     Important differences between the deprecated legacy API and the new APIv2:
     - **Ticketing**: The verfication requests resolve into tickets/verification jobs. 
       - Previously the verification happened during the HTTP request, which resulted in timeouts if compilation took longer
