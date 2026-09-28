@@ -1827,6 +1827,7 @@ components:
         - MaticProxy
         - SequenceWalletProxy
         - LivepeerManagerProxy
+        - AragonAppProxy
         - null
       title: ProxyType
     VerificationJob:
