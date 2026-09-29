@@ -15,6 +15,7 @@ info:
       - A public BigQuery dataset, updated continuously: https://docs.sourcify.dev/docs/bigquery/
     - **Request only the fields that you need.** `fields=all` returns every field, including all source files. It is expensive. Do not use it in loops.
     - **Reuse responses.** Verified contract data does not change often. Store the response. Do not fetch the same contract again.
+    - **Send a descriptive `User-Agent`.** Name your tool or project, its version, and a contact URL or email. Example: `User-Agent: my-indexer/1.2 (+https://example.com; ops@example.com)`. Do not send a generic default such as `python-requests` or `curl`. This lets us contact you before we limit your traffic.
     - **Back off on errors.** Requests are rate limited per client. If you get a `429` or a `5xx` response, wait before the next request. Use exponential backoff. If the response has a `Retry-After` header, wait at least that long.
     - **Do not bulk-verify from Etherscan.** Do not use `/v2/verify/etherscan` to import many contracts. Use it only for the contracts that you need.
     - **Contact us for higher volume.** If the dataset does not fit your use case, email hello@sourcify.dev.
