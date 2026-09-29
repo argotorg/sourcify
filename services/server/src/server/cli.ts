@@ -252,9 +252,15 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       (tag: { name?: string }) => tag?.name !== "Private",
     );
   }
-  server.app.get("/api-docs/swagger.json", (req, res) => {
-    res.json(swaggerDocument);
-  });
+  // Also serve the spec at the paths that tools and AI agents commonly try.
+  // We serve it directly instead of redirecting: the server does not know
+  // its public path prefix (/server), and some clients don't follow redirects.
+  server.app.get(
+    ["/api-docs/swagger.json", "/openapi.json", "/v2/openapi.json"],
+    (req, res) => {
+      res.json(swaggerDocument);
+    },
+  );
   server.app.use(
     "/api-docs",
     swaggerUi.serve,
