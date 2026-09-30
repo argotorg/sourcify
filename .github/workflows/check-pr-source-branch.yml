@@ -1,0 +1,20 @@
+name: Check PR source branch
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, edited]
+
+permissions: {}
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Allow only staging as the source branch
+        if: >
+          github.head_ref != 'staging'
+          || github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "::error::Only PRs from the staging branch of this repository can merge into master."
+          exit 1
