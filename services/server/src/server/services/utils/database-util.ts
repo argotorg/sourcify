@@ -376,17 +376,23 @@ export type GetVerificationJobsByChainAndAddressResult = {
   completed_at: Nullable<string>;
 };
 
-const sourcesAggregation =
-  "json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))";
+/**
+ * Correlated subquery for the sources of the current `compiled_contracts` row.
+ * It returns a `{ path: { content } }` object. The outer query needs no JOIN
+ * and no GROUP BY.
+ */
+export function buildSourcesSubquery(schema: string) {
+  return `(
+      SELECT json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))
+      FROM ${schema}.compiled_contracts_sources
+      LEFT JOIN ${schema}.sources ON sources.source_hash = compiled_contracts_sources.source_hash
+      WHERE compiled_contracts_sources.compilation_id = compiled_contracts.id
+    )`;
+}
 
 /**
- * Builds the `std_json_input` selector around a caller-provided SQL expression
- * yielding the `sources` object.
- *
- * Deployment-keyed queries aggregate sources via a JOIN + GROUP BY
- * (`sourcesAggregation`), while compilation-keyed batch queries use a scalar
- * subquery so they don't need a GROUP BY at all. Both must produce the same
- * standard JSON input, so the surrounding structure lives here only once.
+ * Builds the `std_json_input` selector around the SQL expression that yields
+ * the `sources` object, see `buildSourcesSubquery`.
  */
 export function buildStdJsonInputSelector(sourcesExpression: string) {
   return `json_build_object(
@@ -396,23 +402,47 @@ export function buildStdJsonInputSelector(sourcesExpression: string) {
     )::jsonb || COALESCE(compiled_contracts.additional_input, '{}'::jsonb) as std_json_input`;
 }
 
-function generateSignaturesSelector(type: SignatureType) {
-  // Use jsonb_agg(DISTINCT ...) to avoid duplicate signatures caused by the
-  // Cartesian product when both compiled_contracts_sources and
-  // compiled_contracts_signatures are JOINed on the same compilation_id.
+/**
+ * Correlated subquery for the signatures of one type of the current
+ * `compiled_contracts` row. Keep DISTINCT: it sorts the array, and the order
+ * is part of the API response.
+ */
+export function buildSignaturesSelector(schema: string, type: SignatureType) {
   return `
     COALESCE(
-      jsonb_agg(DISTINCT
-        jsonb_build_object(
-          'signature', signatures.signature,
-          'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
-          'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
+      (
+        SELECT jsonb_agg(DISTINCT
+          jsonb_build_object(
+            'signature', signatures.signature,
+            'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
+            'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
+          )
         )
-      ) FILTER (WHERE compiled_contracts_signatures.signature_type = '${type}'),
+        FROM ${schema}.compiled_contracts_signatures
+        JOIN ${schema}.signatures ON signatures.signature_hash_32 = compiled_contracts_signatures.signature_hash_32
+        WHERE compiled_contracts_signatures.compilation_id = compiled_contracts.id
+          AND compiled_contracts_signatures.signature_type = '${type}'
+      ),
       '[]'::jsonb
     ) as ${type}_signatures
   `;
 }
+
+/**
+ * Selectors that contain a subquery need the schema of the queried tables.
+ * They are functions of the schema. Resolve them with `resolveSelector`.
+ */
+const SCHEMA_DEPENDENT_SELECTORS = {
+  sources: (schema: string) => `${buildSourcesSubquery(schema)} as sources`,
+  std_json_input: (schema: string) =>
+    buildStdJsonInputSelector(buildSourcesSubquery(schema)),
+  function_signatures: (schema: string) =>
+    buildSignaturesSelector(schema, SignatureType.Function),
+  event_signatures: (schema: string) =>
+    buildSignaturesSelector(schema, SignatureType.Event),
+  error_signatures: (schema: string) =>
+    buildSignaturesSelector(schema, SignatureType.Error),
+};
 
 export const STORED_PROPERTIES_TO_SELECTORS = {
   id: "sourcify_matches.id",
@@ -455,7 +485,6 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   transaction_index: "contract_deployments.transaction_index",
   deployer:
     "nullif(concat('0x', encode(contract_deployments.deployer, 'hex')), '0x') as deployer",
-  sources: `${sourcesAggregation} as sources`,
   language: "INITCAP(compiled_contracts.language) as language",
   compiler: "compiled_contracts.compiler",
   version: "compiled_contracts.version as version",
@@ -473,7 +502,6 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   source_ids:
     "compiled_contracts.compilation_artifacts->'sources' as source_ids",
   additional_input: "compiled_contracts.additional_input",
-  std_json_input: buildStdJsonInputSelector(sourcesAggregation),
   std_json_output: `json_build_object(
     'sources', compiled_contracts.compilation_artifacts->'sources',
     'contracts', json_build_object(
@@ -507,12 +535,21 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
       )
     )
   ) as std_json_output`,
-  function_signatures: generateSignaturesSelector(SignatureType.Function),
-  event_signatures: generateSignaturesSelector(SignatureType.Event),
-  error_signatures: generateSignaturesSelector(SignatureType.Error),
+  ...SCHEMA_DEPENDENT_SELECTORS,
 };
 
 export type StoredProperties = keyof typeof STORED_PROPERTIES_TO_SELECTORS;
+
+/**
+ * Returns the SQL selector of a stored property for the given schema.
+ */
+export function resolveSelector(
+  property: StoredProperties,
+  schema: string,
+): string {
+  const selector = STORED_PROPERTIES_TO_SELECTORS[property];
+  return typeof selector === "function" ? selector(schema) : selector;
+}
 
 type creationBytecodeSubfields = keyof NonNullable<
   VerifiedContractApiObject["creationBytecode"]
