@@ -11,6 +11,8 @@ type ErrorLike = {
   shortMessage?: unknown;
   response?: { statusCode?: unknown } | null;
   status?: unknown;
+  /** The JSON-RPC error that ethers wraps, for example in 'could not coalesce error'. */
+  error?: { message?: unknown } | null;
 };
 
 /**
@@ -75,6 +77,10 @@ export function summarizeRpcError(error: unknown): Record<string, unknown> {
     const status = getHttpStatus(errorLike);
     if (status !== undefined) {
       summary.status = status;
+    }
+    const rpcMessage = errorLike.error?.message;
+    if (typeof rpcMessage === 'string') {
+      summary.rpcMessage = truncate(rpcMessage);
     }
     return summary;
   } catch {

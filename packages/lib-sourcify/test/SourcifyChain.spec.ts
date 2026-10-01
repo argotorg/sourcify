@@ -5,6 +5,7 @@ import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
 import {
   DefinitiveError,
+  RpcAuthFailure,
   RpcFailure,
   SourcifyChain,
   setLibSourcifyLogger,
@@ -1074,6 +1075,78 @@ describe('SourcifyChain', () => {
         expect(failures === undefined || failures === 0).to.be.true;
       });
 
+      it('should throw an RpcAuthFailure for an HTTP 403', async () => {
+        sourcifyChain = createTwoRpcChain();
+        await expect(
+          sourcifyChain.callProviderWithTimeout(
+            Promise.reject(makeServerError(403)),
+          ),
+        ).to.be.rejectedWith(RpcAuthFailure);
+      });
+
+      for (const traceSupport of [
+        'trace_transaction',
+        'debug_traceTransaction',
+      ] as const) {
+        it(`should not block an RPC on HTTP 403 from ${traceSupport}`, async () => {
+          sourcifyChain = new SourcifyChain({
+            name: 'TestChain',
+            chainId: 1,
+            rpcs: [{ rpc: 'http://localhost:8545', traceSupport }],
+            supported: true,
+          });
+          const provider = sourcifyChain.rpcs[0].provider!;
+          const sendStub = sandbox
+            .stub(provider, 'send')
+            .rejects(makeServerError(403));
+          const getBlockNumberStub = sandbox
+            .stub(provider, 'getBlockNumber')
+            .resolves(100);
+
+          for (let i = 0; i < 3; i++) {
+            await expect(
+              sourcifyChain.getCreationBytecodeForFactory(
+                '0x' + '1'.repeat(64),
+                '0x' + '2'.repeat(40),
+              ),
+            ).to.be.rejectedWith('All RPCs failed or are blocked');
+          }
+          expect(sendStub).to.have.been.calledThrice;
+          const failures = sourcifyChain.rpcs[0].health?.consecutiveFailures;
+          expect(failures === undefined || failures === 0).to.be.true;
+
+          // Other operations still use the RPC
+          expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+          expect(getBlockNumberStub).to.have.been.calledOnce;
+        });
+      }
+
+      it('should still block an RPC on a timeout from a trace call', async () => {
+        sourcifyChain = new SourcifyChain({
+          name: 'TestChain',
+          chainId: 1,
+          rpcs: [
+            { rpc: 'http://localhost:8545', traceSupport: 'trace_transaction' },
+          ],
+          supported: true,
+        });
+        sandbox.stub(sourcifyChain.rpcs[0].provider!, 'send').rejects(
+          makeError('timeout', 'TIMEOUT', {
+            operation: 'send',
+            reason: 'timeout',
+            request: 'http://localhost:8545',
+          } as any),
+        );
+
+        await expect(
+          sourcifyChain.getCreationBytecodeForFactory(
+            '0x' + '1'.repeat(64),
+            '0x' + '2'.repeat(40),
+          ),
+        ).to.be.rejectedWith('All RPCs failed or are blocked');
+        expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+      });
+
       describe('compact logging', () => {
         let logSpy: sinon.SinonSpy;
 
@@ -1297,6 +1370,30 @@ describe('summarizeRpcError', () => {
       status: 403,
     });
     expect(JSON.stringify(summary)).to.not.contain('BODY');
+  });
+
+  it('should include the nested JSON-RPC error message', () => {
+    const error = makeError('could not coalesce error', 'UNKNOWN_ERROR', {
+      error: {
+        code: -32601,
+        message:
+          'the method trace_transaction does not exist' + 'x'.repeat(500),
+      },
+      payload: {
+        method: 'trace_transaction',
+        params: [],
+        id: 1,
+        jsonrpc: '2.0',
+      },
+    });
+    const summary = summarizeRpcError(error);
+    expect(summary.code).to.equal('UNKNOWN_ERROR');
+    expect(summary.message).to.equal('could not coalesce error');
+    const rpcMessage = summary.rpcMessage as string;
+    expect(rpcMessage).to.match(/^the method trace_transaction does not exist/);
+    expect(rpcMessage).to.match(/\.\.\. \[truncated\]$/);
+    expect(rpcMessage.length).to.be.lessThan(400);
+    expect(summary).to.not.have.property('payload');
   });
 
   it('should cut a long message', () => {

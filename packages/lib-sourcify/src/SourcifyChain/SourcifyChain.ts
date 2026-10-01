@@ -52,6 +52,9 @@ export class RpcFailure extends Error {
   }
 }
 
+/** An HTTP 401 or 403 response. Marks the RPC as unhealthy, except for trace calls. */
+export class RpcAuthFailure extends RpcFailure {}
+
 /** A conclusive negative answer that no other RPC can change, e.g. the tx provably doesn't create the expected contract. Stops the RPC retry loop. */
 export class DefinitiveError extends Error {}
 
@@ -323,7 +326,7 @@ export class SourcifyChain {
         );
       }
       if (isAuthFailure(err)) {
-        throw new RpcFailure(
+        throw new RpcAuthFailure(
           (err as EthersError)?.shortMessage ||
             'RPC failure: server rejected the request with 401 or 403',
           err,
@@ -470,7 +473,11 @@ export class SourcifyChain {
           const result = await parityStyleMethod(rpc, ...args);
           return { result };
         } catch (e: any) {
-          if (e instanceof RpcFailure || e instanceof DefinitiveError) {
+          // A 401 or 403 can apply to the trace method only, so it must not block the RPC.
+          if (
+            (e instanceof RpcFailure && !(e instanceof RpcAuthFailure)) ||
+            e instanceof DefinitiveError
+          ) {
             throw e;
           }
           logInfo('Failed to fetch from parity traces', {
@@ -493,7 +500,11 @@ export class SourcifyChain {
           const result = await gethStyleMethod(rpc, ...args);
           return { result };
         } catch (e: any) {
-          if (e instanceof RpcFailure || e instanceof DefinitiveError) {
+          // A 401 or 403 can apply to the trace method only, so it must not block the RPC.
+          if (
+            (e instanceof RpcFailure && !(e instanceof RpcAuthFailure)) ||
+            e instanceof DefinitiveError
+          ) {
             throw e;
           }
           logInfo('Failed to fetch from geth traces', {
