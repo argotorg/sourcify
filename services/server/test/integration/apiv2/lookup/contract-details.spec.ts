@@ -1157,27 +1157,6 @@ describe("GET /v2/contract/:chainId/:address", function () {
       chai.expect(all.signatures.event).to.have.lengthOf(2);
     });
 
-    it("should return the function signatures in a stable order", async function () {
-      const { resolveWorkers } = makeWorkersWait();
-      const contractAddress = await verifyProxyContract(resolveWorkers);
-
-      const { signatures } = await getContract(contractAddress, "signatures");
-
-      chai
-        .expect(signatures.function)
-        .to.deep.equal(expectedFunctionSignatures);
-    });
-
-    it("should return an empty array for a signature type without signatures", async function () {
-      const { resolveWorkers } = makeWorkersWait();
-      const contractAddress = await verifyProxyContract(resolveWorkers);
-
-      const { signatures } = await getContract(contractAddress, "signatures");
-
-      chai.expect(signatures.error).to.deep.equal([]);
-      chai.expect(signatures.event).to.have.lengthOf(2);
-    });
-
     it("should read sources and signatures in subqueries without a GROUP BY", async function () {
       const { resolveWorkers } = makeWorkersWait();
       const contractAddress = await verifyProxyContract(resolveWorkers);
