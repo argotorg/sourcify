@@ -7,11 +7,13 @@ import {
   DefinitiveError,
   RpcFailure,
   SourcifyChain,
-  isAuthFailure,
   setLibSourcifyLogger,
-  summarizeRpcError,
 } from '../src';
 import { DefaultLogger } from '../src/logger';
+import {
+  isAuthFailure,
+  summarizeRpcError,
+} from '../src/SourcifyChain/rpcErrors';
 import { JsonRpcProvider, makeError } from 'ethers';
 import {
   startHardhatNetwork,
