@@ -9,7 +9,7 @@ import {
   toQuantity,
 } from 'ethers';
 import { logDebug, logInfo, logWarn } from '../logger';
-import { isAuthFailure, summarizeRpcError } from './rpcErrors';
+import { getHttpStatus, isAuthFailure, summarizeRpcError } from './rpcErrors';
 import type {
   CallFrame,
   FetchContractCreationTxMethods,
@@ -34,7 +34,23 @@ export function createFetchRequest(rpc: FetchRequestRPC): FetchRequest {
   return ethersFetchReq;
 }
 
-export class RpcFailure extends Error {}
+export class RpcFailure extends Error {
+  /** The code of the original error, e.g. 'SERVER_ERROR' */
+  code?: string;
+  /** The HTTP status of the original error, if the RPC answered with one */
+  status?: number;
+
+  constructor(message: string, original?: unknown) {
+    super(message);
+    if (typeof original === 'object' && original !== null) {
+      const { code } = original as { code?: unknown };
+      if (typeof code === 'string') {
+        this.code = code;
+      }
+      this.status = getHttpStatus(original);
+    }
+  }
+}
 
 /** A conclusive negative answer that no other RPC can change, e.g. the tx provably doesn't create the expected contract. Stops the RPC retry loop. */
 export class DefinitiveError extends Error {}
@@ -157,6 +173,10 @@ export class SourcifyChain {
         maskedUrl: rpc.maskedUrl,
         chainId: this.chainId,
         previousFailures: rpc.health.consecutiveFailures,
+        failedForMs:
+          rpc.health.failingSince !== undefined
+            ? Date.now() - rpc.health.failingSince
+            : undefined,
       });
     }
     rpc.health = {
@@ -176,12 +196,15 @@ export class SourcifyChain {
       86_400_000, // 24 hours
     ];
 
+    const now = Date.now();
     if (!rpc.health) {
       rpc.health = { consecutiveFailures: 0 };
     }
+    if (rpc.health.consecutiveFailures === 0) {
+      rpc.health.failingSince = now;
+    }
     rpc.health.consecutiveFailures++;
 
-    const now = Date.now();
     const backoffIndex = Math.min(
       rpc.health.consecutiveFailures - 1,
       BACKOFF_SCHEDULE.length - 1,
@@ -197,8 +220,12 @@ export class SourcifyChain {
     }>,
     operationName: string,
   ): Promise<T> {
+    // Counts the RPCs that cannot serve this call because they are blocked or failed.
+    // If this equals the number of RPCs, the chain has no healthy RPC left.
+    let unhealthyRpcs = 0;
     for (const rpc of this.rpcs) {
       if (!rpc.provider || this.isRpcBlocked(rpc)) {
+        unhealthyRpcs++;
         continue;
       }
 
@@ -223,13 +250,19 @@ export class SourcifyChain {
           throw error;
         }
         if (error instanceof RpcFailure) {
+          this.recordRpcFailure(rpc);
+          unhealthyRpcs++;
           logWarn('RPC operation failed, marking as unhealthy', {
             operation: operationName,
             maskedUrl: rpc.maskedUrl,
             chainId: this.chainId,
             error: summarizeRpcError(error),
+            consecutiveFailures: rpc.health?.consecutiveFailures,
+            failingForMs:
+              rpc.health?.failingSince !== undefined
+                ? Date.now() - rpc.health.failingSince
+                : undefined,
           });
-          this.recordRpcFailure(rpc);
           continue;
         }
 
@@ -244,9 +277,14 @@ export class SourcifyChain {
       }
     }
 
-    logInfo('All RPCs failed or are blocked', {
+    // Warn only if no RPC is healthy. If an RPC answered without the data,
+    // or threw an error that is not an RPC failure, the cause is the request, not the RPCs.
+    const log = unhealthyRpcs === this.rpcs.length ? logWarn : logInfo;
+    log('All RPCs failed or are blocked', {
       operation: operationName,
       chainId: this.chainId,
+      unhealthyRpcs,
+      totalRpcs: this.rpcs.length,
     });
     throw new Error(
       `All RPCs failed or are blocked for ${operationName} on chain ${this.chainId}`,
@@ -281,12 +319,14 @@ export class SourcifyChain {
         throw new RpcFailure(
           (err as EthersError)?.message ||
             'RPC failure: Ethers timeout or network error',
+          err,
         );
       }
       if (isAuthFailure(err)) {
         throw new RpcFailure(
           (err as EthersError)?.shortMessage ||
             'RPC failure: server rejected the request with 401 or 403',
+          err,
         );
       }
       throw err;

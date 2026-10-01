@@ -10,10 +10,19 @@ type ErrorLike = {
   message?: unknown;
   shortMessage?: unknown;
   response?: { statusCode?: unknown } | null;
+  status?: unknown;
 };
 
-function getHttpStatus(error: ErrorLike): number | undefined {
-  const status = error.response?.statusCode;
+/**
+ * Returns the HTTP status of an ethers error (`response.statusCode`),
+ * or of an RpcFailure that kept it (`status`).
+ */
+export function getHttpStatus(err: unknown): number | undefined {
+  if (typeof err !== 'object' || err === null) {
+    return undefined;
+  }
+  const error = err as ErrorLike;
+  const status = error.response?.statusCode ?? error.status;
   return typeof status === 'number' ? status : undefined;
 }
 

@@ -1147,6 +1147,109 @@ describe('SourcifyChain', () => {
           expect(serialized).to.not.contain(BODY_MARKER);
           expect(serialized).to.contain('server response 500');
         });
+
+        it('should log how long an RPC has been failing', async () => {
+          const start = Date.now(); // the fake clock of this describe block
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          await sourcifyChain.getBlockNumber();
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.equal(start);
+          clock.tick(5_000);
+          await sourcifyChain.getBlockNumber(); // the allowed immediate retry
+
+          const failureLogs = logSpy
+            .getCalls()
+            .filter(
+              (c) => c.args[1] === 'RPC operation failed, marking as unhealthy',
+            )
+            .map((c) => c.args[2]);
+          expect(failureLogs).to.have.length(2);
+          expect(failureLogs[0]).to.include({
+            consecutiveFailures: 1,
+            failingForMs: 0,
+          });
+          // The code and HTTP status of the original error stay in the summary
+          expect(failureLogs[0].error).to.include({
+            code: 'SERVER_ERROR',
+            status: 403,
+          });
+          expect(failureLogs[1]).to.include({
+            consecutiveFailures: 2,
+            failingForMs: 5_000,
+          });
+          // The start of the series does not move with later failures
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.equal(start);
+        });
+
+        it('should log how long an RPC failed when it recovers', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .onFirstCall()
+            .rejects(makeServerError(403))
+            .onSecondCall()
+            .resolves(100);
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          await sourcifyChain.getBlockNumber();
+          clock.tick(7_000);
+          await sourcifyChain.getBlockNumber();
+
+          expect(findLogMetadata('RPC recovered')).to.include({
+            previousFailures: 1,
+            failedForMs: 7_000,
+          });
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.be.undefined;
+        });
+
+        it('should warn when no RPC of the chain is healthy', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .rejects(makeServerError(401));
+
+          await expect(sourcifyChain.getBlockNumber()).to.be.rejectedWith(
+            'All RPCs failed or are blocked',
+          );
+
+          const call = logSpy
+            .getCalls()
+            .find((c) => c.args[1] === 'All RPCs failed or are blocked');
+          expect(call, 'log not found').to.not.be.undefined;
+          expect(call!.args[0], 'log level').to.equal(1); // warn
+          expect(call!.args[2]).to.include({ unhealthyRpcs: 2, totalRpcs: 2 });
+        });
+
+        it('should not warn when an RPC answered without the data', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getTransaction')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getTransaction')
+            .resolves(null);
+
+          await expect(sourcifyChain.getTx('0x' + '1'.repeat(64))).to.be
+            .rejected;
+
+          const call = logSpy
+            .getCalls()
+            .find((c) => c.args[1] === 'All RPCs failed or are blocked');
+          expect(call, 'log not found').to.not.be.undefined;
+          expect(call!.args[0], 'log level').to.equal(2); // info
+          expect(call!.args[2]).to.include({ unhealthyRpcs: 1, totalRpcs: 2 });
+        });
       });
     });
   });

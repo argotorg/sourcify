@@ -97,6 +97,8 @@ export interface SourcifyRpc {
     consecutiveFailures: number;
     /** Timestamp when this RPC can be retried in milliseconds */
     nextRetryTime?: number;
+    /** Timestamp of the first failure in the current series of consecutive failures, in milliseconds */
+    failingSince?: number;
   };
 }
 
