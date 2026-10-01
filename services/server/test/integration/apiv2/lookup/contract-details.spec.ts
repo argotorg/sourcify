@@ -16,6 +16,9 @@ import Sinon from "sinon";
 import * as proxyContractUtil from "../../../../src/server/services/utils/proxy-contract-util";
 import { extractSignaturesFromAbi } from "../../../../src/server/services/utils/signature-util";
 import type { SignatureRepresentations } from "../../../../src/server/types";
+import { RWStorageIdentifiers } from "../../../../src/server/services/storageServices/identifiers";
+import type { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
+import { bytesFromString } from "../../../../src/server/services/utils/database-util";
 
 chai.use(chaiHttp);
 
@@ -1003,6 +1006,242 @@ describe("GET /v2/contract/:chainId/:address", function () {
       runtimeMatch: null,
       chainId: chainFixture.chainId,
       address: contractAddress,
+    });
+  });
+
+  describe("for a contract with multiple sources and signatures", function () {
+    // EIP1967Proxy has two source files, five functions and two events.
+    const proxyDir = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "testcontracts",
+      "ensure-metadata-storage",
+    );
+    const proxyArtifact = JSON.parse(
+      fs.readFileSync(path.join(proxyDir, "EIP1967Proxy.json"), "utf8"),
+    );
+    const proxyMetadata = JSON.parse(
+      fs.readFileSync(path.join(proxyDir, "correct-metadata.json"), "utf8"),
+    );
+    const proxySources: Record<string, string> = {
+      "src/proxy/EIP1967Proxy.sol": fs.readFileSync(
+        path.join(proxyDir, "EIP1967Proxy.sol"),
+        "utf8",
+      ),
+      "src/proxy/EIP1967Admin.sol": fs.readFileSync(
+        path.join(proxyDir, "EIP1967Admin.sol"),
+        "utf8",
+      ),
+    };
+    // jsonb_agg(DISTINCT ...) sorts the array by the `signature` key.
+    const expectedFunctionSignatures = [
+      {
+        signature: "admin()",
+        signatureHash4: "0xf851a440",
+        signatureHash32:
+          "0xf851a44064d54ebc488774050c771bacc14f01dd7456abacb48978dba9cd92a4",
+      },
+      {
+        signature: "implementation()",
+        signatureHash4: "0x5c60da1b",
+        signatureHash32:
+          "0x5c60da1b04210c25e1974b6edfcf5bb7c7365b6a88c42319fcbd024464075cc2",
+      },
+      {
+        signature: "setAdmin(address)",
+        signatureHash4: "0x704b6c02",
+        signatureHash32:
+          "0x704b6c02682d329712ab11ef6312d46667fbdd78a5dc1aa406e65eec4d30cd5d",
+      },
+      {
+        signature: "upgradeTo(address)",
+        signatureHash4: "0x3659cfe6",
+        signatureHash32:
+          "0x3659cfe672549963da205df855ebfb8672cda4801e0255183bd6a6f536855df7",
+      },
+      {
+        signature: "upgradeToAndCall(address,bytes)",
+        signatureHash4: "0x4f1ef286",
+        signatureHash32:
+          "0x4f1ef2866b98625bdfefae89411f7a82754ac4089eff8e78c8832329a538337f",
+      },
+    ];
+
+    const verifyProxyContract = async (resolveWorkers: () => Promise<void>) => {
+      const contractAddress = await deployFromAbiAndBytecode(
+        chainFixture.localSigner,
+        proxyMetadata.output.abi,
+        proxyArtifact.bytecode,
+        [
+          "0x39f0bd56c1439a22ee90b4972c16b7868d161981",
+          "0x000000000000000000000000000000000000dead",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+        ],
+      );
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(`/v2/verify/metadata/${chainFixture.chainId}/${contractAddress}`)
+        .send({ sources: proxySources, metadata: proxyMetadata });
+      chai.expect(verifyRes.status).to.equal(202);
+      await resolveWorkers();
+      const jobRes = await chai
+        .request(serverFixture.server.app)
+        .get(`/v2/verify/${verifyRes.body.verificationId}`);
+      chai.expect(jobRes.body.isJobCompleted).to.be.true;
+      chai.expect(jobRes.body.error).to.be.undefined;
+      return contractAddress;
+    };
+
+    const getContract = async (contractAddress: string, fields: string) => {
+      const res = await chai
+        .request(serverFixture.server.app)
+        .get(
+          `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=${fields}`,
+        );
+      chai.expect(res.status).to.equal(200);
+      return res.body;
+    };
+
+    const getDatabase = () =>
+      (
+        serverFixture.server.services.storage.rwServices[
+          RWStorageIdentifiers.SourcifyDatabase
+        ] as SourcifyDatabaseService
+      ).database;
+
+    // Counts the identifiers `name` that are not inside parentheses.
+    const countTopLevelOccurrences = (sql: string, name: string) => {
+      const identifier = new RegExp(`\\b${name}\\b`, "g");
+      let depth = 0;
+      let count = 0;
+      for (let i = 0; i < sql.length; i++) {
+        if (sql[i] === "(") depth++;
+        else if (sql[i] === ")") depth--;
+        else if (depth === 0) {
+          identifier.lastIndex = i;
+          if (identifier.test(sql) && identifier.lastIndex - name.length === i)
+            count++;
+        }
+      }
+      return count;
+    };
+
+    it("should return the same sources, signatures and stdJsonInput when requested together and separately", async function () {
+      const { resolveWorkers } = makeWorkersWait();
+      const contractAddress = await verifyProxyContract(resolveWorkers);
+
+      const all = await getContract(contractAddress, "all");
+      const sources = await getContract(contractAddress, "sources");
+      const signatures = await getContract(contractAddress, "signatures");
+      const stdJsonInput = await getContract(contractAddress, "stdJsonInput");
+
+      chai.expect(all.sources).to.deep.equal(sources.sources);
+      chai.expect(all.signatures).to.deep.equal(signatures.signatures);
+      chai.expect(all.stdJsonInput).to.deep.equal(stdJsonInput.stdJsonInput);
+
+      chai
+        .expect(Object.keys(all.sources))
+        .to.have.members(Object.keys(proxySources));
+      chai
+        .expect(Object.keys(all.stdJsonInput.sources))
+        .to.have.members(Object.keys(proxySources));
+      for (const type of ["function", "event", "error"]) {
+        const hashes = all.signatures[type].map(
+          (sig: SignatureRepresentations) => sig.signatureHash32,
+        );
+        chai.expect(new Set(hashes).size).to.equal(hashes.length);
+      }
+      chai.expect(all.signatures.function).to.have.lengthOf(5);
+      chai.expect(all.signatures.event).to.have.lengthOf(2);
+    });
+
+    it("should return the function signatures in a stable order", async function () {
+      const { resolveWorkers } = makeWorkersWait();
+      const contractAddress = await verifyProxyContract(resolveWorkers);
+
+      const { signatures } = await getContract(contractAddress, "signatures");
+
+      chai
+        .expect(signatures.function)
+        .to.deep.equal(expectedFunctionSignatures);
+    });
+
+    it("should return an empty array for a signature type without signatures", async function () {
+      const { resolveWorkers } = makeWorkersWait();
+      const contractAddress = await verifyProxyContract(resolveWorkers);
+
+      const { signatures } = await getContract(contractAddress, "signatures");
+
+      chai.expect(signatures.error).to.deep.equal([]);
+      chai.expect(signatures.event).to.have.lengthOf(2);
+    });
+
+    it("should read sources and signatures in subqueries without a GROUP BY", async function () {
+      const { resolveWorkers } = makeWorkersWait();
+      const contractAddress = await verifyProxyContract(resolveWorkers);
+      const querySpy = sandbox.spy(serverFixture.sourcifyDatabase, "query");
+
+      const result =
+        await getDatabase().getSourcifyMatchByChainAddressWithProperties(
+          parseInt(chainFixture.chainId),
+          bytesFromString(contractAddress),
+          [
+            "sources",
+            "std_json_input",
+            "function_signatures",
+            "event_signatures",
+            "error_signatures",
+            "metadata",
+          ],
+        );
+
+      chai.expect(querySpy.calledOnce).to.be.true;
+      const sql = querySpy.firstCall.args[0] as string;
+      chai.expect(sql.toUpperCase()).to.not.include("GROUP BY");
+      for (const table of [
+        "compiled_contracts_sources",
+        "compiled_contracts_signatures",
+      ]) {
+        chai.expect(sql).to.include(table);
+        chai.expect(countTopLevelOccurrences(sql, table)).to.equal(0);
+      }
+
+      chai.expect(result.rowCount).to.equal(1);
+      const row = result.rows[0];
+      chai.expect(row.sources).to.have.keys(Object.keys(proxySources));
+      chai
+        .expect(row.function_signatures)
+        .to.deep.equal(expectedFunctionSignatures);
+      chai.expect(row.event_signatures).to.have.lengthOf(2);
+      chai.expect(row.error_signatures).to.deep.equal([]);
+      chai.expect(row.metadata).to.deep.equal(proxyMetadata);
+    });
+
+    it("should return the sources of the compilation in getCompilationsByIds", async function () {
+      const { resolveWorkers } = makeWorkersWait();
+      const contractAddress = await verifyProxyContract(resolveWorkers);
+
+      const compilationResult = await serverFixture.sourcifyDatabase.query(
+        `SELECT verified_contracts.compilation_id
+         FROM verified_contracts
+         JOIN contract_deployments ON contract_deployments.id = verified_contracts.deployment_id
+         WHERE contract_deployments.chain_id = $1 AND contract_deployments.address = $2`,
+        [chainFixture.chainId, bytesFromString(contractAddress)],
+      );
+      chai.expect(compilationResult.rowCount).to.equal(1);
+
+      const result = await getDatabase().getCompilationsByIds([
+        compilationResult.rows[0].compilation_id,
+      ]);
+
+      chai.expect(result.rowCount).to.equal(1);
+      const storedSources = result.rows[0]?.std_json_input?.sources;
+      chai.expect(storedSources).to.have.keys(Object.keys(proxySources));
+      for (const [sourcePath, content] of Object.entries(proxySources)) {
+        chai.expect(storedSources?.[sourcePath]?.content).to.equal(content);
+      }
     });
   });
 });
