@@ -522,6 +522,19 @@ describe('etherscan util (lib)', function () {
       expect(result).to.equal('0.3.10+commit.91361694');
     });
 
+    it('should resolve a release without binary assets to its tag version', async () => {
+      nock('https://vyper-releases-mirror.hardhat.org')
+        .get('/list.json')
+        .times(2)
+        .reply(200, [{ tag_name: 'v0.2.14', assets: [] }]);
+
+      const result = await EtherscanUtils.getVyperCompilerVersion(
+        'vyper:0.2.14',
+        0,
+      );
+      expect(result).to.equal('0.2.14');
+    });
+
     it('should return undefined for a version not in the mirror', async () => {
       nock('https://vyper-releases-mirror.hardhat.org')
         .get('/list.json')

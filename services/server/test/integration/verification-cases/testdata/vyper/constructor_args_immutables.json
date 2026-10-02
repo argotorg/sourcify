@@ -93,8 +93,8 @@
       },
       "devdoc": {},
       "userdoc": {},
-      "storageLayout": null,
-      "transientStorageLayout": null
+      "storageLayout": {},
+      "transientStorageLayout": {}
     },
     "creationCodeArtifacts": {
       "sourceMap": {
