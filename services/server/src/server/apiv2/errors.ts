@@ -270,6 +270,7 @@ export function errorHandler(
 ) {
   if (err instanceof SimilarityRecentlyFailedError) {
     res.setHeader("Retry-After", err.retryAfterSeconds);
+    res.append("Access-Control-Expose-Headers", "Retry-After");
   }
 
   // Let errors pass that already match the v2 error format

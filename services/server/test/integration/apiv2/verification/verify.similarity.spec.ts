@@ -118,6 +118,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     const retryResponse = await chai
       .request(serverFixture.server.app)
       .post(endpoint)
+      .set("Origin", "https://repo.sourcify.dev")
       .send({});
     chai.expect(retryResponse.status).to.equal(429);
     chai
@@ -126,6 +127,12 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai
       .expect(Number(retryResponse.headers["retry-after"]))
       .to.be.within(1, 600);
+    chai
+      .expect(retryResponse.headers["access-control-allow-origin"])
+      .to.equal("*");
+    chai
+      .expect(retryResponse.headers["access-control-expose-headers"])
+      .to.equal("Retry-After");
     chai.expect(retryResponse.body).not.to.have.property("verificationId");
     chai.expect(getBytecodeSpy.called).to.be.false;
     chai.expect(candidateSearchSpy.calledOnce).to.be.true;
