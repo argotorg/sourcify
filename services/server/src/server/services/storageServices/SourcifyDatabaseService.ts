@@ -418,6 +418,19 @@ export class SourcifyDatabaseService
     }));
   };
 
+  getRecentFailedSimilarityVerification = async (
+    chainId: string,
+    address: string,
+    failedAfter: Date,
+  ): Promise<Date | null> => {
+    const result = await this.database.getRecentFailedSimilarityVerification(
+      chainId,
+      bytesFromString(address),
+      failedAfter,
+    );
+    return result.rows[0]?.completed_at ?? null;
+  };
+
   async storeVerificationJob(
     startTime: Date,
     chainId: string,

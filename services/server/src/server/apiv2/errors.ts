@@ -27,6 +27,7 @@ export type ErrorCode =
   | "proxy_resolution_error"
   | "job_not_found"
   | "duplicate_verification_request"
+  | "similarity_recently_failed"
   | "etherscan_request_failed"
   | "etherscan_limit"
   | "not_etherscan_verified"
@@ -122,6 +123,22 @@ export class DuplicateVerificationRequestError extends TooManyRequests {
     super(message);
     this.payload = {
       customCode: "duplicate_verification_request",
+      message,
+      errorId: uuidv4(),
+    };
+  }
+}
+
+export class SimilarityRecentlyFailedError extends TooManyRequests {
+  payload: GenericErrorResponse;
+
+  constructor(
+    message: string,
+    public readonly retryAfterSeconds: number,
+  ) {
+    super(message);
+    this.payload = {
+      customCode: "similarity_recently_failed",
       message,
       errorId: uuidv4(),
     };
@@ -251,6 +268,10 @@ export function errorHandler(
   res: Response,
   next: NextFunction,
 ) {
+  if (err instanceof SimilarityRecentlyFailedError) {
+    res.setHeader("Retry-After", err.retryAfterSeconds);
+  }
+
   // Let errors pass that already match the v2 error format
   if (err.payload) {
     next(err);

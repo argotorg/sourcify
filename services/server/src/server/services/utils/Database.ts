@@ -989,6 +989,25 @@ ${
     );
   }
 
+  async getRecentFailedSimilarityVerification(
+    chainId: string,
+    address: Bytes,
+    failedAfter: Date,
+  ): Promise<QueryResult<{ completed_at: Date }>> {
+    return await this.pool.query(
+      `SELECT completed_at
+       FROM ${this.schema}.verification_jobs
+       WHERE chain_id = $1
+         AND contract_address = $2
+         AND verification_endpoint LIKE '/v2/verify/similarity/%'
+         AND error_code = 'no_similar_match_found'
+         AND completed_at > $3
+       ORDER BY completed_at DESC
+       LIMIT 1`,
+      [chainId, address, failedAfter],
+    );
+  }
+
   async insertVerificationJob({
     started_at,
     chain_id,

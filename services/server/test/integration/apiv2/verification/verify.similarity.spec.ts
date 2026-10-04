@@ -1,6 +1,7 @@
 import chai from "chai";
 import chaiHttp from "chai-http";
 import sinon from "sinon";
+import type { VerificationErrorCode } from "../../../../src/server/apiv2/errors";
 import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import {
@@ -84,6 +85,113 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     });
   });
 
+  it("should reject an immediate retry after a completed no-match similarity job without repeating work", async () => {
+    const { resolveWorkers } = makeWorkersWait();
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const getBytecodeSpy = sandbox.spy(
+      serverFixture.sourcifyChainsMap[chainFixture.chainId],
+      "getBytecode",
+    );
+    const candidateSearchSpy = sandbox.spy(
+      databaseService,
+      "getSimilarityCandidateIdsByRuntimeCode",
+    );
+    const endpoint = `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`;
+    const firstResponse = await chai
+      .request(serverFixture.server.app)
+      .post(endpoint)
+      .send({});
+    chai.expect(firstResponse.status).to.equal(202);
+    await resolveWorkers();
+    const jobResponse = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${firstResponse.body.verificationId}`);
+    chai.expect(jobResponse.body.isJobCompleted).to.be.true;
+    chai
+      .expect(jobResponse.body.error.customCode)
+      .to.equal("no_similar_match_found");
+
+    // Clear incidental RPC calls from the initial request's middleware.
+    getBytecodeSpy.resetHistory();
+    const retryResponse = await chai
+      .request(serverFixture.server.app)
+      .post(endpoint)
+      .send({});
+    chai.expect(retryResponse.status).to.equal(429);
+    chai
+      .expect(retryResponse.body.customCode)
+      .to.equal("similarity_recently_failed");
+    chai
+      .expect(Number(retryResponse.headers["retry-after"]))
+      .to.be.within(1, 600);
+    chai.expect(retryResponse.body).not.to.have.property("verificationId");
+    chai.expect(getBytecodeSpy.called).to.be.false;
+    chai.expect(candidateSearchSpy.calledOnce).to.be.true;
+    const jobs = await serverFixture.sourcifyDatabase.query(
+      "SELECT id FROM verification_jobs",
+    );
+    chai.expect(jobs.rowCount).to.equal(1);
+  });
+
+  it("should reject a retry after real candidate recompilation finishes without a match", async () => {
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const verification = structuredClone(MockVerificationExport);
+    verification.address = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF";
+    await databaseService.storeVerification(verification);
+
+    // Change SLOAD's slot after the indexed 75-byte prefix, preserving the
+    // candidate lookup but preventing a runtime or creation-bytecode match.
+    const bytecode = chainFixture.defaultContractArtifact.bytecode.replace(
+      "6000805490509056",
+      "6001805490509056",
+    );
+    chai
+      .expect(bytecode)
+      .not.to.equal(chainFixture.defaultContractArtifact.bytecode);
+    const { contractAddress, txHash } =
+      await deployFromAbiAndBytecodeForCreatorTxHash(
+        chainFixture.localSigner,
+        chainFixture.defaultContractArtifact.abi,
+        bytecode,
+      );
+    const candidateSearchSpy = sandbox.spy(
+      databaseService,
+      "getSimilarityCandidateIdsByRuntimeCode",
+    );
+    const { resolveWorkers, runTaskStub } = makeWorkersWait();
+    const endpoint = `/v2/verify/similarity/${chainFixture.chainId}/${contractAddress}`;
+    const response = await chai
+      .request(serverFixture.server.app)
+      .post(endpoint)
+      .send({ creationTransactionHash: txHash });
+    chai.expect(response.status).to.equal(202);
+    await resolveWorkers();
+    const jobResponse = await chai
+      .request(serverFixture.server.app)
+      .get(`/v2/verify/${response.body.verificationId}`);
+    chai.expect(jobResponse.body.isJobCompleted).to.be.true;
+    chai
+      .expect(jobResponse.body.error.customCode)
+      .to.equal("no_similar_match_found");
+    chai.expect(runTaskStub.calledOnce).to.be.true;
+    chai.expect(runTaskStub.firstCall.args[0].candidates).to.have.length(1);
+
+    const retryResponse = await chai
+      .request(serverFixture.server.app)
+      .post(endpoint)
+      .send({ creationTransactionHash: txHash });
+    chai.expect(retryResponse.status).to.equal(429);
+    chai
+      .expect(retryResponse.body.customCode)
+      .to.equal("similarity_recently_failed");
+    chai.expect(candidateSearchSpy.calledOnce).to.be.true;
+    chai.expect(runTaskStub.calledOnce).to.be.true;
+  });
+
   it("should store a similarity_search_timeout error when the candidate id query times out", async () => {
     const { resolveWorkers } = makeWorkersWait();
 
@@ -116,6 +224,100 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     chai.expect(jobRes.body.isJobCompleted).to.be.true;
     chai.expect(jobRes.body.error).to.deep.include({
       customCode: "similarity_search_timeout",
+    });
+  });
+
+  describe("completed similarity failure cooldown", () => {
+    async function recordFailure(
+      errorCode: VerificationErrorCode,
+      completedAt = new Date(),
+      chainId = chainFixture.chainId,
+      address = chainFixture.defaultContractAddress,
+      endpoint = `/v2/verify/similarity/${chainId}/${address}`,
+    ) {
+      const databaseService = serverFixture.server.services.storage.rwServices[
+        "SourcifyDatabase"
+      ] as SourcifyDatabaseService;
+      const id = await databaseService.storeVerificationJob(
+        new Date(completedAt.getTime() - 7200000),
+        chainId,
+        address,
+        endpoint,
+      );
+      await databaseService.setJobError(id, completedAt, {
+        customCode: errorCode,
+        errorId: "00000000-0000-4000-8000-000000000001",
+      });
+    }
+
+    async function submit() {
+      const response = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress.toLowerCase()}`,
+        )
+        .send({});
+      await Promise.all(
+        serverFixture.server.services.verification["runningTasks"],
+      );
+      return response;
+    }
+
+    it("should use completion time and preserve the remaining cooldown for a differently cased address", async () => {
+      const now = Date.now();
+      sandbox.useFakeTimers({ now, toFake: ["Date"] });
+      await recordFailure("no_similar_match_found", new Date(now - 120500));
+      const response = await submit();
+      chai.expect(response.status).to.equal(429);
+      chai.expect(response.headers["retry-after"]).to.equal("480");
+      const jobs = await serverFixture.sourcifyDatabase.query(
+        "SELECT id FROM verification_jobs",
+      );
+      chai.expect(jobs.rowCount).to.equal(1);
+    });
+
+    it("should allow a retry exactly when the cooldown expires", async () => {
+      const now = Date.now();
+      sandbox.useFakeTimers({ now, toFake: ["Date"] });
+      await recordFailure("no_similar_match_found", new Date(now - 600000));
+      chai.expect((await submit()).status).to.equal(202);
+    });
+
+    for (const errorCode of [
+      "similarity_search_timeout",
+      "internal_error",
+      "cannot_fetch_bytecode",
+    ] as const) {
+      it(`should allow an immediate retry after ${errorCode}`, async () => {
+        await recordFailure(errorCode);
+        chai.expect((await submit()).status).to.equal(202);
+      });
+    }
+
+    it("should ignore a failure from a different verification endpoint", async () => {
+      await recordFailure(
+        "no_similar_match_found",
+        new Date(),
+        undefined,
+        undefined,
+        "/v2/verify/metadata/31337/contract",
+      );
+      chai.expect((await submit()).status).to.equal(202);
+    });
+
+    it("should not apply another chain's cooldown", async () => {
+      await recordFailure("no_similar_match_found", new Date(), "1");
+      chai.expect((await submit()).status).to.equal(202);
+    });
+
+    it("should not apply another address's cooldown", async () => {
+      await recordFailure(
+        "no_similar_match_found",
+        new Date(),
+        undefined,
+        "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF",
+      );
+      chai.expect((await submit()).status).to.equal(202);
     });
   });
 
