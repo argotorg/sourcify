@@ -64,6 +64,25 @@ function filterResponse(response: SignatureResult, shouldFilter: boolean) {
   }
 }
 
+// How long a shared cache (CDN) and a client may store a lookup response in which every
+// hash has a signature. Clients get a short time because a CDN purge cannot reach them.
+const LOOKUP_CDN_MAX_AGE_SECONDS = 3600;
+const LOOKUP_CLIENT_MAX_AGE_SECONDS = 60;
+
+// True if at least one hash was requested and every hash has at least one signature
+function hasSignaturesForAllHashes(response: SignatureResult): boolean {
+  const signatureLists = [
+    ...Object.values(response.function),
+    ...Object.values(response.event),
+  ];
+  return (
+    signatureLists.length > 0 &&
+    signatureLists.every(
+      (signatureItems) => signatureItems !== null && signatureItems.length > 0,
+    )
+  );
+}
+
 function mapLookupResult(rows: SignatureLookupRow[]): SignatureItem[] {
   return rows.map((row) => ({
     name: row.signature,
@@ -170,6 +189,16 @@ export function createSignatureHandlers(
 
         filterResponse(result, shouldFilter);
 
+        // Only complete answers are cacheable, so a newly imported signature for an unknown
+        // hash shows immediately. A cached answer can still be stale until it expires: a new
+        // signature with the same hash (collision) and a change of hasVerifiedContract are
+        // not in it.
+        res.set(
+          "Cache-Control",
+          hasSignaturesForAllHashes(result)
+            ? `public, max-age=${LOOKUP_CLIENT_MAX_AGE_SECONDS}, s-maxage=${LOOKUP_CDN_MAX_AGE_SECONDS}`
+            : "no-store",
+        );
         res.status(StatusCodes.OK).json({
           ok: true,
           result,

@@ -1,5 +1,8 @@
 import { expect, use } from 'chai';
-import { SolidityMetadataContract } from '../../src/Validation/SolidityMetadataContract';
+import {
+  DEFAULT_IPFS_GATEWAY,
+  SolidityMetadataContract,
+} from '../../src/Validation/SolidityMetadataContract';
 import { id as keccak256str } from 'ethers';
 import nock from 'nock';
 import type { ISolidityCompiler } from '../../src/Compilation/CompilationTypes';
@@ -406,7 +409,7 @@ describe('SolidityMetadataContract', () => {
       ipfsMetadata.sources[validSourcePath].urls = [`dweb:/ipfs/${ipfsHash}`];
 
       // Setup mock IPFS response
-      nock('https://ipfs.io')
+      nock(new URL(DEFAULT_IPFS_GATEWAY).origin)
         .get(`/ipfs/${ipfsHash}`)
         .reply(200, validSourceContent);
 
@@ -473,7 +476,7 @@ describe('SolidityMetadataContract', () => {
       const ipfsHash = 'QmTest';
       ipfsMetadata.sources[validSourcePath].urls = [`dweb:/ipfs/${ipfsHash}`];
 
-      nock('https://ipfs.io')
+      nock(new URL(DEFAULT_IPFS_GATEWAY).origin)
         .get(`/ipfs/${ipfsHash}`)
         .reply(200, validSourceContent);
 
@@ -491,7 +494,7 @@ describe('SolidityMetadataContract', () => {
       const contract = new SolidityMetadataContract(validMetadata, []);
       expect(Object.keys(contract.missingSources)).to.have.lengthOf(1);
 
-      nock('https://ipfs.io').get(/.*/).reply(404);
+      nock(new URL(DEFAULT_IPFS_GATEWAY).origin).get(/.*/).reply(404);
 
       await expect(contract.fetchMissing()).to.be.eventually.rejectedWith(
         getErrorMessageFromCode({

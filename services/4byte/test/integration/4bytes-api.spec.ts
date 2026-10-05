@@ -224,6 +224,121 @@ describe("4byte API End-to-End Tests", function () {
       chai.expect(res.body.result.event[validEventHash]).to.be.an("array").that
         .is.empty;
     });
+
+    it("should set a public Cache-Control header when all hashes have signatures", async function () {
+      const functionHash = keccak256str("transfer(address,uint256)").slice(
+        0,
+        10,
+      );
+      const eventHash = keccak256str("Transfer(address,address,uint256)");
+
+      const res = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: functionHash, event: eventHash });
+
+      chai.expect(res).to.have.status(200);
+      chai
+        .expect(res)
+        .to.have.header("cache-control", "public, max-age=60, s-maxage=3600");
+    });
+
+    it("should set Cache-Control to no-store when one hash among known hashes is unknown", async function () {
+      const knownFunctionHash = keccak256str("transfer(address,uint256)").slice(
+        0,
+        10,
+      );
+      const knownEventHash = keccak256str("Transfer(address,address,uint256)");
+      const unknownEventHash =
+        "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
+      const unknownFunctionRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({
+          function: `${knownFunctionHash},0x12345678`,
+          event: knownEventHash,
+        });
+
+      chai.expect(unknownFunctionRes).to.have.status(200);
+      chai.expect(unknownFunctionRes.body.result.function["0x12345678"]).to.be
+        .null;
+      chai
+        .expect(unknownFunctionRes)
+        .to.have.header("cache-control", "no-store");
+
+      const unknownEventRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({
+          function: knownFunctionHash,
+          event: `${knownEventHash},${unknownEventHash}`,
+        });
+
+      chai.expect(unknownEventRes).to.have.status(200);
+      chai
+        .expect(unknownEventRes.body.result.event[unknownEventHash])
+        .to.be.an("array").that.is.empty;
+      chai.expect(unknownEventRes).to.have.header("cache-control", "no-store");
+    });
+
+    it("should set Cache-Control to no-store when all hashes are unknown or no hash is given", async function () {
+      const unknownRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: "0x12345678" });
+
+      chai.expect(unknownRes).to.have.status(200);
+      chai.expect(unknownRes).to.have.header("cache-control", "no-store");
+
+      const noHashRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup");
+
+      chai.expect(noHashRes).to.have.status(200);
+      chai.expect(noHashRes).to.have.header("cache-control", "no-store");
+    });
+
+    it("should set Cache-Control to no-store when the filter removes all signatures of a hash", async function () {
+      // Only the non-canonical signature of the transfer(address,uint256) hash is in the database
+      const collusionSignature =
+        "_____$_$__$___$$$___$$___$__$$(address,uint256)";
+      const hash4 = keccak256str(collusionSignature).slice(0, 10);
+      await serverFixture.resetDatabase();
+      await serverFixture.insertTestSignatures([
+        { signature: collusionSignature, type: SignatureType.Function },
+      ]);
+
+      const filteredRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: hash4 });
+
+      chai.expect(filteredRes).to.have.status(200);
+      chai.expect(filteredRes.body.result.function[hash4]).to.be.an("array")
+        .that.is.empty;
+      chai.expect(filteredRes).to.have.header("cache-control", "no-store");
+
+      const unfilteredRes = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: hash4, filter: "false" });
+
+      chai.expect(unfilteredRes).to.have.status(200);
+      chai
+        .expect(unfilteredRes)
+        .to.have.header("cache-control", "public, max-age=60, s-maxage=3600");
+    });
+
+    it("should not set a public Cache-Control header on error responses", async function () {
+      const res = await chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/lookup")
+        .query({ function: "0x123" });
+
+      chai.expect(res).to.have.status(500);
+      chai.expect(res).to.not.have.header("cache-control");
+    });
   });
 
   describe("GET /signature-database/v1/search", function () {

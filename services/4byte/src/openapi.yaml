@@ -50,6 +50,11 @@ paths:
       responses:
         "200":
           description: The resulting signatures
+          headers:
+            Cache-Control:
+              description: "`public, max-age=60, s-maxage=3600` if every requested hash has at least one signature in the response. Otherwise `no-store`. A cached response can miss a newly imported signature with the same hash and a change of `hasVerifiedContract` until it expires."
+              schema:
+                type: string
           content:
             application/json:
               schema:

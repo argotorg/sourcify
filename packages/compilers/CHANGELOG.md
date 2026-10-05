@@ -1,3 +1,7 @@
+## @ethereum-sourcify/compilers@1.3.1 - 2026-10-05
+
+- Update dependencies
+
 ## @ethereum-sourcify/compilers@1.3.0 - 2026-09-01
 
 - fix(compilers): sandbox native solc cwd to stop import path leaks (#2920)

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.7.3 - 2026-10-05
+
+- fix: replace retired ipfs.io gateway defaults (#2985)
+- fix(lib-sourcify): mark RPCs that answer 401/403 as unhealthy, log RPC errors compactly (#2999)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.7.2 - 2026-09-22
 
 - fix(lib-sourcify): fix infinite loop in ipfsHash for empty input (#2975)

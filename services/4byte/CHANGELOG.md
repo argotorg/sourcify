@@ -1,3 +1,8 @@
+## sourcify-4byte@1.2.0 - 2026-10-05
+
+- feat(4byte): set Cache-Control on signature lookup responses (#2995)
+- Update dependencies
+
 ## sourcify-4byte@1.1.17 - 2026-09-22
 
 - update dependencies

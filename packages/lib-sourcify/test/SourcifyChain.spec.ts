@@ -3,8 +3,19 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import sinonChai from 'sinon-chai';
 import sinon from 'sinon';
-import { DefinitiveError, RpcFailure, SourcifyChain } from '../src';
-import { JsonRpcProvider } from 'ethers';
+import {
+  DefinitiveError,
+  RpcAuthFailure,
+  RpcFailure,
+  SourcifyChain,
+  setLibSourcifyLogger,
+} from '../src';
+import { DefaultLogger } from '../src/logger';
+import {
+  isAuthFailure,
+  summarizeRpcError,
+} from '../src/SourcifyChain/rpcErrors';
+import { JsonRpcProvider, makeError } from 'ethers';
 import {
   startHardhatNetwork,
   stopHardhatNetwork,
@@ -961,6 +972,452 @@ describe('SourcifyChain', () => {
       getBlockNumberStub.resolves(100);
       await sourcifyChain.getBlockNumber();
       expect(getBlockNumberStub.callCount).to.equal(callCountBefore + 1);
+    });
+
+    describe('HTTP auth failures', () => {
+      const BODY_MARKER = 'RESPONSE_BODY_MARKER_DO_NOT_LOG';
+
+      function makeServerError(statusCode: number, bodyLength = 20_000) {
+        const responseBody = BODY_MARKER + 'x'.repeat(bodyLength);
+        return makeError(
+          `server response ${statusCode} Status`,
+          'SERVER_ERROR',
+          {
+            request: 'http://localhost:8545',
+            response: { statusCode, body: responseBody } as any,
+            info: { responseBody },
+          },
+        );
+      }
+
+      function createTwoRpcChain() {
+        return new SourcifyChain({
+          name: 'TestChain',
+          chainId: 1,
+          rpcs: [
+            { rpc: 'http://localhost:8545' },
+            { rpc: 'http://localhost:8546' },
+          ],
+          supported: true,
+        });
+      }
+
+      async function expectRpcBlocked(statusCode: number) {
+        sourcifyChain = createTwoRpcChain();
+        const getBlockNumberStub1 = sandbox
+          .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+          .rejects(makeServerError(statusCode));
+        const getBlockNumberStub2 = sandbox
+          .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+          .resolves(100);
+
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+        // One retry is allowed
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(getBlockNumberStub1).to.have.been.calledTwice;
+        expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(2);
+        // Now the first RPC is skipped
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(getBlockNumberStub1).to.have.been.calledTwice;
+        expect(getBlockNumberStub2).to.have.been.calledThrice;
+      }
+
+      it('should block an RPC that answers with HTTP 403', async () => {
+        await expectRpcBlocked(403);
+      });
+
+      it('should block an RPC that answers with HTTP 401', async () => {
+        await expectRpcBlocked(401);
+      });
+
+      it('should not block an RPC on other HTTP statuses (regression for #2473)', async () => {
+        for (const statusCode of [400, 404, 429, 500, 503]) {
+          sourcifyChain = createTwoRpcChain();
+          const getBlockNumberStub1 = sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(statusCode));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+          expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+          expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+          expect(getBlockNumberStub1, `status ${statusCode}`).to.have.been
+            .calledThrice;
+          const failures = sourcifyChain.rpcs[0].health?.consecutiveFailures;
+          expect(
+            failures === undefined || failures === 0,
+            `status ${statusCode}`,
+          ).to.be.true;
+        }
+      });
+
+      it('should not block an RPC on a SERVER_ERROR without a response', async () => {
+        sourcifyChain = createTwoRpcChain();
+        const getBlockNumberStub1 = sandbox
+          .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+          .rejects(
+            makeError('bad response data', 'SERVER_ERROR', {
+              request: 'http://localhost:8545',
+            } as any),
+          );
+        sandbox
+          .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+          .resolves(100);
+
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+        expect(getBlockNumberStub1).to.have.been.calledThrice;
+        const failures = sourcifyChain.rpcs[0].health?.consecutiveFailures;
+        expect(failures === undefined || failures === 0).to.be.true;
+      });
+
+      it('should throw an RpcAuthFailure for an HTTP 403', async () => {
+        sourcifyChain = createTwoRpcChain();
+        await expect(
+          sourcifyChain.callProviderWithTimeout(
+            Promise.reject(makeServerError(403)),
+          ),
+        ).to.be.rejectedWith(RpcAuthFailure);
+      });
+
+      for (const traceSupport of [
+        'trace_transaction',
+        'debug_traceTransaction',
+      ] as const) {
+        it(`should not block an RPC on HTTP 403 from ${traceSupport}`, async () => {
+          sourcifyChain = new SourcifyChain({
+            name: 'TestChain',
+            chainId: 1,
+            rpcs: [{ rpc: 'http://localhost:8545', traceSupport }],
+            supported: true,
+          });
+          const provider = sourcifyChain.rpcs[0].provider!;
+          const sendStub = sandbox
+            .stub(provider, 'send')
+            .rejects(makeServerError(403));
+          const getBlockNumberStub = sandbox
+            .stub(provider, 'getBlockNumber')
+            .resolves(100);
+
+          for (let i = 0; i < 3; i++) {
+            await expect(
+              sourcifyChain.getCreationBytecodeForFactory(
+                '0x' + '1'.repeat(64),
+                '0x' + '2'.repeat(40),
+              ),
+            ).to.be.rejectedWith('All RPCs failed or are blocked');
+          }
+          expect(sendStub).to.have.been.calledThrice;
+          const failures = sourcifyChain.rpcs[0].health?.consecutiveFailures;
+          expect(failures === undefined || failures === 0).to.be.true;
+
+          // Other operations still use the RPC
+          expect(await sourcifyChain.getBlockNumber()).to.equal(100);
+          expect(getBlockNumberStub).to.have.been.calledOnce;
+        });
+      }
+
+      it('should still block an RPC on a timeout from a trace call', async () => {
+        sourcifyChain = new SourcifyChain({
+          name: 'TestChain',
+          chainId: 1,
+          rpcs: [
+            { rpc: 'http://localhost:8545', traceSupport: 'trace_transaction' },
+          ],
+          supported: true,
+        });
+        sandbox.stub(sourcifyChain.rpcs[0].provider!, 'send').rejects(
+          makeError('timeout', 'TIMEOUT', {
+            operation: 'send',
+            reason: 'timeout',
+            request: 'http://localhost:8545',
+          } as any),
+        );
+
+        await expect(
+          sourcifyChain.getCreationBytecodeForFactory(
+            '0x' + '1'.repeat(64),
+            '0x' + '2'.repeat(40),
+          ),
+        ).to.be.rejectedWith('All RPCs failed or are blocked');
+        expect(sourcifyChain.rpcs[0].health?.consecutiveFailures).to.equal(1);
+      });
+
+      describe('compact logging', () => {
+        let logSpy: sinon.SinonSpy;
+
+        beforeEach(() => {
+          logSpy = sandbox.spy();
+          setLibSourcifyLogger({
+            logLevel: 5,
+            setLevel() {},
+            log: logSpy,
+          });
+        });
+
+        afterEach(() => {
+          setLibSourcifyLogger(DefaultLogger);
+        });
+
+        function findLogMetadata(message: string): unknown {
+          const call = logSpy.getCalls().find((c) => c.args[1] === message);
+          expect(call, `log '${message}' not found`).to.not.be.undefined;
+          return call!.args[2];
+        }
+
+        it('should log a short summary when an RPC is marked unhealthy', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          await sourcifyChain.getBlockNumber();
+
+          const metadata = findLogMetadata(
+            'RPC operation failed, marking as unhealthy',
+          );
+          const serialized = JSON.stringify(metadata);
+          expect(serialized.length).to.be.lessThan(1_000);
+          expect(serialized).to.not.contain(BODY_MARKER);
+          expect(serialized).to.contain('server response 403');
+        });
+
+        it('should log a short summary when a trace call fails', async () => {
+          sourcifyChain = new SourcifyChain({
+            name: 'TestChain',
+            chainId: 1,
+            rpcs: [
+              {
+                rpc: 'http://localhost:8545',
+                traceSupport: 'trace_transaction',
+              },
+            ],
+            supported: true,
+          });
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'send')
+            .rejects(makeServerError(500));
+
+          await expect(
+            sourcifyChain.getCreationBytecodeForFactory(
+              '0x' + '1'.repeat(64),
+              '0x' + '2'.repeat(40),
+            ),
+          ).to.be.rejected;
+
+          const metadata = findLogMetadata(
+            'Failed to fetch from parity traces',
+          );
+          const serialized = JSON.stringify(metadata);
+          expect(serialized.length).to.be.lessThan(1_000);
+          expect(serialized).to.not.contain(BODY_MARKER);
+          expect(serialized).to.contain('server response 500');
+        });
+
+        it('should log how long an RPC has been failing', async () => {
+          const start = Date.now(); // the fake clock of this describe block
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          await sourcifyChain.getBlockNumber();
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.equal(start);
+          clock.tick(5_000);
+          await sourcifyChain.getBlockNumber(); // the allowed immediate retry
+
+          const failureLogs = logSpy
+            .getCalls()
+            .filter(
+              (c) => c.args[1] === 'RPC operation failed, marking as unhealthy',
+            )
+            .map((c) => c.args[2]);
+          expect(failureLogs).to.have.length(2);
+          expect(failureLogs[0]).to.include({
+            consecutiveFailures: 1,
+            failingForMs: 0,
+          });
+          // The code and HTTP status of the original error stay in the summary
+          expect(failureLogs[0].error).to.include({
+            code: 'SERVER_ERROR',
+            status: 403,
+          });
+          expect(failureLogs[1]).to.include({
+            consecutiveFailures: 2,
+            failingForMs: 5_000,
+          });
+          // The start of the series does not move with later failures
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.equal(start);
+        });
+
+        it('should log how long an RPC failed when it recovers', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .onFirstCall()
+            .rejects(makeServerError(403))
+            .onSecondCall()
+            .resolves(100);
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .resolves(100);
+
+          await sourcifyChain.getBlockNumber();
+          clock.tick(7_000);
+          await sourcifyChain.getBlockNumber();
+
+          expect(findLogMetadata('RPC recovered')).to.include({
+            previousFailures: 1,
+            failedForMs: 7_000,
+          });
+          expect(sourcifyChain.rpcs[0].health?.failingSince).to.be.undefined;
+        });
+
+        it('should warn when no RPC of the chain is healthy', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getBlockNumber')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getBlockNumber')
+            .rejects(makeServerError(401));
+
+          await expect(sourcifyChain.getBlockNumber()).to.be.rejectedWith(
+            'All RPCs failed or are blocked',
+          );
+
+          const call = logSpy
+            .getCalls()
+            .find((c) => c.args[1] === 'All RPCs failed or are blocked');
+          expect(call, 'log not found').to.not.be.undefined;
+          expect(call!.args[0], 'log level').to.equal(1); // warn
+          expect(call!.args[2]).to.include({ unhealthyRpcs: 2, totalRpcs: 2 });
+        });
+
+        it('should not warn when an RPC answered without the data', async () => {
+          sourcifyChain = createTwoRpcChain();
+          sandbox
+            .stub(sourcifyChain.rpcs[0].provider!, 'getTransaction')
+            .rejects(makeServerError(403));
+          sandbox
+            .stub(sourcifyChain.rpcs[1].provider!, 'getTransaction')
+            .resolves(null);
+
+          await expect(sourcifyChain.getTx('0x' + '1'.repeat(64))).to.be
+            .rejected;
+
+          const call = logSpy
+            .getCalls()
+            .find((c) => c.args[1] === 'All RPCs failed or are blocked');
+          expect(call, 'log not found').to.not.be.undefined;
+          expect(call!.args[0], 'log level').to.equal(2); // info
+          expect(call!.args[2]).to.include({ unhealthyRpcs: 1, totalRpcs: 2 });
+        });
+      });
+    });
+  });
+});
+
+describe('isAuthFailure', () => {
+  function makeServerError(statusCode?: number) {
+    return makeError('server response', 'SERVER_ERROR', {
+      request: 'http://localhost:8545',
+      response: (statusCode === undefined ? undefined : { statusCode }) as any,
+    });
+  }
+
+  it('should be true for SERVER_ERROR with status 401 or 403', () => {
+    expect(isAuthFailure(makeServerError(401))).to.be.true;
+    expect(isAuthFailure(makeServerError(403))).to.be.true;
+  });
+
+  it('should be false for other statuses, codes and values', () => {
+    for (const statusCode of [200, 400, 404, 429, 500, 503]) {
+      expect(isAuthFailure(makeServerError(statusCode)), `status ${statusCode}`)
+        .to.be.false;
+    }
+    expect(isAuthFailure(makeServerError())).to.be.false;
+    expect(isAuthFailure(makeError('timeout', 'TIMEOUT'))).to.be.false;
+    expect(isAuthFailure(new Error('403'))).to.be.false;
+    expect(isAuthFailure(null)).to.be.false;
+    expect(isAuthFailure('403')).to.be.false;
+  });
+});
+
+describe('summarizeRpcError', () => {
+  it('should summarize an ethers error without the response body', () => {
+    const responseBody = 'BODY'.repeat(5_000);
+    const error = makeError('server response 403 Forbidden', 'SERVER_ERROR', {
+      request: 'http://localhost:8545',
+      response: { statusCode: 403 } as any,
+      info: { responseBody },
+    });
+    const summary = summarizeRpcError(error);
+    expect(summary).to.deep.equal({
+      name: 'Error',
+      code: 'SERVER_ERROR',
+      message: 'server response 403 Forbidden',
+      status: 403,
+    });
+    expect(JSON.stringify(summary)).to.not.contain('BODY');
+  });
+
+  it('should include the nested JSON-RPC error message', () => {
+    const error = makeError('could not coalesce error', 'UNKNOWN_ERROR', {
+      error: {
+        code: -32601,
+        message:
+          'the method trace_transaction does not exist' + 'x'.repeat(500),
+      },
+      payload: {
+        method: 'trace_transaction',
+        params: [],
+        id: 1,
+        jsonrpc: '2.0',
+      },
+    });
+    const summary = summarizeRpcError(error);
+    expect(summary.code).to.equal('UNKNOWN_ERROR');
+    expect(summary.message).to.equal('could not coalesce error');
+    const rpcMessage = summary.rpcMessage as string;
+    expect(rpcMessage).to.match(/^the method trace_transaction does not exist/);
+    expect(rpcMessage).to.match(/\.\.\. \[truncated\]$/);
+    expect(rpcMessage.length).to.be.lessThan(400);
+    expect(summary).to.not.have.property('payload');
+  });
+
+  it('should cut a long message', () => {
+    const summary = summarizeRpcError(new Error('m'.repeat(1_000)));
+    expect(summary.name).to.equal('Error');
+    expect(summary).to.not.have.property('code');
+    expect(summary).to.not.have.property('status');
+    const message = summary.message as string;
+    expect(message.length).to.be.lessThan(400);
+    expect(message).to.match(/^m{300}\.\.\. \[truncated\]$/);
+  });
+
+  it('should handle non-Error values', () => {
+    expect(summarizeRpcError('plain string')).to.deep.equal({
+      message: 'plain string',
+    });
+    expect(summarizeRpcError(null)).to.deep.equal({ message: 'null' });
+    expect(summarizeRpcError(undefined)).to.deep.equal({
+      message: 'undefined',
+    });
+    expect(summarizeRpcError({})).to.deep.equal({ message: '[object Object]' });
+    expect(summarizeRpcError({ code: 42 })).to.deep.equal({
+      code: 42,
+      message: '[object Object]',
     });
   });
 });

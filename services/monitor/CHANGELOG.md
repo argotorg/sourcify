@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.6.4 - 2026-10-05
+
+- fix: replace retired ipfs.io gateway defaults (#2985)
+- Update dependencies
+
 ## sourcify-monitor@1.6.3 - 2026-09-22
 
 - test: remove the live ipfs.io dependency from monitor and server tests (#2967)

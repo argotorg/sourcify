@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.1.2 - 2026-10-05
+
+- fix: replace retired ipfs.io gateway defaults (#2985)
+- docs(openapi): add bulk access and fair use guidance (#2988)
+- feat(server): serve the OpenAPI spec at /openapi.json and /v2/openapi.json (#2989)
+- docs(openapi): recommend a descriptive User-Agent (#2990)
+- perf(server): aggregate sources and signatures in subqueries in the contract lookup (#3001)
+- Update dependencies
+
 ## sourcify-server@4.1.1 - 2026-09-22
 
 - fix: detect Livepeer ManagerProxy in proxyResolution (#2959)\

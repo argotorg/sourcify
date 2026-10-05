@@ -1,8 +1,10 @@
+const DEFAULT_IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
+
 const defaultConfig = {
   decentralizedStorages: {
     ipfs: {
       enabled: true,
-      gateways: ["https://ipfs.io/ipfs/"],
+      gateways: [DEFAULT_IPFS_GATEWAY, "https://gateway.pinata.cloud/ipfs/"],
       timeout: 30000,
       interval: 5000,
       retries: 5,

@@ -34,6 +34,8 @@ import {
 import { logDebug } from '../logger';
 import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
+export const DEFAULT_IPFS_GATEWAY = 'https://ipfs.filebase.io/ipfs/';
+
 export class SolidityMetadataContract {
   metadata: Metadata;
   name: string;
@@ -50,7 +52,7 @@ export class SolidityMetadataContract {
 
   // Static IPFS gateway configuration
   private static ipfsGateway: IpfsGateway = {
-    url: 'https://ipfs.io/ipfs/',
+    url: DEFAULT_IPFS_GATEWAY,
   };
 
   // Static method to set the IPFS gateway
