@@ -381,7 +381,7 @@ export type GetVerificationJobsByChainAndAddressResult = {
  * It returns a `{ path: { content } }` object. The outer query needs no JOIN
  * and no GROUP BY.
  */
-export function buildSourcesSubquery(schema: string) {
+function buildSourcesSubquery(schema: string) {
   return `(
       SELECT json_object_agg(compiled_contracts_sources.path, json_build_object('content', sources.content))
       FROM ${schema}.compiled_contracts_sources
@@ -394,7 +394,7 @@ export function buildSourcesSubquery(schema: string) {
  * Builds the `std_json_input` selector around the SQL expression that yields
  * the `sources` object, see `buildSourcesSubquery`.
  */
-export function buildStdJsonInputSelector(sourcesExpression: string) {
+function buildStdJsonInputSelector(sourcesExpression: string) {
   return `json_build_object(
       'language', INITCAP(compiled_contracts.language),
       'sources', ${sourcesExpression},
@@ -404,19 +404,20 @@ export function buildStdJsonInputSelector(sourcesExpression: string) {
 
 /**
  * Correlated subquery for the signatures of one type of the current
- * `compiled_contracts` row. Keep DISTINCT: it sorts the array, and the order
+ * `compiled_contracts` row. The array is sorted by signature, and the order
  * is part of the API response.
  */
-export function buildSignaturesSelector(schema: string, type: SignatureType) {
+function buildSignaturesSelector(schema: string, type: SignatureType) {
   return `
     COALESCE(
       (
-        SELECT jsonb_agg(DISTINCT
+        SELECT jsonb_agg(
           jsonb_build_object(
             'signature', signatures.signature,
             'signatureHash32', concat('0x', encode(signatures.signature_hash_32, 'hex')),
             'signatureHash4', concat('0x', encode(signatures.signature_hash_4, 'hex'))
           )
+          ORDER BY signatures.signature
         )
         FROM ${schema}.compiled_contracts_signatures
         JOIN ${schema}.signatures ON signatures.signature_hash_32 = compiled_contracts_signatures.signature_hash_32
@@ -432,7 +433,7 @@ export function buildSignaturesSelector(schema: string, type: SignatureType) {
  * Selectors that contain a subquery need the schema of the queried tables.
  * They are functions of the schema. Resolve them with `resolveSelector`.
  */
-const SCHEMA_DEPENDENT_SELECTORS = {
+export const STORED_PROPERTIES_TO_SCHEMA_DEPENDENT_SELECTORS = {
   sources: (schema: string) => `${buildSourcesSubquery(schema)} as sources`,
   std_json_input: (schema: string) =>
     buildStdJsonInputSelector(buildSourcesSubquery(schema)),
@@ -535,10 +536,16 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
       )
     )
   ) as std_json_output`,
-  ...SCHEMA_DEPENDENT_SELECTORS,
 };
 
-export type StoredProperties = keyof typeof STORED_PROPERTIES_TO_SELECTORS;
+export type StoredProperties =
+  | keyof typeof STORED_PROPERTIES_TO_SELECTORS
+  | keyof typeof STORED_PROPERTIES_TO_SCHEMA_DEPENDENT_SELECTORS;
+
+const isSchemaDependent = (
+  property: StoredProperties,
+): property is keyof typeof STORED_PROPERTIES_TO_SCHEMA_DEPENDENT_SELECTORS =>
+  property in STORED_PROPERTIES_TO_SCHEMA_DEPENDENT_SELECTORS;
 
 /**
  * Returns the SQL selector of a stored property for the given schema.
@@ -547,8 +554,9 @@ export function resolveSelector(
   property: StoredProperties,
   schema: string,
 ): string {
-  const selector = STORED_PROPERTIES_TO_SELECTORS[property];
-  return typeof selector === "function" ? selector(schema) : selector;
+  return isSchemaDependent(property)
+    ? STORED_PROPERTIES_TO_SCHEMA_DEPENDENT_SELECTORS[property](schema)
+    : STORED_PROPERTIES_TO_SELECTORS[property];
 }
 
 type creationBytecodeSubfields = keyof NonNullable<

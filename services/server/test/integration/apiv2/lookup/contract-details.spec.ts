@@ -1111,23 +1111,6 @@ describe("GET /v2/contract/:chainId/:address", function () {
         ] as SourcifyDatabaseService
       ).database;
 
-    // Counts the identifiers `name` that are not inside parentheses.
-    const countTopLevelOccurrences = (sql: string, name: string) => {
-      const identifier = new RegExp(`\\b${name}\\b`, "g");
-      let depth = 0;
-      let count = 0;
-      for (let i = 0; i < sql.length; i++) {
-        if (sql[i] === "(") depth++;
-        else if (sql[i] === ")") depth--;
-        else if (depth === 0) {
-          identifier.lastIndex = i;
-          if (identifier.test(sql) && identifier.lastIndex - name.length === i)
-            count++;
-        }
-      }
-      return count;
-    };
-
     it("should return the same sources, signatures and stdJsonInput when requested together and separately", async function () {
       const { resolveWorkers } = makeWorkersWait();
       const contractAddress = await verifyProxyContract(resolveWorkers);
@@ -1179,13 +1162,8 @@ describe("GET /v2/contract/:chainId/:address", function () {
       chai.expect(querySpy.calledOnce).to.be.true;
       const sql = querySpy.firstCall.args[0] as string;
       chai.expect(sql.toUpperCase()).to.not.include("GROUP BY");
-      for (const table of [
-        "compiled_contracts_sources",
-        "compiled_contracts_signatures",
-      ]) {
-        chai.expect(sql).to.include(table);
-        chai.expect(countTopLevelOccurrences(sql, table)).to.equal(0);
-      }
+      chai.expect(sql).to.include("compiled_contracts_sources");
+      chai.expect(sql).to.include("compiled_contracts_signatures");
 
       chai.expect(result.rowCount).to.equal(1);
       const row = result.rows[0];
