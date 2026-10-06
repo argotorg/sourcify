@@ -24,6 +24,8 @@ const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT =
 const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
   "https://chains.blockscout.com/api/chains";
 const VERIFIER_ALREADY_VERIFIED = "VERIFIER_ALREADY_VERIFIED";
+// Explorers can return long HTML error pages. Keep the stored error short.
+const MAX_ERROR_RESPONSE_BODY_LENGTH = 500;
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
@@ -295,6 +297,18 @@ const fetchRoutescanInformation = async (): Promise<VerifierInformation> => {
     apiUrls,
     explorerUrls,
   };
+};
+
+const buildFailedRequestError = async (
+  prefix: string,
+  response: Response,
+): Promise<Error> => {
+  const responseText = await response.text();
+  const body =
+    responseText.length > MAX_ERROR_RESPONSE_BODY_LENGTH
+      ? `${responseText.slice(0, MAX_ERROR_RESPONSE_BODY_LENGTH)}... [truncated, ${responseText.length} characters in total]`
+      : responseText;
+  return new Error(`${prefix} (${response.status}): ${body}`);
 };
 
 interface EtherscanRpcResponse {
@@ -618,9 +632,9 @@ export class EtherscanVerifyApiService implements WStorageService {
       });
 
       if (!response.ok) {
-        const responseText = await response.text();
-        throw new Error(
-          `Explorer verification request failed (${response.status}): ${responseText}`,
+        throw await buildFailedRequestError(
+          "Explorer verification request failed",
+          response,
         );
       }
 
@@ -725,9 +739,9 @@ export class EtherscanVerifyApiService implements WStorageService {
       });
 
       if (!response.ok) {
-        const responseText = await response.text();
-        throw new Error(
-          `Blockscout Vyper verification request failed (${response.status}): ${responseText}`,
+        throw await buildFailedRequestError(
+          "Blockscout Vyper verification request failed",
+          response,
         );
       }
 

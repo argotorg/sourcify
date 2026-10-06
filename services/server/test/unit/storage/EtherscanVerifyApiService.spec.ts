@@ -328,6 +328,41 @@ describe("EtherscanVerifyApiService", function () {
     );
   });
 
+  it("truncates a long response body when the request fails", async () => {
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.BlockscoutVerify,
+      "https://blockscout.example/api",
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+    const responseText = "<!DOCTYPE html>".padEnd(10000, "x");
+    fetchStub.resolves({
+      ok: false,
+      status: 403,
+      text: async () => responseText,
+    } as unknown as Response);
+
+    await expect(
+      service.storeVerification(
+        structuredClone(MockVerificationExport),
+        jobData,
+      ),
+    ).to.eventually.be.rejected;
+
+    sinon.assert.calledOnceWithExactly(
+      upsertStub,
+      jobData.verificationId,
+      WStorageIdentifiers.BlockscoutVerify,
+      {
+        error: `Explorer verification request failed (403): ${responseText.slice(0, 500)}... [truncated, 10000 characters in total]`,
+      },
+    );
+  });
+
   it("retries submission when contract is not yet indexed", async () => {
     const clock = sandbox.useFakeTimers();
     const baseUrl = "https://etherscan.example/api";
