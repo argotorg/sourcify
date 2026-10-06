@@ -306,7 +306,7 @@ const buildFailedRequestError = async (
   const responseText = await response.text();
   const body =
     responseText.length > MAX_ERROR_RESPONSE_BODY_LENGTH
-      ? `${responseText.slice(0, MAX_ERROR_RESPONSE_BODY_LENGTH)}... [truncated, ${responseText.length} characters in total]`
+      ? `${responseText.slice(0, MAX_ERROR_RESPONSE_BODY_LENGTH).replace(/[\uD800-\uDBFF]$/, "")}... [truncated, ${responseText.length} characters in total]`
       : responseText;
   return new Error(`${prefix} (${response.status}): ${body}`);
 };
