@@ -912,7 +912,7 @@ ${
       verified_contracts.runtime_metadata_match,
       verified_contracts.creation_metadata_match,
       sourcify_matches.id as match_id,
-      to_char(sourcify_matches.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as verified_at
+      to_char(verified_contracts.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as verified_at
     FROM ${this.schema}.verification_jobs
     LEFT JOIN ${this.schema}.verification_jobs_ephemeral ON verification_jobs.id = verification_jobs_ephemeral.id
     LEFT JOIN ${this.schema}.verified_contracts ON verification_jobs.verified_contract_id = verified_contracts.id

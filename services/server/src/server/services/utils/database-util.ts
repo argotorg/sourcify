@@ -451,7 +451,7 @@ export const STORED_PROPERTIES_TO_SELECTORS = {
   runtime_match: "sourcify_matches.runtime_match",
   chain_id: "contract_deployments.chain_id",
   verified_at:
-    'to_char(sourcify_matches.created_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as verified_at',
+    'to_char(verified_contracts.created_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as verified_at',
   address:
     "nullif(concat('0x', encode(contract_deployments.address, 'hex')), '0x') as address",
   onchain_creation_code:
