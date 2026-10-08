@@ -10,6 +10,10 @@
 [![Discord](https://img.shields.io/badge/Discord%20-chat-brightgreen?style=plastic&logo=discord)](https://discord.com/invite/6aqd9cfZ9s)
 [![X Follow](https://img.shields.io/twitter/follow/SourcifyEth?style=plastic&logo=x)](https://X.com/SourcifyEth)
 
+<a href="https://drpc.org?ref=7ef756">
+  <img width="218" height="54" src="https://drpc.org/images/external/powered-by-drpc-dark.svg" alt="Powered by dRPC" />
+</a>
+
 Sourcify ([sourcify.dev](https://sourcify.dev)) is a source-code verification service for Ethereum smart contracts supporting Solidity and Vyper. Sourcify is fully commited to
 
 - Open-source (MIT License)
