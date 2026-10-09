@@ -110,7 +110,7 @@ export interface VerificationExport {
       userdoc?: Userdoc;
       devdoc?: Devdoc;
       storageLayout?: StorageLayout | VyperStorageLayout;
-      transientStorageLayout?: TransientStorageLayout;
+      transientStorageLayout?: TransientStorageLayout | VyperStorageLayout;
       evm: {
         bytecode: {
           sourceMap?: string | VyperSourceMap;
