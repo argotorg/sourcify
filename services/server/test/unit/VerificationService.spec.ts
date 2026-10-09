@@ -77,6 +77,9 @@ describe("VerificationService", function () {
       releases = {
         "0.8.26": "soljson-v0.8.26+commit.8a97fa7a.js",
         "0.6.12": "soljson-v0.6.12+commit.27d51765.js",
+        // soljson <0.6.2 used to overflow the stack when loaded under ts-node (#1473)
+        "0.1.1": "soljson-v0.1.1+commit.6ff4cd6.js",
+        "0.4.18": "soljson-v0.4.18+commit.9cf6e910.js",
       };
       nock(HOST_SOLC_REPO, { allowUnmocked: true })
         .get("/bin/list.json")
