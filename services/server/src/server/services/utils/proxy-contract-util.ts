@@ -12,7 +12,8 @@ export type ProxyType =
   | "ZeppelinOSProxy"
   | "MaticProxy"
   | "SequenceWalletProxy"
-  | "LivepeerManagerProxy";
+  | "LivepeerManagerProxy"
+  | "AragonAppProxy";
 
 export type Implementation = { address: string; name?: string };
 
