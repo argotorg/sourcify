@@ -212,6 +212,7 @@ module.exports = {
   vyperRepo: "/tmp/vyper-bin/linux-amd64", // The path to the vyper binaries on the filesystem
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
+  similarityFailureCooldownSeconds: 600, // Cooldown after a similarity job finds no match; 0 disables it
   // The origins that are allowed to access the server, regex allowed
   corsAllowedOrigins: [/^https?:\/\/(?:.+\.)?sourcify.dev$/],
   // Enables the private verify-deprecated endpoint. Used when recreating the DB with deprecated chains that don't have an RPC.
