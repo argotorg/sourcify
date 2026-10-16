@@ -136,6 +136,9 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       vyperRepoPath,
       feRepoPath,
       compilerTimeoutMs,
+      similarityFailureCooldownSeconds: config.get<number>(
+        "similarityFailureCooldownSeconds",
+      ),
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,

@@ -31,6 +31,8 @@ module.exports = {
   feRepo: "/tmp/fe-bin",
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
+  // Cooldown after a similarity job finds no match. Set to 0 to disable.
+  similarityFailureCooldownSeconds: 600,
   corsAllowedOrigins: [
     /^https?:\/\/(?:.+\.)?sourcify.dev$/, // sourcify.dev and subdomains
     /^https?:\/\/(?:.+\.)?sourcify.eth$/, // sourcify.eth and subdomains
