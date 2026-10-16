@@ -871,9 +871,11 @@ export class Verification {
             (contractCompilerOutput as SolidityOutputContract)?.storageLayout ||
             (contractCompilerOutput as VyperOutputContract)?.layout
               ?.storage_layout,
-          transientStorageLayout: (
-            contractCompilerOutput as SolidityOutputContract
-          )?.transientStorageLayout,
+          transientStorageLayout:
+            (contractCompilerOutput as SolidityOutputContract)
+              ?.transientStorageLayout ||
+            (contractCompilerOutput as VyperOutputContract)?.layout
+              ?.transient_storage_layout,
           evm: {
             bytecode: {
               sourceMap: (

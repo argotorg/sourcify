@@ -32,6 +32,24 @@ const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour default
 const normalizeVyperVersion = (v: string): string =>
   v.replace(/^(\d+\.\d+\.\d+)b(\d+)$/, '$1-beta.$2');
 
+const mapVyperRelease = (version: any): VyperVersion => {
+  const tag = version.tag_name.substring(1);
+  const assetName = version.assets[0]?.name;
+  return {
+    // A handful of historical releases have a PyPI package but no binary
+    // asset. Preserve their tag version so the compiler's isolated Python
+    // fallback can still select them.
+    compiler_version: assetName
+      ? assetName
+          .replace('vyper.', '')
+          .replace('.darwin', '')
+          .replace('.linux', '')
+          .replace('.windows.exe', '')
+      : tag,
+    tag,
+  };
+};
+
 export const getVyperCompilerVersion = async (
   compilerString: string,
   cacheDurationMs: number = CACHE_DURATION_MS,
@@ -47,14 +65,7 @@ export const getVyperCompilerVersion = async (
       );
       const versions = await response.json();
       vyperVersionCache = {
-        versions: versions.map((version: any) => ({
-          compiler_version: version.assets[0]?.name
-            .replace('vyper.', '')
-            .replace('.darwin', '')
-            .replace('.linux', '')
-            .replace('.windows.exe', ''),
-          tag: version.tag_name.substring(1),
-        })),
+        versions: versions.map(mapVyperRelease),
         lastFetch: now,
       };
     } catch (error) {
@@ -81,14 +92,7 @@ export const getVyperCompilerVersion = async (
       );
       const versions = await response.json();
       vyperVersionCache = {
-        versions: versions.map((version: any) => ({
-          compiler_version: version.assets[0]?.name
-            .replace('vyper.', '')
-            .replace('.darwin', '')
-            .replace('.linux', '')
-            .replace('.windows.exe', ''),
-          tag: version.tag_name.substring(1),
-        })),
+        versions: versions.map(mapVyperRelease),
         lastFetch: Date.now(),
       };
       found = vyperVersionCache.versions.find(
