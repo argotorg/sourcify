@@ -176,8 +176,7 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
     if (!blockscoutExplorer?.url) continue;
     try {
       const explorerUrl = new URL(blockscoutExplorer.url);
-      // The API key goes into the query string, so never talk to an instance
-      // over plain HTTP. Same rewrite as in sourcify-chains.
+      // The API key is in the query string, never send it over plain HTTP
       explorerUrl.protocol = "https:";
       explorerUrl.pathname = explorerUrl.pathname.replace(/\/$/, "") + "/api";
       explorerUrl.search = "";
@@ -965,9 +964,6 @@ export class EtherscanVerifyApiService implements WStorageService {
       const apiKey = this.getApiKey(chainId);
       if (apiKey) {
         if (url.protocol !== "https:") {
-          // Operator supplied chainInformation can contain anything. Don't
-          // leak the key in cleartext; the explorer will answer with an auth
-          // error that is stored with the verification.
           logger.warn("Not attaching the API key to a non-HTTPS API URL", {
             chainId,
             apiBaseUrl,

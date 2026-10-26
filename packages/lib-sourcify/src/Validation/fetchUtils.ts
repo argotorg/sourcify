@@ -4,22 +4,10 @@ import { lookup } from 'dns/promises';
 import { isIP } from 'net';
 
 export interface FetchOptions {
-  /**
-   * Allow fetching from hosts that resolve to private, loopback, link-local
-   * or otherwise non-public addresses. Only set this for operator-configured
-   * destinations (e.g. a self-hosted IPFS gateway). Never set it for URLs
-   * derived from user input.
-   */
+  /** Only for operator-configured destinations, never for user-supplied URLs */
   allowPrivateHosts?: boolean;
-  /**
-   * Maximum number of redirects to follow. Every hop is validated again.
-   */
   maxRedirects?: number;
-  /**
-   * Upper bound in milliseconds for reading the whole response body after the
-   * headers arrived. Protects against servers that keep a connection open by
-   * sending a byte every now and then.
-   */
+  /** Max ms to read the body after the headers arrived */
   bodyTimeout?: number;
 }
 
@@ -119,7 +107,7 @@ function isPublicIPv4(address: string): boolean {
 
 function isPublicIPv6(address: string): boolean {
   const lower = address.toLowerCase().split('%')[0];
-  // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible addresses
+  // IPv4-mapped addresses
   const mapped = lower.match(/^(?:0*:)*ffff:(\d+\.\d+\.\d+\.\d+)$/);
   if (mapped) return isPublicIPv4(mapped[1]);
   const mappedHex = lower.match(
@@ -147,19 +135,12 @@ export function isPublicIpAddress(address: string): boolean {
   return false;
 }
 
-/**
- * DNS resolution used by assertPublicUrl. Kept on an object so tests can
- * replace it without touching the real resolver.
- */
+// On an object so tests can stub it
 export const dnsResolver = {
   lookup: (hostname: string) => lookup(hostname, { all: true, verbatim: true }),
 };
 
-/**
- * Throws if the URL does not point to a public host. Only http(s) is accepted.
- * Hostnames are resolved and every resolved address has to be public, so that
- * a name pointing at both a public and a private address is rejected.
- */
+// Throws unless the URL is http(s) and every resolved address is public
 export async function assertPublicUrl(resource: string): Promise<URL> {
   let url: URL;
   try {
@@ -175,7 +156,6 @@ export async function assertPublicUrl(resource: string): Promise<URL> {
   if (url.username || url.password) {
     throw new Error(`Refusing to fetch ${resource}: credentials in URL`);
   }
-  // URL.hostname keeps the brackets for IPv6 literals
   const hostname = url.hostname.replace(/^\[|\]$/g, '');
   if (
     !hostname ||
@@ -212,10 +192,7 @@ class NonRetriableFetchError extends Error {}
  * ...
  * ...
  *
- * Unless `options.allowPrivateHosts` is set, the resource and every redirect
- * target must resolve to a public address. Redirects are followed manually so
- * each hop is checked. The returned response's body read is bounded by
- * `options.bodyTimeout`.
+ * Every redirect hop is checked with assertPublicUrl unless options.allowPrivateHosts is set.
  */
 export async function fetchWithBackoff(
   resource: string,
@@ -279,7 +256,6 @@ export async function fetchWithBackoff(
             `Too many redirects fetching ${resource}`,
           );
         }
-        // Drain the redirect response so the connection can be reused
         await response.text().catch(() => undefined);
         current = next;
       }
@@ -288,9 +264,7 @@ export async function fetchWithBackoff(
       }
       logDebug('Success fetchWithBackoff', { resource, timeout, attempt });
       clearTimeout(timer);
-      // Keep a deadline on the body read. Aborting an already consumed
-      // response is a no-op, and unref keeps the timer from holding the
-      // process open.
+      // Deadline for the body read; aborting a consumed response is a no-op
       const bodyTimer = setTimeout(() => {
         logWarn('Aborting slow response body', { resource, bodyTimeout });
         controller.abort();

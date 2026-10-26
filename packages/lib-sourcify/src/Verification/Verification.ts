@@ -557,9 +557,6 @@ export class Verification {
       linkReferences,
     );
     if (librariesTransformationResult.inconsistentLibraries) {
-      // The same library is linked to different addresses in the onchain
-      // bytecode. The exported library map couldn't describe this honestly,
-      // so refuse the match.
       logWarn('Library linked to multiple addresses, refusing match', {
         address: this.address,
         chainId: this.sourcifyChain.chainId,

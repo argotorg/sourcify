@@ -126,13 +126,7 @@ function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
 }
 
 // returns the full bytecode with the call protection replaced with the real address
-//
-// Solidity libraries start their runtime code with `PUSH20 <own address> ADDRESS EQ`
-// to reject non-DELEGATECALL invocations. The compiler leaves the address zeroed
-// and it is filled in at deployment, so the match has to substitute it. Any
-// other leading PUSH20 (e.g. in hand written Yul) is executable data whose
-// operand must not be swapped, otherwise a source with a different address
-// would match the deployed code.
+// Only Solidity libraries have the `PUSH20 <address> ADDRESS EQ` guard; a leading PUSH20 elsewhere (e.g. Yul) is data.
 export function extractCallProtectionTransformation(
   populatedRecompiledBytecode: string,
   onchainRuntimeBytecode: string,
@@ -327,10 +321,7 @@ export function extractLibrariesTransformation(
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
   const libraryMap: StringMap = {};
-  // Every link reference of a library must carry the same address. A deployer
-  // can patch the placeholders by hand and point two call sites of the same
-  // library at different contracts; the exported library list could then only
-  // name one of them. Such a bytecode is reported here and refused by the match.
+  // A library linked to different addresses at different references is reported and refused
   const inconsistentLibraries: { [fqn: string]: string[] } = {};
   const seenAddresses: { [fqn: string]: string } = {};
   for (const file in linkReferences) {

@@ -36,12 +36,7 @@ import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export const DEFAULT_IPFS_GATEWAY = 'https://ipfs.filebase.io/ipfs/';
 
-/**
- * Turns a GitHub file URL (https://github.com/<owner>/<repo>/blob/<ref>/<path>)
- * into its raw.githubusercontent.com equivalent. Returns null for anything
- * that is not exactly a github.com file URL, so that a file name merely
- * containing "github.com" can't make the server fetch an arbitrary host.
- */
+// https://github.com/<owner>/<repo>/blob/<ref>/<path> -> raw.githubusercontent.com URL, else null
 export function getGithubRawUrl(fileName: string): string | null {
   let url: URL;
   try {
@@ -237,9 +232,7 @@ export class SolidityMetadataContract {
 
       let retrievedContent = null;
 
-      // Never fetch a source whose content can't be checked against a hash.
-      // Without the hash the fetched content would be compiled as is, which
-      // would turn the fetch into an oracle for whatever the URL returns.
+      // Only fetch content that can be checked against a hash
       if (!hash) {
         logWarn('Not fetching a missing source without keccak256', {
           fileName,
@@ -256,7 +249,6 @@ export class SolidityMetadataContract {
           if (url.startsWith(IPFS_PREFIX)) {
             const ipfsCID = url.slice(IPFS_PREFIX.length);
             const ipfsUrl = SolidityMetadataContract.ipfsGateway.url + ipfsCID;
-            // The gateway is operator configured, so it may be a private host
             retrievedContent = await performFetch(
               ipfsUrl,
               hash,
