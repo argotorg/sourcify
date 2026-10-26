@@ -1,7 +1,7 @@
 # Needs to be run from the project root context e.g. `cd sourcify/ && docker build -f services/monitor/Dockerfile .`
 
 # Builder image
-FROM node:22.22.0-bookworm@sha256:20a424ecd1d2064a44e12fe287bf3dae443aab31dc5e0c0cb6c74bef9c78911c as builder
+FROM node:22.23.4-bookworm@sha256:63538dfe497cc29dfafdda25ada09b46db68a3f4cc205abf1f5d6bf0913f3384 as builder
 
 RUN mkdir -p /home/app
 WORKDIR /home/app
@@ -15,7 +15,7 @@ RUN npx lerna run build --scope sourcify-server
 ######################
 ## Production image ##
 ######################
-FROM node:22.22.0-trixie-slim@sha256:465a8c8f0f4103861bcbcf3e512608394b7155eccb1955425f4ea3f672ddc53e as production
+FROM node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf as production
 
 # Fe compiler (v26.0.0-alpha.12+) requires libssl3 and glibc >= 2.39
 RUN apt-get update && apt-get install -y --no-install-recommends libssl3 && rm -rf /var/lib/apt/lists/*
