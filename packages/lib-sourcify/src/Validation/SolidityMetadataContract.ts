@@ -31,10 +31,36 @@ import {
   reorderAlphabetically,
   getVariationsByContentHash,
 } from './variationsUtils';
-import { logDebug } from '../logger';
+import { logDebug, logWarn } from '../logger';
 import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export const DEFAULT_IPFS_GATEWAY = 'https://ipfs.filebase.io/ipfs/';
+
+/**
+ * Turns a GitHub file URL (https://github.com/<owner>/<repo>/blob/<ref>/<path>)
+ * into its raw.githubusercontent.com equivalent. Returns null for anything
+ * that is not exactly a github.com file URL, so that a file name merely
+ * containing "github.com" can't make the server fetch an arbitrary host.
+ */
+export function getGithubRawUrl(fileName: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(fileName);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+  const host = url.hostname.toLowerCase();
+  if (host !== 'github.com' && host !== 'www.github.com') return null;
+  if (url.username || url.password || url.port) return null;
+  const match = url.pathname.match(
+    /^\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/blob\/(.+)$/,
+  );
+  if (!match) return null;
+  const [, owner, repo, refAndPath] = match;
+  if (refAndPath.split('/').some((segment) => segment === '..')) return null;
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${refAndPath}`;
+}
 
 export class SolidityMetadataContract {
   metadata: Metadata;
@@ -211,22 +237,32 @@ export class SolidityMetadataContract {
 
       let retrievedContent = null;
 
+      // Never fetch a source whose content can't be checked against a hash.
+      // Without the hash the fetched content would be compiled as is, which
+      // would turn the fetch into an oracle for whatever the URL returns.
+      if (!hash) {
+        logWarn('Not fetching a missing source without keccak256', {
+          fileName,
+        });
+        continue;
+      }
+
       // Sometimes file paths are github urls, try to fetch from there
-      if (fileName.includes('github.com')) {
-        const githubUrl = fileName
-          .replace('github.com', 'raw.githubusercontent.com')
-          .replace('/blob/', '/');
-        retrievedContent = await performFetch(githubUrl, hash, fileName);
+      const githubRawUrl = getGithubRawUrl(fileName);
+      if (githubRawUrl) {
+        retrievedContent = await performFetch(githubRawUrl, hash, fileName);
       } else {
         for (const url of file.urls) {
           if (url.startsWith(IPFS_PREFIX)) {
             const ipfsCID = url.slice(IPFS_PREFIX.length);
             const ipfsUrl = SolidityMetadataContract.ipfsGateway.url + ipfsCID;
+            // The gateway is operator configured, so it may be a private host
             retrievedContent = await performFetch(
               ipfsUrl,
               hash,
               fileName,
               SolidityMetadataContract.ipfsGateway.headers,
+              { allowPrivateHosts: true },
             );
             if (retrievedContent) {
               break;
