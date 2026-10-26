@@ -11,8 +11,6 @@ import type { PathContent } from '../../src';
 import { getErrorMessageFromCode } from '../../src';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { getGithubRawUrl } from '../../src/Validation/SolidityMetadataContract';
-import { dnsResolver } from '../../src/Validation/fetchUtils';
 
 use(chaiAsPromised);
 
@@ -444,47 +442,7 @@ describe('SolidityMetadataContract', () => {
     });
   });
 
-  describe('getGithubRawUrl', () => {
-    it('rewrites a github.com file URL to raw.githubusercontent.com', () => {
-      expect(
-        getGithubRawUrl(
-          'https://github.com/test/repo/blob/main/contracts/Storage.sol',
-        ),
-      ).to.equal(
-        'https://raw.githubusercontent.com/test/repo/main/contracts/Storage.sol',
-      );
-      expect(
-        getGithubRawUrl('https://www.github.com/test/repo/blob/v1.0/a/b.sol'),
-      ).to.equal('https://raw.githubusercontent.com/test/repo/v1.0/a/b.sol');
-    });
-
-    it('returns null for anything that is not a github.com file URL', () => {
-      for (const fileName of [
-        'contracts/Storage.sol',
-        'github.com/test/repo/blob/main/Storage.sol',
-        'https://github.com/test/repo/main/Storage.sol',
-        'https://github.com/test/repo/blob/main/../../x.sol',
-        'https://notgithub.com/test/repo/blob/main/Storage.sol',
-        'https://github.com.evil.example/test/repo/blob/main/Storage.sol',
-        'https://github.com:8080/test/repo/blob/main/Storage.sol',
-        'https://user:pw@github.com/test/repo/blob/main/Storage.sol',
-        'http://172.17.0.1:9000/private-endpoint?x=github.com',
-        'http://localhost/github.com/test/repo/blob/main/Storage.sol',
-        'ftp://github.com/test/repo/blob/main/Storage.sol',
-      ]) {
-        expect(getGithubRawUrl(fileName), fileName).to.be.null;
-      }
-    });
-  });
-
   describe('fetchMissing', () => {
-    beforeEach(() => {
-      // Don't depend on real DNS; every public-looking host resolves publicly
-      sinon
-        .stub(dnsResolver, 'lookup')
-        .resolves([{ address: '140.82.112.3', family: 4 }] as any);
-    });
-
     afterEach(() => {
       nock.cleanAll();
       sinon.restore();

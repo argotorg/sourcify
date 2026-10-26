@@ -1,34 +1,24 @@
-import { expect, use } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { expect } from 'chai';
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import sinon from 'sinon';
 import {
   performFetch,
   fetchWithBackoff,
-  assertPublicUrl,
-  dnsResolver,
-  isPublicIpAddress,
+  getFetchableSourceUrl,
 } from '../../src/Validation/fetchUtils';
 import { id as keccak256str } from 'ethers';
 
-use(chaiAsPromised);
-
-const PUBLIC_IP = '93.184.216.34';
-const PRIVATE_IP = '172.17.0.1';
+const RAW =
+  'https://raw.githubusercontent.com/test/repo/main/contracts/Storage.sol';
 
 describe('fetchUtils', () => {
   let originalFetch: typeof fetch;
   let originalEnv: NodeJS.ProcessEnv;
-  let lookupStub: sinon.SinonStub;
 
   beforeEach(() => {
     originalFetch = global.fetch;
     originalEnv = process.env;
     process.env = { ...process.env };
-    // Resolve every name to a public address unless a test says otherwise
-    lookupStub = sinon
-      .stub(dnsResolver, 'lookup')
-      .resolves([{ address: PUBLIC_IP, family: 4 }] as any);
   });
 
   afterEach(() => {
@@ -37,74 +27,42 @@ describe('fetchUtils', () => {
     sinon.restore();
   });
 
-  describe('isPublicIpAddress', () => {
-    it('accepts public addresses', () => {
-      expect(isPublicIpAddress(PUBLIC_IP)).to.be.true;
-      expect(isPublicIpAddress('2606:2800:220:1:248:1893:25c8:1946')).to.be
-        .true;
+  describe('getFetchableSourceUrl', () => {
+    it('rewrites a github.com file URL to raw.githubusercontent.com', () => {
+      expect(
+        getFetchableSourceUrl(
+          'https://github.com/test/repo/blob/main/contracts/Storage.sol',
+        ),
+      ).to.equal(RAW);
+      expect(
+        getFetchableSourceUrl(
+          'https://www.github.com/test/repo/blob/v1.0/a/b.sol',
+        ),
+      ).to.equal('https://raw.githubusercontent.com/test/repo/v1.0/a/b.sol');
     });
 
-    it('rejects loopback, private, link-local and mapped addresses', () => {
-      for (const address of [
-        '127.0.0.1',
-        '10.1.2.3',
-        '172.17.0.1',
-        '192.168.1.1',
-        '169.254.169.254',
-        '100.64.0.1',
-        '0.0.0.0',
-        '::1',
-        '::',
-        'fd00::1',
-        'fe80::1',
-        '::ffff:127.0.0.1',
-        '::ffff:7f00:1',
-        'not-an-ip',
+    it('accepts an allowlisted host as is, dropping query and fragment', () => {
+      expect(getFetchableSourceUrl(`${RAW}?x=1#y`)).to.equal(RAW);
+      expect(getFetchableSourceUrl(RAW.replace('https', 'http'))).to.equal(RAW);
+    });
+
+    it('returns null for everything else', () => {
+      for (const fileName of [
+        'contracts/Storage.sol',
+        'github.com/test/repo/blob/main/Storage.sol',
+        'https://github.com/test/repo/main/Storage.sol',
+        'https://github.com/test/repo/src/Storage.sol',
+        'https://notgithub.com/test/repo/blob/main/Storage.sol',
+        'https://github.com.evil.example/test/repo/blob/main/Storage.sol',
+        'https://github.com:8080/test/repo/blob/main/Storage.sol',
+        'https://user:pw@github.com/test/repo/blob/main/Storage.sol',
+        'http://172.17.0.1:9000/private-endpoint?x=github.com',
+        'http://localhost/github.com/test/repo/blob/main/Storage.sol',
+        'https://cdn.jsdelivr.net/npm/@openzeppelin/contracts/token/ERC20/ERC20.sol',
+        'ftp://github.com/test/repo/blob/main/Storage.sol',
       ]) {
-        expect(isPublicIpAddress(address), address).to.be.false;
+        expect(getFetchableSourceUrl(fileName), fileName).to.be.null;
       }
-    });
-  });
-
-  describe('assertPublicUrl', () => {
-    it('accepts a public https host', async () => {
-      const url = await assertPublicUrl('https://example.com/file.sol');
-      expect(url.hostname).to.equal('example.com');
-    });
-
-    it('rejects private IP literals', async () => {
-      for (const resource of [
-        'http://127.0.0.1:8080/x',
-        'http://172.17.0.1/private?x=github.com',
-        'http://[::1]/x',
-        'http://localhost/x',
-      ]) {
-        await expect(assertPublicUrl(resource), resource).to.be.rejectedWith(
-          /non-public host/,
-        );
-      }
-    });
-
-    it('rejects a hostname that resolves to a private address', async () => {
-      lookupStub.resolves([
-        { address: PUBLIC_IP, family: 4 },
-        { address: PRIVATE_IP, family: 4 },
-      ] as any);
-      await expect(assertPublicUrl('http://evil.example/x')).to.be.rejectedWith(
-        /non-public host/,
-      );
-    });
-
-    it('rejects non-http schemes and credentials', async () => {
-      await expect(assertPublicUrl('file:///etc/passwd')).to.be.rejectedWith(
-        /unsupported protocol/,
-      );
-      await expect(
-        assertPublicUrl('https://user:pass@example.com/x'),
-      ).to.be.rejectedWith(/credentials/);
-      await expect(assertPublicUrl('not a url')).to.be.rejectedWith(
-        /invalid URL/,
-      );
     });
   });
 
@@ -114,7 +72,7 @@ describe('fetchUtils', () => {
       const hash = keccak256str(content);
       global.fetch = async () => new Response(content, { status: 200 });
 
-      const result = await performFetch('https://test.com', hash, 'test.txt');
+      const result = await performFetch(RAW, hash, 'test.txt');
       expect(result).to.equal(content);
     });
 
@@ -123,28 +81,93 @@ describe('fetchUtils', () => {
       const wrongHash = keccak256str('wrong content');
       global.fetch = async () => new Response(content, { status: 200 });
 
-      const result = await performFetch(
-        'https://test.com',
-        wrongHash,
-        'test.txt',
-      );
+      const result = await performFetch(RAW, wrongHash, 'test.txt');
       expect(result).to.be.null;
     });
 
     it('should return null on failed fetch', async () => {
       global.fetch = async () => new Response('Not Found', { status: 404 });
 
-      const result = await performFetch('https://test.com');
+      const result = await performFetch(RAW);
       expect(result).to.be.null;
     });
 
-    it('should return null without fetching for a private host', async () => {
+    it('refuses hosts that are not allowlisted without fetching', async () => {
       const fetchSpy = sinon.spy(async () => new Response('secret'));
       global.fetch = fetchSpy as unknown as typeof fetch;
 
-      const result = await performFetch('http://172.17.0.1/private');
-      expect(result).to.be.null;
+      for (const url of [
+        'http://172.17.0.1/private?x=github.com',
+        'https://github.com/test/repo/blob/main/Storage.sol',
+        'https://example.com/Storage.sol',
+        'not a url',
+      ]) {
+        expect(await performFetch(url), url).to.be.null;
+      }
       expect(fetchSpy.called).to.be.false;
+    });
+
+    it('allows any host and follows redirects when trusted', async () => {
+      const fetchSpy = sinon.spy(async (_url: string, init?: RequestInit) => {
+        expect(init?.redirect).to.equal('follow');
+        return new Response('gateway', { status: 200 });
+      });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+
+      const result = await performFetch(
+        'http://ipfs.internal:8080/ipfs/Qm',
+        undefined,
+        undefined,
+        {},
+        { trusted: true },
+      );
+      expect(result).to.equal('gateway');
+      expect(fetchSpy.calledOnce).to.be.true;
+    });
+
+    it('does not follow redirects for allowlisted hosts', async () => {
+      global.fetch = (async (_url: string, init?: RequestInit) => {
+        expect(init?.redirect).to.equal('error');
+        return new Response('ok', { status: 200 });
+      }) as unknown as typeof fetch;
+
+      expect(await performFetch(RAW)).to.equal('ok');
+    });
+
+    it('returns null when the body is larger than the limit', async () => {
+      global.fetch = async () => new Response('x'.repeat(100), { status: 200 });
+
+      expect(
+        await performFetch(RAW, undefined, undefined, {}, { maxBodyBytes: 50 }),
+      ).to.be.null;
+      expect(
+        await performFetch(
+          RAW,
+          undefined,
+          undefined,
+          {},
+          { maxBodyBytes: 100 },
+        ),
+      ).to.equal('x'.repeat(100));
+    });
+
+    it('returns null when the body is too slow', async () => {
+      global.fetch = (async () => {
+        const stream = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            // Drip one byte and then stall
+            return new Promise<void>((resolve) => {
+              controller.enqueue(new Uint8Array([0x20]));
+              setTimeout(resolve, 10_000).unref();
+            });
+          },
+        });
+        return new Response(stream, { status: 200 });
+      }) as unknown as typeof fetch;
+
+      expect(
+        await performFetch(RAW, undefined, undefined, {}, { bodyTimeout: 50 }),
+      ).to.be.null;
     });
   });
 
@@ -182,126 +205,6 @@ describe('fetchUtils', () => {
       } catch (error: any) {
         expect(error.message).to.include('Failed fetching');
       }
-    });
-
-    it('does not retry a refused private host', async () => {
-      const fetchSpy = sinon.spy(async () => new Response('x'));
-      global.fetch = fetchSpy as unknown as typeof fetch;
-
-      await expect(
-        fetchWithBackoff('http://127.0.0.1/x', {}, 100, 3),
-      ).to.be.rejectedWith(/non-public host/);
-      expect(fetchSpy.called).to.be.false;
-      expect(lookupStub.called).to.be.false;
-    });
-
-    it('allows a private host when explicitly permitted', async () => {
-      global.fetch = async () => new Response('gateway', { status: 200 });
-
-      const response = await fetchWithBackoff(
-        'http://ipfs.internal:8080/ipfs/Qm',
-        {},
-        100,
-        0,
-        { allowPrivateHosts: true },
-      );
-      expect(await response.text()).to.equal('gateway');
-      expect(lookupStub.called).to.be.false;
-    });
-
-    it('follows redirects to public hosts and checks every hop', async () => {
-      const requested: string[] = [];
-      global.fetch = (async (url: string, init?: RequestInit) => {
-        requested.push(url);
-        expect(init?.redirect).to.equal('manual');
-        if (url === 'https://a.example/x') {
-          return new Response(null, {
-            status: 302,
-            headers: { location: '/y' },
-          });
-        }
-        if (url === 'https://a.example/y') {
-          return new Response(null, {
-            status: 301,
-            headers: { location: 'https://b.example/z' },
-          });
-        }
-        return new Response('final', { status: 200 });
-      }) as unknown as typeof fetch;
-
-      const response = await fetchWithBackoff(
-        'https://a.example/x',
-        {},
-        100,
-        0,
-      );
-      expect(await response.text()).to.equal('final');
-      expect(requested).to.deep.equal([
-        'https://a.example/x',
-        'https://a.example/y',
-        'https://b.example/z',
-      ]);
-      expect(lookupStub.callCount).to.equal(3);
-    });
-
-    it('refuses a redirect to a private host', async () => {
-      const requested: string[] = [];
-      global.fetch = (async (url: string) => {
-        requested.push(url);
-        return new Response(null, {
-          status: 302,
-          headers: { location: 'http://169.254.169.254/latest/meta-data' },
-        });
-      }) as unknown as typeof fetch;
-
-      await expect(
-        fetchWithBackoff('https://a.example/x', {}, 100, 2),
-      ).to.be.rejectedWith(/non-public host/);
-      expect(requested).to.deep.equal(['https://a.example/x']);
-    });
-
-    it('gives up after too many redirects', async () => {
-      global.fetch = (async () =>
-        new Response(null, {
-          status: 302,
-          headers: { location: 'https://a.example/loop' },
-        })) as unknown as typeof fetch;
-
-      await expect(
-        fetchWithBackoff('https://a.example/x', {}, 100, 0, {
-          maxRedirects: 2,
-        }),
-      ).to.be.rejectedWith(/Too many redirects/);
-    });
-
-    it('aborts a response body that is too slow', async () => {
-      global.fetch = (async (_url: string, init?: RequestInit) => {
-        const signal = init?.signal as AbortSignal;
-        const stream = new ReadableStream<Uint8Array>({
-          pull(controller) {
-            // Drip one byte and never finish unless aborted
-            return new Promise<void>((resolve, reject) => {
-              controller.enqueue(new Uint8Array([0x20]));
-              signal.addEventListener('abort', () =>
-                reject(new Error('aborted')),
-              );
-              setTimeout(resolve, 10_000).unref();
-            });
-          },
-        });
-        return new Response(stream, { status: 200 });
-      }) as unknown as typeof fetch;
-
-      const response = await fetchWithBackoff(
-        'https://a.example/slow',
-        {},
-        100,
-        0,
-        {
-          bodyTimeout: 50,
-        },
-      );
-      await expect(response.text()).to.be.rejected;
     });
   });
 });

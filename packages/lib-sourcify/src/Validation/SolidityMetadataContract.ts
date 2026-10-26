@@ -1,6 +1,6 @@
 import { id as keccak256str } from 'ethers';
 import semver from 'semver';
-import { performFetch } from './fetchUtils';
+import { getFetchableSourceUrl, performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
 import type {
   SolidityJsonInput,
@@ -35,27 +35,6 @@ import { logDebug, logWarn } from '../logger';
 import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export const DEFAULT_IPFS_GATEWAY = 'https://ipfs.filebase.io/ipfs/';
-
-// https://github.com/<owner>/<repo>/blob/<ref>/<path> -> raw.githubusercontent.com URL, else null
-export function getGithubRawUrl(fileName: string): string | null {
-  let url: URL;
-  try {
-    url = new URL(fileName);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
-  const host = url.hostname.toLowerCase();
-  if (host !== 'github.com' && host !== 'www.github.com') return null;
-  if (url.username || url.password || url.port) return null;
-  const match = url.pathname.match(
-    /^\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/blob\/(.+)$/,
-  );
-  if (!match) return null;
-  const [, owner, repo, refAndPath] = match;
-  if (refAndPath.split('/').some((segment) => segment === '..')) return null;
-  return `https://raw.githubusercontent.com/${owner}/${repo}/${refAndPath}`;
-}
 
 export class SolidityMetadataContract {
   metadata: Metadata;
@@ -241,9 +220,9 @@ export class SolidityMetadataContract {
       }
 
       // Sometimes file paths are github urls, try to fetch from there
-      const githubRawUrl = getGithubRawUrl(fileName);
-      if (githubRawUrl) {
-        retrievedContent = await performFetch(githubRawUrl, hash, fileName);
+      const sourceUrl = getFetchableSourceUrl(fileName);
+      if (sourceUrl) {
+        retrievedContent = await performFetch(sourceUrl, hash, fileName);
       } else {
         for (const url of file.urls) {
           if (url.startsWith(IPFS_PREFIX)) {
@@ -254,7 +233,7 @@ export class SolidityMetadataContract {
               hash,
               fileName,
               SolidityMetadataContract.ipfsGateway.headers,
-              { allowPrivateHosts: true },
+              { trusted: true },
             );
             if (retrievedContent) {
               break;
