@@ -177,14 +177,8 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
     try {
       const explorerUrl = new URL(blockscoutExplorer.url);
       // The API key goes into the query string, so never talk to an instance
-      // over plain HTTP.
-      if (explorerUrl.protocol !== "https:") {
-        logger.warn("Skipping non-HTTPS Blockscout explorer URL", {
-          chainId,
-          explorer: blockscoutExplorer,
-        });
-        continue;
-      }
+      // over plain HTTP. Same rewrite as in sourcify-chains.
+      explorerUrl.protocol = "https:";
       explorerUrl.pathname = explorerUrl.pathname.replace(/\/$/, "") + "/api";
       explorerUrl.search = "";
       explorerUrl.hash = "";

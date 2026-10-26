@@ -461,7 +461,7 @@ describe("EtherscanVerifyApiService", function () {
   });
 
   describe("plain HTTP explorer URLs", () => {
-    it("drops Blockscout instances that are not served over HTTPS", async () => {
+    it("rewrites plain-HTTP Blockscout instance URLs to HTTPS", async () => {
       const service = new EtherscanVerifyApiService(
         WStorageIdentifiers.BlockscoutVerify,
         {
@@ -489,7 +489,9 @@ describe("EtherscanVerifyApiService", function () {
       expect(service.getApiUrl("checkverifystatus", 1)).to.equal(
         "https://eth.blockscout.com/api?module=contract&action=checkverifystatus&chainid=1",
       );
-      expect(service.getApiUrl("checkverifystatus", 5042002)).to.be.undefined;
+      expect(service.getApiUrl("checkverifystatus", 5042002)).to.equal(
+        "https://explorer.testnet.arc.io/api?module=contract&action=checkverifystatus&chainid=5042002",
+      );
     });
 
     it("does not attach the API key to a non-HTTPS instance URL", async () => {
