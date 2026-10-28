@@ -22,6 +22,7 @@ import {
   findAuxdatasInLegacyAssembly,
 } from './auxdataUtils';
 import { logWarn } from '../logger';
+import { normalizeLegacyLinkReferences } from './legacyLinkReferences';
 
 export const DEFAULT_OUTPUT_SELECTION_FIELDS = [
   'abi',
@@ -287,6 +288,18 @@ export class SolidityCompilation extends AbstractCompilation {
     } else {
       this._metadata = undefined;
     }
+    // solc-js writes a different `linkReferences` format for solc < 0.4.10
+    contract.evm.bytecode.linkReferences = normalizeLegacyLinkReferences(
+      contract.evm.bytecode.linkReferences,
+      contract.evm.bytecode.object,
+      this.jsonInput,
+    );
+    contract.evm.deployedBytecode.linkReferences =
+      normalizeLegacyLinkReferences(
+        contract.evm.deployedBytecode.linkReferences,
+        contract.evm.deployedBytecode.object,
+        this.jsonInput,
+      );
   }
 
   get immutableReferences(): ImmutableReferences {

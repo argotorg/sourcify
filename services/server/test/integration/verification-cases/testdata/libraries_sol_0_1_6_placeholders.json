@@ -1,0 +1,719 @@
+{
+  "_comment": "Library placeholders of a contract compiled with solc 0.1.6. The placeholders contain only the library name and solc-js reports them in a non-standard linkReferences format (see #3044).",
+  "onchain": {
+    "creationBytecode": "0x606060405260405161010080610d4a8339610160604052905160805160a05160c05160e0519451610120516101405160008054600160a060020a03199081169098178155600b96909655600c805460ff19169095179094556001556002929092556006919091553a600555600380549093161760a060020a63ffffffff021916740100000000000000000000000000000000000000007c010000000000000000000000000000000000000000000000000000000090940493909302929092179055610c7b9081906100cf90396000f3606060405236156101325760e060020a600035046309241200811461017b5780630a16697a14610188578063137c638b14610191578063240328661461019e5780633233c6861461021e57806337f4c00e146102295780634e417a98146102345780634e71d92d1461029d5780634f059a43146102bb57806361461954146103195780636560a3071461033557806367ce940d146103405780636ef25c3a1461034d578063830953ab1461035657806395ee122114610361578063a06db7dc14610375578063ae45850b14610381578063b0f07e4414610393578063c6502da8146103ac578063c6803622146103b5578063ca94692d146103c8578063d379be23146103f1578063ea8a1af014610405578063eec2b6281461041e578063f5562753146104c0578063f6b4dfb414610521575b610535600054600160a060020a03908116339091161480156101545750600036115b1561053a576004546002600182161561010002600019019091160460001461053c57610002565b6105f6600a5460ff165b90565b6105f6600b5481565b6105f65b62011d28610185565b6105f66004356024356000738deb276d0abe47132849555a3449f26bd1872baa630bd295e6600360005085856040518460e060020a0281526004018084815260200183600160a060020a03168152602001828152602001935050505060206040518083038160008760325a03f21561000257505060405151949350505050565b6105f6600954610185565b6105f6600554610185565b61060860408051602081810183526000825282516004805460026001821615610100026000190190911604601f810184900484028301840190955284825292939092918301828280156106d55780601f106106aa576101008083540402835291602001916106d5565b6105f6600a54600090819062010000900460ff16156107ba57610002565b6105f66000738deb276d0abe47132849555a3449f26bd1872baa63f5562753436040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506101859050565b610535600a5460009062010000900460ff16156108be57610002565b6105f6600654610185565b6105f65b620186a0610185565b6105f660025481565b6105f6600854610185565b6105f6600a5462010000900460ff16610185565b610676600c5460ff1681565b61068d600054600160a060020a031681565b610535600a5462010000900460ff16156106ea57610002565b6105f660015481565b6105f6600a54610100900460ff16610185565b6105f660035474010000000000000000000000000000000000000000900460e060020a02610185565b61068d600754600160a060020a0316610185565b610535600a5462010000900460ff1615610ba357610002565b6105f66004355b600a54600090610100900460ff16156109e3576040805160e060020a63dcb27883028152600160a060020a03841660048201527f414c52454144595f43414c4c454400000000000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb2788391604482810192869291908290030181838760325a03f21561000257506106e5915050565b6105f66004356000738deb276d0abe47132849555a3449f26bd1872baa63f5562753836040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506106e59050565b61068d600354600160a060020a0316610185565b005b50505b565b600480546000828152602060026001841615610100026000190190931692909204601f908101929092047f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908101923692908390106105be5782800160ff198235161785555b506105379291505b808211156105f257600081556001016105aa565b828001600101855582156105a2579182015b828111156105a25782358260005055916020019190600101906105d0565b8091505b5090565b60408051918252519081900360200190f35b60405180806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600302600f01f150905090810190601f1680156106685780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6040805160ff929092168252519081900360200190f35b60408051600160a060020a03929092168252519081900360200190f35b820191906000526020600020905b8154815290600101906020018083116106b857829003601f168201915b50505050509050610185565b5060015b919050565b600054600160a060020a03908116339091161415806107215750600454600060026001831615610100026000190190921691909104115b1561072b57610002565b604080517f7c0278fc000000000000000000000000000000000000000000000000000000008152600360048201818152602483019384523660448401819052738deb276d0abe47132849555a3449f26bd1872baa94637c0278fc946000939190606401848480828437820191505094505050505060006040518083038160008760325a03f21561000257505050565b604080516001547f0fee183d0000000000000000000000000000000000000000000000000000000082526003600483015233600160a060020a0316602483015234604483015260648201529051738deb276d0abe47132849555a3449f26bd1872baa91630fee183d916084828101926020929190829003018160008760325a03f215610002575050604051519150508015156105ee577339f631bf138b5eb33e96459f4241e93e136591146312c82bcc33346040518360e060020a0281526004018083600160a060020a031681526020018281526020019250505060206040518083038160008760325a03f21561000257505060405151151590506105ee57610002565b5a90506108ca33610425565b15156108d4575b50565b738deb276d0abe47132849555a3449f26bd1872baa63da46be0a600383336108fa610344565b610902610195565b6040518660e060020a0281526004018086815260200185815260200184600160a060020a031681526020018381526020018281526020019550505050505060006040518083038160008760325a03f215610002575050506108d13360408051600080547fc17e6817000000000000000000000000000000000000000000000000000000008352600160a060020a03908116600484015230163160248301529151738deb276d0abe47132849555a3449f26bd1872baa9263c17e68179260448181019360209390928390039091019082908760325a03f2156100025750505050565b600b544310806109fe5750600c54600b5460ff919091160143115b15610a8f576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f494e5f43414c4c5f57494e444f57000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb278839160448281019260009291908290030181838760325a03f21561000257505050600090506106e5565b604080517f0bd295e600000000000000000000000000000000000000000000000000000000815260036004820152600160a060020a03841660248201524360448201529051738deb276d0abe47132849555a3449f26bd1872baa91630bd295e6916064828101926020929190829003018160008760325a03f21561000257505060405151151590506106e1576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f415554484f52495a454400000000000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb278839160448281019260009291908290030181838760325a03f215610002575050506106e5565b600b546101081901431015610bce57600054600160a060020a039081163390911614610bf757610002565b600c54600b5460ff9190911601431115610c7657600a54610100900460ff1615610bf757610002565b604080517f7e9265620000000000000000000000000000000000000000000000000000000081526003600482015233600160a060020a031660248201529051738deb276d0abe47132849555a3449f26bd1872baa91637e9265629160448281019260009291908290030181838760325a03f2156100025750505061053a565b61000256000000000000000000000000685308c340f91faea1b9263b2ebb9e71fc9a751d00000000000000000000000000000000000000000000000000000000000b440900000000000000000000000000000000000000000000000000000000000000ff000000000000000000000000685308c340f91faea1b9263b2ebb9e71fc9a751d9378a9e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000016345785d8a0000",
+    "deployedBytecode": "0x606060405236156101325760e060020a600035046309241200811461017b5780630a16697a14610188578063137c638b14610191578063240328661461019e5780633233c6861461021e57806337f4c00e146102295780634e417a98146102345780634e71d92d1461029d5780634f059a43146102bb57806361461954146103195780636560a3071461033557806367ce940d146103405780636ef25c3a1461034d578063830953ab1461035657806395ee122114610361578063a06db7dc14610375578063ae45850b14610381578063b0f07e4414610393578063c6502da8146103ac578063c6803622146103b5578063ca94692d146103c8578063d379be23146103f1578063ea8a1af014610405578063eec2b6281461041e578063f5562753146104c0578063f6b4dfb414610521575b610535600054600160a060020a03908116339091161480156101545750600036115b1561053a576004546002600182161561010002600019019091160460001461053c57610002565b6105f6600a5460ff165b90565b6105f6600b5481565b6105f65b62011d28610185565b6105f66004356024356000738deb276d0abe47132849555a3449f26bd1872baa630bd295e6600360005085856040518460e060020a0281526004018084815260200183600160a060020a03168152602001828152602001935050505060206040518083038160008760325a03f21561000257505060405151949350505050565b6105f6600954610185565b6105f6600554610185565b61060860408051602081810183526000825282516004805460026001821615610100026000190190911604601f810184900484028301840190955284825292939092918301828280156106d55780601f106106aa576101008083540402835291602001916106d5565b6105f6600a54600090819062010000900460ff16156107ba57610002565b6105f66000738deb276d0abe47132849555a3449f26bd1872baa63f5562753436040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506101859050565b610535600a5460009062010000900460ff16156108be57610002565b6105f6600654610185565b6105f65b620186a0610185565b6105f660025481565b6105f6600854610185565b6105f6600a5462010000900460ff16610185565b610676600c5460ff1681565b61068d600054600160a060020a031681565b610535600a5462010000900460ff16156106ea57610002565b6105f660015481565b6105f6600a54610100900460ff16610185565b6105f660035474010000000000000000000000000000000000000000900460e060020a02610185565b61068d600754600160a060020a0316610185565b610535600a5462010000900460ff1615610ba357610002565b6105f66004355b600a54600090610100900460ff16156109e3576040805160e060020a63dcb27883028152600160a060020a03841660048201527f414c52454144595f43414c4c454400000000000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb2788391604482810192869291908290030181838760325a03f21561000257506106e5915050565b6105f66004356000738deb276d0abe47132849555a3449f26bd1872baa63f5562753836040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506106e59050565b61068d600354600160a060020a0316610185565b005b50505b565b600480546000828152602060026001841615610100026000190190931692909204601f908101929092047f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908101923692908390106105be5782800160ff198235161785555b506105379291505b808211156105f257600081556001016105aa565b828001600101855582156105a2579182015b828111156105a25782358260005055916020019190600101906105d0565b8091505b5090565b60408051918252519081900360200190f35b60405180806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600302600f01f150905090810190601f1680156106685780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6040805160ff929092168252519081900360200190f35b60408051600160a060020a03929092168252519081900360200190f35b820191906000526020600020905b8154815290600101906020018083116106b857829003601f168201915b50505050509050610185565b5060015b919050565b600054600160a060020a03908116339091161415806107215750600454600060026001831615610100026000190190921691909104115b1561072b57610002565b604080517f7c0278fc000000000000000000000000000000000000000000000000000000008152600360048201818152602483019384523660448401819052738deb276d0abe47132849555a3449f26bd1872baa94637c0278fc946000939190606401848480828437820191505094505050505060006040518083038160008760325a03f21561000257505050565b604080516001547f0fee183d0000000000000000000000000000000000000000000000000000000082526003600483015233600160a060020a0316602483015234604483015260648201529051738deb276d0abe47132849555a3449f26bd1872baa91630fee183d916084828101926020929190829003018160008760325a03f215610002575050604051519150508015156105ee577339f631bf138b5eb33e96459f4241e93e136591146312c82bcc33346040518360e060020a0281526004018083600160a060020a031681526020018281526020019250505060206040518083038160008760325a03f21561000257505060405151151590506105ee57610002565b5a90506108ca33610425565b15156108d4575b50565b738deb276d0abe47132849555a3449f26bd1872baa63da46be0a600383336108fa610344565b610902610195565b6040518660e060020a0281526004018086815260200185815260200184600160a060020a031681526020018381526020018281526020019550505050505060006040518083038160008760325a03f215610002575050506108d13360408051600080547fc17e6817000000000000000000000000000000000000000000000000000000008352600160a060020a03908116600484015230163160248301529151738deb276d0abe47132849555a3449f26bd1872baa9263c17e68179260448181019360209390928390039091019082908760325a03f2156100025750505050565b600b544310806109fe5750600c54600b5460ff919091160143115b15610a8f576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f494e5f43414c4c5f57494e444f57000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb278839160448281019260009291908290030181838760325a03f21561000257505050600090506106e5565b604080517f0bd295e600000000000000000000000000000000000000000000000000000000815260036004820152600160a060020a03841660248201524360448201529051738deb276d0abe47132849555a3449f26bd1872baa91630bd295e6916064828101926020929190829003018160008760325a03f21561000257505060405151151590506106e1576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f415554484f52495a454400000000000000000000000000000000000060248201529051738deb276d0abe47132849555a3449f26bd1872baa9163dcb278839160448281019260009291908290030181838760325a03f215610002575050506106e5565b600b546101081901431015610bce57600054600160a060020a039081163390911614610bf757610002565b600c54600b5460ff9190911601431115610c7657600a54610100900460ff1615610bf757610002565b604080517f7e9265620000000000000000000000000000000000000000000000000000000081526003600482015233600160a060020a031660248201529051738deb276d0abe47132849555a3449f26bd1872baa91637e9265629160448281019260009291908290030181838760325a03f2156100025750505061053a565b61000256"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Scheduler.sol": {
+          "content": "import \"libraries/SchedulerLib.sol\";\nimport \"libraries/CallLib.sol\";\n\n\ncontract Scheduler {\n    /*\n     *  Address: 0x321a1e5e0ef137f37eeb5563c987d60ab9dcd8de\n     */\n    GroveLib.Index callIndex;\n\n    /*\n     *  Call Scheduling\n     */\n    function getMinimumGracePeriod() constant returns (uint) {\n        return SchedulerLib.getMinimumGracePeriod();\n    }\n\n    function getDefaultPayment() constant returns (uint) {\n        return 1 ether;\n    }\n\n    function getDefaultFee() constant returns (uint) {\n        return 100 finney;\n    }\n\n    function getMinimumCallGas() constant returns (uint) {\n        return SchedulerLib.getMinimumCallGas();\n    }\n\n    function getMinimumCallCost() constant returns (uint) {\n        return getMinimumCallCost(getDefaultPayment(), getDefaultFee());\n    }\n\n    function getMinimumCallCost(uint basePayment) constant returns (uint) {\n        return getMinimumCallCost(basePayment, getDefaultFee());\n    }\n\n    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {\n        return SchedulerLib.getMinimumCallCost(basePayment, baseFee);\n    }\n\n    function isKnownCall(address callAddress) constant returns (bool) {\n        return GroveLib.exists(callIndex, bytes32(callAddress));\n    }\n\n    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock) public returns (address) {\n        return scheduleCall(contractAddress, abiSignature, targetBlock, 0, 255, getDefaultPayment(), getDefaultFee());\n    }\n\n    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas) public returns (address) {\n        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, 255, getDefaultPayment(), getDefaultFee());\n    }\n\n    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod) public returns (address) {\n        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, getDefaultPayment(), getDefaultFee());\n    }\n\n    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment) public returns (address) {\n        return scheduleCall(contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, getDefaultFee());\n    }\n\n    function scheduleCall(address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee) public returns (address) {\n        return SchedulerLib.scheduleCall(callIndex, msg.sender, contractAddress, abiSignature, targetBlock, suggestedGas, gracePeriod, basePayment, baseFee, msg.value);\n    }\n\n    /*\n     *  Next Call API\n     */\n    function getCallWindowSize() constant returns (uint) {\n            return SchedulerLib.getCallWindowSize();\n    }\n\n    function getNextCall(uint blockNumber) constant returns (address) {\n            return address(GroveLib.query(callIndex, \">=\", int(blockNumber)));\n    }\n\n    function getNextCallSibling(address callAddress) constant returns (address) {\n            return address(GroveLib.getNextNode(callIndex, bytes32(callAddress)));\n    }\n}\n"
+        },
+        "libraries/CallLib.sol": {
+          "content": "import \"libraries/GroveLib.sol\";\n\n\nlibrary CallLib {\n        /*\n         *  Address: 0x2746bcf29bffafcc7906752f639819171d18ce2b\n         */\n        struct Call {\n                address contractAddress;\n                bytes4 abiSignature;\n                bytes callData;\n                uint anchorGasPrice;\n                uint suggestedGas;\n\n                address claimer;\n                uint claimAmount;\n                uint claimerDeposit;\n\n                bool wasSuccessful;\n                bool wasCalled;\n                bool isCancelled;\n        }\n\n        // The number of blocks that each caller in the pool has to complete their\n        // call.\n        uint constant CALL_WINDOW_SIZE = 16;\n\n        address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;\n\n        function extractCallData(Call storage call, bytes data) public {\n            call.callData.length = data.length - 4;\n            if (data.length > 4) {\n                    for (uint i = 0; i < call.callData.length; i++) {\n                            call.callData[i] = data[i + 4];\n                    }\n            }\n        }\n\n        function sendSafe(address to_address, uint value) public returns (uint) {\n                if (value > address(this).balance) {\n                        value = address(this).balance;\n                }\n                if (value > 0) {\n                        AccountingLib.sendRobust(to_address, value);\n                        return value;\n                }\n                return 0;\n        }\n\n        function getGasScalar(uint base_gas_price, uint gas_price) constant returns (uint) {\n                /*\n                 *  Return a number between 0 - 200 to scale the fee based on\n                 *  the gas price set for the calling transaction as compared\n                 *  to the gas price of the scheduling transaction.\n                 *\n                 *  - number approaches zero as the transaction gas price goes\n                 *  above the gas price recorded when the call was scheduled.\n                 *\n                 *  - the number approaches 200 as the transaction gas price\n                 *  drops under the price recorded when the call was scheduled.\n                 *\n                 *  This encourages lower gas costs as the lower the gas price\n                 *  for the executing transaction, the higher the payout to the\n                 *  caller.\n                 */\n                if (gas_price > base_gas_price) {\n                        return 100 * base_gas_price / gas_price;\n                }\n                else {\n                        return 200 - 100 * base_gas_price / (2 * base_gas_price - gas_price);\n                }\n        }\n\n        event CallExecuted(address indexed executor, uint gasCost, uint payment, uint fee, bool success);\n\n        event _CallAborted(address executor, bytes32 reason);\n        function CallAborted(address executor, bytes32 reason) public {\n            _CallAborted(executor, reason);\n        }\n\n        function execute(Call storage self, uint start_gas, address executor, uint overhead, uint extraGas) public {\n            FutureCall call = FutureCall(this);\n\n            // If the pre-execution checks do not pass, exit early.\n            if (!call.beforeExecute(executor)) {\n                return;\n            }\n            \n            // Mark the call has having been executed.\n            self.wasCalled = true;\n            // Make the call\n            self.wasSuccessful = self.contractAddress.call.gas(msg.gas - overhead)(self.abiSignature, self.callData);\n\n            // Compute the scalar (0 - 200) for the fee.\n            uint gasScalar = getGasScalar(self.anchorGasPrice, tx.gasprice);\n\n            uint basePayment;\n            if (self.claimer == executor) {\n                basePayment = self.claimAmount;\n            }\n            else {\n                basePayment = call.basePayment();\n            }\n            uint payment = self.claimerDeposit + basePayment * gasScalar / 100; \n            uint fee = call.baseFee() * gasScalar / 100;\n\n            // zero out the deposit\n            self.claimerDeposit = 0;\n\n            // Log how much gas this call used.  EXTRA_CALL_GAS is a fixed\n            // amount that represents the gas usage of the commands that\n            // happen after this line.\n            uint gasCost = tx.gasprice * (start_gas - msg.gas + extraGas);\n\n            // Now we need to pay the executor as well as keep fee.\n            payment = sendSafe(executor, payment + gasCost);\n            fee = sendSafe(creator, fee);\n\n            // Log execution\n            CallExecuted(executor, gasCost, payment, fee, self.wasSuccessful);\n        }\n\n        event Cancelled(address indexed cancelled_by);\n\n        function cancel(Call storage self, address sender) public {\n                Cancelled(sender);\n                if (self.claimerDeposit >= 0) {\n                    sendSafe(self.claimer, self.claimerDeposit);\n                }\n                var call = FutureCall(this);\n                sendSafe(call.schedulerAddress(), address(this).balance);\n                self.isCancelled = true;\n        }\n\n        /*\n         *  Bid API\n         *  - Gas costs for this transaction are not covered so it\n         *    must be up to the call executors to ensure that their actions\n         *    remain profitable.  Any form of bidding war is likely to eat into\n         *    profits.\n         */\n        event Claimed(address executor, uint claimAmount);\n\n        // The duration (in blocks) during which the maximum claim will slowly rise\n        // towards the basePayment amount.\n        uint constant CLAIM_GROWTH_WINDOW = 240;\n\n        // The duration (in blocks) after the CLAIM_WINDOW that claiming will\n        // remain open.\n        uint constant MAXIMUM_CLAIM_WINDOW = 15;\n\n        // The duration (in blocks) before the call's target block during which\n        // all actions are frozen.  This includes claiming, cancellation,\n        // registering call data.\n        uint constant BEFORE_CALL_FREEZE_WINDOW = 10;\n\n        /*\n         *  The maximum allowed claim amount slowly rises across a window of\n         *  blocks CLAIM_GROWTH_WINDOW prior to the call.  No claimer is\n         *  allowed to claim above this value.  This is intended to prevent\n         *  bidding wars in that each caller should know how much they are\n         *  willing to execute a call for.\n         */\n        function getClaimAmountForBlock(uint block_number) constant returns (uint) {\n            /*\n             *   [--growth-window--][--max-window--][--freeze-window--]\n             *\n             *\n             */\n            var call = FutureBlockCall(this);\n\n            uint last_block = call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW;\n            \n            // claim window has closed\n            if (block_number > last_block) return call.basePayment();\n\n            uint first_block = last_block - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW;\n            \n            // claim window has not begun\n            if (block_number < first_block) return 0;\n\n            // in the maximum claim window.\n            if (block_number > last_block - MAXIMUM_CLAIM_WINDOW) return call.basePayment();\n\n            uint x = block_number - first_block;\n\n            return call.basePayment() * x / CLAIM_GROWTH_WINDOW;\n        }\n\n        function claim(Call storage self, address executor, uint deposit_amount, uint basePayment) public returns (bool) {\n                // Already claimed\n                if (self.claimer != 0x0) return false;\n\n                // Insufficient Deposit\n                if (deposit_amount < 2 * basePayment) return false;\n\n                var call = FutureBlockCall(this);\n\n                // Too early\n                if (block.number < call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) return false;\n\n                // Too late\n                if (block.number > call.targetBlock() - BEFORE_CALL_FREEZE_WINDOW) return false;\n                self.claimAmount = getClaimAmountForBlock(block.number);\n                self.claimer = executor;\n                self.claimerDeposit = deposit_amount;\n\n                // Log the claim.\n                Claimed(executor, self.claimAmount);\n        }\n\n        function checkExecutionAuthorization(Call storage self, address executor, uint block_number) returns (bool) {\n                /*\n                 *  Check whether the given `executor` is authorized.\n                 */\n                var call = FutureBlockCall(this);\n\n                uint targetBlock = call.targetBlock();\n\n                // Invalid, not in call window.\n                if (block_number < targetBlock || block_number > targetBlock + call.gracePeriod()) throw;\n\n                // Within the reserved call window so if there is a claimer, the\n                // executor must be the claimdor.\n                if (block_number - targetBlock < CALL_WINDOW_SIZE) {\n                    return (self.claimer == 0x0 || self.claimer == executor);\n                }\n\n                // Must be in the free-for-all period.\n                return true;\n        }\n}\n\n\ncontract FutureCall {\n        address public schedulerAddress;\n\n        uint public basePayment;\n        uint public baseFee;\n\n        CallLib.Call call;\n\n        /*\n         *  Data accessor functions.\n         */\n        function contractAddress() constant returns (address) {\n            return call.contractAddress;\n        }\n\n        function abiSignature() constant returns (bytes4) {\n            return call.abiSignature;\n        }\n\n        function callData() constant returns (bytes) {\n            return call.callData;\n        }\n\n        function anchorGasPrice() constant returns (uint) {\n            return call.anchorGasPrice;\n        }\n\n        function suggestedGas() constant returns (uint) {\n            return call.suggestedGas;\n        }\n\n        function claimer() constant returns (address) {\n            return call.claimer;\n        }\n\n        function claimAmount() constant returns (uint) {\n            return call.claimAmount;\n        }\n\n        function claimerDeposit() constant returns (uint) {\n            return call.claimerDeposit;\n        }\n\n        function wasSuccessful() constant returns (bool) {\n            return call.wasSuccessful;\n        }\n\n        function wasCalled() constant returns (bool) {\n            return call.wasCalled;\n        }\n\n        function isCancelled() constant returns (bool) {\n            return call.isCancelled;\n        }\n\n        function getClaimAmountForBlock() constant returns (uint) {\n            return CallLib.getClaimAmountForBlock(block.number);\n        }\n\n        function getClaimAmountForBlock(uint block_number) constant returns (uint) {\n            return CallLib.getClaimAmountForBlock(block_number);\n        }\n\n        function () {\n                // Fallback to allow sending funds to this contract.\n                // Also allows call data registration.\n                if (msg.sender == schedulerAddress && msg.data.length > 0) {\n                        if (call.callData.length != 0) {\n                            throw;\n                        }\n                        call.callData = msg.data;\n                }\n        }\n\n        modifier notcancelled { if (call.isCancelled) throw; _ }\n\n        // The author (Piper Merriam) address.\n        address constant creator = 0xd3cda913deb6f67967b99d67acdfa1712c293601;\n\n        function registerData() public notcancelled {\n            if (msg.sender != schedulerAddress || call.callData.length > 0) {\n                // cannot write over call data\n                throw;\n            }\n            CallLib.extractCallData(call, msg.data);\n        }\n\n        function claim() public notcancelled returns (bool) {\n            bool success = CallLib.claim(call, msg.sender, msg.value, basePayment);\n            if (!success) {\n                if (!AccountingLib.sendRobust(msg.sender, msg.value)) throw;\n            }\n            return success;\n        }\n\n        function checkExecutionAuthorization(address executor, uint block_number) constant returns (bool) {\n            return CallLib.checkExecutionAuthorization(call, executor, block_number);\n        }\n\n        // API for inherited contracts\n        function beforeExecute(address executor) public returns (bool);\n        function afterExecute(address executor) internal;\n        function getOverhead() constant returns (uint);\n        function getExtraGas() constant returns (uint);\n\n        function sendSafe(address to_address, uint value) internal {\n            CallLib.sendSafe(to_address, value);\n        }\n\n        function execute() public notcancelled {\n            uint start_gas = msg.gas;\n\n            // Check that the call should be executed now.\n            if (!beforeExecute(msg.sender)) return;\n\n            // Execute the call\n            CallLib.execute(call, start_gas, msg.sender, getOverhead(), getExtraGas());\n\n            // Any logic that needs to occur after the call has executed should\n            // go in afterExecute\n            afterExecute(msg.sender);\n        }\n}\n\n\ncontract FutureBlockCall is FutureCall {\n        uint public targetBlock;\n        uint8 public gracePeriod;\n\n        function FutureBlockCall(address _schedulerAddress, uint _targetBlock, uint8 _gracePeriod, address _contractAddress, bytes4 _abiSignature, uint _suggestedGas, uint _basePayment, uint _baseFee) {\n                // TODO: split this constructor across this contract and the\n                // parent contract FutureCall\n                schedulerAddress = _schedulerAddress;\n\n                targetBlock = _targetBlock;\n                gracePeriod = _gracePeriod;\n\n\n                basePayment = _basePayment;\n                baseFee = _baseFee;\n\n                call.suggestedGas = _suggestedGas;\n                call.anchorGasPrice = tx.gasprice;\n                call.contractAddress = _contractAddress;\n                call.abiSignature = _abiSignature;\n        }\n\n        function beforeExecute(address executor) public returns (bool) {\n            if (call.wasCalled) {\n                // Not being called within call window.\n                CallLib.CallAborted(executor, \"ALREADY_CALLED\");\n                return false;\n            }\n\n            if (block.number < targetBlock || block.number > targetBlock + gracePeriod) {\n                // Not being called within call window.\n                CallLib.CallAborted(executor, \"NOT_IN_CALL_WINDOW\");\n                return false;\n            }\n\n            // If they are not authorized to execute the call at this time,\n            // exit early.\n            if (!CallLib.checkExecutionAuthorization(call, executor, block.number)) {\n                CallLib.CallAborted(executor, \"NOT_AUTHORIZED\");\n                return;\n            }\n\n            return true;\n        }\n\n        function afterExecute(address executor) internal {\n            // Refund any leftover funds.\n            CallLib.sendSafe(schedulerAddress, address(this).balance);\n        }\n\n        uint constant GAS_OVERHEAD = 100000;\n\n        function getOverhead() constant returns (uint) {\n                return GAS_OVERHEAD;\n        }\n\n        uint constant EXTRA_GAS = 73000;\n\n        function getExtraGas() constant returns (uint) {\n                return EXTRA_GAS;\n        }\n\n        uint constant CLAIM_GROWTH_WINDOW = 240;\n        uint constant MAXIMUM_CLAIM_WINDOW = 15;\n        uint constant BEFORE_CALL_FREEZE_WINDOW = 10;\n\n        function cancel() public notcancelled {\n            // Before the claim window\n            if (block.number < targetBlock - BEFORE_CALL_FREEZE_WINDOW - MAXIMUM_CLAIM_WINDOW - CLAIM_GROWTH_WINDOW) {\n                // already cancelled\n                if (msg.sender != schedulerAddress) throw;\n                CallLib.cancel(call, msg.sender);\n                return;\n            }\n            if (block.number > targetBlock + gracePeriod) {\n                // already called\n                if (call.wasCalled) throw;\n                CallLib.cancel(call, msg.sender);\n                return;\n            }\n            throw;\n        }\n}\n"
+        },
+        "libraries/GroveLib.sol": {
+          "content": "// Grove v0.2\n\n\n/// @title GroveLib - Library for queriable indexed ordered data.\n/// @author PiperMerriam - <pipermerriam@gmail.com>\nlibrary GroveLib {\n        /*\n         *  Indexes for ordered data\n         *\n         *  Address: 0x661d36b10dd5b879e496edaf860327812fb81e48\n         */\n        struct Index {\n                bytes32 root;\n                mapping (bytes32 => Node) nodes;\n        }\n\n        struct Node {\n                bytes32 id;\n                int value;\n                bytes32 parent;\n                bytes32 left;\n                bytes32 right;\n                uint height;\n        }\n\n        function max(uint a, uint b) internal returns (uint) {\n            if (a >= b) {\n                return a;\n            }\n            return b;\n        }\n\n        /*\n         *  Node getters\n         */\n        /// @dev Retrieve the unique identifier for the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeId(Index storage index, bytes32 id) constant returns (bytes32) {\n            return index.nodes[id].id;\n        }\n\n        /// @dev Retrieve the value for the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeValue(Index storage index, bytes32 id) constant returns (int) {\n            return index.nodes[id].value;\n        }\n\n        /// @dev Retrieve the height of the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeHeight(Index storage index, bytes32 id) constant returns (uint) {\n            return index.nodes[id].height;\n        }\n\n        /// @dev Retrieve the parent id of the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeParent(Index storage index, bytes32 id) constant returns (bytes32) {\n            return index.nodes[id].parent;\n        }\n\n        /// @dev Retrieve the left child id of the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeLeftChild(Index storage index, bytes32 id) constant returns (bytes32) {\n            return index.nodes[id].left;\n        }\n\n        /// @dev Retrieve the right child id of the node.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNodeRightChild(Index storage index, bytes32 id) constant returns (bytes32) {\n            return index.nodes[id].right;\n        }\n\n        /// @dev Retrieve the node id of the next node in the tree.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getPreviousNode(Index storage index, bytes32 id) constant returns (bytes32) {\n            Node storage currentNode = index.nodes[id];\n\n            if (currentNode.id == 0x0) {\n                // Unknown node, just return 0x0;\n                return 0x0;\n            }\n\n            Node memory child;\n\n            if (currentNode.left != 0x0) {\n                // Trace left to latest child in left tree.\n                child = index.nodes[currentNode.left];\n\n                while (child.right != 0) {\n                    child = index.nodes[child.right];\n                }\n                return child.id;\n            }\n\n            if (currentNode.parent != 0x0) {\n                // Now we trace back up through parent relationships, looking\n                // for a link where the child is the right child of it's\n                // parent.\n                Node storage parent = index.nodes[currentNode.parent];\n                child = currentNode;\n\n                while (true) {\n                    if (parent.right == child.id) {\n                        return parent.id;\n                    }\n\n                    if (parent.parent == 0x0) {\n                        break;\n                    }\n                    child = parent;\n                    parent = index.nodes[parent.parent];\n                }\n            }\n\n            // This is the first node, and has no previous node.\n            return 0x0;\n        }\n\n        /// @dev Retrieve the node id of the previous node in the tree.\n        /// @param index The index that the node is part of.\n        /// @param id The id for the node to be looked up.\n        function getNextNode(Index storage index, bytes32 id) constant returns (bytes32) {\n            Node storage currentNode = index.nodes[id];\n\n            if (currentNode.id == 0x0) {\n                // Unknown node, just return 0x0;\n                return 0x0;\n            }\n\n            Node memory child;\n\n            if (currentNode.right != 0x0) {\n                // Trace right to earliest child in right tree.\n                child = index.nodes[currentNode.right];\n\n                while (child.left != 0) {\n                    child = index.nodes[child.left];\n                }\n                return child.id;\n            }\n\n            if (currentNode.parent != 0x0) {\n                // if the node is the left child of it's parent, then the\n                // parent is the next one.\n                Node storage parent = index.nodes[currentNode.parent];\n                child = currentNode;\n\n                while (true) {\n                    if (parent.left == child.id) {\n                        return parent.id;\n                    }\n\n                    if (parent.parent == 0x0) {\n                        break;\n                    }\n                    child = parent;\n                    parent = index.nodes[parent.parent];\n                }\n\n                // Now we need to trace all the way up checking to see if any parent is the \n            }\n\n            // This is the final node.\n            return 0x0;\n        }\n\n\n        /// @dev Updates or Inserts the id into the index at its appropriate location based on the value provided.\n        /// @param index The index that the node is part of.\n        /// @param id The unique identifier of the data element the index node will represent.\n        /// @param value The value of the data element that represents it's total ordering with respect to other elementes.\n        function insert(Index storage index, bytes32 id, int value) public {\n                if (index.nodes[id].id == id) {\n                    // A node with this id already exists.  If the value is\n                    // the same, then just return early, otherwise, remove it\n                    // and reinsert it.\n                    if (index.nodes[id].value == value) {\n                        return;\n                    }\n                    remove(index, id);\n                }\n\n                uint leftHeight;\n                uint rightHeight;\n\n                bytes32 previousNodeId = 0x0;\n\n                if (index.root == 0x0) {\n                    index.root = id;\n                }\n                Node storage currentNode = index.nodes[index.root];\n\n                // Do insertion\n                while (true) {\n                    if (currentNode.id == 0x0) {\n                        // This is a new unpopulated node.\n                        currentNode.id = id;\n                        currentNode.parent = previousNodeId;\n                        currentNode.value = value;\n                        break;\n                    }\n\n                    // Set the previous node id.\n                    previousNodeId = currentNode.id;\n\n                    // The new node belongs in the right subtree\n                    if (value >= currentNode.value) {\n                        if (currentNode.right == 0x0) {\n                            currentNode.right = id;\n                        }\n                        currentNode = index.nodes[currentNode.right];\n                        continue;\n                    }\n\n                    // The new node belongs in the left subtree.\n                    if (currentNode.left == 0x0) {\n                        currentNode.left = id;\n                    }\n                    currentNode = index.nodes[currentNode.left];\n                }\n\n                // Rebalance the tree\n                _rebalanceTree(index, currentNode.id);\n        }\n\n        /// @dev Checks whether a node for the given unique identifier exists within the given index.\n        /// @param index The index that should be searched\n        /// @param id The unique identifier of the data element to check for.\n        function exists(Index storage index, bytes32 id) constant returns (bool) {\n            return (index.nodes[id].id == id);\n        }\n\n        /// @dev Remove the node for the given unique identifier from the index.\n        /// @param index The index that should be removed\n        /// @param id The unique identifier of the data element to remove.\n        function remove(Index storage index, bytes32 id) public {\n            Node storage replacementNode;\n            Node storage parent;\n            Node storage child;\n            bytes32 rebalanceOrigin;\n\n            Node storage nodeToDelete = index.nodes[id];\n\n            if (nodeToDelete.id != id) {\n                // The id does not exist in the tree.\n                return;\n            }\n\n            if (nodeToDelete.left != 0x0 || nodeToDelete.right != 0x0) {\n                // This node is not a leaf node and thus must replace itself in\n                // it's tree by either the previous or next node.\n                if (nodeToDelete.left != 0x0) {\n                    // This node is guaranteed to not have a right child.\n                    replacementNode = index.nodes[getPreviousNode(index, nodeToDelete.id)];\n                }\n                else {\n                    // This node is guaranteed to not have a left child.\n                    replacementNode = index.nodes[getNextNode(index, nodeToDelete.id)];\n                }\n                // The replacementNode is guaranteed to have a parent.\n                parent = index.nodes[replacementNode.parent];\n\n                // Keep note of the location that our tree rebalancing should\n                // start at.\n                rebalanceOrigin = replacementNode.id;\n\n                // Join the parent of the replacement node with any subtree of\n                // the replacement node.  We can guarantee that the replacement\n                // node has at most one subtree because of how getNextNode and\n                // getPreviousNode are used.\n                if (parent.left == replacementNode.id) {\n                    parent.left = replacementNode.right;\n                    if (replacementNode.right != 0x0) {\n                        child = index.nodes[replacementNode.right];\n                        child.parent = parent.id;\n                    }\n                }\n                if (parent.right == replacementNode.id) {\n                    parent.right = replacementNode.left;\n                    if (replacementNode.left != 0x0) {\n                        child = index.nodes[replacementNode.left];\n                        child.parent = parent.id;\n                    }\n                }\n\n                // Now we replace the nodeToDelete with the replacementNode.\n                // This includes parent/child relationships for all of the\n                // parent, the left child, and the right child.\n                replacementNode.parent = nodeToDelete.parent;\n                if (nodeToDelete.parent != 0x0) {\n                    parent = index.nodes[nodeToDelete.parent];\n                    if (parent.left == nodeToDelete.id) {\n                        parent.left = replacementNode.id;\n                    }\n                    if (parent.right == nodeToDelete.id) {\n                        parent.right = replacementNode.id;\n                    }\n                }\n                else {\n                    // If the node we are deleting is the root node update the\n                    // index root node pointer.\n                    index.root = replacementNode.id;\n                }\n\n                replacementNode.left = nodeToDelete.left;\n                if (nodeToDelete.left != 0x0) {\n                    child = index.nodes[nodeToDelete.left];\n                    child.parent = replacementNode.id;\n                }\n\n                replacementNode.right = nodeToDelete.right;\n                if (nodeToDelete.right != 0x0) {\n                    child = index.nodes[nodeToDelete.right];\n                    child.parent = replacementNode.id;\n                }\n            }\n            else if (nodeToDelete.parent != 0x0) {\n                // The node being deleted is a leaf node so we only erase it's\n                // parent linkage.\n                parent = index.nodes[nodeToDelete.parent];\n\n                if (parent.left == nodeToDelete.id) {\n                    parent.left = 0x0;\n                }\n                if (parent.right == nodeToDelete.id) {\n                    parent.right = 0x0;\n                }\n\n                // keep note of where the rebalancing should begin.\n                rebalanceOrigin = parent.id;\n            }\n            else {\n                // This is both a leaf node and the root node, so we need to\n                // unset the root node pointer.\n                index.root = 0x0;\n            }\n\n            // Now we zero out all of the fields on the nodeToDelete.\n            nodeToDelete.id = 0x0;\n            nodeToDelete.value = 0;\n            nodeToDelete.parent = 0x0;\n            nodeToDelete.left = 0x0;\n            nodeToDelete.right = 0x0;\n\n            // Walk back up the tree rebalancing\n            if (rebalanceOrigin != 0x0) {\n                _rebalanceTree(index, rebalanceOrigin);\n            }\n        }\n\n        bytes2 constant GT = \">\";\n        bytes2 constant LT = \"<\";\n        bytes2 constant GTE = \">=\";\n        bytes2 constant LTE = \"<=\";\n        bytes2 constant EQ = \"==\";\n\n        function _compare(int left, bytes2 operator, int right) internal returns (bool) {\n            if (operator == GT) {\n                return (left > right);\n            }\n            if (operator == LT) {\n                return (left < right);\n            }\n            if (operator == GTE) {\n                return (left >= right);\n            }\n            if (operator == LTE) {\n                return (left <= right);\n            }\n            if (operator == EQ) {\n                return (left == right);\n            }\n\n            // Invalid operator.\n            throw;\n        }\n\n        function _getMaximum(Index storage index, bytes32 id) internal returns (int) {\n                Node storage currentNode = index.nodes[id];\n\n                while (true) {\n                    if (currentNode.right == 0x0) {\n                        return currentNode.value;\n                    }\n                    currentNode = index.nodes[currentNode.right];\n                }\n        }\n\n        function _getMinimum(Index storage index, bytes32 id) internal returns (int) {\n                Node storage currentNode = index.nodes[id];\n\n                while (true) {\n                    if (currentNode.left == 0x0) {\n                        return currentNode.value;\n                    }\n                    currentNode = index.nodes[currentNode.left];\n                }\n        }\n\n\n        /** @dev Query the index for the edge-most node that satisfies the\n         *  given query.  For >, >=, and ==, this will be the left-most node\n         *  that satisfies the comparison.  For < and <= this will be the\n         *  right-most node that satisfies the comparison.\n         */\n        /// @param index The index that should be queried\n        /** @param operator One of '>', '>=', '<', '<=', '==' to specify what\n         *  type of comparison operator should be used.\n         */\n        function query(Index storage index, bytes2 operator, int value) public returns (bytes32) {\n                bytes32 rootNodeId = index.root;\n                \n                if (rootNodeId == 0x0) {\n                    // Empty tree.\n                    return 0x0;\n                }\n\n                Node storage currentNode = index.nodes[rootNodeId];\n\n                while (true) {\n                    if (_compare(currentNode.value, operator, value)) {\n                        // We have found a match but it might not be the\n                        // *correct* match.\n                        if ((operator == LT) || (operator == LTE)) {\n                            // Need to keep traversing right until this is no\n                            // longer true.\n                            if (currentNode.right == 0x0) {\n                                return currentNode.id;\n                            }\n                            if (_compare(_getMinimum(index, currentNode.right), operator, value)) {\n                                // There are still nodes to the right that\n                                // match.\n                                currentNode = index.nodes[currentNode.right];\n                                continue;\n                            }\n                            return currentNode.id;\n                        }\n\n                        if ((operator == GT) || (operator == GTE) || (operator == EQ)) {\n                            // Need to keep traversing left until this is no\n                            // longer true.\n                            if (currentNode.left == 0x0) {\n                                return currentNode.id;\n                            }\n                            if (_compare(_getMaximum(index, currentNode.left), operator, value)) {\n                                currentNode = index.nodes[currentNode.left];\n                                continue;\n                            }\n                            return currentNode.id;\n                        }\n                    }\n\n                    if ((operator == LT) || (operator == LTE)) {\n                        if (currentNode.left == 0x0) {\n                            // There are no nodes that are less than the value\n                            // so return null.\n                            return 0x0;\n                        }\n                        currentNode = index.nodes[currentNode.left];\n                        continue;\n                    }\n\n                    if ((operator == GT) || (operator == GTE)) {\n                        if (currentNode.right == 0x0) {\n                            // There are no nodes that are greater than the value\n                            // so return null.\n                            return 0x0;\n                        }\n                        currentNode = index.nodes[currentNode.right];\n                        continue;\n                    }\n\n                    if (operator == EQ) {\n                        if (currentNode.value < value) {\n                            if (currentNode.right == 0x0) {\n                                return 0x0;\n                            }\n                            currentNode = index.nodes[currentNode.right];\n                            continue;\n                        }\n\n                        if (currentNode.value > value) {\n                            if (currentNode.left == 0x0) {\n                                return 0x0;\n                            }\n                            currentNode = index.nodes[currentNode.left];\n                            continue;\n                        }\n                    }\n                }\n        }\n\n        function _rebalanceTree(Index storage index, bytes32 id) internal {\n            // Trace back up rebalancing the tree and updating heights as\n            // needed..\n            Node storage currentNode = index.nodes[id];\n\n            while (true) {\n                int balanceFactor = _getBalanceFactor(index, currentNode.id);\n\n                if (balanceFactor == 2) {\n                    // Right rotation (tree is heavy on the left)\n                    if (_getBalanceFactor(index, currentNode.left) == -1) {\n                        // The subtree is leaning right so it need to be\n                        // rotated left before the current node is rotated\n                        // right.\n                        _rotateLeft(index, currentNode.left);\n                    }\n                    _rotateRight(index, currentNode.id);\n                }\n\n                if (balanceFactor == -2) {\n                    // Left rotation (tree is heavy on the right)\n                    if (_getBalanceFactor(index, currentNode.right) == 1) {\n                        // The subtree is leaning left so it need to be\n                        // rotated right before the current node is rotated\n                        // left.\n                        _rotateRight(index, currentNode.right);\n                    }\n                    _rotateLeft(index, currentNode.id);\n                }\n\n                if ((-1 <= balanceFactor) && (balanceFactor <= 1)) {\n                    _updateNodeHeight(index, currentNode.id);\n                }\n\n                if (currentNode.parent == 0x0) {\n                    // Reached the root which may be new due to tree\n                    // rotation, so set it as the root and then break.\n                    break;\n                }\n\n                currentNode = index.nodes[currentNode.parent];\n            }\n        }\n\n        function _getBalanceFactor(Index storage index, bytes32 id) internal returns (int) {\n                Node storage node = index.nodes[id];\n\n                return int(index.nodes[node.left].height) - int(index.nodes[node.right].height);\n        }\n\n        function _updateNodeHeight(Index storage index, bytes32 id) internal {\n                Node storage node = index.nodes[id];\n\n                node.height = max(index.nodes[node.left].height, index.nodes[node.right].height) + 1;\n        }\n\n        function _rotateLeft(Index storage index, bytes32 id) internal {\n            Node storage originalRoot = index.nodes[id];\n\n            if (originalRoot.right == 0x0) {\n                // Cannot rotate left if there is no right originalRoot to rotate into\n                // place.\n                throw;\n            }\n\n            // The right child is the new root, so it gets the original\n            // `originalRoot.parent` as it's parent.\n            Node storage newRoot = index.nodes[originalRoot.right];\n            newRoot.parent = originalRoot.parent;\n\n            // The original root needs to have it's right child nulled out.\n            originalRoot.right = 0x0;\n\n            if (originalRoot.parent != 0x0) {\n                // If there is a parent node, it needs to now point downward at\n                // the newRoot which is rotating into the place where `node` was.\n                Node storage parent = index.nodes[originalRoot.parent];\n\n                // figure out if we're a left or right child and have the\n                // parent point to the new node.\n                if (parent.left == originalRoot.id) {\n                    parent.left = newRoot.id;\n                }\n                if (parent.right == originalRoot.id) {\n                    parent.right = newRoot.id;\n                }\n            }\n\n\n            if (newRoot.left != 0) {\n                // If the new root had a left child, that moves to be the\n                // new right child of the original root node\n                Node storage leftChild = index.nodes[newRoot.left];\n                originalRoot.right = leftChild.id;\n                leftChild.parent = originalRoot.id;\n            }\n\n            // Update the newRoot's left node to point at the original node.\n            originalRoot.parent = newRoot.id;\n            newRoot.left = originalRoot.id;\n\n            if (newRoot.parent == 0x0) {\n                index.root = newRoot.id;\n            }\n\n            // TODO: are both of these updates necessary?\n            _updateNodeHeight(index, originalRoot.id);\n            _updateNodeHeight(index, newRoot.id);\n        }\n\n        function _rotateRight(Index storage index, bytes32 id) internal {\n            Node storage originalRoot = index.nodes[id];\n\n            if (originalRoot.left == 0x0) {\n                // Cannot rotate right if there is no left node to rotate into\n                // place.\n                throw;\n            }\n\n            // The left child is taking the place of node, so we update it's\n            // parent to be the original parent of the node.\n            Node storage newRoot = index.nodes[originalRoot.left];\n            newRoot.parent = originalRoot.parent;\n\n            // Null out the originalRoot.left\n            originalRoot.left = 0x0;\n\n            if (originalRoot.parent != 0x0) {\n                // If the node has a parent, update the correct child to point\n                // at the newRoot now.\n                Node storage parent = index.nodes[originalRoot.parent];\n\n                if (parent.left == originalRoot.id) {\n                    parent.left = newRoot.id;\n                }\n                if (parent.right == originalRoot.id) {\n                    parent.right = newRoot.id;\n                }\n            }\n\n            if (newRoot.right != 0x0) {\n                Node storage rightChild = index.nodes[newRoot.right];\n                originalRoot.left = newRoot.right;\n                rightChild.parent = originalRoot.id;\n            }\n\n            // Update the new root's right node to point to the original node.\n            originalRoot.parent = newRoot.id;\n            newRoot.right = originalRoot.id;\n\n            if (newRoot.parent == 0x0) {\n                index.root = newRoot.id;\n            }\n\n            // Recompute heights.\n            _updateNodeHeight(index, originalRoot.id);\n            _updateNodeHeight(index, newRoot.id);\n        }\n}\n"
+        },
+        "libraries/SchedulerLib.sol": {
+          "content": "import \"libraries/GroveLib.sol\";\nimport \"libraries/AccountingLib.sol\";\nimport \"libraries/CallLib.sol\";\n\n\nlibrary SchedulerLib {\n    /*\n     *  Address: 0x873bf63c898791e57fa66e7b9261ea81df0b8044\n     */\n    /*\n     *  Call Scheduling API\n     */\n    // Ten minutes into the future.\n    uint constant MAX_BLOCKS_IN_FUTURE = 40 + 10 + 255;\n\n    // The minimum gas required to execute a scheduled call on a function that\n    // does almost nothing.  This is an approximation and assumes the worst\n    // case scenario for gas consumption.\n    // \n    // Measured Minimum is closer to 150,000\n    uint constant MINIMUM_CALL_GAS = 200000;\n\n    event CallScheduled(address call_address);\n\n    event CallRejected(address indexed schedulerAddress, bytes32 reason);\n\n    uint constant CALL_WINDOW_SIZE = 16;\n\n    function getCallWindowSize() constant returns (uint) {\n        return CALL_WINDOW_SIZE;\n    }\n\n    function getMinimumGracePeriod() constant returns (uint) {\n        return 4 * CALL_WINDOW_SIZE;\n    }\n\n    function getMinimumCallGas() constant returns (uint) {\n        return MINIMUM_CALL_GAS;\n    }\n\n    function getMinimumCallCost(uint basePayment, uint baseFee) constant returns (uint) {\n        return 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice;\n    }\n\n    function scheduleCall(GroveLib.Index storage self, address schedulerAddress, address contractAddress, bytes4 abiSignature, uint targetBlock, uint suggestedGas, uint8 gracePeriod, uint basePayment, uint baseFee, uint endowment) public returns (address) {\n        /*\n        * Primary API for scheduling a call.\n        *\n        * - No sooner than MAX_BLOCKS_IN_FUTURE\n        * - Grace Period must be longer than the minimum grace period.\n        * - msg.value must be >= MIN_GAS * tx.gasprice + 2 * (baseFee + basePayment)\n        */\n        bytes32 reason;\n\n        if (targetBlock < block.number + MAX_BLOCKS_IN_FUTURE) {\n            // Don't allow scheduling further than\n            // MAX_BLOCKS_IN_FUTURE\n            reason = \"TOO_SOON\";\n        }\n        else if (gracePeriod < getMinimumGracePeriod()) {\n            reason = \"GRACE_TOO_SHORT\";\n        }\n        else if (endowment < 2 * (baseFee + basePayment) + MINIMUM_CALL_GAS * tx.gasprice) {\n            reason = \"INSUFFICIENT_FUNDS\";\n        }\n\n        if (reason != 0x0) {\n            CallRejected(schedulerAddress, reason);\n            AccountingLib.sendRobust(schedulerAddress, endowment);\n            return;\n        }\n\n        var call = new FutureBlockCall.value(endowment)(schedulerAddress, targetBlock, gracePeriod, contractAddress, abiSignature, suggestedGas, basePayment, baseFee);\n\n        // Put the call into the grove index.\n        GroveLib.insert(self, bytes32(address(call)), int(call.targetBlock()));\n\n        CallScheduled(address(call));\n\n        return address(call);\n    }\n}\n"
+        },
+        "libraries/AccountingLib.sol": {
+          "content": "// Accounting v0.1 (not the same as the 0.1 release of this library)\n\n/// @title Accounting Lib - Accounting utilities\n/// @author Piper Merriam - <pipermerriam@gmail.com>\nlibrary AccountingLib {\n        /*\n         *  Address: 0x947aaa72162d32135d2af1ed0c6d610d541829c3\n         */\n        struct Bank {\n            mapping (address => uint) accountBalances;\n        }\n\n        /// @dev Low level method for adding funds to an account.  Protects against overflow.\n        /// @param self The Bank instance to operate on.\n        /// @param accountAddress The address of the account the funds should be added to.\n        /// @param value The amount that should be added to the account.\n        function addFunds(Bank storage self, address accountAddress, uint value) public {\n                if (self.accountBalances[accountAddress] + value < self.accountBalances[accountAddress]) {\n                        // Prevent Overflow.\n                        throw;\n                }\n                self.accountBalances[accountAddress] += value;\n        }\n\n        event _Deposit(address indexed _from, address indexed accountAddress, uint value);\n        /// @dev Function wrapper around the _Deposit event so that it can be used by contracts.  Can be used to log a deposit to an account.\n        /// @param _from The address that deposited the funds.\n        /// @param accountAddress The address of the account the funds were added to.\n        /// @param value The amount that was added to the account.\n        function Deposit(address _from, address accountAddress, uint value) public {\n            _Deposit(_from, accountAddress, value);\n        }\n\n\n        /// @dev Safe function for depositing funds.  Returns boolean for whether the deposit was successful\n        /// @param self The Bank instance to operate on.\n        /// @param accountAddress The address of the account the funds should be added to.\n        /// @param value The amount that should be added to the account.\n        function deposit(Bank storage self, address accountAddress, uint value) public returns (bool) {\n                addFunds(self, accountAddress, value);\n                return true;\n        }\n\n        event _Withdrawal(address indexed accountAddress, uint value);\n\n        /// @dev Function wrapper around the _Withdrawal event so that it can be used by contracts.  Can be used to log a withdrawl from an account.\n        /// @param accountAddress The address of the account the funds were withdrawn from.\n        /// @param value The amount that was withdrawn to the account.\n        function Withdrawal(address accountAddress, uint value) public {\n            _Withdrawal(accountAddress, value);\n        }\n\n        event _InsufficientFunds(address indexed accountAddress, uint value, uint balance);\n\n        /// @dev Function wrapper around the _InsufficientFunds event so that it can be used by contracts.  Can be used to log a failed withdrawl from an account.\n        /// @param accountAddress The address of the account the funds were to be withdrawn from.\n        /// @param value The amount that was attempted to be withdrawn from the account.\n        /// @param balance The current balance of the account.\n        function InsufficientFunds(address accountAddress, uint value, uint balance) public {\n            _InsufficientFunds(accountAddress, value, balance);\n        }\n\n        /// @dev Low level method for removing funds from an account.  Protects against underflow.\n        /// @param self The Bank instance to operate on.\n        /// @param accountAddress The address of the account the funds should be deducted from.\n        /// @param value The amount that should be deducted from the account.\n        function deductFunds(Bank storage self, address accountAddress, uint value) public {\n                /*\n                 *  Helper function that should be used for any reduction of\n                 *  account funds.  It has error checking to prevent\n                 *  underflowing the account balance which would be REALLY bad.\n                 */\n                if (value > self.accountBalances[accountAddress]) {\n                        // Prevent Underflow.\n                        throw;\n                }\n                self.accountBalances[accountAddress] -= value;\n        }\n\n        /// @dev Safe function for withdrawing funds.  Returns boolean for whether the deposit was successful as well as sending the amount in ether to the account address.\n        /// @param self The Bank instance to operate on.\n        /// @param accountAddress The address of the account the funds should be withdrawn from.\n        /// @param value The amount that should be withdrawn from the account.\n        function withdraw(Bank storage self, address accountAddress, uint value) public returns (bool) {\n                /*\n                 *  Public API for withdrawing funds.\n                 */\n                if (self.accountBalances[accountAddress] >= value) {\n                        deductFunds(self, accountAddress, value);\n                        if (!accountAddress.send(value)) {\n                                // Potentially sending money to a contract that\n                                // has a fallback function.  So instead, try\n                                // tranferring the funds with the call api.\n                                if (!accountAddress.call.value(value)()) {\n                                        // Revert the entire transaction.  No\n                                        // need to destroy the funds.\n                                        throw;\n                                }\n                        }\n                        return true;\n                }\n                return false;\n        }\n\n        uint constant DEFAULT_SEND_GAS = 100000;\n\n        function sendRobust(address toAddress, uint value) public returns (bool) {\n                if (msg.gas < DEFAULT_SEND_GAS) {\n                    return sendRobust(toAddress, value, msg.gas);\n                }\n                return sendRobust(toAddress, value, DEFAULT_SEND_GAS);\n        }\n\n        function sendRobust(address toAddress, uint value, uint maxGas) public returns (bool) {\n                if (value > 0 && !toAddress.send(value)) {\n                        // Potentially sending money to a contract that\n                        // has a fallback function.  So instead, try\n                        // tranferring the funds with the call api.\n                        if (!toAddress.call.gas(maxGas).value(value)()) {\n                                return false;\n                        }\n                }\n                return true;\n        }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        }
+      }
+    },
+    "compilerVersion": "0.1.6+commit.d41f8b7c",
+    "contractIdentifier": "libraries/CallLib.sol:FutureBlockCall"
+  },
+  "output": {
+    "creationBytecode": "0x606060405260405161010080610d4a8339610160604052905160805160a05160c05160e0519451610120516101405160008054600160a060020a03199081169098178155600b96909655600c805460ff19169095179094556001556002929092556006919091553a600555600380549093161760a060020a63ffffffff021916740100000000000000000000000000000000000000007c010000000000000000000000000000000000000000000000000000000090940493909302929092179055610c7b9081906100cf90396000f3606060405236156101325760e060020a600035046309241200811461017b5780630a16697a14610188578063137c638b14610191578063240328661461019e5780633233c6861461021e57806337f4c00e146102295780634e417a98146102345780634e71d92d1461029d5780634f059a43146102bb57806361461954146103195780636560a3071461033557806367ce940d146103405780636ef25c3a1461034d578063830953ab1461035657806395ee122114610361578063a06db7dc14610375578063ae45850b14610381578063b0f07e4414610393578063c6502da8146103ac578063c6803622146103b5578063ca94692d146103c8578063d379be23146103f1578063ea8a1af014610405578063eec2b6281461041e578063f5562753146104c0578063f6b4dfb414610521575b610535600054600160a060020a03908116339091161480156101545750600036115b1561053a576004546002600182161561010002600019019091160460001461053c57610002565b6105f6600a5460ff165b90565b6105f6600b5481565b6105f65b62011d28610185565b6105f66004356024356000730000000000000000000000000000000000000000630bd295e6600360005085856040518460e060020a0281526004018084815260200183600160a060020a03168152602001828152602001935050505060206040518083038160008760325a03f21561000257505060405151949350505050565b6105f6600954610185565b6105f6600554610185565b61060860408051602081810183526000825282516004805460026001821615610100026000190190911604601f810184900484028301840190955284825292939092918301828280156106d55780601f106106aa576101008083540402835291602001916106d5565b6105f6600a54600090819062010000900460ff16156107ba57610002565b6105f6600073000000000000000000000000000000000000000063f5562753436040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506101859050565b610535600a5460009062010000900460ff16156108be57610002565b6105f6600654610185565b6105f65b620186a0610185565b6105f660025481565b6105f6600854610185565b6105f6600a5462010000900460ff16610185565b610676600c5460ff1681565b61068d600054600160a060020a031681565b610535600a5462010000900460ff16156106ea57610002565b6105f660015481565b6105f6600a54610100900460ff16610185565b6105f660035474010000000000000000000000000000000000000000900460e060020a02610185565b61068d600754600160a060020a0316610185565b610535600a5462010000900460ff1615610ba357610002565b6105f66004355b600a54600090610100900460ff16156109e3576040805160e060020a63dcb27883028152600160a060020a03841660048201527f414c52454144595f43414c4c4544000000000000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb2788391604482810192869291908290030181838760325a03f21561000257506106e5915050565b6105f6600435600073000000000000000000000000000000000000000063f5562753836040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506106e59050565b61068d600354600160a060020a0316610185565b005b50505b565b600480546000828152602060026001841615610100026000190190931692909204601f908101929092047f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908101923692908390106105be5782800160ff198235161785555b506105379291505b808211156105f257600081556001016105aa565b828001600101855582156105a2579182015b828111156105a25782358260005055916020019190600101906105d0565b8091505b5090565b60408051918252519081900360200190f35b60405180806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600302600f01f150905090810190601f1680156106685780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6040805160ff929092168252519081900360200190f35b60408051600160a060020a03929092168252519081900360200190f35b820191906000526020600020905b8154815290600101906020018083116106b857829003601f168201915b50505050509050610185565b5060015b919050565b600054600160a060020a03908116339091161415806107215750600454600060026001831615610100026000190190921691909104115b1561072b57610002565b604080517f7c0278fc00000000000000000000000000000000000000000000000000000000815260036004820181815260248301938452366044840181905273000000000000000000000000000000000000000094637c0278fc946000939190606401848480828437820191505094505050505060006040518083038160008760325a03f21561000257505050565b604080516001547f0fee183d0000000000000000000000000000000000000000000000000000000082526003600483015233600160a060020a031660248301523460448301526064820152905173000000000000000000000000000000000000000091630fee183d916084828101926020929190829003018160008760325a03f215610002575050604051519150508015156105ee577300000000000000000000000000000000000000006312c82bcc33346040518360e060020a0281526004018083600160a060020a031681526020018281526020019250505060206040518083038160008760325a03f21561000257505060405151151590506105ee57610002565b5a90506108ca33610425565b15156108d4575b50565b73000000000000000000000000000000000000000063da46be0a600383336108fa610344565b610902610195565b6040518660e060020a0281526004018086815260200185815260200184600160a060020a031681526020018381526020018281526020019550505050505060006040518083038160008760325a03f215610002575050506108d13360408051600080547fc17e6817000000000000000000000000000000000000000000000000000000008352600160a060020a039081166004840152301631602483015291517300000000000000000000000000000000000000009263c17e68179260448181019360209390928390039091019082908760325a03f2156100025750505050565b600b544310806109fe5750600c54600b5460ff919091160143115b15610a8f576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f494e5f43414c4c5f57494e444f570000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb278839160448281019260009291908290030181838760325a03f21561000257505050600090506106e5565b604080517f0bd295e600000000000000000000000000000000000000000000000000000000815260036004820152600160a060020a0384166024820152436044820152905173000000000000000000000000000000000000000091630bd295e6916064828101926020929190829003018160008760325a03f21561000257505060405151151590506106e1576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f415554484f52495a4544000000000000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb278839160448281019260009291908290030181838760325a03f215610002575050506106e5565b600b546101081901431015610bce57600054600160a060020a039081163390911614610bf757610002565b600c54600b5460ff9190911601431115610c7657600a54610100900460ff1615610bf757610002565b604080517f7e9265620000000000000000000000000000000000000000000000000000000081526003600482015233600160a060020a03166024820152905173000000000000000000000000000000000000000091637e9265629160448281019260009291908290030181838760325a03f2156100025750505061053a565b61000256",
+    "deployedBytecode": "0x606060405236156101325760e060020a600035046309241200811461017b5780630a16697a14610188578063137c638b14610191578063240328661461019e5780633233c6861461021e57806337f4c00e146102295780634e417a98146102345780634e71d92d1461029d5780634f059a43146102bb57806361461954146103195780636560a3071461033557806367ce940d146103405780636ef25c3a1461034d578063830953ab1461035657806395ee122114610361578063a06db7dc14610375578063ae45850b14610381578063b0f07e4414610393578063c6502da8146103ac578063c6803622146103b5578063ca94692d146103c8578063d379be23146103f1578063ea8a1af014610405578063eec2b6281461041e578063f5562753146104c0578063f6b4dfb414610521575b610535600054600160a060020a03908116339091161480156101545750600036115b1561053a576004546002600182161561010002600019019091160460001461053c57610002565b6105f6600a5460ff165b90565b6105f6600b5481565b6105f65b62011d28610185565b6105f66004356024356000730000000000000000000000000000000000000000630bd295e6600360005085856040518460e060020a0281526004018084815260200183600160a060020a03168152602001828152602001935050505060206040518083038160008760325a03f21561000257505060405151949350505050565b6105f6600954610185565b6105f6600554610185565b61060860408051602081810183526000825282516004805460026001821615610100026000190190911604601f810184900484028301840190955284825292939092918301828280156106d55780601f106106aa576101008083540402835291602001916106d5565b6105f6600a54600090819062010000900460ff16156107ba57610002565b6105f6600073000000000000000000000000000000000000000063f5562753436040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506101859050565b610535600a5460009062010000900460ff16156108be57610002565b6105f6600654610185565b6105f65b620186a0610185565b6105f660025481565b6105f6600854610185565b6105f6600a5462010000900460ff16610185565b610676600c5460ff1681565b61068d600054600160a060020a031681565b610535600a5462010000900460ff16156106ea57610002565b6105f660015481565b6105f6600a54610100900460ff16610185565b6105f660035474010000000000000000000000000000000000000000900460e060020a02610185565b61068d600754600160a060020a0316610185565b610535600a5462010000900460ff1615610ba357610002565b6105f66004355b600a54600090610100900460ff16156109e3576040805160e060020a63dcb27883028152600160a060020a03841660048201527f414c52454144595f43414c4c4544000000000000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb2788391604482810192869291908290030181838760325a03f21561000257506106e5915050565b6105f6600435600073000000000000000000000000000000000000000063f5562753836040518260e060020a0281526004018082815260200191505060206040518083038160008760325a03f2156100025750506040515191506106e59050565b61068d600354600160a060020a0316610185565b005b50505b565b600480546000828152602060026001841615610100026000190190931692909204601f908101929092047f8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b908101923692908390106105be5782800160ff198235161785555b506105379291505b808211156105f257600081556001016105aa565b828001600101855582156105a2579182015b828111156105a25782358260005055916020019190600101906105d0565b8091505b5090565b60408051918252519081900360200190f35b60405180806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600302600f01f150905090810190601f1680156106685780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6040805160ff929092168252519081900360200190f35b60408051600160a060020a03929092168252519081900360200190f35b820191906000526020600020905b8154815290600101906020018083116106b857829003601f168201915b50505050509050610185565b5060015b919050565b600054600160a060020a03908116339091161415806107215750600454600060026001831615610100026000190190921691909104115b1561072b57610002565b604080517f7c0278fc00000000000000000000000000000000000000000000000000000000815260036004820181815260248301938452366044840181905273000000000000000000000000000000000000000094637c0278fc946000939190606401848480828437820191505094505050505060006040518083038160008760325a03f21561000257505050565b604080516001547f0fee183d0000000000000000000000000000000000000000000000000000000082526003600483015233600160a060020a031660248301523460448301526064820152905173000000000000000000000000000000000000000091630fee183d916084828101926020929190829003018160008760325a03f215610002575050604051519150508015156105ee577300000000000000000000000000000000000000006312c82bcc33346040518360e060020a0281526004018083600160a060020a031681526020018281526020019250505060206040518083038160008760325a03f21561000257505060405151151590506105ee57610002565b5a90506108ca33610425565b15156108d4575b50565b73000000000000000000000000000000000000000063da46be0a600383336108fa610344565b610902610195565b6040518660e060020a0281526004018086815260200185815260200184600160a060020a031681526020018381526020018281526020019550505050505060006040518083038160008760325a03f215610002575050506108d13360408051600080547fc17e6817000000000000000000000000000000000000000000000000000000008352600160a060020a039081166004840152301631602483015291517300000000000000000000000000000000000000009263c17e68179260448181019360209390928390039091019082908760325a03f2156100025750505050565b600b544310806109fe5750600c54600b5460ff919091160143115b15610a8f576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f494e5f43414c4c5f57494e444f570000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb278839160448281019260009291908290030181838760325a03f21561000257505050600090506106e5565b604080517f0bd295e600000000000000000000000000000000000000000000000000000000815260036004820152600160a060020a0384166024820152436044820152905173000000000000000000000000000000000000000091630bd295e6916064828101926020929190829003018160008760325a03f21561000257505060405151151590506106e1576040805160e060020a63dcb27883028152600160a060020a03841660048201527f4e4f545f415554484f52495a4544000000000000000000000000000000000000602482015290517300000000000000000000000000000000000000009163dcb278839160448281019260009291908290030181838760325a03f215610002575050506106e5565b600b546101081901431015610bce57600054600160a060020a039081163390911614610bf757610002565b600c54600b5460ff9190911601431115610c7657600a54610100900460ff1615610bf757610002565b604080517f7e9265620000000000000000000000000000000000000000000000000000000081526003600482015233600160a060020a03166024820152905173000000000000000000000000000000000000000091637e9265629160448281019260009291908290030181838760325a03f2156100025750505061053a565b61000256",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "wasSuccessful",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "targetBlock",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getExtraGas",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [
+            {
+              "name": "executor",
+              "type": "address"
+            },
+            {
+              "name": "block_number",
+              "type": "uint256"
+            }
+          ],
+          "name": "checkExecutionAuthorization",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "claimerDeposit",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "anchorGasPrice",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "callData",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": false,
+          "inputs": [],
+          "name": "claim",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getClaimAmountForBlock",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": false,
+          "inputs": [],
+          "name": "execute",
+          "outputs": [],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "suggestedGas",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "getOverhead",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "baseFee",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "claimAmount",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "isCancelled",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "gracePeriod",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint8"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "schedulerAddress",
+          "outputs": [
+            {
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": false,
+          "inputs": [],
+          "name": "registerData",
+          "outputs": [],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "basePayment",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "wasCalled",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "abiSignature",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes4"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "claimer",
+          "outputs": [
+            {
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": false,
+          "inputs": [],
+          "name": "cancel",
+          "outputs": [],
+          "type": "function"
+        },
+        {
+          "constant": false,
+          "inputs": [
+            {
+              "name": "executor",
+              "type": "address"
+            }
+          ],
+          "name": "beforeExecute",
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [
+            {
+              "name": "block_number",
+              "type": "uint256"
+            }
+          ],
+          "name": "getClaimAmountForBlock",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "contractAddress",
+          "outputs": [
+            {
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "type": "function"
+        },
+        {
+          "inputs": [
+            {
+              "name": "_schedulerAddress",
+              "type": "address"
+            },
+            {
+              "name": "_targetBlock",
+              "type": "uint256"
+            },
+            {
+              "name": "_gracePeriod",
+              "type": "uint8"
+            },
+            {
+              "name": "_contractAddress",
+              "type": "address"
+            },
+            {
+              "name": "_abiSignature",
+              "type": "bytes4"
+            },
+            {
+              "name": "_suggestedGas",
+              "type": "uint256"
+            },
+            {
+              "name": "_basePayment",
+              "type": "uint256"
+            },
+            {
+              "name": "_baseFee",
+              "type": "uint256"
+            }
+          ],
+          "type": "constructor"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": null,
+      "transientStorageLayout": null,
+      "sources": null
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {
+        "libraries/CallLib.sol": {
+          "CallLib": [
+            {
+              "start": 634,
+              "length": 20
+            },
+            {
+              "start": 913,
+              "length": 20
+            },
+            {
+              "start": 1361,
+              "length": 20
+            },
+            {
+              "start": 1433,
+              "length": 20
+            },
+            {
+              "start": 2107,
+              "length": 20
+            },
+            {
+              "start": 2264,
+              "length": 20
+            },
+            {
+              "start": 2469,
+              "length": 20
+            },
+            {
+              "start": 2675,
+              "length": 20
+            },
+            {
+              "start": 2844,
+              "length": 20
+            },
+            {
+              "start": 2981,
+              "length": 20
+            },
+            {
+              "start": 3124,
+              "length": 20
+            },
+            {
+              "start": 3335,
+              "length": 20
+            }
+          ]
+        },
+        "libraries/AccountingLib.sol": {
+          "AccountingLib": [
+            {
+              "start": 2337,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": null,
+      "cborAuxdata": {}
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {
+        "libraries/CallLib.sol": {
+          "CallLib": [
+            {
+              "start": 427,
+              "length": 20
+            },
+            {
+              "start": 706,
+              "length": 20
+            },
+            {
+              "start": 1154,
+              "length": 20
+            },
+            {
+              "start": 1226,
+              "length": 20
+            },
+            {
+              "start": 1900,
+              "length": 20
+            },
+            {
+              "start": 2057,
+              "length": 20
+            },
+            {
+              "start": 2262,
+              "length": 20
+            },
+            {
+              "start": 2468,
+              "length": 20
+            },
+            {
+              "start": 2637,
+              "length": 20
+            },
+            {
+              "start": 2774,
+              "length": 20
+            },
+            {
+              "start": 2917,
+              "length": 20
+            },
+            {
+              "start": 3128,
+              "length": 20
+            }
+          ]
+        },
+        "libraries/AccountingLib.sol": {
+          "AccountingLib": [
+            {
+              "start": 2130,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": null,
+      "cborAuxdata": {}
+    },
+    "metadata": null
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 634,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 913,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 1361,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 1433,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2107,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2264,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2469,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2675,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2844,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2981,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 3124,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 3335,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2337,
+        "id": "libraries/AccountingLib.sol:AccountingLib"
+      },
+      {
+        "type": "insert",
+        "reason": "constructorArguments",
+        "offset": 3402
+      }
+    ],
+    "creationValues": {
+      "libraries": {
+        "libraries/CallLib.sol:CallLib": "0x8deb276d0abe47132849555a3449f26bd1872baa",
+        "libraries/AccountingLib.sol:AccountingLib": "0x39f631bf138b5eb33e96459f4241e93e13659114"
+      },
+      "constructorArguments": "0x000000000000000000000000685308c340f91faea1b9263b2ebb9e71fc9a751d00000000000000000000000000000000000000000000000000000000000b440900000000000000000000000000000000000000000000000000000000000000ff000000000000000000000000685308c340f91faea1b9263b2ebb9e71fc9a751d9378a9e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000016345785d8a0000"
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 427,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 706,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 1154,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 1226,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 1900,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2057,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2262,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2468,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2637,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2774,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2917,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 3128,
+        "id": "libraries/CallLib.sol:CallLib"
+      },
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 2130,
+        "id": "libraries/AccountingLib.sol:AccountingLib"
+      }
+    ],
+    "runtimeValues": {
+      "libraries": {
+        "libraries/CallLib.sol:CallLib": "0x8deb276d0abe47132849555a3449f26bd1872baa",
+        "libraries/AccountingLib.sol:AccountingLib": "0x39f631bf138b5eb33e96459f4241e93e13659114"
+      }
+    }
+  }
+}

@@ -354,6 +354,20 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(matchSol0_4_9);
   });
 
+  it("should match a Solidity 0.1.6 contract with libraries linked using compiler settings", async () => {
+    const librariesSol0_1_6LinkedByCompiler = (
+      await import("./testdata/libraries_sol_0_1_6_linked_by_compiler.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(librariesSol0_1_6LinkedByCompiler);
+  });
+
+  it("should match a Solidity 0.1.6 contract with library placeholders", async () => {
+    const librariesSol0_1_6Placeholders = (
+      await import("./testdata/libraries_sol_0_1_6_placeholders.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(librariesSol0_1_6Placeholders);
+  });
+
   it("should store transientStorageLayout for a contract that uses the transient keyword", async () => {
     const transientStorageLayout = (
       await import("./testdata/transient_storage_layout.json")
