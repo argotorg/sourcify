@@ -1,8 +1,10 @@
 import { expect } from 'chai';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import type { LinkReferences } from '@ethereum-sourcify/compilers-types';
 import {
   AuxdataTransformation,
   extractImmutablesTransformation,
+  extractLibrariesTransformation,
 } from '../../src/Verification/Transformations';
 
 describe('Transformations', () => {
@@ -238,6 +240,86 @@ describe('Transformations', () => {
       expect(result.populatedRecompiledBytecode).to.equal(
         solidityOnchainRuntime,
       );
+    });
+  });
+
+  describe('extractLibrariesTransformation', () => {
+    const ADDRESS = '1111111111111111111111111111111111111111';
+    const linkReferences: LinkReferences = {
+      'libraries/Lib.sol': { Lib: [{ start: 1, length: 20 }] },
+    };
+    const real = '0x73' + ADDRESS;
+    const expectedResult = {
+      populatedRecompiledBytecode: real,
+      libraryMap: { ['__Lib___________________________________']: ADDRESS },
+      transformations: [
+        {
+          type: 'replace',
+          reason: 'library',
+          offset: 1,
+          id: 'libraries/Lib.sol:Lib',
+        },
+      ],
+      transformationValues: {
+        libraries: { 'libraries/Lib.sol:Lib': '0x' + ADDRESS },
+      },
+    };
+
+    it('accepts the bare-name placeholder for solc < 0.4.9', () => {
+      const template = '0x73' + '__Lib___________________________________';
+      expect(
+        extractLibrariesTransformation(
+          template,
+          real,
+          linkReferences,
+          '0.1.6+commit.d41f8b7c',
+        ),
+      ).to.deep.equal(expectedResult);
+    });
+
+    it('rejects the bare-name placeholder for solc >= 0.4.9', () => {
+      const template = '0x73' + '__Lib___________________________________';
+      expect(() =>
+        extractLibrariesTransformation(
+          template,
+          real,
+          linkReferences,
+          '0.4.9+commit.364da425',
+        ),
+      ).to.throw('Library placeholder mismatch');
+      expect(() =>
+        extractLibrariesTransformation(template, real, linkReferences),
+      ).to.throw('Library placeholder mismatch');
+    });
+
+    it('accepts the file:Lib placeholder for solc 0.4.9', () => {
+      const template = '0x73' + '__libraries/Lib.sol:Lib_________________';
+      const result = extractLibrariesTransformation(
+        template,
+        real,
+        linkReferences,
+        '0.4.9+commit.364da425',
+      );
+      expect(result.transformations).to.deep.equal(
+        expectedResult.transformations,
+      );
+      expect(result.populatedRecompiledBytecode).to.equal(real);
+    });
+
+    it('does not throw for a compiler version that is not valid semver', () => {
+      expect(
+        extractLibrariesTransformation(
+          real,
+          real,
+          {},
+          '0.4.1b1+commit.039d3692',
+        ),
+      ).to.deep.equal({
+        populatedRecompiledBytecode: real,
+        libraryMap: {},
+        transformations: [],
+        transformationValues: {},
+      });
     });
   });
 });

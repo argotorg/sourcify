@@ -555,6 +555,7 @@ export class Verification {
       populatedRecompiledBytecode,
       onchainBytecode,
       linkReferences,
+      this.compilation.compilerVersion,
     );
     const libraryMap = librariesTransformationResult.libraryMap;
     populatedRecompiledBytecode =
