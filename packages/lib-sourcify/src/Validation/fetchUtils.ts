@@ -3,7 +3,9 @@ import { id as keccak256str } from 'ethers';
 
 // Hosts a missing source may be fetched from by file name. The operator-configured
 // IPFS gateway is the only other destination (see performFetch's `trusted`).
-export const ALLOWED_SOURCE_HOSTS = ['raw.githubusercontent.com'];
+export const ALLOWED_SOURCE_HOSTS: readonly string[] = [
+  'raw.githubusercontent.com',
+];
 
 const DEFAULT_BACKOFF = 10000;
 const DEFAULT_RETRIES = 4;
@@ -180,6 +182,11 @@ export async function fetchWithBackoff(
   let timeout = backoff;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => {
+      logDebug('Aborting request', { resource, headers, timeout, attempt });
+      controller.abort();
+    }, timeout);
     try {
       logDebug('Start fetchWithBackoff', {
         resource,
@@ -187,18 +194,12 @@ export async function fetchWithBackoff(
         timeout,
         attempt,
       });
-      const controller = new AbortController();
-      const id = setTimeout(() => {
-        logDebug('Aborting request', { resource, headers, timeout, attempt });
-        controller.abort();
-      }, timeout);
       const response = await fetch(resource, {
         signal: controller.signal,
         headers,
         ...init,
       });
       logDebug('Success fetchWithBackoff', { resource, timeout, attempt });
-      clearTimeout(id);
       return response;
     } catch (error) {
       if (attempt === retries) {
@@ -222,6 +223,8 @@ export async function fetchWithBackoff(
         });
         continue;
       }
+    } finally {
+      clearTimeout(id);
     }
   }
   throw new Error(`Failed fetching ${resource}`);
