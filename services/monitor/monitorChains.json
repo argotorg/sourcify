@@ -420,28 +420,6 @@
     ]
   },
   {
-    "name": "Scroll Testnet",
-    "chainId": 534351,
-    "rpc": [
-      "https://sepolia-rpc.scroll.io",
-      "https://rpc.ankr.com/scroll_sepolia_testnet",
-      "https://scroll-sepolia-rpc.publicnode.com",
-      {
-        "type": "ApiKey",
-        "url": "https://lb.drpc.org/ogrpc?network=scroll-sepolia&dkey={API_KEY}",
-        "apiKeyEnvName": "DRPC_API_KEY",
-        "traceSupport": "debug_traceTransaction"
-      },
-      {
-        "type": "ApiKey",
-        "url": "https://{SUBDOMAIN}.scroll-testnet.quiknode.pro/{API_KEY}",
-        "apiKeyEnvName": "QUICKNODE_API_KEY",
-        "subDomainEnvName": "QUICKNODE_SUBDOMAIN",
-        "traceSupport": "debug_traceTransaction"
-      }
-    ]
-  },
-  {
     "name": "Zircuit Mainnet",
     "chainId": 48900,
     "rpc": [
