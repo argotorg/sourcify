@@ -11,7 +11,11 @@ import { getWorkerPoolThreadCounts } from "../../src/server/services/Verificatio
 import { StorageService } from "../../src/server/services/StorageService";
 import { RWStorageIdentifiers } from "../../src/server/services/storageServices/identifiers";
 import sinon from "sinon";
-import type { EtherscanResult } from "@ethereum-sourcify/lib-sourcify";
+import type {
+  EtherscanResult,
+  SourcifyChainMap,
+} from "@ethereum-sourcify/lib-sourcify";
+import { SimilarityRecentlyFailedError } from "../../src/server/apiv2/errors";
 import { testS3Bucket, testS3Path } from "../helpers/S3ClientMock";
 import { MockVerificationExport } from "../helpers/mocks";
 
@@ -54,6 +58,105 @@ describe("VerificationService", function () {
 
     return mockStorageService;
   }
+
+  describe("similarity failure cooldown configuration", () => {
+    function createService(cooldownSeconds: number) {
+      const storage = createMockStorageService("similarity-job");
+      const getBytecode = sandbox.stub().resolves("0x" + "60".repeat(100));
+      storage.performServiceOperation
+        .withArgs("getRecentFailedSimilarityVerification")
+        .resolves(null);
+      storage.performServiceOperation
+        .withArgs("getSimilarityCandidateIdsByRuntimeCode")
+        .resolves([]);
+      verificationService = new VerificationService(
+        {
+          sourcifyChainMap: {
+            "1": {
+              getBytecode,
+              getSourcifyChainObj: () => ({
+                chainId: 1,
+                name: "Test",
+                rpcs: [],
+                supported: true,
+              }),
+            },
+          } as unknown as SourcifyChainMap,
+          solcRepoPath: config.get("solcRepo"),
+          solJsonRepoPath: config.get("solJsonRepo"),
+          vyperRepoPath: config.get("vyperRepo"),
+          feRepoPath: config.get("feRepo"),
+          similarityFailureCooldownSeconds: cooldownSeconds,
+        },
+        storage,
+      );
+      return { storage, getBytecode };
+    }
+
+    it("should honour a configured cooldown before fetching bytecode", async () => {
+      const now = Date.now();
+      sandbox.useFakeTimers({ now, toFake: ["Date"] });
+      const { storage, getBytecode } = createService(15);
+      storage.performServiceOperation
+        .withArgs("getRecentFailedSimilarityVerification")
+        .resolves(new Date(now - 10000));
+      let error: unknown;
+      try {
+        await verificationService.verifyFromSimilarityViaWorker(
+          "/v2/verify/similarity/1/address",
+          "1",
+          "address",
+        );
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(SimilarityRecentlyFailedError);
+      expect(
+        (error as SimilarityRecentlyFailedError).retryAfterSeconds,
+      ).to.equal(5);
+      expect(getBytecode.called).to.be.false;
+      expect(storage.performServiceOperation.calledWith("storeVerificationJob"))
+        .to.be.false;
+    });
+
+    it("should disable the cooldown without querying failure history when configured to zero", async () => {
+      const { storage, getBytecode } = createService(0);
+      const id = await verificationService.verifyFromSimilarityViaWorker(
+        "/v2/verify/similarity/1/address",
+        "1",
+        "address",
+      );
+      expect(id).to.equal("similarity-job");
+      expect(getBytecode.calledOnce).to.be.true;
+      expect(
+        storage.performServiceOperation.calledWith(
+          "getRecentFailedSimilarityVerification",
+        ),
+      ).to.be.false;
+      await Promise.all(verificationService["runningTasks"]);
+    });
+
+    it("should allow a retry if the cooldown expires during the history lookup", async () => {
+      const now = Date.now();
+      const clock = sandbox.useFakeTimers({ now, toFake: ["Date"] });
+      const { storage, getBytecode } = createService(1);
+      storage.performServiceOperation
+        .withArgs("getRecentFailedSimilarityVerification")
+        .callsFake(async () => {
+          clock.tick(1);
+          return new Date(now - 999);
+        });
+      expect(
+        await verificationService.verifyFromSimilarityViaWorker(
+          "/v2/verify/similarity/1/address",
+          "1",
+          "address",
+        ),
+      ).to.equal("similarity-job");
+      expect(getBytecode.calledOnce).to.be.true;
+      await Promise.all(verificationService["runningTasks"]);
+    });
+  });
 
   function mockWorkerPoolError(verificationService: VerificationService) {
     const workerPoolStub = sandbox.stub(
