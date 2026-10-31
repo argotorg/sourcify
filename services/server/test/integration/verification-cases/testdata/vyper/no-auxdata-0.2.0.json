@@ -41,7 +41,7 @@
       ],
       "userdoc": {},
       "devdoc": {},
-      "storageLayout": null,
+      "storageLayout": {},
       "transientStorageLayout": null,
       "sources": {
         "test.vy": {

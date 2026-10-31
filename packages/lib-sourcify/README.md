@@ -257,12 +257,16 @@ const solc = new Solc('/path/to/solc/repo', '/path/to/solcjs/repo');
 ### Vyper Compiler Example
 
 ```typescript
-import { useVyperCompiler } from '@ethereum-sourcify/compilers';
+import {
+  useVyperCompiler,
+  useVyperStorageLayout,
+} from '@ethereum-sourcify/compilers';
 
 import {
   IVyperCompiler,
   VyperOutput,
   VyperJsonInput,
+  VyperStorageLayout,
 } from '@ethereum-sourcify/lib-sourcify';
 
 class Vyper implements IVyperCompiler {
@@ -274,9 +278,32 @@ class Vyper implements IVyperCompiler {
   ): Promise<VyperOutput> {
     return await useVyperCompiler(this.vyperRepoPath, version, vyperJsonInput);
   }
+
+  async extractStorageLayout(
+    version: string,
+    vyperJsonInput: VyperJsonInput,
+    targetPath: string,
+  ): Promise<VyperStorageLayout> {
+    return await useVyperStorageLayout(
+      this.vyperRepoPath,
+      version,
+      vyperJsonInput,
+      targetPath,
+    );
+  }
 }
 const vyper = new Vyper('/path/to/vyper/repo');
 ```
+
+Historical storage-layout extraction supports Vyper `0.1.0-beta.16` through
+the `0.4.1b3` prerelease. Vyper `0.4.1b4` and newer return the layout through
+Standard JSON directly. The historical adapter requires
+[uv](https://docs.astral.sh/uv/) on `PATH` because it loads the exact Vyper
+package in an isolated Python process. Layout-extraction failure is
+supplemental and does not invalidate bytecode verification. Historical struct
+entries include an optional `type_definitions` table so mappings and arrays of
+structs remain self-describing without changing the existing flat Vyper layout
+shape.
 
 ## SourcifyChain
 

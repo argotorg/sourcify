@@ -3,6 +3,8 @@ import type {
   SolidityOutput,
   VyperJsonInput,
   VyperOutput,
+  VyperStorageLayout,
+  VyperStorageLayouts,
   FeJsonInput,
   FeOutput,
 } from '@ethereum-sourcify/compilers-types';
@@ -74,6 +76,16 @@ export interface IVyperCompiler {
     version: string,
     vyperJsonInput: VyperJsonInput,
   ): Promise<VyperOutput>;
+  extractStorageLayout?(
+    version: string,
+    vyperJsonInput: VyperJsonInput,
+    targetPath: string,
+  ): Promise<VyperStorageLayout>;
+  extractStorageLayouts?(
+    version: string,
+    vyperJsonInput: VyperJsonInput,
+    targetPath: string,
+  ): Promise<VyperStorageLayouts>;
 }
 
 export interface IFeCompiler {
