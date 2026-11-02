@@ -401,7 +401,7 @@ export class Verification {
     const settings = compilation.jsonInput.settings;
     const usesCustomYulOptimizerSteps =
       settings.optimizer?.details?.yulDetails?.optimizerSteps !== undefined;
-    // Solar output may also depend on unused sources, so always check it
+    // Solar is new, so always check it (unused sources changed its bytecode before 0.3.0)
     const mayHitExtraFileInputBug =
       isSolarVersion(compilation.compilerVersion) ||
       (settings.optimizer?.enabled &&

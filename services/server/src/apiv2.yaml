@@ -5,13 +5,12 @@ paths:
       tags:
         - Verify Contracts
       summary: Verify Contract (Standard JSON)
-      # TODO(solar release): use the real release version in the Solar paragraph
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description), [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description), or Fe JSON input (a Sourcify-defined format — Fe has no official compiler JSON interface).
 
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
-        Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.d9f23fbe.solar.0.3.0`. Sourcify then compiles with that Solar release. Solar is only supported on this endpoint.
+        Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Solar is only supported on this endpoint.
 
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
 
@@ -600,8 +599,7 @@ components:
                       enabled: true
                       runs: 200
                     evmVersion: cancun
-                # TODO(solar release): use the real release version
-                compilerVersion: "0.8.38+commit.d9f23fbe.solar.0.3.0"
+                compilerVersion: "0.8.38+commit.e7a91fc7.solar.0.3.0"
                 contractIdentifier: "contracts/Storage.sol:Storage"
     MetadataVerificationRequest:
       description: ""
@@ -1431,9 +1429,8 @@ components:
       # We need to be permissive here because Vyper versions are named inconsistently.
       # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
-      # - Solar: 0.8.38+commit.d9f23fbe.solar.0.3.0 (emulated solc version, Solar commit and version)
-      # TODO(solar release): use the real release version in the description
-      description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.d9f23fbe.solar.0.3.0`."
+      # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
+      description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
       pattern: '^v?\d+\.\d+\.\d+.*$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:

@@ -22,7 +22,7 @@
       }
     }
   },
-  "deploymentCompilerVersion": "0.8.38+commit.b079122f.solar.0.2.0-dev",
+  "deploymentCompilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
   "deploymentContractIdentifier": "contracts/Factory.sol:Factory",
   "constructorArgs": "0x000000000000000000000000000000000000000000000000000000000000002a",
   "reuseInput": "y",

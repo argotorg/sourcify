@@ -11,8 +11,7 @@ import {
 import { useSolidityCompiler } from '../src/lib/solidityCompiler';
 import { CompilerError } from '../src/lib/common';
 
-// TODO(solar release): switch to the first release that has these features
-const SOLAR_TEST_VERSION = '0.8.38+commit.b079122f.solar.0.2.0-dev';
+const SOLAR_TEST_VERSION = '0.8.38+commit.e7a91fc7.solar.0.3.0';
 
 const solarRepoPath = path.join('/tmp', 'compilers-solar-repo');
 
@@ -42,10 +41,10 @@ const factoryInput: SolarJsonInput = {
 describe('Solar version parsing', () => {
   it('Should parse a release version', () => {
     expect(
-      parseSolarVersion('0.8.38+commit.d9f23fbe.solar.0.3.0'),
+      parseSolarVersion('0.8.38+commit.e7a91fc7.solar.0.3.0'),
     ).to.deep.equal({
       solcVersion: '0.8.38',
-      commit: 'd9f23fbe',
+      commit: 'e7a91fc7',
       solarVersion: '0.3.0',
     });
   });
@@ -87,7 +86,23 @@ describe('Verify Solar Compiler', () => {
     }
   });
 
-  // TODO(solar release): add a test that downloads the release and compiles with it
+  it('Should download a release and cache it', async () => {
+    const platform = findSolarPlatform() as string;
+    const version = parseSolarVersion(SOLAR_TEST_VERSION)!;
+    const cachedPath = path.join(
+      solarRepoPath,
+      `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`,
+    );
+    fs.rmSync(cachedPath, { force: true });
+    const solarPath = await getSolarExecutable(
+      solarRepoPath,
+      platform,
+      version,
+    );
+    expect(solarPath).to.equal(cachedPath);
+    expect(fs.existsSync(solarPath)).to.be.true;
+  });
+
   it('Should reject a release binary with a different commit', async () => {
     const platform = findSolarPlatform() as string;
     // v0.2.0 is a real release, but not of this commit

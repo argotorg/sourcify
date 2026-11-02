@@ -30,7 +30,7 @@ describe("createCompilationFromJsonInput", () => {
   it("uses Solar when the version names a Solar build", () => {
     const compilation = createCompilationFromJsonInput(
       compilers,
-      "0.8.38+commit.d9f23fbe.solar.0.3.0",
+      "0.8.38+commit.e7a91fc7.solar.0.3.0",
       jsonInput,
       { path: "A.sol", name: "A" },
     );

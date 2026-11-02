@@ -39,8 +39,7 @@ const BYTECODE_VYPER_NO_ARRAY = readFileSync(
 const BYTECODE_VYPER_NO_AUXDATA_LENGTH = readFileSync(
   `${BYTECODES_FOLDER}/vyper-no-auxdata-length.hex`,
 ).toString();
-// TODO(solar release): recompile these fixtures with the release
-// Real Solar b079122f output; SOLAR_TEST_VERSION=1 gives the release encoding
+// Real Solar output: 0.3.0 release, and a main dev build (b079122f) for the text encoding
 const BYTECODE_SOLAR_RELEASE = readFileSync(
   `${BYTECODES_FOLDER}/solar-release.hex`,
 ).toString();
@@ -120,12 +119,12 @@ describe('bytecode utils', function () {
 
   it('bytecode decode cbor with the `solar` property of a Solar release', () => {
     const decoded = decode(BYTECODE_SOLAR_RELEASE, AuxdataStyle.SOLIDITY);
-    chai.expect(decoded.solarVersion).to.equal('0.2.0');
+    chai.expect(decoded.solarVersion).to.equal('0.3.0');
     chai.expect(decoded.solcVersion).to.be.undefined;
     // CID of the metadata that Solar emitted with this bytecode
     chai
       .expect(decoded.ipfs)
-      .to.equal('QmPxPUYzJpFoZHcQXAZJAEmZgG9YgFguzGx4VETGr6KRaZ');
+      .to.equal('QmSA9EPDq5PHLGUG95EKxLYKY4C2VwRTGmns9sin2FEee3');
   });
 
   it('bytecode decode cbor with the `solar` property of a Solar dev build', () => {
@@ -139,7 +138,7 @@ describe('bytecode utils', function () {
 
   it('bytecode decode cbor of a Solar build with bytecodeHash none', () => {
     const decoded = decode(BYTECODE_SOLAR_HASH_NONE, AuxdataStyle.SOLIDITY);
-    chai.expect(decoded).to.deep.equal({ solarVersion: '0.2.0' });
+    chai.expect(decoded).to.deep.equal({ solarVersion: '0.3.0' });
   });
 
   it('bytecode decode Vyper cbor auxdata for version >= 0.4.1', () => {

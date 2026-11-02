@@ -19,7 +19,6 @@ const HOST_SOLAR_REPO =
  * Linux x64 uses the static musl build, which runs on any glibc.
  */
 export function findSolarPlatform(): string | false {
-  // TODO(solar release): check that the release ships an archive for each target
   if (process.platform === 'linux') {
     if (process.arch === 'x64') return 'x86_64-unknown-linux-musl';
     if (process.arch === 'arm64') return 'aarch64-unknown-linux-gnu';
@@ -35,7 +34,7 @@ export function findSolarPlatform(): string | false {
  * Compiles with Solar in standard JSON mode.
  *
  * @param solarRepoPath folder that caches the Solar binaries
- * @param version the solc-compatible Solar version, e.g. 0.8.38+commit.d9f23fbe.solar.0.3.0
+ * @param version the solc-compatible Solar version, e.g. 0.8.38+commit.e7a91fc7.solar.0.3.0
  * @param solarJsonInput standard JSON input, the solc format plus Solar settings
  * @param timeoutMs wall-clock limit for the subprocess, defaults to DEFAULT_COMPILE_TIMEOUT_MS
  */
@@ -146,8 +145,7 @@ function assertSolarBuild(solarPath: string, version: SolarVersion) {
       'Error running Solar binary, are you on the right platform?';
     throw new Error(`Cannot run Solar binary ${solarPath}: ${error}`);
   }
-  // TODO(solar release): check that a release prints this line like the dev build
-  // The first line is e.g. `solar 0.3.0+commit.d9f23fbe`
+  // The first line is e.g. `solar 0.3.0+commit.e7a91fc7`
   const firstLine = spawned.stdout.toString().split('\n')[0].trim();
   const expected = `solar ${version.solarVersion}+commit.${version.commit}`;
   if (firstLine !== expected) {
@@ -162,7 +160,6 @@ async function fetchAndSaveSolar(
   solarVersion: string,
   solarPath: string,
 ): Promise<void> {
-  // TODO(solar release): check the archive name and the solar-<target>/solar path
   const archiveName = `solar-${platform}`;
   const solarURI = `${HOST_SOLAR_REPO}v${solarVersion}/${archiveName}.tar.gz`;
   logInfo('Fetching Solar', { solarVersion, platform, solarURI, solarPath });

@@ -401,7 +401,6 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(feTestMultiFile);
   });
 
-  // TODO(solar release): set the release version in testdata/solar/generator and regenerate
   // Regenerate with generate-test-case.ts and the files in testdata/solar/generator
   it("should store an exact match of a Solar factory with immutables and constructor arguments", async () => {
     const solarFullMatch = (await import("./testdata/solar/full_match.json"))

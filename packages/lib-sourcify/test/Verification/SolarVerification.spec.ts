@@ -15,8 +15,7 @@ import { deployFeContract, expectVerification, solarCompiler } from '../utils';
 
 use(chaiAsPromised);
 
-// TODO(solar release): switch to the first release that has these features
-const SOLAR_VERSION = '0.8.38+commit.b079122f.solar.0.2.0-dev';
+const SOLAR_VERSION = '0.8.38+commit.e7a91fc7.solar.0.3.0';
 
 const HARDHAT_PORT = 8545;
 const sourcifyChain = new SourcifyChain({
@@ -163,8 +162,8 @@ describe('SolarVerification', () => {
     const verification = await verify(
       { 'Factory.sol': FACTORY_SOURCE },
       deployment,
-      // TODO(solar release): same build as SOLAR_VERSION, only the solc part differs
-      '0.8.36+commit.b079122f.solar.0.2.0-dev',
+      // Same build as SOLAR_VERSION, only the solc part differs
+      '0.8.36+commit.e7a91fc7.solar.0.3.0',
     );
     expectVerification(verification, {
       status: { runtimeMatch: 'perfect', creationMatch: 'perfect' },
