@@ -8,7 +8,6 @@ import {
   extractLibrariesTransformation,
 } from '../../src/Verification/Transformations';
 import { id as keccak256Str } from 'ethers';
-import type { LinkReferences } from '@ethereum-sourcify/compilers-types';
 
 describe('Transformations', () => {
   describe('AuxdataTransformation', () => {
@@ -266,6 +265,7 @@ describe('Transformations', () => {
       transformationValues: {
         libraries: { 'libraries/Lib.sol:Lib': '0x' + ADDRESS },
       },
+      inconsistentLibraries: undefined,
     };
 
     it('accepts the bare-name placeholder for solc < 0.4.9', () => {
@@ -322,6 +322,7 @@ describe('Transformations', () => {
         libraryMap: {},
         transformations: [],
         transformationValues: {},
+        inconsistentLibraries: undefined,
       });
     });
   });
