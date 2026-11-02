@@ -6,9 +6,12 @@ import {
   useSolidityCompiler,
   useVyperCompiler,
   useFeCompiler,
+  useSolarCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
   Metadata,
+  SolarJsonInput,
+  SolarOutput,
   SolidityJsonInput,
   SolidityOutput,
   SolidityOutputContract,
@@ -23,6 +26,7 @@ import type {
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
+  ISolarCompiler,
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
@@ -111,6 +115,21 @@ class FeCompiler implements IFeCompiler {
 }
 
 export const feCompiler = new FeCompiler();
+
+class SolarCompiler implements ISolarCompiler {
+  async compile(
+    version: string,
+    solarJsonInput: SolarJsonInput,
+  ): Promise<SolarOutput> {
+    return await useSolarCompiler(
+      path.join('/tmp', 'lib-sourcify-solar-repo'),
+      version,
+      solarJsonInput,
+    );
+  }
+}
+
+export const solarCompiler = new SolarCompiler();
 
 /**
  * Helper function to verify a Verification object using its getters

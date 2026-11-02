@@ -1,4 +1,6 @@
 import type {
+  SolarJsonInput,
+  SolarOutput,
   SolidityJsonInput,
   SolidityOutput,
   VyperJsonInput,
@@ -78,6 +80,14 @@ export interface IVyperCompiler {
 
 export interface IFeCompiler {
   compile(version: string, feJsonInput: FeJsonInput): Promise<FeOutput>;
+}
+
+// Solar takes and returns the solc standard JSON format plus Solar fields
+export interface ISolarCompiler {
+  compile(
+    version: string,
+    solarJsonInput: SolarJsonInput,
+  ): Promise<SolarOutput>;
 }
 
 export type AnyCompilation =
