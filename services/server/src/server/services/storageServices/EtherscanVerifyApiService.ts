@@ -176,6 +176,8 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
     if (!blockscoutExplorer?.url) continue;
     try {
       const explorerUrl = new URL(blockscoutExplorer.url);
+      // The API key is in the query string, never send it over plain HTTP
+      explorerUrl.protocol = "https:";
       explorerUrl.pathname = explorerUrl.pathname.replace(/\/$/, "") + "/api";
       explorerUrl.search = "";
       explorerUrl.hash = "";
@@ -961,7 +963,14 @@ export class EtherscanVerifyApiService implements WStorageService {
     if (includeApiKey) {
       const apiKey = this.getApiKey(chainId);
       if (apiKey) {
-        url.searchParams.set("apikey", apiKey);
+        if (url.protocol !== "https:") {
+          logger.warn("Not attaching the API key to a non-HTTPS API URL", {
+            chainId,
+            apiBaseUrl,
+          });
+        } else {
+          url.searchParams.set("apikey", apiKey);
+        }
       }
     }
 

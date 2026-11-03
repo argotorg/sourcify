@@ -115,6 +115,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
+        solarRepoPath: config.get("solarRepo"),
       },
       new StorageService({
         enabledServices: {
@@ -174,6 +175,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
+        solarRepoPath: config.get("solarRepo"),
         workerIdleTimeout: 20,
       },
       createMockStorageService("no-job"),
@@ -202,6 +204,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
+        solarRepoPath: config.get("solarRepo"),
       },
       mockStorageService,
     );
@@ -263,6 +266,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
+        solarRepoPath: config.get("solarRepo"),
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",
@@ -319,6 +323,7 @@ describe("VerificationService", function () {
         solJsonRepoPath: config.get("solJsonRepo"),
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
+        solarRepoPath: config.get("solarRepo"),
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",

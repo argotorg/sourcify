@@ -1,0 +1,211 @@
+{
+  "_comment": "Library placeholders of a contract compiled with solc 0.4.9. The placeholder holds the fully qualified name truncated to 36 characters and solc-js reports it in a non-standard linkReferences format (see #3044).",
+  "onchain": {
+    "creationBytecode": "0x6060604052341561000c57fe5b5b6101598061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680631003e2d2146100465780632ddbd13a14610066575bfe5b341561004e57fe5b610064600480803590602001909190505061008c565b005b341561006e57fe5b610076610127565b6040518082815260200191505060405180910390f35b737d53f102f4d4aa014db4e10d6deec2009b3cda6b63771602f7600054836000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b151561010657fe5b60325a03f4151561011357fe5b505050604051805190506000819055505b50565b600054815600a165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029",
+    "deployedBytecode": "0x60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680631003e2d2146100465780632ddbd13a14610066575bfe5b341561004e57fe5b610064600480803590602001909190505061008c565b005b341561006e57fe5b610076610127565b6040518082815260200191505060405180910390f35b737d53f102f4d4aa014db4e10d6deec2009b3cda6b63771602f7600054836000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b151561010657fe5b60325a03f4151561011357fe5b505050604051805190506000819055505b50565b600054815600a165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Ledger.sol": {
+          "content": "pragma solidity ^0.4.9;\n\nimport \"contracts/libraries/accounting/AccountingLib.sol\";\n\ncontract Ledger {\n    uint public total;\n\n    function add(uint amount) {\n        total = AccountingLib.add(total, amount);\n    }\n}\n"
+        },
+        "contracts/libraries/accounting/AccountingLib.sol": {
+          "content": "pragma solidity ^0.4.9;\n\nlibrary AccountingLib {\n    function add(uint a, uint b) returns (uint) {\n        return a + b;\n    }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "enabled": false,
+          "runs": 200
+        }
+      }
+    },
+    "compilerVersion": "0.4.9+commit.364da425",
+    "contractIdentifier": "contracts/Ledger.sol:Ledger"
+  },
+  "output": {
+    "creationBytecode": "0x6060604052341561000c57fe5b5b6101598061001c6000396000f30060606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680631003e2d2146100465780632ddbd13a14610066575bfe5b341561004e57fe5b610064600480803590602001909190505061008c565b005b341561006e57fe5b610076610127565b6040518082815260200191505060405180910390f35b73000000000000000000000000000000000000000063771602f7600054836000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b151561010657fe5b60325a03f4151561011357fe5b505050604051805190506000819055505b50565b600054815600a165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029",
+    "deployedBytecode": "0x60606040526000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680631003e2d2146100465780632ddbd13a14610066575bfe5b341561004e57fe5b610064600480803590602001909190505061008c565b005b341561006e57fe5b610076610127565b6040518082815260200191505060405180910390f35b73000000000000000000000000000000000000000063771602f7600054836000604051602001526040518363ffffffff167c0100000000000000000000000000000000000000000000000000000000028152600401808381526020018281526020019250505060206040518083038186803b151561010657fe5b60325a03f4151561011357fe5b505050604051805190506000819055505b50565b600054815600a165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "constant": false,
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256"
+            }
+          ],
+          "name": "add",
+          "outputs": [],
+          "payable": false,
+          "type": "function"
+        },
+        {
+          "constant": true,
+          "inputs": [],
+          "name": "total",
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "payable": false,
+          "type": "function"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": null,
+      "transientStorageLayout": null,
+      "sources": {
+        "contracts/Ledger.sol": {
+          "id": 0
+        },
+        "contracts/libraries/accounting/AccountingLib.sol": {
+          "id": 1
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {
+        "contracts/libraries/accounting/AccountingLib.sol": {
+          "AccountingLib": [
+            {
+              "start": 170,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": "85:131:0:-;;;;;;;;;;;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 330,
+          "value": "0xa165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {
+        "contracts/libraries/accounting/AccountingLib.sol": {
+          "AccountingLib": [
+            {
+              "start": 142,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": "85:131:0:-;;;;;;;;;;;;;;;;;;;;;;131:83;;;;;;;;;;;;;;;;;;;;;;;;107:17;;;;;;;;;;;;;;;;;;;;;;;;;;;;;131:83;175:13;:17;193:5;;200:6;175:32;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;167:5;:40;;;;131:83;;:::o;107:17::-;;;;:::o",
+      "cborAuxdata": {
+        "1": {
+          "offset": 302,
+          "value": "0xa165627a7a72305820f5185a776366149068f84a6448e6dcd1f91a95f711a15fda4b9cbd942a7651580029"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "version": "0.4.9+commit.364da425"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "constant": false,
+            "inputs": [
+              {
+                "name": "amount",
+                "type": "uint256"
+              }
+            ],
+            "name": "add",
+            "outputs": [],
+            "payable": false,
+            "type": "function"
+          },
+          {
+            "constant": true,
+            "inputs": [],
+            "name": "total",
+            "outputs": [
+              {
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "payable": false,
+            "type": "function"
+          }
+        ],
+        "devdoc": {
+          "methods": {}
+        },
+        "userdoc": {
+          "methods": {}
+        }
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Ledger.sol": "Ledger"
+        },
+        "libraries": {},
+        "optimizer": {
+          "enabled": false,
+          "runs": 200
+        },
+        "remappings": []
+      },
+      "sources": {
+        "contracts/Ledger.sol": {
+          "keccak256": "0x49287c750c5f6f628249e1abb7ff3975ab5172263b2c7be49bd5f5cd6f9f166b",
+          "urls": [
+            "bzzr://b9c0443d571e294f632e6bff9ba99484b04ecefcaf6d9aa325b6d7f39483015c"
+          ]
+        },
+        "contracts/libraries/accounting/AccountingLib.sol": {
+          "keccak256": "0x2c035f82951da6e4efa641a70526714503217d17f7182c0fa174e6fc4d063e50",
+          "urls": [
+            "bzzr://11a7cfc1b0534f38f4a089bc7388030e63ca3f2dc5ebbc049f29a876d57f6586"
+          ]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "creationTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 170,
+        "id": "contracts/libraries/accounting/AccountingLib.sol:AccountingLib"
+      }
+    ],
+    "creationValues": {
+      "libraries": {
+        "contracts/libraries/accounting/AccountingLib.sol:AccountingLib": "0x7d53f102f4d4aa014db4e10d6deec2009b3cda6b"
+      }
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 142,
+        "id": "contracts/libraries/accounting/AccountingLib.sol:AccountingLib"
+      }
+    ],
+    "runtimeValues": {
+      "libraries": {
+        "contracts/libraries/accounting/AccountingLib.sol:AccountingLib": "0x7d53f102f4d4aa014db4e10d6deec2009b3cda6b"
+      }
+    }
+  }
+}

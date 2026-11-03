@@ -1154,6 +1154,171 @@ describe('Verification Class Tests', () => {
     });
   });
 
+  describe('Misleading match guards', () => {
+    // Deploys raw runtime bytecode with a minimal CODECOPY/RETURN prologue
+    async function deployRuntimeBytecode(runtime: string): Promise<string> {
+      const code = runtime.replace(/^0x/, '');
+      const length = (code.length / 2).toString(16).padStart(4, '0');
+      const creation = `0x61${length}80600c6000396000f3${code}`;
+      const tx = await signer.sendTransaction({ data: creation });
+      const receipt = await tx.wait();
+      if (!receipt?.contractAddress) {
+        throw new Error('Deployment did not return a contract address');
+      }
+      return receipt.contractAddress;
+    }
+
+    it('does not treat a leading PUSH20 in Yul as library call protection', async () => {
+      const content = `object "PushTwenty" {
+  code {
+    datacopy(0, dataoffset("runtime"), datasize("runtime"))
+    return(0, datasize("runtime"))
+  }
+  object "runtime" {
+    code {
+      // PUSH20 0x00..00 BALANCE POP: the operand is executable data, not a guard
+      verbatim_0i_0o(hex"73${'00'.repeat(20)}3150")
+      stop()
+    }
+  }
+}
+`;
+      const jsonInput = {
+        language: 'Yul',
+        sources: { 'PushTwenty.yul': { content } },
+        settings: {
+          optimizer: { enabled: false },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = () =>
+        new YulCompilation(solc, '0.8.26+commit.8a97fa7a', jsonInput, {
+          name: 'PushTwenty',
+          path: 'PushTwenty.yul',
+        });
+
+      const compiled = makeCompilation();
+      await compiled.compile();
+      const zeroOperandRuntime = compiled.runtimeBytecode;
+      expect(zeroOperandRuntime.startsWith('0x73' + '00'.repeat(20))).to.be
+        .true;
+
+      // Control: deployed exactly as compiled, Yul still verifies
+      const honestAddress = await deployRuntimeBytecode(zeroOperandRuntime);
+      const honest = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        honestAddress,
+      );
+      await honest.verify();
+      expectVerification(honest, {
+        status: { runtimeMatch: 'partial', creationMatch: null },
+      });
+      expect(honest.transformations.runtime.list).to.be.empty;
+
+      // Deployed with a different operand: the source would call another address
+      const tamperedRuntime =
+        '0x73' +
+        UNUSED_ADDRESS.slice(2).toLowerCase() +
+        zeroOperandRuntime.slice(44);
+      const tamperedAddress = await deployRuntimeBytecode(tamperedRuntime);
+      const tampered = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        tamperedAddress,
+      );
+      await expect(tampered.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+    });
+
+    it('refuses a match when one library is linked to different addresses', async () => {
+      const content = `// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+library MathLib {
+    function increment(uint256 x) external pure returns (uint256) {
+        return x + 1;
+    }
+}
+
+contract LinkedTwice {
+    function first(uint256 x) external pure returns (uint256) {
+        return MathLib.increment(x);
+    }
+
+    function second(uint256 x) external pure returns (uint256) {
+        return MathLib.increment(x) + 1;
+    }
+}
+`;
+      const jsonInput = {
+        language: 'Solidity',
+        sources: { 'LinkedTwice.sol': { content } },
+        settings: {
+          optimizer: { enabled: false, runs: 200 },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = () =>
+        new SolidityCompilation(solc, '0.8.19+commit.7dd6d404', jsonInput, {
+          name: 'LinkedTwice',
+          path: 'LinkedTwice.sol',
+        });
+
+      const compiled = makeCompilation();
+      await compiled.compile();
+      const linkRefs =
+        compiled.runtimeLinkReferences['LinkedTwice.sol'].MathLib;
+      expect(linkRefs).to.have.lengthOf(2);
+
+      // Patch the placeholders by hand, like a deployer with raw bytecode could
+      const link = (addresses: string[]) => {
+        let bytecode = compiled.runtimeBytecode;
+        linkRefs.forEach((ref, i) => {
+          const start = ref.start * 2 + 2;
+          bytecode =
+            bytecode.slice(0, start) +
+            addresses[i].slice(2).toLowerCase() +
+            bytecode.slice(start + ref.length * 2);
+        });
+        return bytecode;
+      };
+      const libraryA = '0x1111111111111111111111111111111111111111';
+      const libraryB = '0x2222222222222222222222222222222222222222';
+
+      // Control: both call sites use the same library
+      const consistentAddress = await deployRuntimeBytecode(
+        link([libraryA, libraryA]),
+      );
+      const consistent = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        consistentAddress,
+      );
+      await consistent.verify();
+      expectVerification(consistent, {
+        status: { runtimeMatch: 'perfect', creationMatch: null },
+      });
+      expect(consistent.transformations.runtime.values.libraries).to.deep.equal(
+        { 'LinkedTwice.sol:MathLib': libraryA },
+      );
+
+      // The first call site goes to another contract than the second one
+      const inconsistentAddress = await deployRuntimeBytecode(
+        link([libraryB, libraryA]),
+      );
+      const inconsistent = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        inconsistentAddress,
+      );
+      await expect(inconsistent.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+    });
+  });
+
   describe('Immutable Contract Verification', () => {
     it('should verify a contract with immutables', async () => {
       const contractFolderPath = path.join(

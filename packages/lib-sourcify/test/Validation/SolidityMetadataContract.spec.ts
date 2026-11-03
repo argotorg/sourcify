@@ -10,6 +10,7 @@ import type { Metadata } from '@ethereum-sourcify/compilers-types';
 import type { PathContent } from '../../src';
 import { getErrorMessageFromCode } from '../../src';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 
 use(chaiAsPromised);
 
@@ -444,6 +445,49 @@ describe('SolidityMetadataContract', () => {
   describe('fetchMissing', () => {
     afterEach(() => {
       nock.cleanAll();
+      sinon.restore();
+    });
+
+    it('does not fetch a file name that only contains github.com', async () => {
+      const metadata = { ...validMetadata };
+      const fileName = 'http://172.17.0.1:9000/private-endpoint?x=github.com';
+      metadata.sources = {
+        [fileName]: {
+          keccak256: keccak256str(validSourceContent),
+          urls: [],
+        },
+      };
+      const fetchSpy = sinon.spy(global, 'fetch');
+
+      const contract = new SolidityMetadataContract(metadata, []);
+      await expect(contract.fetchMissing()).to.be.eventually.rejectedWith(
+        getErrorMessageFromCode({
+          code: 'missing_source',
+          missingSources: [fileName],
+        }),
+      );
+      expect(fetchSpy.called).to.be.false;
+    });
+
+    it('does not fetch a source without keccak256', async () => {
+      const metadata = { ...validMetadata };
+      const githubPath =
+        'https://github.com/test/repo/blob/main/contracts/Storage.sol';
+      metadata.sources = {
+        [githubPath]: {
+          urls: ['dweb:/ipfs/QmTest'],
+        } as any,
+      };
+      const fetchSpy = sinon.spy(global, 'fetch');
+
+      const contract = new SolidityMetadataContract(metadata, []);
+      await expect(contract.fetchMissing()).to.be.eventually.rejectedWith(
+        getErrorMessageFromCode({
+          code: 'missing_source',
+          missingSources: [githubPath],
+        }),
+      );
+      expect(fetchSpy.called).to.be.false;
     });
 
     it('should fetch missing sources from GitHub', async () => {

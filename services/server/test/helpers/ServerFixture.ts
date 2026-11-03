@@ -11,6 +11,7 @@ import type { SourcifyDatabaseService } from "../../src/server/services/storageS
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import { FeLocal } from "../../src/server/services/compiler/local/FeLocal";
+import { SolarLocal } from "../../src/server/services/compiler/local/SolarLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
 import { getIpfsMockGatewayUrl } from "./IpfsMockServer";
@@ -94,6 +95,7 @@ export class ServerFixture {
         solc: new SolcLocal(config.get("solcRepo"), config.get("solJsonRepo")),
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
+        solar: new SolarLocal(config.get("solarRepo")),
         verifyDeprecated: true,
         replaceContract: true,
         sourcifyPrivateToken: "sourcify-test-token",
@@ -112,6 +114,7 @@ export class ServerFixture {
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
+          solarRepoPath: config.get("solarRepo"),
         },
         {
           serverUrl: config.get("serverUrl"),

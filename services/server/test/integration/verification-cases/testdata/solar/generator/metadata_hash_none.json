@@ -1,0 +1,32 @@
+{
+  "deploymentStdJsonInput": {
+    "language": "Solidity",
+    "sources": {
+      "contracts/Factory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "*": ["evm.bytecode.object"]
+        }
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      }
+    }
+  },
+  "deploymentCompilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+  "deploymentContractIdentifier": "contracts/Factory.sol:Factory",
+  "constructorArgs": "0x000000000000000000000000000000000000000000000000000000000000002a",
+  "reuseInput": "y",
+  "generateVerification": "y",
+  "testCaseDescription": "Solar: bytecodeHash none, so the CBOR auxdata only has the solar version and the best result is a match.",
+  "filename": "solar/metadata_hash_none"
+}

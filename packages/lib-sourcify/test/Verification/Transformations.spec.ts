@@ -1,9 +1,13 @@
 import { expect } from 'chai';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
+import type { LinkReferences } from '@ethereum-sourcify/compilers-types';
 import {
   AuxdataTransformation,
+  extractCallProtectionTransformation,
   extractImmutablesTransformation,
+  extractLibrariesTransformation,
 } from '../../src/Verification/Transformations';
+import { id as keccak256Str } from 'ethers';
 
 describe('Transformations', () => {
   describe('AuxdataTransformation', () => {
@@ -238,6 +242,179 @@ describe('Transformations', () => {
       expect(result.populatedRecompiledBytecode).to.equal(
         solidityOnchainRuntime,
       );
+    });
+  });
+
+  describe('extractLibrariesTransformation', () => {
+    const ADDRESS = '1111111111111111111111111111111111111111';
+    const linkReferences: LinkReferences = {
+      'libraries/Lib.sol': { Lib: [{ start: 1, length: 20 }] },
+    };
+    const real = '0x73' + ADDRESS;
+    const expectedResult = {
+      populatedRecompiledBytecode: real,
+      libraryMap: { ['__Lib___________________________________']: ADDRESS },
+      transformations: [
+        {
+          type: 'replace',
+          reason: 'library',
+          offset: 1,
+          id: 'libraries/Lib.sol:Lib',
+        },
+      ],
+      transformationValues: {
+        libraries: { 'libraries/Lib.sol:Lib': '0x' + ADDRESS },
+      },
+      inconsistentLibraries: undefined,
+    };
+
+    it('accepts the bare-name placeholder for solc < 0.4.9', () => {
+      const template = '0x73' + '__Lib___________________________________';
+      expect(
+        extractLibrariesTransformation(
+          template,
+          real,
+          linkReferences,
+          '0.1.6+commit.d41f8b7c',
+        ),
+      ).to.deep.equal(expectedResult);
+    });
+
+    it('rejects the bare-name placeholder for solc >= 0.4.9', () => {
+      const template = '0x73' + '__Lib___________________________________';
+      expect(() =>
+        extractLibrariesTransformation(
+          template,
+          real,
+          linkReferences,
+          '0.4.9+commit.364da425',
+        ),
+      ).to.throw('Library placeholder mismatch');
+      expect(() =>
+        extractLibrariesTransformation(template, real, linkReferences),
+      ).to.throw('Library placeholder mismatch');
+    });
+
+    it('accepts the file:Lib placeholder for solc 0.4.9', () => {
+      const template = '0x73' + '__libraries/Lib.sol:Lib_________________';
+      const result = extractLibrariesTransformation(
+        template,
+        real,
+        linkReferences,
+        '0.4.9+commit.364da425',
+      );
+      expect(result.transformations).to.deep.equal(
+        expectedResult.transformations,
+      );
+      expect(result.populatedRecompiledBytecode).to.equal(real);
+    });
+
+    it('does not throw for a compiler version that is not valid semver', () => {
+      expect(
+        extractLibrariesTransformation(
+          real,
+          real,
+          {},
+          '0.4.1b1+commit.039d3692',
+        ),
+      ).to.deep.equal({
+        populatedRecompiledBytecode: real,
+        libraryMap: {},
+        transformations: [],
+        transformationValues: {},
+        inconsistentLibraries: undefined,
+      });
+    });
+  });
+});
+
+const ADDRESS_A = '1111111111111111111111111111111111111111';
+const ADDRESS_B = '2222222222222222222222222222222222222222';
+const ZERO_ADDRESS = '00'.repeat(20);
+
+describe('extractCallProtectionTransformation', () => {
+  const tail = '60806040';
+  const guardTemplate = `0x73${ZERO_ADDRESS}3014${tail}`;
+  const guardOnchain = `0x73${ADDRESS_A}3014${tail}`;
+
+  it('replaces the library guard address for Solidity', () => {
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      guardOnchain,
+      'Solidity',
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardOnchain);
+    expect(result.transformations).to.deep.equal([
+      { type: 'replace', reason: 'callProtection', offset: 1 },
+    ]);
+    expect(result.transformationValues).to.deep.equal({
+      callProtection: '0x' + ADDRESS_A,
+    });
+  });
+
+  it('does not touch a leading PUSH20 in Yul', () => {
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      guardOnchain,
+      'Yul',
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+    expect(result.transformations).to.be.empty;
+    expect(result.transformationValues).to.deep.equal({});
+  });
+
+  it('does not touch a PUSH20 that is not followed by ADDRESS EQ', () => {
+    // PUSH20 <addr> BALANCE: the operand is used as data
+    const template = `0x73${ZERO_ADDRESS}3150`;
+    const onchain = `0x73${ADDRESS_A}3150`;
+    const result = extractCallProtectionTransformation(
+      template,
+      onchain,
+      'Solidity',
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(template);
+    expect(result.transformations).to.be.empty;
+  });
+});
+
+describe('extractLibrariesTransformation', () => {
+  const fqn = 'Lib.sol:MathLib';
+  const placeholder = '__$' + keccak256Str(fqn).slice(2).slice(0, 34) + '$__';
+  // 0x | 6080 | <placeholder> | aa | <placeholder> | 00
+  const template = `0x6080${placeholder}aa${placeholder}00`;
+  const linkReferences = {
+    'Lib.sol': {
+      MathLib: [
+        { start: 2, length: 20 },
+        { start: 23, length: 20 },
+      ],
+    },
+  } as unknown as LinkReferences;
+
+  it('accepts the same address at every link reference', () => {
+    const onchain = `0x6080${ADDRESS_A}aa${ADDRESS_A}00`;
+    const result = extractLibrariesTransformation(
+      template,
+      onchain,
+      linkReferences,
+    );
+    expect(result.inconsistentLibraries).to.be.undefined;
+    expect(result.populatedRecompiledBytecode).to.equal(onchain);
+    expect(result.transformationValues.libraries).to.deep.equal({
+      [fqn]: '0x' + ADDRESS_A,
+    });
+    expect(result.transformations).to.have.lengthOf(2);
+  });
+
+  it('reports a library linked to different addresses', () => {
+    const onchain = `0x6080${ADDRESS_A}aa${ADDRESS_B}00`;
+    const result = extractLibrariesTransformation(
+      template,
+      onchain,
+      linkReferences,
+    );
+    expect(result.inconsistentLibraries).to.deep.equal({
+      [fqn]: ['0x' + ADDRESS_A, '0x' + ADDRESS_B],
     });
   });
 });

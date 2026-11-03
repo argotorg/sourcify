@@ -20,6 +20,7 @@ import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
+import { SolarLocal } from "./services/compiler/local/SolarLocal";
 
 export const getEtherscanApiKeyForEachChain = (
   chainsMap: SourcifyChainMap,
@@ -106,6 +107,11 @@ const feRepoPath =
   (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
 export const fe = new FeLocal(feRepoPath, compilerTimeoutMs);
 
+logger.info("Using local Solar compiler");
+const solarRepoPath =
+  (config.get("solarRepo") as string) || path.join("/tmp", "solar-repo");
+export const solar = new SolarLocal(solarRepoPath, compilerTimeoutMs);
+
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
   value: RegExp.prototype.toString,
@@ -130,6 +136,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solc,
       vyper,
       fe,
+      solar,
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),
@@ -146,6 +153,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solJsonRepoPath,
       vyperRepoPath,
       feRepoPath,
+      solarRepoPath,
       compilerTimeoutMs,
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)

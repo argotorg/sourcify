@@ -1,7 +1,9 @@
 import { id as keccak256str } from 'ethers';
 import semver from 'semver';
-import { performFetch } from './fetchUtils';
+import { getFetchableSourceUrl, performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
+import { SolarCompilation } from '../Compilation/SolarCompilation';
+import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   SolidityJsonInput,
   Metadata,
@@ -31,7 +33,7 @@ import {
   reorderAlphabetically,
   getVariationsByContentHash,
 } from './variationsUtils';
-import { logDebug } from '../logger';
+import { logDebug, logWarn } from '../logger';
 import { convertLibrariesToStdJsonFormat } from '../utils/utils';
 
 export const DEFAULT_IPFS_GATEWAY = 'https://ipfs.filebase.io/ipfs/';
@@ -95,15 +97,24 @@ export class SolidityMetadataContract {
 
     this.createJsonInputFromMetadata();
 
-    this.compilation = new SolidityCompilation(
-      compiler,
-      this.metadata.compiler.version,
-      this.solcJsonInput!,
-      {
-        path: this.path,
-        name: this.name,
-      },
-    );
+    const compilationTarget = {
+      path: this.path,
+      name: this.name,
+    };
+    // Solar metadata names the Solar build in the version, the caller passes the Solar compiler
+    this.compilation = isSolarVersion(this.metadata.compiler.version)
+      ? new SolarCompilation(
+          compiler,
+          this.metadata.compiler.version,
+          this.solcJsonInput!,
+          compilationTarget,
+        )
+      : new SolidityCompilation(
+          compiler,
+          this.metadata.compiler.version,
+          this.solcJsonInput!,
+          compilationTarget,
+        );
 
     return this.compilation;
   }
@@ -211,12 +222,18 @@ export class SolidityMetadataContract {
 
       let retrievedContent = null;
 
+      // Only fetch content that can be checked against a hash
+      if (!hash) {
+        logWarn('Not fetching a missing source without keccak256', {
+          fileName,
+        });
+        continue;
+      }
+
       // Sometimes file paths are github urls, try to fetch from there
-      if (fileName.includes('github.com')) {
-        const githubUrl = fileName
-          .replace('github.com', 'raw.githubusercontent.com')
-          .replace('/blob/', '/');
-        retrievedContent = await performFetch(githubUrl, hash, fileName);
+      const sourceUrl = getFetchableSourceUrl(fileName);
+      if (sourceUrl) {
+        retrievedContent = await performFetch(sourceUrl, hash, fileName);
       } else {
         for (const url of file.urls) {
           if (url.startsWith(IPFS_PREFIX)) {
@@ -227,6 +244,7 @@ export class SolidityMetadataContract {
               hash,
               fileName,
               SolidityMetadataContract.ipfsGateway.headers,
+              { trusted: true },
             );
             if (retrievedContent) {
               break;

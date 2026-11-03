@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.8.0 - 2026-11-03
+
+- fix: harden source fetching, match transformations and Blockscout key handling (GHSA-q975-797r-6pmw) (#3039)
+- fix(lib-sourcify): verify contracts with libraries compiled with solc < 0.4.10 (#3045)
+- feat: verify contracts compiled with Solar (#3050)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.7.4 - 2026-10-21
 
 - fix(monitor): send each new contract to the server only once (#3027)

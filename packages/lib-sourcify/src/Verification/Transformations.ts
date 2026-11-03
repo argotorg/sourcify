@@ -4,11 +4,13 @@ import type {
   LinkReferences,
 } from '@ethereum-sourcify/compilers-types';
 import type {
+  CompilationLanguage,
   CompiledContractCborAuxdata,
   StringMap,
 } from '../Compilation/CompilationTypes';
 import type { InterfaceAbi } from 'ethers';
 import { AbiCoder, id as keccak256Str, Interface } from 'ethers';
+import semver from 'semver';
 import { logError } from '../logger';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
@@ -125,9 +127,11 @@ function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
 }
 
 // returns the full bytecode with the call protection replaced with the real address
+// Only Solidity libraries have the `PUSH20 <address> ADDRESS EQ` guard; a leading PUSH20 elsewhere (e.g. Yul) is data.
 export function extractCallProtectionTransformation(
   populatedRecompiledBytecode: string,
   onchainRuntimeBytecode: string,
+  language: CompilationLanguage,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
@@ -136,8 +140,11 @@ export function extractCallProtectionTransformation(
 
   const push20CodeOp = '73';
   const callProtection = `0x${push20CodeOp}${'00'.repeat(20)}`;
+  const addressOp = '30';
+  const eqOp = '14';
+  const callProtectionGuard = `${callProtection}${addressOp}${eqOp}`;
 
-  if (template.startsWith(callProtection)) {
+  if (language === 'Solidity' && template.startsWith(callProtectionGuard)) {
     const replacedCallProtection = real.slice(0, 0 + callProtection.length);
     const callProtectionAddress = replacedCallProtection.slice(4); // remove 0x73
     transformations.push(CallProtectionTransformation());
@@ -307,14 +314,27 @@ export function extractConstructorArgumentsTransformation(
   };
 }
 
+/**
+ * Before v0.4.9 the placeholder contains only the library name.
+ * Only Solidity versions are valid semver, so the version is coerced first.
+ */
+function hasBareNamePlaceholders(compilerVersion?: string): boolean {
+  const version = compilerVersion ? semver.coerce(compilerVersion) : null;
+  return version !== null && semver.lt(version, '0.4.9');
+}
+
 export function extractLibrariesTransformation(
   template: string,
   real: string,
   linkReferences: LinkReferences,
+  compilerVersion?: string,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
   const libraryMap: StringMap = {};
+  // A library linked to different addresses at different references is reported and refused
+  const inconsistentLibraries: { [fqn: string]: string[] } = {};
+  const seenAddresses: { [fqn: string]: string } = {};
   for (const file in linkReferences) {
     for (const lib in linkReferences[file]) {
       for (const linkRefObj of linkReferences[file][lib]) {
@@ -331,6 +351,8 @@ export function extractLibrariesTransformation(
         // Placeholder format was different pre v0.5.0 https://docs.soliditylang.org/en/v0.4.26/contracts.html#libraries
         const trimmedFQN = fqn.slice(0, 36); // in case the fqn is too long
         const calculatedPreV050Placeholder = '__' + trimmedFQN.padEnd(38, '_');
+        const calculatedPreV049Placeholder =
+          '__' + lib.slice(0, 36).padEnd(38, '_');
 
         // We support the placeholder to be zeroed out to accept bytecodes coming from the DB
         // (In our database we store bytecodes with the placeholder zeroed out)
@@ -339,14 +361,27 @@ export function extractLibrariesTransformation(
         if (!(
           placeholder === calculatedPlaceholder ||
           placeholder === calculatedPreV050Placeholder ||
+          (placeholder === calculatedPreV049Placeholder &&
+            hasBareNamePlaceholders(compilerVersion)) ||
           placeholder === calculatedZeroedPlaceholder
         ))
           throw new Error(
-            `Library placeholder mismatch: ${placeholder} vs ${calculatedPlaceholder} or ${calculatedPreV050Placeholder}`,
+            `Library placeholder mismatch: ${placeholder} vs ${calculatedPlaceholder}, ${calculatedPreV050Placeholder} or ${calculatedPreV049Placeholder}`,
           );
 
         const address = real.slice(strStart, strStart + strLength);
         libraryMap[placeholder] = address;
+
+        if (seenAddresses[fqn] === undefined) {
+          seenAddresses[fqn] = address;
+        } else if (seenAddresses[fqn] !== address) {
+          const addresses = (inconsistentLibraries[fqn] ??= [
+            '0x' + seenAddresses[fqn],
+          ]);
+          if (!addresses.includes('0x' + address)) {
+            addresses.push('0x' + address);
+          }
+        }
 
         // Replace the specific occurrence of the placeholder
         template =
@@ -370,6 +405,10 @@ export function extractLibrariesTransformation(
     libraryMap,
     transformations,
     transformationValues,
+    inconsistentLibraries:
+      Object.keys(inconsistentLibraries).length > 0
+        ? inconsistentLibraries
+        : undefined,
   };
 }
 
