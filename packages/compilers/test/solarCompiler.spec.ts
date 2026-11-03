@@ -13,6 +13,9 @@ import { useSolidityCompiler } from '../src/lib/solidityCompiler';
 import { CompilerError } from '../src/lib/common';
 
 const SOLAR_TEST_VERSION = '0.8.38+commit.e7a91fc7.solar.0.3.0';
+// The Solar that Foundry v1.9.0 bundles, hosted by Sourcify for Linux x64
+const FOUNDRY_SOLAR_VERSION = '0.8.38+commit.a2b44354.solar.0.3.0-dev';
+const HOSTED_PLATFORM = 'x86_64-unknown-linux-musl';
 
 const solarRepoPath = path.join('/tmp', 'compilers-solar-repo');
 
@@ -73,7 +76,7 @@ describe('Verify Solar Compiler', () => {
     expect(findSolarPlatform()).to.be.a('string');
   });
 
-  it('Should not download a build that is not a release', async () => {
+  it('Should not download a build that is not a release and that Sourcify does not host', async () => {
     const platform = findSolarPlatform() as string;
     try {
       await getSolarExecutable(
@@ -133,14 +136,33 @@ describe('Verify Solar Compiler', () => {
     );
   });
 
-  it('Should not replace a cached build that is not a release', async () => {
-    const platform = findSolarPlatform() as string;
-    const version = parseSolarVersion(
-      '0.8.38+commit.00000000.solar.0.3.0-dev',
-    )!;
+  it('Should download the copy that Sourcify hosts of a build that is not a release', async function () {
+    if (findSolarPlatform() !== HOSTED_PLATFORM) {
+      this.skip();
+    }
+    const version = parseSolarVersion(FOUNDRY_SOLAR_VERSION)!;
     const cachedPath = path.join(
       solarRepoPath,
-      `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`,
+      `solar-${HOSTED_PLATFORM}-v${version.solarVersion}+commit.${version.commit}`,
+    );
+    fs.rmSync(cachedPath, { force: true });
+    const solarPath = await getSolarExecutable(
+      solarRepoPath,
+      HOSTED_PLATFORM,
+      version,
+    );
+    expect(solarPath).to.equal(cachedPath);
+    expect(fs.existsSync(solarPath)).to.be.true;
+  });
+
+  it('Should replace a cached build that is not a release and reports another build', async function () {
+    if (findSolarPlatform() !== HOSTED_PLATFORM) {
+      this.skip();
+    }
+    const version = parseSolarVersion(FOUNDRY_SOLAR_VERSION)!;
+    const cachedPath = path.join(
+      solarRepoPath,
+      `solar-${HOSTED_PLATFORM}-v${version.solarVersion}+commit.${version.commit}`,
     );
     fs.mkdirSync(solarRepoPath, { recursive: true });
     fs.writeFileSync(
@@ -148,15 +170,16 @@ describe('Verify Solar Compiler', () => {
       '#!/bin/sh\necho "solar 0.3.0-dev+commit.11111111"\n',
       { mode: 0o755 },
     );
-    try {
-      await getSolarExecutable(solarRepoPath, platform, version);
-      expect.fail('Expected error was not thrown');
-    } catch (error: any) {
-      expect(error.message).to.contain('not found');
-      expect(fs.existsSync(cachedPath)).to.be.true;
-    } finally {
-      fs.rmSync(cachedPath, { force: true });
-    }
+    const solarPath = await getSolarExecutable(
+      solarRepoPath,
+      HOSTED_PLATFORM,
+      version,
+    );
+    const firstLine = spawnSync(solarPath, ['--version'])
+      .stdout.toString()
+      .split('\n')[0]
+      .trim();
+    expect(firstLine).to.equal('solar 0.3.0-dev+commit.a2b44354');
   });
 
   it('Should reject a release binary with a different commit', async () => {

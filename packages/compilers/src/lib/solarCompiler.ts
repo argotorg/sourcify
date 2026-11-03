@@ -15,6 +15,9 @@ import type {
 
 const HOST_SOLAR_REPO =
   'https://github.com/paradigmxyz/solar/releases/download/';
+// Copies of builds that are not a release, e.g. the Solar that Foundry bundles
+const HOST_SOLAR_DEV_BUILDS =
+  'https://storage.googleapis.com/solar-dev-binary/solar/';
 
 /**
  * Returns the target of the Solar release archive for this machine.
@@ -101,7 +104,7 @@ export async function useSolarCompiler(
 /**
  * Returns the path of the Solar binary for the given version.
  * Uses a cached binary when one exists, otherwise downloads the release.
- * Builds that are not a release (e.g. 0.3.0-dev) are only used when cached.
+ * A build that is not a release (e.g. 0.3.0-dev) comes from Sourcify's copies.
  */
 export async function getSolarExecutable(
   solarRepoPath: string,
@@ -117,10 +120,6 @@ export async function getSolarExecutable(
       logDebug('Found existing Solar binary', { solarPath });
       return solarPath;
     } catch (error: any) {
-      // A build that is not a release cannot be replaced by a download
-      if (!isRelease) {
-        throw error;
-      }
       // Replace a wrong or broken cached binary, as the solc and vyper paths do
       logWarn(
         'Cached Solar binary is not the requested build, downloading again',
@@ -133,16 +132,14 @@ export async function getSolarExecutable(
     }
   }
 
-  if (!isRelease) {
-    throw new Error(
-      `Solar ${version.solarVersion}+commit.${version.commit} is not a release and cannot be downloaded`,
-    );
-  }
-
   // Unique temp name so parallel workers never run a half-written binary.
   // Piscina workers are threads of one process, so the pid alone is not unique.
   const tmpPath = `${solarPath}.${process.pid}.${threadId}.${randomUUID()}.tmp`;
-  await fetchAndSaveSolar(platform, version.solarVersion, tmpPath);
+  if (isRelease) {
+    await fetchAndSaveSolar(platform, version.solarVersion, tmpPath);
+  } else {
+    await fetchAndSaveSolarCopy(fileName, version, tmpPath);
+  }
   try {
     assertSolarBuild(tmpPath, version);
     fs.renameSync(tmpPath, solarPath);
@@ -173,6 +170,29 @@ function assertSolarBuild(solarPath: string, version: SolarVersion) {
       `Solar build ${version.solarVersion}+commit.${version.commit} not found: the binary reports "${firstLine}"`,
     );
   }
+}
+
+// Fetches the copy that Sourcify hosts of a build that is not a release
+async function fetchAndSaveSolarCopy(
+  fileName: string,
+  version: SolarVersion,
+  solarPath: string,
+): Promise<void> {
+  const solarURI = `${HOST_SOLAR_DEV_BUILDS}${encodeURIComponent(fileName)}`;
+  logInfo('Fetching Solar', { solarURI, solarPath });
+
+  const res = await fetchWithBackoff(solarURI);
+  if (res.status !== 200) {
+    logError('Failed fetching Solar', { solarURI, status: res.status });
+    throw new Error(
+      `Solar ${version.solarVersion}+commit.${version.commit} is not a release, and Sourcify has no copy of it for this platform`,
+    );
+  }
+  fs.mkdirSync(path.dirname(solarPath), { recursive: true });
+  fs.writeFileSync(solarPath, Buffer.from(await res.arrayBuffer()), {
+    mode: 0o755,
+  });
+  logInfo('Saved Solar', { solarURI, solarPath });
 }
 
 async function fetchAndSaveSolar(

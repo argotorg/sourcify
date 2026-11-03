@@ -50,7 +50,8 @@ Vyper follows the same pattern.
 [Solar](https://github.com/paradigmxyz/solar) compiles Solidity with the same standard JSON input and output as solc. `useSolarCompiler(solarRepoPath, version, solarJsonInput, timeoutMs?)` takes the solc-compatible version that `SOLC_WRAPPER=1 solar --version` prints, for example `0.8.38+commit.e7a91fc7.solar.0.3.0`. The version names the Solar release and the commit of the build.
 
 - For a release, the function downloads `solar-<target>.tar.gz` from the GitHub release and checks that the binary reports the requested commit.
-- A build that is not a release, such as `0.3.0-dev`, cannot be downloaded. Put it in `solarRepoPath` as `solar-<target>-v<solar version>+commit.<commit>`, for example `solar-x86_64-unknown-linux-musl-v0.3.0-dev+commit.d9f23fbe`.
+- A build that is not a release, such as `0.3.0-dev`, comes from the copies that Sourcify hosts, for example the Solar that Foundry v1.9.0 bundles. Sourcify hosts copies only for Linux x64. The file name is the cache name, `solar-<target>-v<solar version>+commit.<commit>`.
+- To use another build, put it in `solarRepoPath` under that name, for example `solar-x86_64-unknown-linux-musl-v0.3.0-dev+commit.d9f23fbe`.
 
 ## Compilation timeout
 
