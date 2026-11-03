@@ -1,3 +1,7 @@
+## @ethereum-sourcify/compilers-types@1.4.0 - 2026-11-03
+
+- feat: verify contracts compiled with Solar (#3050)
+
 ## @ethereum-sourcify/compilers-types@1.3.3 - 2026-10-05
 
 - Update dependencies
