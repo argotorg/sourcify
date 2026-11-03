@@ -400,4 +400,32 @@ describe("Specific Verification Cases", function () {
       .default as unknown as VerificationTestCase;
     await testVerificationCase(feTestMultiFile);
   });
+
+  // Regenerate with generate-test-case.ts and the files in testdata/solar/generator
+  it("should store an exact match of a Solar factory with immutables and constructor arguments", async () => {
+    const solarFullMatch = (await import("./testdata/solar/full_match.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(solarFullMatch);
+  });
+
+  it("should store a match of a Solar contract whose metadata hashes differ", async () => {
+    const solarPartialMatch = (
+      await import("./testdata/solar/partial_match.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarPartialMatch);
+  });
+
+  it("should store a Solar contract with a manually linked library", async () => {
+    const solarLibraries = (
+      await import("./testdata/solar/libraries_manually_linked.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarLibraries);
+  });
+
+  it("should store a match of a Solar contract compiled with bytecodeHash none", async () => {
+    const solarMetadataHashNone = (
+      await import("./testdata/solar/metadata_hash_none.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarMetadataHashNone);
+  });
 });

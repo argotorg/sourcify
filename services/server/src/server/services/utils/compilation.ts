@@ -4,6 +4,7 @@ import type {
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
+  ISolarCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   CompilationError,
@@ -11,9 +12,12 @@ import {
   VyperCompilation,
   YulCompilation,
   FeCompilation,
+  SolarCompilation,
+  isSolarVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   AnyJsonInput,
+  SolarJsonInput,
   SolidityJsonInput,
   VyperJsonInput,
   FeJsonInput,
@@ -24,6 +28,7 @@ export function createCompilationFromJsonInput(
     solc: ISolidityCompiler;
     vyper: IVyperCompiler;
     fe: IFeCompiler;
+    solar: ISolarCompiler;
   },
   compilerVersion: string,
   jsonInput: AnyJsonInput,
@@ -31,6 +36,15 @@ export function createCompilationFromJsonInput(
 ): AnyCompilation {
   switch (jsonInput?.language) {
     case "Solidity": {
+      // Solar compiles Solidity too, its version names the Solar build
+      if (isSolarVersion(compilerVersion)) {
+        return new SolarCompilation(
+          compilers.solar,
+          compilerVersion,
+          jsonInput as SolarJsonInput,
+          compilationTarget,
+        );
+      }
       return new SolidityCompilation(
         compilers.solc,
         compilerVersion,

@@ -9,6 +9,8 @@ import type {
 import {
   Verification,
   SourcifyLibError,
+  CompilationError,
+  isSolarVersion,
   SourcifyChain,
   SolidityMetadataContract,
   useAllSourcesAndReturnCompilation,
@@ -19,6 +21,7 @@ import { ChainRepository } from "../../../sourcify-chain-repository";
 import { SolcLocal } from "../compiler/local/SolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
 import { FeLocal } from "../compiler/local/FeLocal";
+import { SolarLocal } from "../compiler/local/SolarLocal";
 import { v4 as uuidv4 } from "uuid";
 import { getCreatorTx } from "../utils/contract-creation-util";
 import type {
@@ -42,8 +45,9 @@ let chainRepository: ChainRepository;
 let solc: SolcLocal;
 let vyper: VyperLocal;
 let fe: FeLocal;
+let solar: SolarLocal;
 const initWorker = () => {
-  if (chainRepository && solc && vyper && fe) {
+  if (chainRepository && solc && vyper && fe && solar) {
     return;
   }
 
@@ -78,6 +82,10 @@ const initWorker = () => {
   );
   fe = new FeLocal(
     Piscina.workerData.feRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
+  );
+  solar = new SolarLocal(
+    Piscina.workerData.solarRepoPath,
     Piscina.workerData.compilerTimeoutMs,
   );
 };
@@ -127,7 +135,7 @@ async function _verifyFromJsonInput({
   let compilation: AnyCompilation;
   try {
     compilation = createCompilationFromJsonInput(
-      { solc, vyper, fe },
+      { solc, vyper, fe, solar },
       compilerVersion,
       jsonInput,
       compilationTarget,
@@ -184,6 +192,14 @@ async function _verifyFromMetadata({
     path,
     content,
   }));
+  // Solar is only supported with a standard JSON input for now
+  if (isSolarVersion(metadata.compiler.version)) {
+    return {
+      errorExport: createErrorExport(
+        new CompilationError({ code: "unsupported_compiler_version" }),
+      ),
+    };
+  }
   const metadataContract = new SolidityMetadataContract(metadata, sourcesList);
 
   let compilation: SolidityCompilation;
@@ -306,7 +322,7 @@ async function _verifySimilarity({
     let compilation;
     try {
       compilation = createPreRunCompilationFromStoredCandidate(
-        { solc, vyper, fe },
+        { solc, vyper, fe, solar },
         candidate,
       );
     } catch (error: any) {

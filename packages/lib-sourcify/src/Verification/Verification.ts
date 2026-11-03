@@ -18,6 +18,7 @@ import type {
   StringMap,
 } from '../Compilation/CompilationTypes';
 import semver from 'semver';
+import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 
 import type { Transformation, TransformationValues } from './Transformations';
 import {
@@ -169,7 +170,9 @@ export class Verification {
       compiledRuntimeBytecode.length !== this.onchainRuntimeBytecode.length
     ) {
       // Before throwing the bytecode length mismatch error, check for Solidity extra file input bug
-      const solidityBugType = this.handleSolidityExtraFileInputBug();
+      const solidityBugType = isSolarVersion(this.compilation.compilerVersion)
+        ? SolidityBugType.NONE
+        : this.handleSolidityExtraFileInputBug();
       if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
         throw new VerificationError({
           code: 'extra_file_input_bug',
@@ -228,8 +231,10 @@ export class Verification {
       });
     }
 
+    // The solc bug workarounds don't apply to Solar
     if (
       this.compilation.language === 'Solidity' &&
+      !isSolarVersion(this.compilation.compilerVersion) &&
       this.runtimeMatch === null
     ) {
       // Handle Solidity extra file input bug
@@ -396,7 +401,10 @@ export class Verification {
     const settings = compilation.jsonInput.settings;
     const usesCustomYulOptimizerSteps =
       settings.optimizer?.details?.yulDetails?.optimizerSteps !== undefined;
+    // Solar does not have the extra-file-input bug of old solc. Without this
+    // guard, semver.lt would read the solc part of the Solar version.
     const mayHitExtraFileInputBug =
+      !isSolarVersion(compilation.compilerVersion) &&
       settings.optimizer?.enabled &&
       (semver.lt(compilation.compilerVersion, '0.8.22') ||
         usesCustomYulOptimizerSteps);

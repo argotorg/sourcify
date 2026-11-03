@@ -22,6 +22,7 @@ import type {
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
+  ISolarCompiler,
   Userdoc,
   Devdoc,
   VyperSourceMap,
@@ -30,6 +31,7 @@ import type {
 import {
   PreRunCompilation,
   splitFullyQualifiedName,
+  isSolarVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   VerifiedContract as VerifiedContractApiObject,
@@ -813,11 +815,15 @@ function getKeccak256Bytecodes(
   };
 }
 
-export function getCompilerNameFromLanguage(language: string): string {
+export function getCompilerName(
+  language: string,
+  compilerVersion: string,
+): string {
   switch (language.toLocaleLowerCase()) {
     case "yul":
     case "solidity":
-      return "solc";
+      // Solar compiles Solidity too, its version names the Solar build
+      return isSolarVersion(compilerVersion) ? "solar" : "solc";
     case "vyper":
       return "vyper";
     case "fe":
@@ -1011,7 +1017,10 @@ export async function getDatabaseColumnsFromVerification(
     },
     compiledContract: {
       language: verification.compilation.language.toLocaleLowerCase(),
-      compiler: getCompilerNameFromLanguage(verification.compilation.language),
+      compiler: getCompilerName(
+        verification.compilation.language,
+        verification.compilation.compilerVersion,
+      ),
       compiler_settings: prepareCompilerSettingsFromVerification(verification),
       name: verification.compilation.compilationTarget.name,
       version: verification.compilation.compilerVersion,
@@ -1050,7 +1059,13 @@ export function createPreRunCompilationFromStoredCandidate(
     solc,
     vyper,
     fe,
-  }: { solc: ISolidityCompiler; vyper: IVyperCompiler; fe: IFeCompiler },
+    solar,
+  }: {
+    solc: ISolidityCompiler;
+    vyper: IVyperCompiler;
+    fe: IFeCompiler;
+    solar: ISolarCompiler;
+  },
   candidate: SimilarityCandidate,
 ): PreRunCompilation {
   const {
@@ -1075,7 +1090,9 @@ export function createPreRunCompilationFromStoredCandidate(
       ? fe
       : jsonInput.language === "Vyper"
         ? vyper
-        : solc;
+        : isSolarVersion(version)
+          ? solar
+          : solc;
   const compilation = new PreRunCompilation(
     compiler,
     version,

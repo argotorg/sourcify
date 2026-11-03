@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import {
+  getCompilerName,
   getDatabaseColumnsFromVerification,
   normalizeCallProtection,
 } from "../../../src/server/services/utils/database-util";
@@ -116,6 +117,22 @@ describe("database-util", () => {
       const bytecode = Buffer.from("6080604052348015600e575f80fd", "hex");
 
       expect(normalizeCallProtection(bytecode)).to.equal(bytecode);
+    });
+  });
+
+  describe("getCompilerName", () => {
+    it("names the compiler from the language and the version", () => {
+      expect(getCompilerName("Solidity", "0.8.28+commit.7893614a")).to.equal(
+        "solc",
+      );
+      expect(
+        getCompilerName("Solidity", "0.8.38+commit.e7a91fc7.solar.0.3.0"),
+      ).to.equal("solar");
+      expect(getCompilerName("Yul", "0.8.28+commit.7893614a")).to.equal("solc");
+      expect(getCompilerName("Vyper", "0.4.1+commit.8a93dd27")).to.equal(
+        "vyper",
+      );
+      expect(getCompilerName("Fe", "26.0.0-alpha.12")).to.equal("fe");
     });
   });
 });

@@ -4,6 +4,7 @@ import type {
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
+  ISolarCompiler,
   PreRunCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
 import logger from "../../../common/logger";
@@ -758,6 +759,7 @@ export class SourcifyDatabaseService
       solc: ISolidityCompiler;
       vyper: IVyperCompiler;
       fe: IFeCompiler;
+      solar: ISolarCompiler;
     },
   ): Promise<PreRunCompilation> {
     await this.init();

@@ -2,6 +2,8 @@ import { id as keccak256str } from 'ethers';
 import semver from 'semver';
 import { getFetchableSourceUrl, performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
+import { SolarCompilation } from '../Compilation/SolarCompilation';
+import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   SolidityJsonInput,
   Metadata,
@@ -95,15 +97,24 @@ export class SolidityMetadataContract {
 
     this.createJsonInputFromMetadata();
 
-    this.compilation = new SolidityCompilation(
-      compiler,
-      this.metadata.compiler.version,
-      this.solcJsonInput!,
-      {
-        path: this.path,
-        name: this.name,
-      },
-    );
+    const compilationTarget = {
+      path: this.path,
+      name: this.name,
+    };
+    // Solar metadata names the Solar build in the version, the caller passes the Solar compiler
+    this.compilation = isSolarVersion(this.metadata.compiler.version)
+      ? new SolarCompilation(
+          compiler,
+          this.metadata.compiler.version,
+          this.solcJsonInput!,
+          compilationTarget,
+        )
+      : new SolidityCompilation(
+          compiler,
+          this.metadata.compiler.version,
+          this.solcJsonInput!,
+          compilationTarget,
+        );
 
     return this.compilation;
   }

@@ -10,6 +10,8 @@ paths:
 
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
+        Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Solar is only supported on this endpoint.
+
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
 
         **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated.
@@ -575,6 +577,30 @@ components:
                         }
                 compilerVersion: "26.0.0-alpha.10"
                 contractIdentifier: "src/lib.fe:Counter"
+            Solidity Contract compiled with Solar:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+                        }
+                  settings:
+                    optimizer:
+                      enabled: true
+                      runs: 200
+                    evmVersion: cancun
+                compilerVersion: "0.8.38+commit.e7a91fc7.solar.0.3.0"
+                contractIdentifier: "contracts/Storage.sol:Storage"
     MetadataVerificationRequest:
       description: ""
       content:
@@ -788,6 +814,7 @@ components:
                         $ref: "#/components/schemas/Language"
                       compiler:
                         type: string
+                        description: "The compiler: `solc`, `solar`, `vyper` or `fe`. Solar compiles Solidity, so `language` is `Solidity` for both `solc` and `solar`."
                         example: "solc"
                       compilerVersion:
                         allOf:
@@ -1402,6 +1429,8 @@ components:
       # We need to be permissive here because Vyper versions are named inconsistently.
       # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
+      # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
+      description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
       pattern: '^v?\d+\.\d+\.\d+.*$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:

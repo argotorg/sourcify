@@ -39,6 +39,16 @@ const BYTECODE_VYPER_NO_ARRAY = readFileSync(
 const BYTECODE_VYPER_NO_AUXDATA_LENGTH = readFileSync(
   `${BYTECODES_FOLDER}/vyper-no-auxdata-length.hex`,
 ).toString();
+// Real Solar output: 0.3.0 release, and a main dev build (b079122f) for the text encoding
+const BYTECODE_SOLAR_RELEASE = readFileSync(
+  `${BYTECODES_FOLDER}/solar-release.hex`,
+).toString();
+const BYTECODE_SOLAR_DEV = readFileSync(
+  `${BYTECODES_FOLDER}/solar-dev.hex`,
+).toString();
+const BYTECODE_SOLAR_HASH_NONE = readFileSync(
+  `${BYTECODES_FOLDER}/solar-hash-none.hex`,
+).toString();
 
 describe('bytecode utils', function () {
   it("return the whole bytecode when the bytecode that doesn't contain auxdata", () => {
@@ -105,6 +115,30 @@ describe('bytecode utils', function () {
     chai.expect(
       decode(BYTECODE_EXPERIMENTAL, AuxdataStyle.SOLIDITY).experimental,
     ).to.be.true;
+  });
+
+  it('bytecode decode cbor with the `solar` property of a Solar release', () => {
+    const decoded = decode(BYTECODE_SOLAR_RELEASE, AuxdataStyle.SOLIDITY);
+    chai.expect(decoded.solarVersion).to.equal('0.3.0');
+    chai.expect(decoded.solcVersion).to.be.undefined;
+    // CID of the metadata that Solar emitted with this bytecode
+    chai
+      .expect(decoded.ipfs)
+      .to.equal('QmSA9EPDq5PHLGUG95EKxLYKY4C2VwRTGmns9sin2FEee3');
+  });
+
+  it('bytecode decode cbor with the `solar` property of a Solar dev build', () => {
+    const decoded = decode(BYTECODE_SOLAR_DEV, AuxdataStyle.SOLIDITY);
+    chai.expect(decoded.solarVersion).to.equal('0.2.0-dev+commit.b079122f');
+    chai.expect(decoded.solcVersion).to.be.undefined;
+    chai
+      .expect(decoded.ipfs)
+      .to.equal('QmS35M8oc7tKNd7Tfg5C89cxS5bG7DSYuPgNUZMSfawktk');
+  });
+
+  it('bytecode decode cbor of a Solar build with bytecodeHash none', () => {
+    const decoded = decode(BYTECODE_SOLAR_HASH_NONE, AuxdataStyle.SOLIDITY);
+    chai.expect(decoded).to.deep.equal({ solarVersion: '0.3.0' });
   });
 
   it('bytecode decode Vyper cbor auxdata for version >= 0.4.1', () => {

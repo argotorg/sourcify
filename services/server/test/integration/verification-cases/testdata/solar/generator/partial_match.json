@@ -1,0 +1,51 @@
+{
+  "deploymentStdJsonInput": {
+    "language": "Solidity",
+    "sources": {
+      "contracts/Factory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "*": ["evm.bytecode.object"]
+        }
+      }
+    }
+  },
+  "deploymentCompilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+  "deploymentContractIdentifier": "contracts/Factory.sol:Factory",
+  "constructorArgs": "0x000000000000000000000000000000000000000000000000000000000000002a",
+  "reuseInput": "n",
+  "generateVerification": "y",
+  "testCaseDescription": "Solar: match when only a comment differs, so the metadata hashes in both CBOR auxdata differ.",
+  "filename": "solar/partial_match",
+  "verificationStdJsonInput": {
+    "language": "Solidity",
+    "sources": {
+      "contracts/Factory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n// A comment that changes the metadata\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "*": ["evm.bytecode.object"]
+        }
+      }
+    }
+  },
+  "verificationCompilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+  "verificationContractIdentifier": "contracts/Factory.sol:Factory"
+}

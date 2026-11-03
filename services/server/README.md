@@ -210,6 +210,7 @@ module.exports = {
   solcRepo: "/tmp/solc-bin/linux-amd64", // The path to the solc binaries on the filesystem
   solJsonRepo: "/tmp/solc-bin/soljson", // The path to the solJson binaries on the filesystem
   vyperRepo: "/tmp/vyper-bin/linux-amd64", // The path to the vyper binaries on the filesystem
+  solarRepo: "/tmp/solar-bin", // The path to the Solar binaries on the filesystem
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   // The origins that are allowed to access the server, regex allowed

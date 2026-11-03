@@ -27,6 +27,7 @@ module.exports = {
   solJsonRepo: "/home/app/data/compilers/soljson",
   vyperRepo: "/home/app/data/compilers/vyper",
   feRepo: "/home/app/data/compilers/fe",
+  solarRepo: "/home/app/data/compilers/solar",
   initCompilers: true,
   verifyDeprecated: true,
 };

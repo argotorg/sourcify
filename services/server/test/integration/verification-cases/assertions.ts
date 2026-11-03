@@ -3,7 +3,7 @@ import { keccak256 } from "ethers";
 import type { ServerFixture } from "../../helpers/ServerFixture";
 import {
   bytesFromString,
-  getCompilerNameFromLanguage,
+  getCompilerName,
 } from "../../../src/server/services/utils/database-util";
 import { extractSignaturesFromAbi } from "../../../src/server/services/utils/signature-util";
 import crypto from "crypto";
@@ -136,7 +136,10 @@ export async function assertDatabase(
   chai
     .expect(row.compiler)
     .to.equal(
-      getCompilerNameFromLanguage(testCase.input.stdJsonInput.language),
+      getCompilerName(
+        testCase.input.stdJsonInput.language,
+        testCase.input.compilerVersion,
+      ),
     );
   chai.expect(row.version).to.equal(testCase.input.compilerVersion);
   chai
@@ -407,7 +410,10 @@ export async function assertApiV2Lookup(
   chai
     .expect(res.body.compilation.compiler)
     .to.equal(
-      getCompilerNameFromLanguage(testCase.input.stdJsonInput.language),
+      getCompilerName(
+        testCase.input.stdJsonInput.language,
+        testCase.input.compilerVersion,
+      ),
     );
   chai
     .expect(res.body.compilation.compilerVersion)
