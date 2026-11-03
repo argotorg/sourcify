@@ -53,6 +53,7 @@ import {
   BytecodeTooShortForSimilarityError,
   ContractNotDeployedError,
   GetBytecodeError,
+  SimilarityRecentlyFailedError,
 } from "../apiv2/errors";
 import type { VerificationErrorCode } from "../apiv2/errors";
 import {
@@ -93,6 +94,7 @@ export interface VerificationServiceOptions {
   compilerTimeoutMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
+  similarityFailureCooldownSeconds?: number;
   debugDataS3Config?: S3Config;
 }
 
@@ -102,6 +104,7 @@ export class VerificationService {
   solJsonRepoPath: string;
   storageService: StorageService;
   private sourcifyChainMap: SourcifyChainMap;
+  private readonly similarityFailureCooldownSeconds: number;
 
   activeVerificationsByChainIdAddress: {
     [chainIdAndAddress: string]: boolean;
@@ -122,6 +125,16 @@ export class VerificationService {
     this.solJsonRepoPath = options.solJsonRepoPath;
     this.storageService = storageService;
     this.sourcifyChainMap = options.sourcifyChainMap;
+    this.similarityFailureCooldownSeconds =
+      options.similarityFailureCooldownSeconds ?? 600;
+    if (
+      !Number.isFinite(this.similarityFailureCooldownSeconds) ||
+      this.similarityFailureCooldownSeconds < 0
+    ) {
+      throw new Error(
+        "similarityFailureCooldownSeconds must be a non-negative finite number",
+      );
+    }
 
     if (options.debugDataS3Config) {
       const s3Config = options.debugDataS3Config;
@@ -390,6 +403,30 @@ export class VerificationService {
     address: string,
     creationTransactionHash?: string,
   ): Promise<VerificationJobId> {
+    if (this.similarityFailureCooldownSeconds > 0) {
+      const failedAt = await this.storageService.performServiceOperation(
+        "getRecentFailedSimilarityVerification",
+        [
+          chainId,
+          address,
+          new Date(Date.now() - this.similarityFailureCooldownSeconds * 1000),
+        ],
+      );
+      if (failedAt) {
+        const remainingMs =
+          failedAt.getTime() +
+          this.similarityFailureCooldownSeconds * 1000 -
+          Date.now();
+        // The cooldown may expire while the database query is running.
+        if (remainingMs > 0) {
+          throw new SimilarityRecentlyFailedError(
+            `Similarity verification for contract ${address} on chain ${chainId} recently found no match. Retry after the cooldown expires.`,
+            Math.ceil(remainingMs / 1000),
+          );
+        }
+      }
+    }
+
     let runtimeBytecode: string;
     try {
       runtimeBytecode =

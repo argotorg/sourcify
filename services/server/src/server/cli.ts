@@ -155,6 +155,9 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       feRepoPath,
       solarRepoPath,
       compilerTimeoutMs,
+      similarityFailureCooldownSeconds: config.get<number>(
+        "similarityFailureCooldownSeconds",
+      ),
       workerIdleTimeout: process.env.WORKER_IDLE_TIMEOUT
         ? parseInt(process.env.WORKER_IDLE_TIMEOUT)
         : undefined,
