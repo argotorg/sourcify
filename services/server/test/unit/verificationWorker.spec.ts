@@ -12,9 +12,11 @@ import Piscina from "piscina";
 import { LOCAL_CHAINS } from "../../src/sourcify-chains";
 import {
   SolidityCompilation,
+  SolarCompilation,
   type SourcifyChainInstance,
   type SolidityJsonInput,
   type SoliditySettings,
+  type SolarJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import { getAddress } from "ethers";
 import type { VerifyOutput } from "../../src/server/services/workers/workerTypes";
@@ -22,6 +24,7 @@ import type { DeploymentInfo } from "../helpers/helpers";
 import { deployFromAbiAndBytecodeForCreatorTxHash } from "../helpers/helpers";
 import type { JobErrorData } from "../../src/server/services/utils/database-util";
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
+import { SolarLocal } from "../../src/server/services/compiler/local/SolarLocal";
 import type {
   SolidityOutput,
   OutputError,
@@ -48,6 +51,7 @@ describe("verificationWorker", function () {
       solcRepoPath: config.get("solcRepo"),
       solJsonRepoPath: config.get("solJsonRepo"),
       vyperRepoPath: config.get("vyperRepo"),
+      solarRepoPath: config.get("solarRepo"),
     });
   });
 
@@ -566,6 +570,67 @@ describe("verificationWorker", function () {
       });
 
       assertErrorResponse(result, "no_similar_match_found");
+    });
+
+    describe("with a Solar candidate", function () {
+      // The similarity route never compiles, so a stored Solar contract is a candidate like any other
+      const SOLAR_FQN = "contracts/Factory.sol:Factory";
+      let solarCase: any;
+      let solarCompilation: SolarCompilation;
+
+      before(async () => {
+        solarCase = (
+          await import("../integration/verification-cases/testdata/solar/full_match.json")
+        ).default;
+        solarCompilation = new SolarCompilation(
+          new SolarLocal(config.get("solarRepo")),
+          solarCase.input.compilerVersion,
+          structuredClone(solarCase.input.stdJsonInput) as SolarJsonInput,
+          { path: "contracts/Factory.sol", name: "Factory" },
+        );
+        await solarCompilation.compile();
+        await solarCompilation.generateCborAuxdataPositions();
+      });
+
+      it("should verify using a stored Solar candidate", async () => {
+        const result = await verifySimilarity({
+          chainId: chainFixture.chainId,
+          address: chainFixture.defaultContractAddress,
+          runtimeBytecode: solarCase.onchain.deployedBytecode,
+          creationData: {
+            creationTransactionHash: chainFixture.defaultContractCreatorTx,
+            creationBytecode: solarCase.onchain.creationBytecode,
+            deployer: getAddress(chainFixture.localSigner.address),
+            blockNumber: chainFixture.defaultContractBlockNumber,
+            txIndex: chainFixture.defaultContractTxIndex,
+          },
+          candidates: [
+            {
+              std_json_input: structuredClone(solarCompilation.jsonInput),
+              std_json_output: structuredClone(
+                solarCompilation.compilerOutput!,
+              ),
+              version: solarCompilation.compilerVersion,
+              fully_qualified_name: SOLAR_FQN,
+              creation_cbor_auxdata:
+                solarCompilation.creationBytecodeCborAuxdata,
+              runtime_cbor_auxdata: solarCompilation.runtimeBytecodeCborAuxdata,
+              metadata: solarCompilation.metadata!,
+            },
+          ],
+        });
+
+        expect(result).to.not.have.property("errorResponse");
+        expect(result.verificationExport).to.deep.include({
+          status: { runtimeMatch: "perfect", creationMatch: "perfect" },
+        });
+        expect(result.verificationExport!.compilation.compilerVersion).to.equal(
+          solarCase.input.compilerVersion,
+        );
+        expect(
+          result.verificationExport!.transformations.runtime.values.immutables,
+        ).to.deep.equal(solarCase.verification.runtimeValues.immutables);
+      });
     });
   });
 });

@@ -321,10 +321,6 @@ async function _verifySimilarity({
   for (const candidate of candidates) {
     let compilation;
     try {
-      // Solar is only supported with a standard JSON input for now
-      if (isSolarVersion(candidate.version)) {
-        continue;
-      }
       compilation = createPreRunCompilationFromStoredCandidate(
         { solc, vyper, fe, solar },
         candidate,
