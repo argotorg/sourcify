@@ -2,6 +2,8 @@ import path from 'path';
 import fs from 'fs';
 import { gunzipSync } from 'zlib';
 import { spawnSync } from 'child_process';
+import { randomUUID } from 'crypto';
+import { threadId } from 'worker_threads';
 import { asyncExec, CompilerError, fetchWithBackoff } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import { parseSolarVersion } from '@ethereum-sourcify/compilers-types';
@@ -108,20 +110,38 @@ export async function getSolarExecutable(
 ): Promise<string> {
   const fileName = `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`;
   const solarPath = path.join(solarRepoPath, fileName);
+  const isRelease = !version.solarVersion.includes('-');
   if (fs.existsSync(solarPath)) {
-    assertSolarBuild(solarPath, version);
-    logDebug('Found existing Solar binary', { solarPath });
-    return solarPath;
+    try {
+      assertSolarBuild(solarPath, version);
+      logDebug('Found existing Solar binary', { solarPath });
+      return solarPath;
+    } catch (error: any) {
+      // A build that is not a release cannot be replaced by a download
+      if (!isRelease) {
+        throw error;
+      }
+      // Replace a wrong or broken cached binary, as the solc and vyper paths do
+      logWarn(
+        'Cached Solar binary is not the requested build, downloading again',
+        {
+          solarPath,
+          error: error.message,
+        },
+      );
+      fs.rmSync(solarPath, { force: true });
+    }
   }
 
-  if (version.solarVersion.includes('-')) {
+  if (!isRelease) {
     throw new Error(
       `Solar ${version.solarVersion}+commit.${version.commit} is not a release and cannot be downloaded`,
     );
   }
 
-  // Unique temp name so parallel workers never run a half-written binary
-  const tmpPath = `${solarPath}.${process.pid}.${Date.now()}.tmp`;
+  // Unique temp name so parallel workers never run a half-written binary.
+  // Piscina workers are threads of one process, so the pid alone is not unique.
+  const tmpPath = `${solarPath}.${process.pid}.${threadId}.${randomUUID()}.tmp`;
   await fetchAndSaveSolar(platform, version.solarVersion, tmpPath);
   try {
     assertSolarBuild(tmpPath, version);

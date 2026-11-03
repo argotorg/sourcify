@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 import { parseSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type { SolarJsonInput } from '@ethereum-sourcify/compilers-types';
 import {
@@ -101,6 +102,61 @@ describe('Verify Solar Compiler', () => {
     );
     expect(solarPath).to.equal(cachedPath);
     expect(fs.existsSync(solarPath)).to.be.true;
+  });
+
+  it('Should replace a cached release binary that reports another build', async () => {
+    const platform = findSolarPlatform() as string;
+    const version = parseSolarVersion(SOLAR_TEST_VERSION)!;
+    const cachedPath = path.join(
+      solarRepoPath,
+      `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`,
+    );
+    // E.g. a crates.io build copied by hand under the release file name
+    fs.mkdirSync(solarRepoPath, { recursive: true });
+    fs.writeFileSync(
+      cachedPath,
+      '#!/bin/sh\necho "solar 0.3.0+commit.275d15ec"\n',
+      { mode: 0o755 },
+    );
+    const solarPath = await getSolarExecutable(
+      solarRepoPath,
+      platform,
+      version,
+    );
+    expect(solarPath).to.equal(cachedPath);
+    const firstLine = spawnSync(solarPath, ['--version'])
+      .stdout.toString()
+      .split('\n')[0]
+      .trim();
+    expect(firstLine).to.equal(
+      `solar ${version.solarVersion}+commit.${version.commit}`,
+    );
+  });
+
+  it('Should not replace a cached build that is not a release', async () => {
+    const platform = findSolarPlatform() as string;
+    const version = parseSolarVersion(
+      '0.8.38+commit.00000000.solar.0.3.0-dev',
+    )!;
+    const cachedPath = path.join(
+      solarRepoPath,
+      `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`,
+    );
+    fs.mkdirSync(solarRepoPath, { recursive: true });
+    fs.writeFileSync(
+      cachedPath,
+      '#!/bin/sh\necho "solar 0.3.0-dev+commit.11111111"\n',
+      { mode: 0o755 },
+    );
+    try {
+      await getSolarExecutable(solarRepoPath, platform, version);
+      expect.fail('Expected error was not thrown');
+    } catch (error: any) {
+      expect(error.message).to.contain('not found');
+      expect(fs.existsSync(cachedPath)).to.be.true;
+    } finally {
+      fs.rmSync(cachedPath, { force: true });
+    }
   });
 
   it('Should reject a release binary with a different commit', async () => {
