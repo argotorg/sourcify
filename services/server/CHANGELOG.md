@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.3.0 - 2026-11-03
+
+- chore: bump Node to 22.23.4 for Brotli RCE CVE-2026-111497 (Node2Shell) (#3040)
+- fix: harden source fetching, match transformations and Blockscout key handling (GHSA-q975-797r-6pmw) (#3039)
+- fix(lib-sourcify): verify contracts with libraries compiled with solc < 0.4.10 (#3045)
+- feat: verify contracts compiled with Solar (#3050)
+- fix: verify contracts built with the Solar that Foundry bundles (#3052)
+- Update dependencies
+
 ## sourcify-server@4.2.0 - 2026-10-21
 
 - fix(server): truncate explorer error response bodies (#3008)
