@@ -10,7 +10,7 @@ paths:
 
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
-        Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Solar is only supported on this endpoint.
+        Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Sourcify also supports the Solar build that Foundry v1.9.0 bundles, `0.8.38+commit.a2b44354.solar.0.3.0-dev`, which `forge build --use solar` uses. Solar is only supported on this endpoint.
 
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
 
@@ -412,7 +412,7 @@ components:
 
                   Must include the `language` field inside the stdJsonInput object. Currently supports Solidity, Vyper, and Fe.
 
-                  Only top-level fields that Sourcify stores are accepted: `language`, `sources`, `settings`, and `storage_layout_overrides` (Vyper).
+                  Only top-level fields that Sourcify stores are accepted: `language`, `sources`, `settings`, and `storage_layout_overrides` (Vyper). Sourcify removes the fields that Foundry build info adds (`version`, `allowPaths`, `basePath`, `includePaths`), so the `input` of a Foundry build info can be sent as it is.
               compilerVersion:
                 $ref: "#/components/schemas/CompilerVersion"
               contractIdentifier:
