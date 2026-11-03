@@ -1,6 +1,7 @@
 import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import type { ChildProcess } from 'child_process';
 import { AbiCoder, type JsonRpcSigner } from 'ethers';
 import {
@@ -187,22 +188,29 @@ describe('SolarVerification', () => {
     );
   });
 
-  it('should remove unused sources after a match', async () => {
+  it('should remove unused sources after a match without a check compilation', async () => {
     const deployment = await deploy(FACTORY_SOURCE);
-    const verification = await verify(
-      {
-        'Factory.sol': FACTORY_SOURCE,
-        'Unused.sol':
-          '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\ncontract Unused {}\n',
-      },
-      deployment,
-    );
-    expectVerification(verification, {
-      status: { runtimeMatch: 'perfect', creationMatch: 'perfect' },
-    });
-    expect(Object.keys(verification.compilation.sources)).to.deep.equal([
-      'Factory.sol',
-    ]);
+    // Solar does not have the extra-file-input bug, so one compilation is enough
+    const compileSpy = sinon.spy(solarCompiler, 'compile');
+    try {
+      const verification = await verify(
+        {
+          'Factory.sol': FACTORY_SOURCE,
+          'Unused.sol':
+            '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\ncontract Unused {}\n',
+        },
+        deployment,
+      );
+      expectVerification(verification, {
+        status: { runtimeMatch: 'perfect', creationMatch: 'perfect' },
+      });
+      expect(Object.keys(verification.compilation.sources)).to.deep.equal([
+        'Factory.sol',
+      ]);
+      expect(compileSpy.callCount).to.equal(1);
+    } finally {
+      compileSpy.restore();
+    }
   });
 
   it('should not match a different contract', async () => {

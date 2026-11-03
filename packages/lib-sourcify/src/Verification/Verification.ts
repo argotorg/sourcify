@@ -401,12 +401,13 @@ export class Verification {
     const settings = compilation.jsonInput.settings;
     const usesCustomYulOptimizerSteps =
       settings.optimizer?.details?.yulDetails?.optimizerSteps !== undefined;
-    // Solar is new, so always check it (unused sources changed its bytecode before 0.3.0)
+    // Solar does not have the extra-file-input bug of old solc. Without this
+    // guard, semver.lt would read the solc part of the Solar version.
     const mayHitExtraFileInputBug =
-      isSolarVersion(compilation.compilerVersion) ||
-      (settings.optimizer?.enabled &&
-        (semver.lt(compilation.compilerVersion, '0.8.22') ||
-          usesCustomYulOptimizerSteps));
+      !isSolarVersion(compilation.compilerVersion) &&
+      settings.optimizer?.enabled &&
+      (semver.lt(compilation.compilerVersion, '0.8.22') ||
+        usesCustomYulOptimizerSteps);
     if (mayHitExtraFileInputBug) {
       try {
         // Compile without the unused sources, only outputting the bytecodes
