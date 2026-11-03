@@ -94,20 +94,13 @@ export class SolarCompilation extends SolidityCompilation {
     await super.compile(false);
     // SOLC_WRAPPER_VERSION changes only the solc part of the version a user sends.
     // Store the version from the metadata so one build always has one version.
+    // The compiler (assertSolarBuild) guarantees that the binary is the
+    // requested commit and Solar version, so the metadata names the same build.
     const metadataVersion = this.metadata?.compiler?.version;
-    const reported = metadataVersion
-      ? parseSolarVersion(metadataVersion)
-      : undefined;
-    const requested = parseSolarVersion(this.compilerVersion);
-    if (
-      metadataVersion &&
-      reported &&
-      requested &&
-      reported.commit === requested.commit &&
-      reported.solarVersion === requested.solarVersion
-    ) {
-      this.compilerVersion = metadataVersion;
+    if (!metadataVersion || !parseSolarVersion(metadataVersion)) {
+      throw new CompilationError({ code: 'invalid_compiler_version' });
     }
+    this.compilerVersion = metadataVersion;
   }
 
   public async generateCborAuxdataPositions() {
