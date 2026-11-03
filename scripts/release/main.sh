@@ -12,6 +12,7 @@ SCRIPT_DIR=$(dirname "$0")
 source "${SCRIPT_DIR}/logging_utils.sh"
 source "${SCRIPT_DIR}/git_utils.sh"
 source "${SCRIPT_DIR}/release_data_utils.sh"
+source "${SCRIPT_DIR}/changelog.sh"
 source "${SCRIPT_DIR}/release.sh"
 source "${SCRIPT_DIR}/release_todos.sh"
 
@@ -30,11 +31,11 @@ fi
 
 prompt_execute_or_skip "creating new branch because we can't commit to staging directly" create_new_branch "release-$(date +'%Y-%m-%d-%H-%M')" # Add hour and minute to the branch name if we do multiple releases in the same day
 prompt_execute_or_skip "removing the done .release-todos files (committed with the changelogs)" clear_release_todo_files
-prompt_execute_or_skip "choosing versions for each package and writing changelogs" update_packages_and_changelog
+prompt_execute_or_skip "reviewing the changelogs generated from the commits and choosing versions for each package" update_packages_and_changelog
 prompt_execute_or_skip "commiting the changelogs" commit_changelogs
 
 ## Run lerna version and create git tags
-prompt_execute_or_skip "choosing same versions in lerna to create git tags and updating dependencies" run_lerna_version
+prompt_execute_or_skip "running lerna version to bump the versions, update the dependencies and create git tags" run_lerna_version
 prompt_execute_or_skip "publishing the branch" publish_branch_and_open_pr_to_staging
 
 prompt_execute_or_skip "asking if release PR is merged (Do a MERGE COMMIT not SQUASH)" ask_if_release_pr_merged
