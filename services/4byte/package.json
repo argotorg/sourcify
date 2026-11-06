@@ -54,8 +54,8 @@
     "chai-http": "4.4.0",
     "copyfiles": "2.4.1",
     "csv-parse": "7.0.3",
-    "dbmate": "2.36.0",
+    "dbmate": "2.37.0",
     "mocha": "10.8.2",
-    "npm-run-all2": "9.0.3"
+    "npm-run-all2": "9.0.4"
   }
 }
