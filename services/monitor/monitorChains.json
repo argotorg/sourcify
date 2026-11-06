@@ -429,5 +429,13 @@
         "apiKeyEnvName": "ZIRCUIT_API_KEY"
       }
     ]
+  },
+  {
+    "name": "Orbinum Testnet",
+    "chainId": 2700,
+    "rpc": [
+      "https://rpc-1.testnet.orbinum.io",
+      "https://rpc-2.testnet.orbinum.io"
+    ]
   }
 ]
