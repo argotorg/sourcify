@@ -115,6 +115,8 @@ export function getErrorMessageFromCode(params: SourcifyLibErrorParameters) {
       return 'No runtime bytecode cbor auxdata on compilation object.';
     case 'invalid_compiler_version':
       return 'Invalid compiler version.';
+    case 'unsupported_compiler_version':
+      return 'Unsupported compiler version.';
     case 'cannot_generate_cbor_auxdata_positions':
       return 'Cannot generate cbor auxdata positions.';
     // Verification errors

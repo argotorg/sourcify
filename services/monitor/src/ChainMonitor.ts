@@ -20,6 +20,9 @@ function createsContract(tx: TransactionResponse): boolean {
 
 const NEW_BLOCK_EVENT = "new-block";
 
+// How many recently found addresses each chain keeps to skip duplicates
+const RECENT_CONTRACTS_LIMIT = 10_000;
+
 /**
  * A monitor that periodically checks for new contracts on a single chain.
  */
@@ -43,6 +46,8 @@ export default class ChainMonitor extends EventEmitter {
   private traceNumberOfTries: number;
   private traceDelay: number;
   private monitorFactories: boolean;
+  // Insertion-ordered, so the first entry is the oldest
+  private recentContracts = new Set<string>();
 
   constructor(
     sourcifyChain: SourcifyChain,
@@ -310,12 +315,32 @@ export default class ChainMonitor extends EventEmitter {
     return null;
   }
 
+  // Returns true if the address was already found recently, otherwise records it.
+  // Without this, a contract found by both the tx check and the trace check is sent twice.
+  private isRecentContract(address: string): boolean {
+    const key = address.toLowerCase();
+    if (this.recentContracts.has(key)) return true;
+    this.recentContracts.add(key);
+    if (this.recentContracts.size > RECENT_CONTRACTS_LIMIT) {
+      const oldest = this.recentContracts.values().next().value;
+      if (oldest !== undefined) this.recentContracts.delete(oldest);
+    }
+    return false;
+  }
+
   // Function triggered when a new contract is found in a block.
   // Gets the contract bytecode, decodes the metadata hash, assembles the contract's files from DecentralizedStorage, and sends them to Sourcify servers.
   private processNewContract = async (
     creatorTxHash: string,
     address: string,
   ) => {
+    if (this.isRecentContract(address)) {
+      this.chainLogger.debug("Skipping contract that was already found", {
+        address,
+        creatorTxHash,
+      });
+      return;
+    }
     try {
       let metadataHash: FileHash;
       const bytecode = await this.getBytecodeWithRetries(address);
@@ -323,6 +348,8 @@ export default class ChainMonitor extends EventEmitter {
         this.chainLogger.warn("Could not fetch bytecode for contract", {
           address,
         });
+        // Forget the address so that a later find can try again
+        this.recentContracts.delete(address.toLowerCase());
         return;
       }
       try {

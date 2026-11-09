@@ -354,6 +354,27 @@ describe("Specific Verification Cases", function () {
     await testVerificationCase(matchSol0_4_9);
   });
 
+  it("should match a Solidity 0.1.6 contract with libraries linked using compiler settings", async () => {
+    const librariesSol0_1_6LinkedByCompiler = (
+      await import("./testdata/libraries_sol_0_1_6_linked_by_compiler.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(librariesSol0_1_6LinkedByCompiler);
+  });
+
+  it("should match a Solidity 0.1.6 contract with library placeholders", async () => {
+    const librariesSol0_1_6Placeholders = (
+      await import("./testdata/libraries_sol_0_1_6_placeholders.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(librariesSol0_1_6Placeholders);
+  });
+
+  it("should match a Solidity 0.4.9 contract with a library placeholder of a truncated fully qualified name", async () => {
+    const librariesSol0_4_9TruncatedPlaceholder = (
+      await import("./testdata/libraries_sol_0_4_9_truncated_placeholder.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(librariesSol0_4_9TruncatedPlaceholder);
+  });
+
   it("should store transientStorageLayout for a contract that uses the transient keyword", async () => {
     const transientStorageLayout = (
       await import("./testdata/transient_storage_layout.json")
@@ -378,5 +399,33 @@ describe("Specific Verification Cases", function () {
     const feTestMultiFile = (await import("./testdata/fe/multi_file.json"))
       .default as unknown as VerificationTestCase;
     await testVerificationCase(feTestMultiFile);
+  });
+
+  // Regenerate with generate-test-case.ts and the files in testdata/solar/generator
+  it("should store an exact match of a Solar factory with immutables and constructor arguments", async () => {
+    const solarFullMatch = (await import("./testdata/solar/full_match.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(solarFullMatch);
+  });
+
+  it("should store a match of a Solar contract whose metadata hashes differ", async () => {
+    const solarPartialMatch = (
+      await import("./testdata/solar/partial_match.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarPartialMatch);
+  });
+
+  it("should store a Solar contract with a manually linked library", async () => {
+    const solarLibraries = (
+      await import("./testdata/solar/libraries_manually_linked.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarLibraries);
+  });
+
+  it("should store a match of a Solar contract compiled with bytecodeHash none", async () => {
+    const solarMetadataHashNone = (
+      await import("./testdata/solar/metadata_hash_none.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(solarMetadataHashNone);
   });
 });

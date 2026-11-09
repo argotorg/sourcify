@@ -106,7 +106,10 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
 
   it('runs the subprocess in an empty temp dir, not the host cwd', async () => {
     // `pwd` reports where the subprocess ran: a temp dir, not the host cwd.
-    const cwd = (await asyncExec('pwd', '{}', MAX_BUFFER)).trim();
+    // The command reads stdin first. Else the stdin write can fail with EPIPE.
+    const cwd = (
+      await asyncExec('cat > /dev/null && pwd', '{}', MAX_BUFFER)
+    ).trim();
     expect(cwd).to.not.equal(process.cwd());
     expect(cwd.startsWith(fs.realpathSync(os.tmpdir()))).to.equal(true);
   });

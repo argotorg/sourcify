@@ -111,6 +111,14 @@ export function validateFieldsAndOmit(
   next();
 }
 
+// Foundry build info adds these to the input, they are not compiler input
+const FOUNDRY_BUILD_INFO_FIELDS = [
+  "version",
+  "allowPaths",
+  "basePath",
+  "includePaths",
+];
+
 export function validateStandardJsonInput(
   req: Request,
   res: Response,
@@ -136,6 +144,10 @@ export function validateStandardJsonInput(
     throw new InvalidParametersError(
       "Standard JSON input must contain a content field for each source.",
     );
+  }
+
+  for (const field of FOUNDRY_BUILD_INFO_FIELDS) {
+    delete req.body.stdJsonInput[field];
   }
 
   // Reject any top-level field we don't store in the database. Fields we don't persist

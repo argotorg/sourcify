@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a new feature or an improvement
+labels: ["✨ feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the suggestion. See [CONTRIBUTING.md](https://github.com/argotorg/sourcify/blob/staging/CONTRIBUTING.md) for how we handle contributions.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem do you want to solve? Who has this problem?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like Sourcify to do? A prompt that you would give to an AI agent is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Optional. What other solutions or workarounds did you consider?
+  - type: input
+    id: ai-use
+    attributes:
+      label: AI use
+      description: Optional. Did an AI tool help you write this issue? Which one?

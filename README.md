@@ -41,10 +41,18 @@ For more details refer to [docs.sourcify.dev](https://docs.sourcify.dev/docs/int
 
 ## How we work
 
-Sourcify aims to be fully open and transparent. You can see what we are working day-to-day on on our [Public Issue Board](https://github.com/orgs/ethereum/projects/46) as well our [Quarterly Milestones](https://github.com/orgs/ethereum/projects/46/views/3) for our longer term plans.
+Sourcify aims to be fully open and transparent. You can see what we are working day-to-day on on our [Public Issue Board](https://github.com/orgs/argotorg/projects/33) as well our [Quarterly Milestones](https://github.com/orgs/argotorg/projects/33/views/3) for our longer term plans.
+
+## Contributing
+
+We prefer issues over pull requests. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before you open an issue or a pull request, and follow our [Code of Conduct](./CODE_OF_CONDUCT.md). To report a security problem, see [SECURITY.md](./SECURITY.md).
 
 ## Adding a new chain
 
 If you'd like to add a new chain support to Sourcify please follow the [chain support instructions](https://docs.sourcify.dev/docs/chain-support/) in docs.
 
 _Sourcify is an [Argot Collective](https://argot.org) project_
+
+<a href="https://drpc.org?ref=7ef756">
+  <img width="218" height="54" src="https://drpc.org/images/external/powered-by-drpc-dark.svg" alt="Powered by dRPC" />
+</a>

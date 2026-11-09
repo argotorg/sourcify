@@ -1,0 +1,32 @@
+{
+  "deploymentStdJsonInput": {
+    "language": "Solidity",
+    "sources": {
+      "contracts/Calculator.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nlibrary MathLib {\n    function triple(uint256 x) external pure returns (uint256) {\n        return x * 3;\n    }\n}\n\ncontract Calculator {\n    function run(uint256 x) external pure returns (uint256) {\n        return MathLib.triple(x);\n    }\n}\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "*": ["evm.bytecode.object"]
+        }
+      }
+    }
+  },
+  "deploymentCompilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+  "deploymentContractIdentifier": "contracts/Calculator.sol:Calculator",
+  "constructorArgs": "",
+  "reuseInput": "y",
+  "generateVerification": "y",
+  "testCaseDescription": "Solar: the library placeholder was replaced manually instead of linking with the compiler settings.",
+  "filename": "solar/libraries_manually_linked",
+  "linkLibraries": {
+    "__$6f6b23775c1e7a17d98e210c111f94b3de$__": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+  }
+}

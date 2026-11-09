@@ -1,3 +1,17 @@
+## sourcify-4byte@1.3.1 - 2026-11-03
+
+- chore: bump Node to 22.23.4 for Brotli RCE CVE-2026-111497 (Node2Shell) (#3040)
+- Update dependencies
+
+## sourcify-4byte@1.3.0 - 2026-10-21
+
+- feat(4byte): live signature stats from a daily BigQuery base, and /recent (#3033)
+
+## sourcify-4byte@1.2.0 - 2026-10-05
+
+- feat(4byte): set Cache-Control on signature lookup responses (#2995)
+- Update dependencies
+
 ## sourcify-4byte@1.1.17 - 2026-09-22
 
 - update dependencies

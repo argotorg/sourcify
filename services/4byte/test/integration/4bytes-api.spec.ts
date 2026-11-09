@@ -744,89 +744,195 @@ describe("4byte API End-to-End Tests", function () {
   });
 
   describe("GET /signature-database/v1/stats", function () {
-    it("should return signature statistics", async function () {
+    it("should return the total and a null breakdown without a base file", async function () {
+      serverFixture.server.stats.reset();
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/stats");
 
       chai.expect(res).to.have.status(200);
-      chai.expect(res.body.result).to.have.property("count");
-      chai.expect(res.body.result.count).to.have.property("function");
-      chai.expect(res.body.result.count).to.have.property("event");
-      chai.expect(res.body.result.count).to.have.property("error");
-      chai.expect(res.body.result.count).to.have.property("unknown");
-      chai.expect(res.body.result.count).to.have.property("total");
-
-      // total should be the number of unique signatures in the database
-      chai.expect(res.body.result.count.total).to.be.equal(
-        new Set(
-          // Use a set to count unique signatures
+      chai.expect(res.body.result.count).to.deep.equal({
+        function: null,
+        event: null,
+        error: null,
+        unknown: null,
+        total: new Set(
           FourByteServerFixture.testSignatures.map((sig) => sig.signature),
         ).size,
-      );
-      // unknown should be the number of signatures that are not associated with a verified contract
-      chai
-        .expect(res.body.result.count.unknown)
-        .to.be.equal(
-          FourByteServerFixture.testSignatures.filter(
-            (sig) => sig.type === undefined,
-          ).length,
-        );
-      // error should be the number of error signatures
-      chai
-        .expect(res.body.result.count.error)
-        .to.be.equal(
-          FourByteServerFixture.testSignatures.filter(
-            (sig) => sig.type === SignatureType.Error,
-          ).length,
-        );
-      // function should be the number of function signatures
-      chai
-        .expect(res.body.result.count.function)
-        .to.be.equal(
-          FourByteServerFixture.testSignatures.filter(
-            (sig) => sig.type === SignatureType.Function,
-          ).length,
-        );
-      // event should be the number of event signatures
-      chai
-        .expect(res.body.result.count.event)
-        .to.be.equal(
-          FourByteServerFixture.testSignatures.filter(
-            (sig) => sig.type === SignatureType.Event,
-          ).length,
-        );
-
-      // refreshed_at
-      chai.expect(res.body.result).to.have.property("metadata");
-      chai.expect(res.body.result.metadata).to.have.property("refreshed_at");
-      // should be a valid ISO string
+      });
       chai
         .expect(new Date(res.body.result.metadata.refreshed_at).toISOString())
-        .to.be.a("string");
-
-      const functionCount = FourByteServerFixture.testSignatures.filter(
-        (sig) => sig.type === SignatureType.Function,
-      ).length;
-      const eventCount = FourByteServerFixture.testSignatures.filter(
-        (sig) => sig.type === SignatureType.Event,
-      ).length;
-
-      chai.expect(res.body.result.count.function).to.be.equal(functionCount);
-      chai.expect(res.body.result.count.event).to.be.equal(eventCount);
+        .to.equal(res.body.result.metadata.refreshed_at);
     });
 
-    it("should return zero counts for empty database", async function () {
-      // Reset database without inserting test signatures
+    it("should return a zero total for empty database", async function () {
       await serverFixture.resetDatabase();
+      serverFixture.server.stats.reset();
 
       const res = await chai
         .request(`http://localhost:${serverFixture.port}`)
         .get("/signature-database/v1/stats");
 
       chai.expect(res).to.have.status(200);
-      chai.expect(res.body.result.count.function).to.equal(0);
-      chai.expect(res.body.result.count.event).to.equal(0);
+      chai.expect(res.body.result.count.total).to.equal(0);
+      chai.expect(res.body.result.count.function).to.equal(null);
+    });
+  });
+
+  describe("GET /signature-database/v1/recent", function () {
+    const request = () =>
+      chai
+        .request(`http://localhost:${serverFixture.port}`)
+        .get("/signature-database/v1/recent");
+
+    it("should return the signatures oldest first, with types and source", async function () {
+      await serverFixture.resetDatabase();
+      await serverFixture.insertTestSignatures([{ signature: "imported()" }]);
+      await serverFixture.insertVerifiedContract({
+        name: "Token",
+        chainId: 11155111,
+        address: "0x00000000000000000000000000000000000000aa",
+        signatures: [
+          { signature: "mint(uint256)", type: SignatureType.Function },
+          { signature: "Minted(uint256)", type: SignatureType.Event },
+        ],
+      });
+
+      const res = await request();
+
+      chai.expect(res).to.have.status(200);
+      chai.expect(res).to.have.header("cache-control", "no-store");
+      chai.expect(res.body.result.next).to.equal(null);
+      const signatures = res.body.result.signatures;
+      chai.expect(signatures).to.have.length(3);
+      chai.expect(signatures[0]).to.deep.include({
+        signature: "imported()",
+        signatureHash4: keccak256str("imported()").slice(0, 10),
+        signatureHash32: keccak256str("imported()"),
+        types: [],
+        source: null,
+      });
+      chai
+        .expect(signatures[0].createdAt)
+        .to.match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/);
+      const fromContract = signatures.slice(1);
+      chai
+        .expect(fromContract.map((s: any) => s.signature).sort())
+        .to.deep.equal(["Minted(uint256)", "mint(uint256)"]);
+      for (const sig of fromContract) {
+        chai.expect(sig.source).to.deep.equal({
+          name: "Token",
+          chainId: "11155111",
+          address: "0x00000000000000000000000000000000000000aa",
+        });
+        chai
+          .expect(sig.types)
+          .to.deep.equal([
+            sig.signature === "mint(uint256)" ? "function" : "event",
+          ]);
+      }
+    });
+
+    it("should prefer the contract whose verification added the signature", async function () {
+      await serverFixture.resetDatabase();
+      await serverFixture.insertVerifiedContract({
+        name: "First",
+        chainId: 1,
+        address: "0x00000000000000000000000000000000000000a1",
+        signatures: [{ signature: "shared()", type: SignatureType.Function }],
+      });
+      await serverFixture.insertVerifiedContract({
+        name: "Second",
+        chainId: 1,
+        address: "0x00000000000000000000000000000000000000a2",
+        signatures: [{ signature: "shared()", type: SignatureType.Function }],
+      });
+
+      const res = await request();
+
+      chai.expect(res.body.result.signatures).to.have.length(1);
+      chai.expect(res.body.result.signatures[0].source.name).to.equal("First");
+    });
+
+    it("should page through signatures with the same created_at", async function () {
+      await serverFixture.resetDatabase();
+      const names = Array.from({ length: 5 }, (_, i) => `same${i}()`);
+      // One transaction, so all rows have the same created_at
+      await serverFixture.insertTestSignatures(
+        names.map((signature) => ({ signature })),
+      );
+
+      const seen: string[] = [];
+      let cursor: string | null = null;
+      let pages = 0;
+      do {
+        const res: any = await request().query({
+          limit: 2,
+          ...(cursor ? { cursor } : {}),
+        });
+        chai.expect(res).to.have.status(200);
+        seen.push(...res.body.result.signatures.map((s: any) => s.signature));
+        cursor = res.body.result.next;
+        pages++;
+      } while (cursor && pages < 10);
+
+      chai.expect(pages).to.equal(3);
+      chai.expect(seen.sort()).to.deep.equal(names.sort());
+    });
+
+    it("should only return signatures with created_at >= since", async function () {
+      await serverFixture.resetDatabase();
+      await serverFixture.insertTestSignatures([{ signature: "old()" }]);
+      await serverFixture.pool.query(
+        "UPDATE signatures SET created_at = now() - interval '2 hours'",
+      );
+      await serverFixture.insertTestSignatures([{ signature: "new()" }]);
+
+      const res = await request();
+      chai
+        .expect(res.body.result.signatures.map((s: any) => s.signature))
+        .to.deep.equal(["new()"]);
+
+      const withSince = await request().query({
+        since: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      });
+      chai
+        .expect(withSince.body.result.signatures.map((s: any) => s.signature))
+        .to.deep.equal(["old()", "new()"]);
+    });
+
+    it("should accept a since that JS reads but Postgres does not", async function () {
+      await serverFixture.resetDatabase();
+      await serverFixture.insertTestSignatures([{ signature: "new()" }]);
+
+      // The format of Date.prototype.toString(), with a GMT+hhmm zone
+      const since = new Date(Date.now() - 60 * 60 * 1000).toString();
+      const res = await request().query({ since });
+
+      chai.expect(res, res.text).to.have.status(200);
+      chai
+        .expect(res.body.result.signatures.map((s: any) => s.signature))
+        .to.deep.equal(["new()"]);
+    });
+
+    it("should reject invalid parameters", async function () {
+      const cases = [
+        { since: "yesterday" },
+        { since: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() },
+        { limit: 0 },
+        { limit: 501 },
+        { limit: "ten" },
+        { cursor: "2026-10-20T10:00:00.000000Z" },
+        { cursor: "nope_0x1234" },
+        // Valid for JS, but the cursor must keep the microseconds in UTC
+        { cursor: `2026-10-20T10:00:00.000Z_0x${"ab".repeat(32)}` },
+        { cursor: `Oct 20 2026 10:00 GMT+0200_0x${"ab".repeat(32)}` },
+      ];
+      for (const query of cases) {
+        const res = await request().query(query);
+        chai.expect(res, JSON.stringify(query)).to.have.status(400);
+        chai.expect(res.body).to.have.property("ok", false);
+      }
     });
   });
 
@@ -901,12 +1007,12 @@ describe("4byte API End-to-End Tests", function () {
 
       const responses = await Promise.all(requests);
 
-      // All responses should have the same data
-      const firstResponse = responses[0].body;
+      // All responses should have the same counts
+      const firstResponse = responses[0].body.result.count;
       responses.forEach((res, index) => {
         chai.expect(res).to.have.status(200);
         chai
-          .expect(res.body)
+          .expect(res.body.result.count)
           .to.deep.equal(
             firstResponse,
             `Response ${index} should match first response`,

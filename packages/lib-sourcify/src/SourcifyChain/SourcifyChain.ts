@@ -428,7 +428,8 @@ export class SourcifyChain {
   };
 
   /**
-   * Tries to fetch all created contracts for a block with the available methods.
+   * Tries to fetch the addresses that contracts created (factory deploys) in a block with the available methods.
+   * Top-level deploys (a tx with no `to`) are not returned: callers find them in the block's transactions.
    */
   getCreatedAddressesFromBlockTraces = async (
     blockNumber: number,
@@ -607,7 +608,8 @@ export class SourcifyChain {
 
   /**
    * For Parity style traces `trace_block`
-   * Extracts the all created addresses from the traces of a block
+   * Extracts the addresses that contracts created (factory deploys) from the traces of a block.
+   * Top-level deploys (a tx with no `to`) are not returned: callers find them in the block's transactions.
    */
   extractCreatedAddressesFromParityTraceProvider = async (
     rpc: SourcifyRpcWithProvider,
@@ -637,6 +639,14 @@ export class SourcifyChain {
     const createdAddresses: Record<string, string[]> = {};
     for (const trace of traces) {
       if (trace.type !== 'create') continue;
+      // An empty traceAddress is the root frame of the tx, i.e. a top-level deploy.
+      // The Geth path skips it too, because it starts from the root frame's `calls`.
+      if (
+        Array.isArray(trace.traceAddress) &&
+        trace.traceAddress.length === 0
+      ) {
+        continue;
+      }
       if (isReverted(trace)) continue;
       if (!trace.result || !trace.result.address || !trace.transactionHash) {
         logWarn('Found create trace with missing data, skipping.', {
@@ -723,7 +733,8 @@ export class SourcifyChain {
 
   /**
    * For Geth style traces `debug_traceBlockByNumber`
-   * Extracts the all created addresses from the traces of a block
+   * Extracts the addresses that contracts created (factory deploys) from the traces of a block.
+   * Top-level deploys (a tx with no `to`) are not returned: callers find them in the block's transactions.
    */
   extractCreatedAddressesFromGethTraceProvider = async (
     rpc: SourcifyRpcWithProvider,

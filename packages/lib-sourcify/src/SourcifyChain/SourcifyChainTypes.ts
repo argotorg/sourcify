@@ -24,6 +24,12 @@ export type SourcifyChainExtension = {
 export interface FetchContractCreationTxMethods {
   blockscoutApi?: {
     url: string;
+    /**
+     * True when the chain is served by the Blockscout PRO API gateway
+     * (api.blockscout.com). The server then uses the gateway with the
+     * BLOCKSCOUT_PRO_API_KEY instead of the instance url.
+     */
+    proApi?: boolean;
   };
   routescanApi?: {
     type: 'mainnet' | 'testnet';

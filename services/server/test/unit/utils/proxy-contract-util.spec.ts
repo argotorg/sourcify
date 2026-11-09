@@ -9,6 +9,7 @@ describe("proxy contract util", function () {
   const sandbox = sinon.createSandbox();
   const LIVEPEER_MANAGER_PROXY_ADDRESS =
     "0x35Bcf3c30594191d53231E4FF333E8A770453e40";
+  const ARAGON_APP_PROXY_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 
   afterEach(() => {
     sandbox.restore();
@@ -213,6 +214,80 @@ describe("proxy contract util", function () {
         { address: "0xbe197fcbfe74de8f10460ea61644b006cc0f0bd2" },
       ],
     });
+  });
+
+  it("should detect AragonAppProxy", async function () {
+    // aragonOS AppProxyUpgradeable, resolved via the ERC-897 implementation()
+    // call. Based on Lido stETH (chain 1) 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84.
+    // A call with any other arguments resolves to undefined and fails the test.
+    const callStub = sandbox.stub();
+    callStub
+      .withArgs({ to: ARAGON_APP_PROXY_ADDRESS, data: "0x5c60da1b" })
+      .resolves(
+        "0x000000000000000000000000028271e30a695c0527a0c50ca30603fed004cdb0",
+      );
+    mockSourcifyChain.call = callStub;
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.AragonAppProxy,
+      ARAGON_APP_PROXY_ADDRESS,
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "AragonAppProxy",
+      implementations: [
+        { address: "0x028271e30a695c0527a0c50ca30603fed004cdb0" },
+      ],
+    });
+    chai.expect(callStub.calledOnce).to.be.true;
+  });
+
+  it("should detect AragonAppProxy from creation bytecode (the path Sourcify uses)", async function () {
+    const callStub = sandbox.stub();
+    callStub
+      .withArgs({ to: ARAGON_APP_PROXY_ADDRESS, data: "0x5c60da1b" })
+      .resolves(
+        "0x000000000000000000000000028271e30a695c0527a0c50ca30603fed004cdb0",
+      );
+    mockSourcifyChain.call = callStub;
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.AragonAppProxyCreationCode,
+      ARAGON_APP_PROXY_ADDRESS,
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: true,
+      proxyType: "AragonAppProxy",
+      implementations: [
+        { address: "0x028271e30a695c0527a0c50ca30603fed004cdb0" },
+      ],
+    });
+    chai.expect(callStub.calledOnce).to.be.true;
+  });
+
+  it("should not detect an Aragon app implementation as AragonAppProxy", async function () {
+    // The app reads the same kernel slot as the proxy but has no
+    // implementation() function. Based on the Lido stETH implementation
+    // (chain 1) 0x028271E30a695c0527A0C50cA30603feD004cDb0.
+    const callStub = sandbox.stub().rejects(new Error("execution reverted"));
+    mockSourcifyChain.call = callStub;
+
+    const result = await detectAndResolveProxy(
+      proxyBytecodes.AragonAppImplementation,
+      "0x028271E30a695c0527A0C50cA30603feD004cDb0",
+      mockSourcifyChain,
+    );
+
+    chai.expect(result).to.deep.equal({
+      isProxy: false,
+      proxyType: null,
+      implementations: [],
+    });
+    chai.expect(callStub.called).to.be.false;
   });
 
   it("should return false for factories that deploy proxies", async function () {

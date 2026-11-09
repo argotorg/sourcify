@@ -1,6 +1,8 @@
 import type http from "http";
 import logger from "./logger";
 import { SignatureDatabase } from "./SignatureDatabase";
+import { SignatureStats } from "./SignatureStats";
+import type { SignatureStatsOptions } from "./SignatureStats";
 import express from "express";
 import cors from "cors";
 import { createSignatureHandlers } from "./api/handlers";
@@ -19,12 +21,14 @@ export interface DatabaseConfig {
 export interface ServerOptions {
   port: string | number;
   databaseConfig: DatabaseConfig;
+  statsOptions?: SignatureStatsOptions;
 }
 
 export class FourByteServer {
   app: express.Application;
   port: string | number;
   database: SignatureDatabase;
+  stats: SignatureStats;
   httpServer?: http.Server;
 
   constructor(options: ServerOptions) {
@@ -32,6 +36,11 @@ export class FourByteServer {
     this.port = options.port;
     logger.info("4Byte Server port set", { port: this.port });
     this.database = new SignatureDatabase(options.databaseConfig);
+    this.stats = new SignatureStats(
+      this.database,
+      logger,
+      options.statsOptions,
+    );
 
     // Check database health during initialization
     this.database.checkDatabaseHealth().catch((error) => {
@@ -42,7 +51,7 @@ export class FourByteServer {
     this.app.use(cors());
     this.app.use(express.json());
 
-    const handlers = createSignatureHandlers(this.database, logger);
+    const handlers = createSignatureHandlers(this.database, this.stats, logger);
 
     this.app.get(
       "/signature-database/v1/lookup",
@@ -56,6 +65,7 @@ export class FourByteServer {
     );
     this.app.post("/signature-database/v1/import", handlers.importSignatures);
     this.app.get("/signature-database/v1/stats", handlers.getSignaturesStats);
+    this.app.get("/signature-database/v1/recent", handlers.getRecentSignatures);
 
     this.app.get("/health", async (_req, res) => {
       try {
@@ -77,6 +87,7 @@ export class FourByteServer {
   }
 
   async listen(): Promise<void> {
+    await this.stats.start();
     return new Promise<void>((resolve, reject) => {
       this.httpServer = this.app.listen(this.port, (error?: Error) => {
         if (error) {
@@ -103,6 +114,7 @@ export class FourByteServer {
         });
       });
     }
+    this.stats.stop();
     await this.database.close();
     logger.info("4byte database connection closed");
   }

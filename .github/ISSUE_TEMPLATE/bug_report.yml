@@ -1,0 +1,46 @@
+name: Bug report
+description: Report something in Sourcify that doesn't work as expected
+labels: ["🪲 bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report. A clear issue helps us more than a pull request, so please give as much detail as you can. See [CONTRIBUTING.md](https://github.com/argotorg/sourcify/blob/staging/CONTRIBUTING.md).
+
+        For questions or help with a contract that won't verify, please ask on Discord or Matrix first.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: For verification problems, give the chain ID, the contract address, and the verification job ID if you have one. Include the request that you sent, if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+      description: What did you expect to happen, and what happened?
+    validations:
+      required: true
+  - type: textarea
+    id: analysis
+    attributes:
+      label: Analysis of the cause
+      description: Optional. If you looked into the cause, tell us what you found.
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: Optional. How would you fix it? A prompt that you would give to an AI agent is fine.
+  - type: input
+    id: ai-use
+    attributes:
+      label: AI use
+      description: Optional. Did an AI tool help you write this issue? Which one?

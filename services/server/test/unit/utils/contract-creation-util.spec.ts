@@ -8,6 +8,7 @@ import type { SourcifyChainMap } from "@ethereum-sourcify/lib-sourcify";
 import sinon from "sinon";
 import { SourcifyChain } from "@ethereum-sourcify/lib-sourcify";
 import { findContractCreationTxByBinarySearch } from "../../../src/server/services/utils/contract-creation-util";
+import logger from "../../../src/common/logger";
 
 // Tests hitting the live creation-tx APIs are in test/creation-tx-apis/.
 describe("contract creation util", function () {
@@ -77,6 +78,45 @@ describe("contract creation util", function () {
       chai.expect(calledUrl.endsWith("&apikey=")).to.equal(true);
     });
 
+    it("should not log the API key when the API request fails", async function () {
+      fetchStub.resolves({ status: 429, json: async () => ({}) } as any);
+      const warnStub = sinon.stub(logger, "warn");
+      const debugStub = sinon.stub(logger, "debug");
+      const chain = new SourcifyChain({
+        name: "Canonical Etherscan Chain",
+        chainId: 1,
+        supported: true,
+        rpcs: [{ rpc: "http://localhost/" }],
+        fetchContractCreationTxUsing: { etherscanApi: true },
+        etherscanApi: { supported: true },
+      });
+
+      try {
+        await getCreatorTx(chain, ADDRESS);
+      } finally {
+        warnStub.restore();
+        debugStub.restore();
+      }
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai.expect(fetchStub.firstCall.args[0]).to.include(GLOBAL_KEY);
+      const loggedArgs = JSON.stringify([
+        ...warnStub.getCalls().map((call) => call.args),
+        ...debugStub.getCalls().map((call) => call.args),
+      ]);
+      chai.expect(loggedArgs).to.not.include(GLOBAL_KEY);
+      const warnCall = warnStub
+        .getCalls()
+        .map((call) => call.args as any[])
+        .find((args) => args[0] === "Error while getting creation transaction");
+      chai.expect(warnCall).to.not.equal(undefined);
+      chai
+        .expect(warnCall?.[1]?.error)
+        .to.equal(
+          `Contract creator tx could not be fetched from https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}&apikey= because of status code 429`,
+        );
+    });
+
     it("should send the global ETHERSCAN_API_KEY to a canonical Etherscan chain (no url)", async function () {
       const chain = new SourcifyChain({
         name: "Canonical Etherscan Chain",
@@ -92,6 +132,84 @@ describe("contract creation util", function () {
       chai.expect(fetchStub.calledOnce).to.equal(true);
       const calledUrl = fetchStub.firstCall.args[0] as string;
       chai.expect(calledUrl).to.include(GLOBAL_KEY);
+    });
+  });
+
+  describe("Blockscout PRO API handling for getCreatorTx", function () {
+    const ADDRESS = "0x0000000000000000000000000000000000000001";
+    const PRO_API_KEY = "SECRET_BLOCKSCOUT_PRO_KEY";
+    const INSTANCE_URL = "https://eth.blockscout.com/";
+    let prevProApiKey: string | undefined;
+    let fetchStub: sinon.SinonStub;
+
+    const createChain = (proApi?: boolean) =>
+      new SourcifyChain({
+        name: "Blockscout Chain",
+        chainId: 1,
+        supported: true,
+        rpcs: [{ rpc: "http://localhost/" }],
+        fetchContractCreationTxUsing: {
+          blockscoutApi: { url: INSTANCE_URL, proApi },
+        },
+      });
+
+    beforeEach(function () {
+      prevProApiKey = process.env.BLOCKSCOUT_PRO_API_KEY;
+      process.env.BLOCKSCOUT_PRO_API_KEY = PRO_API_KEY;
+      fetchStub = sinon.stub(global, "fetch" as any).resolves({
+        status: 200,
+        json: async () => ({ creation_transaction_hash: "0xabc" }),
+      } as any);
+    });
+
+    afterEach(function () {
+      fetchStub.restore();
+      if (prevProApiKey === undefined)
+        delete process.env.BLOCKSCOUT_PRO_API_KEY;
+      else process.env.BLOCKSCOUT_PRO_API_KEY = prevProApiKey;
+    });
+
+    it("should use the PRO API gateway with the key when proApi is true", async function () {
+      const creatorTx = await getCreatorTx(createChain(true), ADDRESS);
+
+      chai.expect(creatorTx).to.equal("0xabc");
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai
+        .expect(fetchStub.firstCall.args[0])
+        .to.equal(
+          `https://api.blockscout.com/1/api/v2/addresses/${ADDRESS}?apikey=${PRO_API_KEY}`,
+        );
+    });
+
+    it("should use the instance url when proApi is false", async function () {
+      await getCreatorTx(createChain(false), ADDRESS);
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      const calledUrl = fetchStub.firstCall.args[0] as string;
+      chai
+        .expect(calledUrl)
+        .to.equal(`${INSTANCE_URL}/api/v2/addresses/${ADDRESS}`);
+      chai.expect(calledUrl).to.not.include(PRO_API_KEY);
+    });
+
+    it("should use the instance url when proApi is not set", async function () {
+      await getCreatorTx(createChain(), ADDRESS);
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai
+        .expect(fetchStub.firstCall.args[0])
+        .to.equal(`${INSTANCE_URL}/api/v2/addresses/${ADDRESS}`);
+    });
+
+    it("should use the instance url when BLOCKSCOUT_PRO_API_KEY is not set", async function () {
+      delete process.env.BLOCKSCOUT_PRO_API_KEY;
+
+      await getCreatorTx(createChain(true), ADDRESS);
+
+      chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai
+        .expect(fetchStub.firstCall.args[0])
+        .to.equal(`${INSTANCE_URL}/api/v2/addresses/${ADDRESS}`);
     });
   });
 

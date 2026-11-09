@@ -1,0 +1,210 @@
+{
+  "_comment": "Solar: the library placeholder was replaced manually instead of linking with the compiler settings.",
+  "onchain": {
+    "creationBytecode": "0x34600d57609f8060115f395ff35b5f5ffd34605c575f3560e01c8063a444f5e903605c57608060405260243610605c5760205f6024601c737a250d5630b4cf539739df2c5dacb4c659f2488d63f40a049d5f5260043585525af4156060573d602011605c575f515f5260205ff35b5f5ffd5b3d5f5f3e3d5ffdfea26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034",
+    "deployedBytecode": "0x34605c575f3560e01c8063a444f5e903605c57608060405260243610605c5760205f6024601c737a250d5630b4cf539739df2c5dacb4c659f2488d63f40a049d5f5260043585525af4156060573d602011605c575f515f5260205ff35b5f5ffd5b3d5f5f3e3d5ffdfea26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Calculator.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nlibrary MathLib {\n    function triple(uint256 x) external pure returns (uint256) {\n        return x * 3;\n    }\n}\n\ncontract Calculator {\n    function run(uint256 x) external pure returns (uint256) {\n        return MathLib.triple(x);\n    }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun"
+      }
+    },
+    "compilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+    "contractIdentifier": "contracts/Calculator.sol:Calculator"
+  },
+  "output": {
+    "creationBytecode": "0x34600d57609f8060115f395ff35b5f5ffd34605c575f3560e01c8063a444f5e903605c57608060405260243610605c5760205f6024601c73000000000000000000000000000000000000000063f40a049d5f5260043585525af4156060573d602011605c575f515f5260205ff35b5f5ffd5b3d5f5f3e3d5ffdfea26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034",
+    "deployedBytecode": "0x34605c575f3560e01c8063a444f5e903605c57608060405260243610605c5760205f6024601c73000000000000000000000000000000000000000063f40a049d5f5260043585525af4156060573d602011605c575f515f5260205ff35b5f5ffd5b3d5f5f3e3d5ffdfea26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "type": "function",
+          "name": "run",
+          "inputs": [
+            {
+              "name": "x",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "pure"
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      },
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "sources": {
+        "contracts/Calculator.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {
+        "contracts/Calculator.sol": {
+          "MathLib": [
+            {
+              "start": 56,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": ":::-:0;;;;;;;;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 122,
+          "value": "0xa26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {
+        "contracts/Calculator.sol": {
+          "MathLib": [
+            {
+              "start": 39,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": ":::-:0;;;;;;;;;;;;;;;;;;;;;;;;270:17:0;;;;;;;;;;;;;;;;;;;;263:25;;;;;-1:-1:-1;270:17:0;;;-1:-1:-1;270:17:0;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 105,
+          "value": "0xa26469706673582212209165a1742a4f0caed0714d2bf71d7d132f5ce3d12e522691039d9126fe79a6bf65736f6c6172430003000034"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "name": "solar",
+        "version": "0.8.38+commit.e7a91fc7.solar.0.3.0"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "x",
+                "type": "uint256"
+              }
+            ],
+            "name": "run",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "pure",
+            "type": "function"
+          }
+        ],
+        "devdoc": {
+          "kind": "dev",
+          "methods": {},
+          "version": 1
+        },
+        "userdoc": {
+          "kind": "user",
+          "methods": {},
+          "version": 1
+        }
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Calculator.sol": "Calculator"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "remappings": []
+      },
+      "sources": {
+        "contracts/Calculator.sol": {
+          "keccak256": "0xb9314510ca58a0bbe35e5ea93a3242d3a9602f22b74fdc53b5f263d0ef4cbf95",
+          "urls": [
+            "bzz-raw://a69f4f1a342dc533a764ceaec3a79a622508088dd0fc55ab832465fddf249ce6",
+            "dweb:/ipfs/QmdxjmDzWvTcUcGrWRZdyLLa2vjLmnkDq2k3bx9xq2Svbj"
+          ]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "creationTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 56,
+        "id": "contracts/Calculator.sol:MathLib"
+      }
+    ],
+    "creationValues": {
+      "libraries": {
+        "contracts/Calculator.sol:MathLib": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+      }
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 39,
+        "id": "contracts/Calculator.sol:MathLib"
+      }
+    ],
+    "runtimeValues": {
+      "libraries": {
+        "contracts/Calculator.sol:MathLib": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+      }
+    }
+  }
+}

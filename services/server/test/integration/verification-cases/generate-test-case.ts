@@ -10,17 +10,26 @@
  * 4. Creating a JSON test data file with most fields auto-filled
  *
  * The user only needs to manually fill in the verification section and cborAuxdata fields.
+ *
+ * Pass a JSON file with the answers to skip the prompts, e.g. to regenerate the
+ * Solar fixtures: `npx ts-node generate-test-case.ts testdata/solar/generator/full_match.json`
  */
 
 import readline from "readline";
 import fs from "fs/promises";
+import { readFileSync } from "fs";
 import path from "path";
-import { spawn } from "child_process";
 import type { ChildProcess } from "child_process";
-import treeKill from "tree-kill";
+import {
+  startHardhatNetwork,
+  stopHardhatNetwork,
+} from "@ethereum-sourcify/test-helpers";
 import { JsonRpcProvider, Network } from "ethers";
 import type { JsonRpcSigner } from "ethers";
-import { useSolidityCompiler } from "@ethereum-sourcify/compilers";
+import {
+  useSolidityCompiler,
+  useSolarCompiler,
+} from "@ethereum-sourcify/compilers";
 import type {
   SolidityOutput,
   SolidityOutputContract,
@@ -33,7 +42,10 @@ import type {
 import {
   Verification,
   SolidityCompilation,
+  SolarCompilation,
   DEFAULT_OUTPUT_SELECTION_FIELDS,
+  SOLAR_OUTPUT_SELECTION_FIELDS,
+  isSolarVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import { toMatchLevel } from "../../../src/server/services/utils/util";
@@ -41,6 +53,20 @@ import SourcifyChainMock from "../../../src/server/services/utils/SourcifyChainM
 
 const solcRepoPath = "/tmp/solc-bin/linux-amd64";
 const solJsonRepoPath = "/tmp/solc-bin/soljson";
+const solarRepoPath = "/tmp/solar-bin";
+
+// Optional answers file, keyed by the names passed to question() and readJsonInput()
+const answers: Record<string, any> | undefined = process.argv[2]
+  ? JSON.parse(readFileSync(process.argv[2], "utf8"))
+  : undefined;
+
+function answer(key: string): any {
+  if (!(key in answers!)) {
+    throw new Error(`Missing answer "${key}" in ${process.argv[2]}`);
+  }
+  console.log(`${key}: ${JSON.stringify(answers![key]).slice(0, 80)}`);
+  return structuredClone(answers![key]);
+}
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -48,12 +74,32 @@ const rl = readline.createInterface({
 });
 
 // Promisify readline question
-function question(query: string): Promise<string> {
+function question(query: string, key: string): Promise<string> {
+  if (answers) return Promise.resolve(answer(key));
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
+// Compiles with Solar when the version names a Solar build
+async function compile(
+  version: string,
+  input: SolidityJsonInput,
+  forceEmscripten = false,
+): Promise<SolidityOutput> {
+  if (isSolarVersion(version)) {
+    return await useSolarCompiler(solarRepoPath, version, input);
+  }
+  return await useSolidityCompiler(
+    solcRepoPath,
+    solJsonRepoPath,
+    version,
+    input,
+    forceEmscripten,
+  );
+}
+
 // Helper to read multiline JSON input
-async function readJsonInput(prompt: string): Promise<any> {
+async function readJsonInput(prompt: string, key: string): Promise<any> {
+  if (answers) return answer(key);
   console.log(prompt);
   console.log("Paste your JSON (press Enter on an empty line when done):");
   console.log();
@@ -76,48 +122,6 @@ async function readJsonInput(prompt: string): Promise<any> {
     };
 
     rl.on("line", onLine);
-  });
-}
-
-// Start Hardhat network
-function startHardhatNetwork(port: number): Promise<ChildProcess> {
-  return new Promise((resolve) => {
-    const hardhatNodeProcess = spawn("npx", [
-      "hardhat",
-      "node",
-      "--port",
-      port.toString(),
-    ]);
-
-    hardhatNodeProcess.stderr.on("data", (data: Buffer) => {
-      console.error(`Hardhat Network Error: ${data.toString()}`);
-    });
-
-    hardhatNodeProcess.stdout.on("data", (data: Buffer) => {
-      const output = data.toString();
-      process.stdout.write(output);
-      if (output.includes("Started HTTP and WebSocket JSON-RPC server at")) {
-        resolve(hardhatNodeProcess);
-      }
-    });
-  });
-}
-
-// Stop Hardhat network
-function stopHardhatNetwork(hardhatNodeProcess: ChildProcess): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!hardhatNodeProcess.pid) {
-      resolve();
-      return;
-    }
-    treeKill(hardhatNodeProcess.pid, "SIGTERM", (err) => {
-      if (err) {
-        console.error(`Failed to kill process tree: ${err}`);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
   });
 }
 
@@ -169,13 +173,7 @@ class SolcCompilerWrapper implements ISolidityCompiler {
     version: string,
     solcJsonInput: SolidityJsonInput,
   ): Promise<SolidityOutput> {
-    return await useSolidityCompiler(
-      solcRepoPath,
-      solJsonRepoPath,
-      version,
-      solcJsonInput,
-      true,
-    );
+    return await compile(version, solcJsonInput, true);
   }
 }
 
@@ -272,13 +270,16 @@ async function main() {
     console.log("-".repeat(80));
     const deploymentStdJsonInput = await readJsonInput(
       "Please provide the stdJsonInput that leads to the deployed contract code.\nMake sure to include linked library addresses if your contract uses libraries.",
+      "deploymentStdJsonInput",
     );
 
     const deploymentCompilerVersion = await question(
       "Enter the compiler version (e.g., '0.8.18+commit.87f61d96'): ",
+      "deploymentCompilerVersion",
     );
     const deploymentContractIdentifier = await question(
       "Enter the contract identifier (e.g., 'contracts/Storage.sol:Storage'): ",
+      "deploymentContractIdentifier",
     );
 
     console.log();
@@ -289,9 +290,7 @@ async function main() {
     console.log("STEP 2: Compilation & Constructor Arguments");
     console.log("-".repeat(80));
 
-    const deploymentOutput = await useSolidityCompiler(
-      solcRepoPath,
-      solJsonRepoPath,
+    const deploymentOutput = await compile(
       deploymentCompilerVersion.trim(),
       deploymentStdJsonInput,
       true,
@@ -312,8 +311,20 @@ async function main() {
 
     let creationBytecode = "0x" + deploymentContract.evm.bytecode.object;
 
+    // Placeholders are replaced like a manual link, e.g. {"__$...$__": "<address>"}
+    if (answers?.linkLibraries) {
+      for (const [placeholder, address] of Object.entries(
+        answers.linkLibraries as Record<string, string>,
+      )) {
+        creationBytecode = creationBytecode
+          .split(placeholder)
+          .join(address.replace(/^0x/, "").toLowerCase());
+      }
+    }
+
     const constructorArgs = await question(
       "Enter constructor arguments (ABI-encoded hex string, or press Enter for none): ",
+      "constructorArgs",
     );
 
     if (constructorArgs.trim()) {
@@ -367,6 +378,7 @@ async function main() {
 
     const reuseInput = await question(
       "Should the same stdJsonInput, compilerVersion and contractIdentifier be used for\nthe verification in the test case? If you want the test case to verify via a\nmodified stdJsonInput, say no. (Y/n): ",
+      "reuseInput",
     );
 
     let verificationStdJsonInput = deploymentStdJsonInput;
@@ -383,12 +395,15 @@ async function main() {
       console.log();
       verificationStdJsonInput = await readJsonInput(
         "Please provide the stdJsonInput for verification:",
+        "verificationStdJsonInput",
       );
       verificationCompilerVersion = await question(
         "Enter the compiler version for verification: ",
+        "verificationCompilerVersion",
       );
       verificationContractIdentifier = await question(
         "Enter the contract identifier for verification: ",
+        "verificationContractIdentifier",
       );
     }
 
@@ -401,13 +416,16 @@ async function main() {
     // The generator compiles directly via useSolidityCompiler (bypassing the
     // SolidityCompilation class, which scopes output to the target), so it
     // requests full output for every contract to build a complete fixture, hence the "*": "*" selection.
+    const isSolar = isSolarVersion(verificationCompilerVersion.trim());
     verificationStdJsonInput.settings.outputSelection = {
-      "*": { "*": [...DEFAULT_OUTPUT_SELECTION_FIELDS] },
+      "*": {
+        "*": isSolar
+          ? [...SOLAR_OUTPUT_SELECTION_FIELDS]
+          : [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+      },
     };
 
-    const verificationOutput = await useSolidityCompiler(
-      solcRepoPath,
-      solJsonRepoPath,
+    const verificationOutput = await compile(
       verificationCompilerVersion.trim(),
       verificationStdJsonInput,
     );
@@ -437,6 +455,7 @@ async function main() {
 
     const generateVerification = await question(
       "Do you want to generate verification results too? If you do so, please make sure to\nMANUALLY CHECK the data inside the cborAuxdata and verification fields very thoroughly. (Y/n): ",
+      "generateVerification",
     );
 
     // Default to yes if empty input or yes/y
@@ -462,7 +481,9 @@ async function main() {
           .trim()
           .split(":");
 
-        const compilation = new SolidityCompilation(
+        const compilation = new (
+          isSolar ? SolarCompilation : SolidityCompilation
+        )(
           solcWrapper,
           verificationCompilerVersion.trim(),
           verificationStdJsonInput,
@@ -535,10 +556,12 @@ async function main() {
 
     const testCaseDescription = await question(
       "What verification case is tested by your new test?\n(This will be used for the _comment field): ",
+      "testCaseDescription",
     );
 
     const filename = await question(
       "Enter a filename for this test case (without .json extension,\ne.g., 'constructor_args_with_libraries'): ",
+      "filename",
     );
 
     // Build the test case
@@ -556,6 +579,28 @@ async function main() {
         cborAuxdataData.creation;
       finalTestCaseOutput.runtimeCodeArtifacts.cborAuxdata =
         cborAuxdataData.runtime;
+    }
+
+    // Sourcify stores library placeholders as zero addresses
+    const zeroLibraries = (bytecode: string, transformations: any[]) =>
+      transformations
+        .filter((t) => t.reason === "library")
+        .reduce(
+          (code: string, t) =>
+            code.slice(0, 2 + t.offset * 2) +
+            "0".repeat(40) +
+            code.slice(2 + t.offset * 2 + 40),
+          bytecode,
+        );
+    if (verificationGenerated && verificationData) {
+      finalTestCaseOutput.creationBytecode = zeroLibraries(
+        finalTestCaseOutput.creationBytecode,
+        verificationData.creationTransformations,
+      );
+      finalTestCaseOutput.deployedBytecode = zeroLibraries(
+        finalTestCaseOutput.deployedBytecode,
+        verificationData.runtimeTransformations,
+      );
     }
 
     const testCase: VerificationTestCase = {

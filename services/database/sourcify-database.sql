@@ -1133,32 +1133,6 @@ CREATE TABLE public.signatures (
 
 
 --
--- Name: signature_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: -
---
-
-CREATE MATERIALIZED VIEW public.signature_stats AS
- SELECT (compiled_contracts_signatures.signature_type)::text AS signature_type,
-    count(DISTINCT compiled_contracts_signatures.signature_hash_32) AS count,
-    now() AS refreshed_at
-   FROM public.compiled_contracts_signatures
-  GROUP BY compiled_contracts_signatures.signature_type
-UNION ALL
- SELECT 'unknown'::text AS signature_type,
-    count(*) AS count,
-    now() AS refreshed_at
-   FROM public.signatures s
-  WHERE (NOT (EXISTS ( SELECT 1
-           FROM public.compiled_contracts_signatures ccs
-          WHERE (ccs.signature_hash_32 = s.signature_hash_32))))
-UNION ALL
- SELECT 'total'::text AS signature_type,
-    count(*) AS count,
-    now() AS refreshed_at
-   FROM public.signatures
-  WITH NO DATA;
-
-
---
 -- Name: sources; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1653,13 +1627,6 @@ CREATE INDEX contracts_creation_code_hash_runtime_code_hash ON public.contracts 
 --
 
 CREATE INDEX contracts_runtime_code_hash ON public.contracts USING btree (runtime_code_hash);
-
-
---
--- Name: signature_stats_type_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX signature_stats_type_idx ON public.signature_stats USING btree (signature_type);
 
 
 --
@@ -2300,4 +2267,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260820120000'),
     ('20260826100000'),
     ('20260908145004'),
-    ('20260915115359');
+    ('20260915115359'),
+    ('20261020100000');

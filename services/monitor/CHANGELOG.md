@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-monitor@1.6.6 - 2026-11-03
+
+- chore: bump Node to 22.23.4 for Brotli RCE CVE-2026-111497 (Node2Shell) (#3040)
+- chore(monitor): remove Scroll Sepolia (534351) (#3047)
+- Update dependencies
+
+## sourcify-monitor@1.6.5 - 2026-10-21
+
+- fix(monitor): send each new contract to the server only once (#3027)
+
+## sourcify-monitor@1.6.4 - 2026-10-05
+
+- fix: replace retired ipfs.io gateway defaults (#2985)
+- Update dependencies
+
 ## sourcify-monitor@1.6.3 - 2026-09-22
 
 - test: remove the live ipfs.io dependency from monitor and server tests (#2967)

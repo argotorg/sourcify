@@ -6,6 +6,8 @@ import { deriveEtherscanApiKey } from "./etherscan-util";
 const ETHERSCAN_API =
   "https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&module=contract&action=getcontractcreation&contractaddresses=${ADDRESS}&apikey=";
 const BLOCKSCOUT_API_SUFFIX = "/api/v2/addresses/${ADDRESS}";
+const BLOCKSCOUT_PRO_API_URL =
+  "https://api.blockscout.com/${CHAIN_ID}/api/v2/addresses/${ADDRESS}?apikey=";
 const AVALANCHE_SUBNET_SUFFIX =
   "contracts/${ADDRESS}/transactions:getDeployment";
 const NEXUS_SUFFIX = "v1/${RUNTIME}/accounts/${ADDRESS}";
@@ -56,13 +58,29 @@ function getEtherscanApiContractCreatorFetcher(
   );
 }
 
+function parseBlockscoutCreationTx(response: any) {
+  return response?.creation_tx_hash || response?.creation_transaction_hash;
+}
+
 function getBlockscoutApiContractCreatorFetcher(
   apiURL: string,
 ): ContractCreationFetcher {
   return getApiContractCreationFetcher(
     apiURL + BLOCKSCOUT_API_SUFFIX,
-    (response: any) =>
-      response?.creation_tx_hash || response?.creation_transaction_hash,
+    parseBlockscoutCreationTx,
+  );
+}
+
+function getBlockscoutProApiContractCreatorFetcher(
+  chainId: number,
+  apiKey: string,
+): ContractCreationFetcher {
+  // Don't replace ${ADDRESS} because it's done inside getCreatorTxUsingFetcher()
+  const url = BLOCKSCOUT_PRO_API_URL.replace("${CHAIN_ID}", chainId.toString());
+  return getApiContractCreationFetcher(
+    url + apiKey,
+    parseBlockscoutCreationTx,
+    url,
   );
 }
 
@@ -166,10 +184,15 @@ async function getCreatorTxUsingFetcher(
     "${ADDRESS}",
     contractAddress,
   );
+  // The url can contain an API key. Only log the masked url.
+  const maskedFetchAddressFilled = fetcher?.maskedUrl?.replace(
+    "${ADDRESS}",
+    contractAddress,
+  );
 
   logger.debug("Fetching Creator Tx", {
     fetcherUrl: fetcher?.maskedUrl,
-    contractFetchAddressFilled,
+    maskedFetchAddressFilled,
     contractAddress,
   });
 
@@ -177,12 +200,15 @@ async function getCreatorTxUsingFetcher(
 
   try {
     if (fetcher?.responseParser) {
-      const response = await fetchFromApi(contractFetchAddressFilled);
+      const response = await fetchFromApi(
+        contractFetchAddressFilled,
+        maskedFetchAddressFilled,
+      );
       const creatorTx = fetcher?.responseParser(response);
       if (creatorTx) {
         logger.debug("Fetched Creator Tx", {
           fetcherUrl: fetcher?.maskedUrl,
-          contractFetchAddressFilled,
+          maskedFetchAddressFilled,
           contractAddress,
           creatorTx,
         });
@@ -213,9 +239,17 @@ export const getCreatorTx = async (
 ): Promise<string | null> => {
   // Try blockscout first
   if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi) {
-    const fetcher = getBlockscoutApiContractCreatorFetcher(
-      sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi.url,
-    );
+    const { url, proApi } =
+      sourcifyChain.fetchContractCreationTxUsing.blockscoutApi;
+    // Use the PRO API gateway for the higher rate limits when the chain supports it
+    const proApiKey = process.env.BLOCKSCOUT_PRO_API_KEY;
+    const fetcher =
+      proApi && proApiKey
+        ? getBlockscoutProApiContractCreatorFetcher(
+            sourcifyChain.chainId,
+            proApiKey,
+          )
+        : getBlockscoutApiContractCreatorFetcher(url);
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
@@ -324,7 +358,8 @@ export const getCreatorTx = async (
   return null;
 };
 
-async function fetchFromApi(fetchAddress: string) {
+// The error message goes into the logs. It must not contain the API key.
+async function fetchFromApi(fetchAddress: string, maskedFetchAddress?: string) {
   const res = await fetch(fetchAddress);
   if (res.status === StatusCodes.OK) {
     const response = await res.json();
@@ -332,7 +367,7 @@ async function fetchFromApi(fetchAddress: string) {
   }
 
   throw new Error(
-    `Contract creator tx could not be fetched from ${fetchAddress} because of status code ${res.status}`,
+    `Contract creator tx could not be fetched from ${maskedFetchAddress} because of status code ${res.status}`,
   );
 }
 

@@ -1,3 +1,18 @@
+## @ethereum-sourcify/compilers@1.4.0 - 2026-11-03
+
+- Fix flaky cwd sandbox test in compilers package (#3038)
+- feat: verify contracts compiled with Solar (#3050)
+- fix: verify contracts built with the Solar that Foundry bundles (#3052)
+- Update dependencies
+
+## @ethereum-sourcify/compilers@1.3.2 - 2026-10-21
+
+- update dependencies
+
+## @ethereum-sourcify/compilers@1.3.1 - 2026-10-05
+
+- Update dependencies
+
 ## @ethereum-sourcify/compilers@1.3.0 - 2026-09-01
 
 - fix(compilers): sandbox native solc cwd to stop import path leaks (#2920)

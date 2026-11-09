@@ -13,6 +13,13 @@ export type FourByteServerFixtureOptions = {
   skipDatabaseReset?: boolean;
 };
 
+export interface TestVerifiedContract {
+  name: string;
+  chainId: number;
+  address: string;
+  signatures: TestSignature[];
+}
+
 export class FourByteServerFixture {
   private _server?: FourByteServer;
   private _pool?: Pool;
@@ -54,6 +61,8 @@ export class FourByteServerFixture {
           max: 20,
           schema: process.env.FOURBYTES_POSTGRES_SCHEMA || "public",
         },
+        // Count up to now. Tests call server.stats.reset() after they change the database.
+        statsOptions: { commitMarginMs: 0, countStepMs: 1 },
       });
 
       // Start the server
@@ -83,18 +92,8 @@ export class FourByteServerFixture {
     if (!this._pool) return;
 
     await this._pool.query(
-      "TRUNCATE signatures, compiled_contracts_signatures RESTART IDENTITY CASCADE",
+      "TRUNCATE signatures, compiled_contracts_signatures, verified_contracts, compiled_contracts, contract_deployments, contracts, code RESTART IDENTITY CASCADE",
     );
-
-    // Refresh the materialized view to clear stats
-    try {
-      await this._pool.query("REFRESH MATERIALIZED VIEW signature_stats");
-    } catch (error) {
-      // Ignore errors if the materialized view doesn't exist yet
-      console.log(
-        "Could not refresh signature stats (materialized view may not exist yet)",
-      );
-    }
   }
 
   async insertTestSignatures(signatures: TestSignature[]): Promise<void> {
@@ -131,17 +130,72 @@ export class FourByteServerFixture {
         }
       }
 
-      // Refresh the materialized view for stats
-      try {
-        await client.query("REFRESH MATERIALIZED VIEW signature_stats");
-      } catch (error) {
-        // Ignore errors if the materialized view doesn't exist or can't be refreshed
-        console.log(
-          "Could not refresh signature stats materialized view:",
-          error,
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Stores a minimal verified contract and its signatures in one transaction, as the
+  // server does after a verification.
+  async insertVerifiedContract(contract: TestVerifiedContract): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Unique code for each contract, because of the unique keys on the code hashes
+      const code = Buffer.from(contract.address.slice(2), "hex");
+      const {
+        rows: [{ code_hash: codeHash }],
+      } = await client.query(
+        "INSERT INTO code (code_hash, code_hash_keccak, code) VALUES (digest($1::bytea, 'sha256'), '\\x', $1) RETURNING code_hash",
+        [code],
+      );
+      const {
+        rows: [{ id: contractId }],
+      } = await client.query(
+        "INSERT INTO contracts (creation_code_hash, runtime_code_hash) VALUES ($1, $1) RETURNING id",
+        [codeHash],
+      );
+      const {
+        rows: [{ id: deploymentId }],
+      } = await client.query(
+        "INSERT INTO contract_deployments (chain_id, address, contract_id) VALUES ($1, $2, $3) RETURNING id",
+        [
+          contract.chainId,
+          Buffer.from(contract.address.slice(2), "hex"),
+          contractId,
+        ],
+      );
+      const {
+        rows: [{ id: compilationId }],
+      } = await client.query(
+        `INSERT INTO compiled_contracts (compiler, version, language, name, fully_qualified_name, compiler_settings,
+           compilation_artifacts, creation_code_hash, creation_code_artifacts, runtime_code_hash, runtime_code_artifacts)
+         VALUES ('solc', '0.8.0', 'solidity', $1, $2, '{}', '{"abi":[],"sources":{}}', $3,
+           '{"sourceMap":"","linkReferences":{}}', $3, '{"sourceMap":"","linkReferences":{},"immutableReferences":{}}')
+         RETURNING id`,
+        [contract.name, `${contract.name}.sol:${contract.name}`, codeHash],
+      );
+      await client.query(
+        `INSERT INTO verified_contracts (deployment_id, compilation_id, creation_match, runtime_match,
+           runtime_values, runtime_transformations, runtime_metadata_match)
+         VALUES ($1, $2, false, true, '{}', '[]', true)`,
+        [deploymentId, compilationId],
+      );
+      for (const sig of contract.signatures) {
+        const hash32 = Buffer.from(keccak256str(sig.signature).slice(2), "hex");
+        await client.query(
+          "INSERT INTO signatures (signature, signature_hash_32) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+          [sig.signature, hash32],
+        );
+        await client.query(
+          "INSERT INTO compiled_contracts_signatures (compilation_id, signature_hash_32, signature_type) VALUES ($1, $2, $3)",
+          [compilationId, hash32, sig.type ?? SignatureType.Function],
         );
       }
-
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");

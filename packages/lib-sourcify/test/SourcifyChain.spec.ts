@@ -441,6 +441,36 @@ describe('SourcifyChain', () => {
       );
     });
 
+    it('should skip top-level creates in parity block traces', async () => {
+      const mockProvider = sourcifyChain.rpcs[0].provider!;
+      sandbox.stub(mockProvider, 'send').resolves([
+        {
+          // A tx with no `to`: the root frame is the create
+          type: 'create',
+          result: { address: '0xtopLevelAddress' },
+          transactionHash: '0xhash1',
+          traceAddress: [],
+        },
+        {
+          // A factory call: the create is a child frame
+          type: 'call',
+          action: { to: '0xfactory' },
+          transactionHash: '0xhash2',
+          traceAddress: [],
+        },
+        {
+          type: 'create',
+          result: { address: '0xfactoryCreatedAddress' },
+          transactionHash: '0xhash2',
+          traceAddress: [0],
+        },
+      ]);
+
+      const result =
+        await sourcifyChain.getCreatedAddressesFromBlockTraces(12345);
+      expect(result).to.deep.equal({ '0xhash2': ['0xfactoryCreatedAddress'] });
+    });
+
     it('should skip reverted creates in parity block traces', async () => {
       const mockProvider = sourcifyChain.rpcs[0].provider!;
       sandbox.stub(mockProvider, 'send').resolves([

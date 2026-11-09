@@ -16,10 +16,29 @@ export interface SignatureSearchRow {
   has_verified_contract: boolean;
 }
 
-export interface SignatureStatsRow {
-  signature_type: SignatureType;
-  count: string;
-  refreshed_at: Date;
+export interface SignatureCountsSince {
+  total: number;
+  function: number;
+  event: number;
+  error: number;
+  unknown: number;
+}
+
+export interface RecentSignatureRow {
+  signature: string;
+  signature_hash_4: string;
+  signature_hash_32: string;
+  // ISO 8601 with microseconds, so that it can be a cursor without loss
+  created_at: string;
+  types: SignatureType[];
+  contract_name: string | null;
+  chain_id: string | null;
+  address: string | null;
+}
+
+export interface RecentSignaturesCursor {
+  createdAt: string;
+  signatureHash32: Buffer;
 }
 
 export interface SignatureInsertResult {
@@ -128,17 +147,117 @@ export class SignatureDatabase {
     return result.rows;
   }
 
-  async getSignatureCounts(): Promise<SignatureStatsRow[]> {
+  // Counts the signatures with after < created_at <= until, by type. The types come from all
+  // current usages, so a signature that is first imported and then found in a verified
+  // contract counts with its type. This does one index lookup in
+  // compiled_contracts_signatures for each new signature. On production it takes about
+  // 0.2 s for 2 hours of signatures and 8 s for 1 day.
+  async countSignaturesBetween(
+    after: Date,
+    until: Date,
+  ): Promise<SignatureCountsSince> {
     const query = `
       SELECT
-        signature_type,
-        count::text,
-        refreshed_at
-      FROM ${this.qualify("signature_stats")}
-      ORDER BY signature_type
+        COUNT(*)::text AS total,
+        (COUNT(*) FILTER (WHERE 'function' = ANY(u.types)))::text AS function,
+        (COUNT(*) FILTER (WHERE 'event' = ANY(u.types)))::text AS event,
+        (COUNT(*) FILTER (WHERE 'error' = ANY(u.types)))::text AS error,
+        (COUNT(*) FILTER (WHERE u.types IS NULL))::text AS unknown
+      FROM ${this.qualify("signatures")} s
+      LEFT JOIN LATERAL (
+        SELECT array_agg(DISTINCT ccs.signature_type::text) AS types
+        FROM ${this.qualify("compiled_contracts_signatures")} ccs
+        WHERE ccs.signature_hash_32 = s.signature_hash_32
+      ) u ON true
+      WHERE s.created_at > $1 AND s.created_at <= $2
     `;
+    const result = await this.pool.query<Record<string, string>>(query, [
+      after,
+      until,
+    ]);
+    const row = result.rows[0];
+    return {
+      total: parseInt(row.total, 10),
+      function: parseInt(row.function, 10),
+      event: parseInt(row.event, 10),
+      error: parseInt(row.error, 10),
+      unknown: parseInt(row.unknown, 10),
+    };
+  }
 
-    const result = await this.pool.query<SignatureStatsRow>(query);
+  // Counts the signatures with after < created_at <= until. Reads only the
+  // signatures_created_at index.
+  async countAllSignaturesBetween(after: Date, until: Date): Promise<number> {
+    const result = await this.pool.query<{ total: string }>(
+      `SELECT COUNT(*)::text AS total FROM ${this.qualify("signatures")} WHERE created_at > $1 AND created_at <= $2`,
+      [after, until],
+    );
+    return parseInt(result.rows[0].total, 10);
+  }
+
+  // Counts the signatures with created_at <= until. This reads the whole
+  // signatures_created_at index, so call it rarely.
+  async countSignaturesUntil(until: Date): Promise<number> {
+    const result = await this.pool.query<{ total: string }>(
+      `SELECT COUNT(*)::text AS total FROM ${this.qualify("signatures")} WHERE created_at <= $1`,
+      [until],
+    );
+    return parseInt(result.rows[0].total, 10);
+  }
+
+  // Signatures with created_at >= since, oldest first. The cursor is the last row of
+  // the previous page: many signatures can have the same created_at (one transaction).
+  // The source is one verified contract that uses the signature. It prefers the usage
+  // that was stored in the same transaction as the signature, which is the contract
+  // whose verification added the signature.
+  async getRecentSignatures(
+    since: string,
+    cursor: RecentSignaturesCursor | undefined,
+    limit: number,
+  ): Promise<RecentSignatureRow[]> {
+    const query = `
+      WITH recent AS (
+        SELECT s.signature, s.signature_hash_4, s.signature_hash_32, s.created_at
+        FROM ${this.qualify("signatures")} s
+        WHERE s.created_at >= $1::timestamptz
+          AND ($2::timestamptz IS NULL OR (s.created_at, s.signature_hash_32) > ($2::timestamptz, $3::bytea))
+        ORDER BY s.created_at, s.signature_hash_32
+        LIMIT $4
+      )
+      SELECT
+        r.signature,
+        concat('0x', encode(r.signature_hash_4, 'hex')) AS signature_hash_4,
+        concat('0x', encode(r.signature_hash_32, 'hex')) AS signature_hash_32,
+        to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at,
+        COALESCE(types.types, '{}') AS types,
+        source.contract_name,
+        source.chain_id::text AS chain_id,
+        CASE WHEN source.address IS NULL THEN NULL
+          ELSE concat('0x', encode(source.address, 'hex')) END AS address
+      FROM recent r
+      LEFT JOIN LATERAL (
+        SELECT array_agg(DISTINCT ccs.signature_type::text ORDER BY ccs.signature_type::text) AS types
+        FROM ${this.qualify("compiled_contracts_signatures")} ccs
+        WHERE ccs.signature_hash_32 = r.signature_hash_32
+      ) types ON true
+      LEFT JOIN LATERAL (
+        SELECT cc.name AS contract_name, cd.chain_id, cd.address
+        FROM ${this.qualify("compiled_contracts_signatures")} ccs
+        JOIN ${this.qualify("verified_contracts")} vc ON vc.compilation_id = ccs.compilation_id
+        JOIN ${this.qualify("contract_deployments")} cd ON cd.id = vc.deployment_id
+        JOIN ${this.qualify("compiled_contracts")} cc ON cc.id = ccs.compilation_id
+        WHERE ccs.signature_hash_32 = r.signature_hash_32
+        ORDER BY (ccs.created_at = r.created_at) DESC, vc.id DESC
+        LIMIT 1
+      ) source ON true
+      ORDER BY r.created_at, r.signature_hash_32
+    `;
+    const result = await this.pool.query<RecentSignatureRow>(query, [
+      since,
+      cursor?.createdAt ?? null,
+      cursor?.signatureHash32 ?? null,
+      limit,
+    ]);
     return result.rows;
   }
 

@@ -257,12 +257,15 @@ paths:
   /signature-database/v1/stats:
     get:
       summary: Show database stats
-      description: function, event and error fields show the number of signatures that are associated with a verified contract and the respective type. unknown shows the number of signatures that are not associated with a verified contract, hence no type can be assigned. total shows the total number of signatures in the database.
+      description: |
+        function, event and error show the number of signatures that are associated with a verified contract and the respective type. A signature can have more than one type. unknown shows the number of signatures that are not associated with a verified contract, hence no type can be assigned. total shows the total number of signatures in the database.
+
+        The numbers are approximate. They are a daily count plus the signatures that were added after it, and they are updated once a minute. They do not include the signatures of the last 1 to 2 minutes. If the daily count is not available, function, event, error and unknown are null, and only total is given.
       tags:
         - Signature Database
       responses:
         "200":
-          description: The status of the import
+          description: The signature counts
           content:
             application/json:
               schema:
@@ -277,24 +280,154 @@ paths:
                         type: object
                         properties:
                           function:
-                            type: number
+                            type: [number, "null"]
                           event:
-                            type: number
+                            type: [number, "null"]
                           error:
-                            type: number
+                            type: [number, "null"]
                           unknown:
-                            type: number
+                            type: [number, "null"]
                           total:
                             type: number
+                      metadata:
+                        type: object
+                        properties:
+                          refreshed_at:
+                            type: string
+                            format: date-time
+                            description: The time when the counts were computed
+              examples:
+                withBreakdown:
+                  summary: The daily count is available
+                  value:
+                    ok: true
+                    result:
+                      count:
+                        function: 4906592
+                        event: 1199357
+                        error: 556949
+                        unknown: 3951695
+                        total: 10600577
+                      metadata:
+                        refreshed_at: "2026-10-20T10:00:00.000Z"
+                withoutBreakdown:
+                  summary: The daily count is not available
+                  value:
+                    ok: true
+                    result:
+                      count:
+                        function: null
+                        event: null
+                        error: null
+                        unknown: null
+                        total: 10600577
+                      metadata:
+                        refreshed_at: "2026-10-20T10:00:00.000Z"
+  /signature-database/v1/recent:
+    get:
+      summary: List recently added signatures
+      description: |
+        Lists the signatures that were added to the database at or after `since`, oldest first. Each signature has its types and, if a verified contract uses it, one such contract as `source`. The source is the contract whose verification added the signature, if possible. An imported signature that no verified contract uses has the source null.
+
+        A response has at most `limit` signatures. If `next` is not null, request the next page with `cursor=<next>` and the same `since`.
+
+        `created_at` is the start time of the database transaction. So a signature can appear after a newer one was already returned. To follow new signatures, poll with a `since` that is some time before the newest signature that you have, and remove duplicates by `signatureHash32`.
+      tags:
+        - Signature Database
+      parameters:
+        - in: query
+          name: since
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: ISO 8601 time. At most one day ago. The default is one hour ago.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+          description: The `next` value of the previous page
+      responses:
+        "200":
+          description: The recent signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      signatures:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            signature:
+                              type: string
+                            signatureHash4:
+                              type: string
+                            signatureHash32:
+                              type: string
+                            createdAt:
+                              type: string
+                              format: date-time
+                              description: With microseconds
+                            types:
+                              type: array
+                              items:
+                                type: string
+                                enum: [function, event, error]
+                              description: Empty if no verified contract uses the signature
+                            source:
+                              type: ["object", "null"]
+                              properties:
+                                name:
+                                  type: string
+                                chainId:
+                                  type: string
+                                address:
+                                  type: string
+                      next:
+                        type: ["string", "null"]
               example:
                 ok: true
                 result:
-                  count:
-                    function: 125847
-                    event: 8329
-                    error: 2156
-                    unknown: 15432
-                    total: 151764
+                  signatures:
+                    - signature: "transfer(address,uint256)"
+                      signatureHash4: "0xa9059cbb"
+                      signatureHash32: "0xa9059cbb2ab09eb219583f4a59a5d0623ade346d962bcd4e46b11da047c9049b"
+                      createdAt: "2026-10-20T10:00:00.123456Z"
+                      types: ["function"]
+                      source:
+                        name: "Token"
+                        chainId: "1"
+                        address: "0x00000000000000000000000000000000000000aa"
+                  next: null
+        "400":
+          description: A parameter is not valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "since must be at most one day ago"
   /health:
     get:
       summary: Check server health

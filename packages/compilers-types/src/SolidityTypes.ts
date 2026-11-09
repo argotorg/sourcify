@@ -112,7 +112,7 @@ export interface SolidityOutputError {
   errorCode?: string;
 }
 
-interface SolidityOutputEvmBytecode {
+export interface SolidityOutputEvmBytecode {
   object: string;
   opcodes?: string;
   sourceMap?: string;
@@ -126,7 +126,7 @@ export interface ImmutableReferences {
   }>;
 }
 
-interface SolidityOutputEvmDeployedBytecode extends SolidityOutputEvmBytecode {
+export interface SolidityOutputEvmDeployedBytecode extends SolidityOutputEvmBytecode {
   immutableReferences?: ImmutableReferences;
 }
 

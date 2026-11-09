@@ -1,5 +1,17 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.15.4 - 2026-11-03
+
+- Update dependencies
+
+## sourcify-database@2.15.3 - 2026-10-21
+
+- feat(4byte): live signature stats from a daily BigQuery base, and /recent (#3033)
+
+## sourcify-database@2.15.2 - 2026-10-05
+
+- Update dependencies
+
 ## sourcify-database@2.15.1 - 2026-09-22
 
 - feat(database): add created_at to compiled_contracts_metadata (#2963)

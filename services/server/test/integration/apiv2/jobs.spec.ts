@@ -61,7 +61,7 @@ describe("GET /v2/verify/:verificationId", function () {
       const verificationResult = await serverFixture.sourcifyDatabase.query(
         `SELECT 
           sm.id as match_id,
-          to_char(sm.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as verified_at,
+          to_char(vc.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as verified_at,
           vc.id as verified_contract_id
         FROM verified_contracts vc
         JOIN sourcify_matches sm ON sm.verified_contract_id = vc.id

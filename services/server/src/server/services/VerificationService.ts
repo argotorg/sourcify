@@ -90,6 +90,7 @@ export interface VerificationServiceOptions {
   solJsonRepoPath: string;
   vyperRepoPath: string;
   feRepoPath: string;
+  solarRepoPath: string;
   compilerTimeoutMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
@@ -187,6 +188,7 @@ export class VerificationService {
         solJsonRepoPath: options.solJsonRepoPath,
         vyperRepoPath: options.vyperRepoPath,
         feRepoPath: options.feRepoPath,
+        solarRepoPath: options.solarRepoPath,
         compilerTimeoutMs: options.compilerTimeoutMs,
       },
       minThreads,

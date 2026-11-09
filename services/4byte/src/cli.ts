@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import yaml from "yamljs";
 import logger from "./logger";
 import { FourByteServer } from "./FourByteServer";
+import { parseBaseMaxAgeMs } from "./SignatureStats";
 
 const port = process.env.PORT || 4444;
 
@@ -24,6 +25,12 @@ const server = new FourByteServer({
       ? parseInt(process.env.FOURBYTES_POSTGRES_MAX_CONNECTIONS)
       : 20,
     schema: process.env.FOURBYTES_POSTGRES_SCHEMA,
+  },
+  statsOptions: {
+    baseUrl: process.env.SIGNATURE_STATS_BASE_URL || undefined,
+    baseMaxAgeMs: parseBaseMaxAgeMs(
+      process.env.SIGNATURE_STATS_BASE_MAX_AGE_HOURS,
+    ),
   },
 });
 

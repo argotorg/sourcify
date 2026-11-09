@@ -1000,5 +1000,97 @@ describe("POST /v2/verify/:chainId/:address", function () {
     it("should upgrade runtime match from match to exact_match even if creation match is already exact_match", async () => {
       await testPartialUpgrade("creation");
     });
+
+    it("should return the upgraded match's verification time as verifiedAt", async () => {
+      const modifiedJsonInput = JSON.parse(
+        JSON.stringify(chainFixture.defaultContractJsonInput),
+      );
+      modifiedJsonInput.sources = {
+        "contracts/StorageModified.sol": {
+          content: chainFixture.defaultContractModifiedSource.toString(),
+        },
+      };
+
+      const { resolveWorkers: resolveWorkers1, runTaskStub } =
+        makeWorkersWait();
+      const verifyRes1 = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: modifiedJsonInput,
+          compilerVersion:
+            chainFixture.defaultContractMetadataObject.compiler.version,
+          contractIdentifier: "contracts/StorageModified.sol:StorageModified",
+          creationTransactionHash: chainFixture.defaultContractCreatorTx,
+        });
+      await assertJobVerification(
+        serverFixture,
+        verifyRes1,
+        resolveWorkers1,
+        chainFixture.chainId,
+        chainFixture.defaultContractAddress,
+        "match",
+      );
+
+      // Move the partial match into the past so the upgrade gets a visibly later time
+      const oldTimestamp = "2020-01-01T00:00:00Z";
+      await serverFixture.sourcifyDatabase.query(
+        "UPDATE sourcify_matches SET created_at = $1",
+        [oldTimestamp],
+      );
+      await serverFixture.sourcifyDatabase.query(
+        "UPDATE verified_contracts SET created_at = $1",
+        [oldTimestamp],
+      );
+
+      runTaskStub.restore();
+      const { resolveWorkers: resolveWorkers2 } = makeWorkersWait();
+      const verifyRes2 = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: chainFixture.defaultContractJsonInput,
+          compilerVersion:
+            chainFixture.defaultContractMetadataObject.compiler.version,
+          contractIdentifier: Object.entries(
+            chainFixture.defaultContractMetadataObject.settings
+              .compilationTarget,
+          )[0].join(":"),
+          creationTransactionHash: chainFixture.defaultContractCreatorTx,
+        });
+      await assertJobVerification(
+        serverFixture,
+        verifyRes2,
+        resolveWorkers2,
+        chainFixture.chainId,
+        chainFixture.defaultContractAddress,
+        "exact_match",
+      );
+
+      const upgradedResult = await serverFixture.sourcifyDatabase.query(
+        `SELECT to_char(vc.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as verified_at
+        FROM sourcify_matches sm
+        JOIN verified_contracts vc ON vc.id = sm.verified_contract_id`,
+      );
+      const upgradedVerifiedAt = upgradedResult.rows[0].verified_at;
+      chai.expect(upgradedVerifiedAt).to.not.equal(oldTimestamp);
+
+      const contractRes = await chai
+        .request(serverFixture.server.app)
+        .get(
+          `/v2/contract/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        );
+      chai.expect(contractRes.body.match).to.equal("exact_match");
+      chai.expect(contractRes.body.verifiedAt).to.equal(upgradedVerifiedAt);
+
+      const jobRes = await chai
+        .request(serverFixture.server.app)
+        .get(`/v2/verify/${verifyRes2.body.verificationId}`);
+      chai.expect(jobRes.body.contract.verifiedAt).to.equal(upgradedVerifiedAt);
+    });
   });
 });

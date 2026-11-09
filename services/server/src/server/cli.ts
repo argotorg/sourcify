@@ -20,6 +20,7 @@ import { Server } from "./server";
 import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
+import { SolarLocal } from "./services/compiler/local/SolarLocal";
 
 export const getEtherscanApiKeyForEachChain = (
   chainsMap: SourcifyChainMap,
@@ -33,6 +34,17 @@ export const getEtherscanApiKeyForEachChain = (
     },
     {},
   );
+
+// Chains that the Blockscout PRO API gateway serves, see the blockscoutApi.proApi flag in sourcify-chains
+export const getBlockscoutProApiChainIds = (
+  chainsMap: SourcifyChainMap,
+): string[] =>
+  Object.entries(chainsMap)
+    .filter(
+      ([, { supported, fetchContractCreationTxUsing }]) =>
+        supported && fetchContractCreationTxUsing?.blockscoutApi?.proApi,
+    )
+    .map(([chainId]) => chainId);
 
 // lib-sourcify configuration
 const DEFAULT_IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -95,6 +107,11 @@ const feRepoPath =
   (config.get("feRepo") as string) || path.join("/tmp", "fe-repo");
 export const fe = new FeLocal(feRepoPath, compilerTimeoutMs);
 
+logger.info("Using local Solar compiler");
+const solarRepoPath =
+  (config.get("solarRepo") as string) || path.join("/tmp", "solar-repo");
+export const solar = new SolarLocal(solarRepoPath, compilerTimeoutMs);
+
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
   value: RegExp.prototype.toString,
@@ -119,6 +136,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solc,
       vyper,
       fe,
+      solar,
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),
@@ -135,6 +153,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       solJsonRepoPath,
       vyperRepoPath,
       feRepoPath,
+      solarRepoPath,
       compilerTimeoutMs,
       similarityFailureCooldownSeconds: config.get<number>(
         "similarityFailureCooldownSeconds",
@@ -228,6 +247,10 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
         },
         BlockscoutVerify: {
           defaultApiKey: process.env.BLOCKSCOUT_API_KEY as string,
+          blockscoutProApi: {
+            apiKey: process.env.BLOCKSCOUT_PRO_API_KEY as string,
+            chainIds: getBlockscoutProApiChainIds(sourcifyChainsMap),
+          },
         },
         RoutescanVerify: {
           defaultApiKey: process.env.ROUTESCAN_API_KEY as string,

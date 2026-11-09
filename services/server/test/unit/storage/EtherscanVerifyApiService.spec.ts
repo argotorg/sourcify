@@ -328,6 +328,234 @@ describe("EtherscanVerifyApiService", function () {
     );
   });
 
+  describe("Blockscout PRO API", () => {
+    const instanceBaseUrl = "https://blockscout.example/api";
+    const proApiKey = "proapi_secret";
+    const chainId = MockVerificationExport.chainId;
+
+    const createProService = (
+      identifier: EtherscanVerifyApiIdentifiers,
+      upsertStub: sinon.SinonStub,
+      chainIds: string[] = [String(chainId)],
+    ) =>
+      createService(identifier, instanceBaseUrl, upsertStub, {
+        defaultApiKey: "instance_key",
+        blockscoutProApi: { apiKey: proApiKey, chainIds },
+      });
+
+    const okPayload = {
+      status: "1" as const,
+      message: "OK",
+      result: "receipt-123",
+    };
+
+    it("submits to the PRO API gateway with the PRO key for a PRO chain", async () => {
+      const upsertStub = sandbox.stub().resolves();
+      const service = createProService(
+        WStorageIdentifiers.BlockscoutVerify,
+        upsertStub,
+      );
+      fetchStub.resolves(mockFetchResponse(okPayload));
+
+      await expect(
+        service.storeVerification(structuredClone(MockVerificationExport), {
+          verificationId: "verification-job-id",
+          finishTime: new Date(),
+        }),
+      ).to.eventually.be.fulfilled;
+
+      sinon.assert.calledOnce(fetchStub);
+      const [requestUrl] = fetchStub.firstCall.args;
+      expect(requestUrl).to.equal(
+        `https://api.blockscout.com/v2/api?module=contract&action=verifysourcecode&chain_id=${chainId}&apikey=${proApiKey}`,
+      );
+    });
+
+    it("submits to the instance url for a chain without PRO API", async () => {
+      const upsertStub = sandbox.stub().resolves();
+      const service = createProService(
+        WStorageIdentifiers.BlockscoutVerify,
+        upsertStub,
+        ["999"],
+      );
+      fetchStub.resolves(mockFetchResponse(okPayload));
+
+      await expect(
+        service.storeVerification(structuredClone(MockVerificationExport), {
+          verificationId: "verification-job-id",
+          finishTime: new Date(),
+        }),
+      ).to.eventually.be.fulfilled;
+
+      const [requestUrl] = fetchStub.firstCall.args;
+      expect(requestUrl).to.equal(
+        `${instanceBaseUrl}?module=contract&action=verifysourcecode&chainid=${chainId}&apikey=instance_key`,
+      );
+    });
+
+    it("ignores the PRO API settings for a non-Blockscout verifier", async () => {
+      const upsertStub = sandbox.stub().resolves();
+      const service = createProService(
+        WStorageIdentifiers.EtherscanVerify,
+        upsertStub,
+      );
+      fetchStub.resolves(mockFetchResponse(okPayload));
+
+      await expect(
+        service.storeVerification(structuredClone(MockVerificationExport), {
+          verificationId: "verification-job-id",
+          finishTime: new Date(),
+        }),
+      ).to.eventually.be.fulfilled;
+
+      const [requestUrl] = fetchStub.firstCall.args;
+      expect(requestUrl).to.equal(
+        `${instanceBaseUrl}?module=contract&action=verifysourcecode&chainid=${chainId}&apikey=instance_key`,
+      );
+    });
+
+    it("keeps the public status and contract urls on the instance url", () => {
+      const service = createProService(
+        WStorageIdentifiers.BlockscoutVerify,
+        sandbox.stub().resolves(),
+      );
+
+      const statusUrl = service.getApiUrl("checkverifystatus", chainId);
+      expect(statusUrl).to.equal(
+        `${instanceBaseUrl}?module=contract&action=checkverifystatus&chainid=${chainId}`,
+      );
+      expect(statusUrl).to.not.include(proApiKey);
+    });
+
+    it("keeps the instance url for Vyper verification on a PRO chain", async () => {
+      const upsertStub = sandbox.stub().resolves();
+      const service = createProService(
+        WStorageIdentifiers.BlockscoutVerify,
+        upsertStub,
+      );
+      fetchStub.resolves(
+        mockFetchResponse({
+          status: "1",
+          message: "Smart-contract verification started",
+          result: "",
+        }),
+      );
+
+      const vyperVerification = structuredClone(MockVerificationExport);
+      vyperVerification.compilation.language = "Vyper";
+      vyperVerification.compilation.compilerVersion = "0.3.10";
+
+      await expect(
+        service.storeVerification(vyperVerification, {
+          verificationId: "verification-job-id",
+          finishTime: new Date(),
+        }),
+      ).to.eventually.be.fulfilled;
+
+      const [requestUrl] = fetchStub.firstCall.args;
+      expect(requestUrl).to.equal(
+        `https://blockscout.example/api/v2/smart-contracts/${vyperVerification.address.toLowerCase()}/verification/via/vyper-standard-input`,
+      );
+      expect(requestUrl).to.not.include(proApiKey);
+    });
+  });
+
+  describe("plain HTTP explorer URLs", () => {
+    it("rewrites plain-HTTP Blockscout instance URLs to HTTPS", async () => {
+      const service = new EtherscanVerifyApiService(
+        WStorageIdentifiers.BlockscoutVerify,
+        {
+          database: { upsertExternalVerification: sandbox.stub() },
+        } as unknown as SourcifyDatabaseService,
+      );
+      fetchStub.resolves({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          "1": {
+            explorers: [{ url: "https://eth.blockscout.com", hostedBy: "x" }],
+          },
+          "5042002": {
+            explorers: [
+              { url: "http://explorer.testnet.arc.io", hostedBy: "x" },
+            ],
+          },
+        }),
+        text: async () => "",
+      } as unknown as Response);
+
+      await service.init();
+
+      expect(service.getApiUrl("checkverifystatus", 1)).to.equal(
+        "https://eth.blockscout.com/api?module=contract&action=checkverifystatus&chainid=1",
+      );
+      expect(service.getApiUrl("checkverifystatus", 5042002)).to.equal(
+        "https://explorer.testnet.arc.io/api?module=contract&action=checkverifystatus&chainid=5042002",
+      );
+    });
+
+    it("does not attach the API key to a non-HTTPS instance URL", async () => {
+      const apiKey = "instance-key";
+      const chainId = MockVerificationExport.chainId;
+      const service = createService(
+        WStorageIdentifiers.BlockscoutVerify,
+        "http://blockscout.example/api",
+        sandbox.stub().resolves(),
+        { apiKeys: { [String(chainId)]: apiKey } },
+      );
+      fetchStub.resolves(
+        mockFetchResponse({ status: "1", message: "OK", result: "receipt" }),
+      );
+
+      await service.storeVerification(structuredClone(MockVerificationExport), {
+        verificationId: "verification-job-id",
+        finishTime: new Date(),
+      });
+
+      sinon.assert.calledOnce(fetchStub);
+      const [requestUrl] = fetchStub.firstCall.args;
+      expect(requestUrl).to.equal(
+        `http://blockscout.example/api?module=contract&action=verifysourcecode&chainid=${chainId}`,
+      );
+      expect(requestUrl).to.not.include(apiKey);
+    });
+  });
+
+  it("truncates a long response body when the request fails", async () => {
+    const upsertStub = sandbox.stub().resolves();
+    const service = createService(
+      WStorageIdentifiers.BlockscoutVerify,
+      "https://blockscout.example/api",
+      upsertStub,
+    );
+    const jobData = {
+      verificationId: "verification-job-id",
+      finishTime: new Date(),
+    };
+    const responseText = "<!DOCTYPE html>".padEnd(10000, "x");
+    fetchStub.resolves({
+      ok: false,
+      status: 403,
+      text: async () => responseText,
+    } as unknown as Response);
+
+    await expect(
+      service.storeVerification(
+        structuredClone(MockVerificationExport),
+        jobData,
+      ),
+    ).to.eventually.be.rejected;
+
+    sinon.assert.calledOnceWithExactly(
+      upsertStub,
+      jobData.verificationId,
+      WStorageIdentifiers.BlockscoutVerify,
+      {
+        error: `Explorer verification request failed (403): ${responseText.slice(0, 500)}... [truncated, 10000 characters in total]`,
+      },
+    );
+  });
+
   it("retries submission when contract is not yet indexed", async () => {
     const clock = sandbox.useFakeTimers();
     const baseUrl = "https://etherscan.example/api";

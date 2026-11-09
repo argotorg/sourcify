@@ -1,10 +1,72 @@
-import { makeChunkedFile } from '@fairdatasociety/bmt-js';
-import { keccak256 } from 'ethers';
+import { getBytes, keccak256 } from 'ethers';
 
-export function swarmBzzr1Hash(file: string) {
-  // convert file to Uint8Array
-  const encoder = new TextEncoder();
-  const fileBytes = encoder.encode(file);
+const CHUNK_SIZE = 4096;
+const SEGMENT_SIZE = 32;
+const SEGMENTS_PER_CHUNK = CHUNK_SIZE / SEGMENT_SIZE;
+
+interface Chunk {
+  address: Uint8Array;
+  span: number;
+}
+
+const hash = (bytes: Uint8Array) => getBytes(keccak256(bytes));
+
+// 8 byte little endian span, lower 32 bits only
+function makeSpan(length: number): Uint8Array {
+  const span = new Uint8Array(8);
+  new DataView(span.buffer).setUint32(0, length >>> 0, true);
+  return span;
+}
+
+// Binary Merkle Tree root over the zero padded 4096 byte chunk
+function bmtRootHash(payload: Uint8Array): Uint8Array {
+  let level = new Uint8Array(CHUNK_SIZE);
+  level.set(payload);
+  while (level.length > SEGMENT_SIZE) {
+    const next = new Uint8Array(level.length / 2);
+    for (let i = 0; i < level.length; i += 2 * SEGMENT_SIZE) {
+      next.set(hash(level.subarray(i, i + 2 * SEGMENT_SIZE)), i / 2);
+    }
+    level = next;
+  }
+  return level;
+}
+
+function makeChunk(payload: Uint8Array, span: number): Chunk {
+  const input = new Uint8Array(8 + SEGMENT_SIZE);
+  input.set(makeSpan(span));
+  input.set(bmtRootHash(payload), 8);
+  return { address: hash(input), span };
+}
+
+// A level with 128n + 1 chunks moves its last chunk to a higher level
+function popCarrierChunk(chunks: Chunk[]): Chunk | null {
+  if (chunks.length <= 1) return null;
+  return chunks.length % SEGMENTS_PER_CHUNK === 1 ? chunks.pop()! : null;
+}
+
+function nextBmtLevel(chunks: Chunk[], carrier: Chunk | null) {
+  const next: Chunk[] = [];
+  for (let i = 0; i < chunks.length; i += SEGMENTS_PER_CHUNK) {
+    const children = chunks.slice(i, i + SEGMENTS_PER_CHUNK);
+    const payload = new Uint8Array(children.length * SEGMENT_SIZE);
+    children.forEach((c, j) => payload.set(c.address, j * SEGMENT_SIZE));
+    const span = children.reduce((sum, c) => sum + c.span, 0);
+    next.push(makeChunk(payload, span));
+  }
+  if (carrier) {
+    if (next.length % SEGMENTS_PER_CHUNK !== 0) {
+      next.push(carrier);
+      carrier = null;
+    }
+  } else {
+    carrier = popCarrierChunk(next);
+  }
+  return { next, carrier };
+}
+
+export function swarmBzzr1Hash(file: string): string {
+  const fileBytes = new TextEncoder().encode(file);
 
   // solc returns 32 zero bytes for empty input
   // https://github.com/argotorg/solidity/blob/develop/libsolutil/SwarmHash.cpp
@@ -12,15 +74,19 @@ export function swarmBzzr1Hash(file: string) {
     return '0'.repeat(64);
   }
 
-  // Binary Merkle Tree on the file
-  const chunkedFile = makeChunkedFile(fileBytes);
+  let chunks: Chunk[] = [];
+  for (let i = 0; i < fileBytes.length; i += CHUNK_SIZE) {
+    const payload = fileBytes.subarray(i, i + CHUNK_SIZE);
+    chunks.push(makeChunk(payload, payload.length));
+  }
 
-  // get the address from the chunked file
-  const bytes = chunkedFile.address();
+  let carrier = popCarrierChunk(chunks);
+  while (chunks.length !== 1 || carrier) {
+    ({ next: chunks, carrier } = nextBmtLevel(chunks, carrier));
+  }
 
-  // convert the address to hex string
   const hexByte = (n: number) => n.toString(16).padStart(2, '0');
-  return Array.from(bytes, hexByte).join('');
+  return Array.from(chunks[0].address, hexByte).join('');
 }
 
 function toLittleEndian(size: number): Uint8Array {

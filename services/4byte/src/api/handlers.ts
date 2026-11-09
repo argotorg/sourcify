@@ -3,9 +3,10 @@ import { StatusCodes } from "http-status-codes";
 import type { Logger } from "winston";
 import type {
   SignatureLookupRow,
-  SignatureStatsRow,
   SignatureInsertResult,
+  RecentSignaturesCursor,
 } from "../SignatureDatabase";
+import type { SignatureStats } from "../SignatureStats";
 import {
   getCanonicalSignatures,
   validateSignature,
@@ -120,6 +121,33 @@ type SearchSignaturesRequest = Omit<Request, "query"> & {
   query: { query: string; filter?: "true" | "false" };
 };
 
+type RecentSignaturesRequest = Omit<Request, "query"> & {
+  query: { since?: string; cursor?: string; limit?: string };
+};
+
+export const RECENT_DEFAULT_LIMIT = 100;
+export const RECENT_MAX_LIMIT = 500;
+export const RECENT_MAX_SINCE_AGE_MS = 24 * 60 * 60 * 1000;
+const RECENT_DEFAULT_SINCE_AGE_MS = 60 * 60 * 1000;
+
+// The format of createdAt in the response. Postgres reads it as UTC, with
+// microseconds, so the cursor keeps the exact position.
+const CURSOR_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
+
+// The cursor is "<createdAt>_<signatureHash32>" of the last item of a page
+function parseRecentCursor(raw: string): RecentSignaturesCursor | undefined {
+  const [createdAt, hash, ...rest] = raw.split("_");
+  if (
+    rest.length > 0 ||
+    !CURSOR_TIME.test(createdAt ?? "") ||
+    isNaN(new Date(createdAt).getTime()) ||
+    !/^0x[0-9a-fA-F]{64}$/.test(hash ?? "")
+  ) {
+    return undefined;
+  }
+  return { createdAt, signatureHash32: bytesFromString(hash)! };
+}
+
 type ImportSignaturesRequest = Omit<Request, "body"> & {
   body: {
     function?: string[];
@@ -141,10 +169,15 @@ export interface SignatureHandlers {
     res: Response,
   ) => Promise<void>;
   getSignaturesStats: (req: Request, res: Response) => Promise<void>;
+  getRecentSignatures: (
+    req: RecentSignaturesRequest,
+    res: Response,
+  ) => Promise<void>;
 }
 
 export function createSignatureHandlers(
   database: SignatureDatabase,
+  stats: SignatureStats,
   logger: Logger,
 ): SignatureHandlers {
   return {
@@ -343,36 +376,94 @@ export function createSignatureHandlers(
 
     getSignaturesStats: async (_req, res) => {
       try {
-        const rows: SignatureStatsRow[] = await database.getSignatureCounts();
-
-        const stats = {
-          count: { function: 0, event: 0, error: 0, unknown: 0, total: 0 },
-          metadata: { refreshed_at: "" },
-        };
-
-        for (const row of rows) {
-          if ((row.signature_type as string) === "unknown") {
-            stats.count.unknown = parseInt(row.count, 10);
-          } else if ((row.signature_type as string) === "total") {
-            stats.count.total = parseInt(row.count, 10);
-          } else {
-            stats.count[row.signature_type] = parseInt(row.count, 10);
-          }
-
-          if (stats.metadata.refreshed_at === "") {
-            stats.metadata.refreshed_at = row.refreshed_at.toISOString();
-          }
-        }
-
+        const result = await stats.getStats();
         res.status(StatusCodes.OK).json({
           ok: true,
-          result: stats,
+          result,
         });
       } catch (error) {
         logger.error("Error in getSignaturesStats", { error });
         sendSignatureApiFailure(
           res,
           "Unexpected failure while getting signature stats",
+        );
+      }
+    },
+
+    getRecentSignatures: async (req, res) => {
+      const badRequest = (error: string) => {
+        res.status(StatusCodes.BAD_REQUEST).json({ ok: false, error });
+      };
+
+      const now = Date.now();
+      const since =
+        req.query.since ??
+        new Date(now - RECENT_DEFAULT_SINCE_AGE_MS).toISOString();
+      const sinceTime = new Date(since).getTime();
+      if (isNaN(sinceTime)) {
+        return badRequest(`Invalid since '${since}'. Use an ISO 8601 time.`);
+      }
+      if (sinceTime < now - RECENT_MAX_SINCE_AGE_MS) {
+        return badRequest("since must be at most one day ago");
+      }
+
+      const limit =
+        req.query.limit === undefined
+          ? RECENT_DEFAULT_LIMIT
+          : Number(req.query.limit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > RECENT_MAX_LIMIT) {
+        return badRequest(
+          `limit must be an integer from 1 to ${RECENT_MAX_LIMIT}`,
+        );
+      }
+
+      let cursor: RecentSignaturesCursor | undefined;
+      if (req.query.cursor !== undefined) {
+        cursor = parseRecentCursor(req.query.cursor);
+        if (!cursor) {
+          return badRequest(`Invalid cursor '${req.query.cursor}'`);
+        }
+      }
+
+      try {
+        // The time that JS checked, so Postgres reads the same time
+        const rows = await database.getRecentSignatures(
+          new Date(sinceTime).toISOString(),
+          cursor,
+          limit,
+        );
+        const signatures = rows.map((row) => ({
+          signature: row.signature,
+          signatureHash4: row.signature_hash_4,
+          signatureHash32: row.signature_hash_32,
+          createdAt: row.created_at,
+          types: row.types,
+          source:
+            row.address === null
+              ? null
+              : {
+                  name: row.contract_name,
+                  chainId: row.chain_id,
+                  address: row.address,
+                },
+        }));
+        const last = signatures[signatures.length - 1];
+        res.set("Cache-Control", "no-store");
+        res.status(StatusCodes.OK).json({
+          ok: true,
+          result: {
+            signatures,
+            next:
+              signatures.length === limit
+                ? `${last.createdAt}_${last.signatureHash32}`
+                : null,
+          },
+        });
+      } catch (error) {
+        logger.error("Error in getRecentSignatures", { error });
+        sendSignatureApiFailure(
+          res,
+          "Unexpected failure while getting recent signatures",
         );
       }
     },

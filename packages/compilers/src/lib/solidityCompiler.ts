@@ -13,6 +13,7 @@ import {
   DEFAULT_COMPILE_TIMEOUT_MS,
   fetchWithBackoff,
 } from './common';
+import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   SolidityJsonInput,
   SolidityOutput,
@@ -57,6 +58,12 @@ export async function useSolidityCompiler(
   forceEmscripten = false,
   timeoutMs?: number,
 ): Promise<SolidityOutput> {
+  // A Solar version is valid semver and would otherwise fall through to a solc download
+  if (isSolarVersion(version)) {
+    throw new Error(
+      `${version} is a Solar version, compile it with the Solar compiler`,
+    );
+  }
   // For nightly builds, Solidity version is saved as 0.8.17-ci.2022.8.9+commit.6b60524c instead of 0.8.17-nightly.2022.8.9+commit.6b60524c.
   // Not possible to retrieve compilers with "-ci.".
   if (version.includes('-ci.')) version = version.replace('-ci.', '-nightly.');

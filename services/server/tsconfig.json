@@ -16,6 +16,12 @@
     },
     "skipLibCheck": true
   },
+  "ts-node": {
+    // With allowJs, ts-node would transpile the downloaded soljson-*.js compilers
+    // (large emscripten builds), which overflows the stack for solc <0.6.2.
+    // Keep ts-node's default node_modules ignore and skip the soljson files.
+    "ignore": ["(?:^|/)node_modules/", "(?:^|/)soljson-[^/]*\\.js$"]
+  },
   "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules/**"]
 }

@@ -29,6 +29,7 @@ module.exports = {
   solJsonRepo: "/tmp/solc-bin/soljson",
   vyperRepo: "/tmp/vyper-bin",
   feRepo: "/tmp/fe-bin",
+  solarRepo: "/tmp/solar-bin",
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   // Cooldown after a similarity job finds no match. Set to 0 to disable.

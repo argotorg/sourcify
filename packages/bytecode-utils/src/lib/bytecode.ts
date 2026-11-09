@@ -12,6 +12,7 @@ export type SolidityDecodedObject = {
   // Known CBOR fields that are defined in the spec
   ipfs?: string;
   solcVersion?: string;
+  solarVersion?: string;
   experimental?: boolean;
   bzzr0?: string;
   bzzr1?: string;
@@ -172,6 +173,15 @@ export const decode = <T extends AuxdataStyle>(
             result.solcVersion = cborDecodedObject.solc;
           } else {
             result.solcVersion = cborDecodedObject.solc.join('.');
+          }
+          break;
+        }
+        case 'solar': {
+          // Releases are 3 bytes, other builds are text like solc nightlies
+          if (typeof cborDecodedObject.solar === 'string') {
+            result.solarVersion = cborDecodedObject.solar;
+          } else {
+            result.solarVersion = cborDecodedObject.solar.join('.');
           }
           break;
         }

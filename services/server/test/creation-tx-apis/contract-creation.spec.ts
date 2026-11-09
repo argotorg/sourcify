@@ -113,9 +113,19 @@ describe("creation-tx APIs (live)", function () {
     chainId: number;
     address: string;
     txHash: string;
+    // Use the Blockscout PRO API gateway, needs BLOCKSCOUT_PRO_API_KEY
+    blockscoutProApi?: boolean;
   }[] = [
     {
       type: "blockscoutApi",
+      chainId: 1,
+      address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+      txHash:
+        "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
+    },
+    {
+      type: "blockscoutApi",
+      blockscoutProApi: true,
       chainId: 1,
       address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
       txHash:
@@ -158,7 +168,10 @@ describe("creation-tx APIs (live)", function () {
     },
   ];
   for (const testCase of testCases) {
-    it(`should run getCreatorTx with ${testCase.type}`, async function () {
+    const testName = testCase.blockscoutProApi
+      ? `${testCase.type} (PRO API)`
+      : testCase.type;
+    it(`should run getCreatorTx with ${testName}`, async function () {
       const sourcifyChainsArray = new ChainRepository(sourcifyChainsMap)
         .sourcifyChainsArray;
       const sourcifyChain = sourcifyChainsArray.find(
@@ -183,6 +196,14 @@ describe("creation-tx APIs (live)", function () {
         return;
       }
 
+      // Skip the Blockscout PRO API test if BLOCKSCOUT_PRO_API_KEY is not set
+      if (testCase.blockscoutProApi && !process.env.BLOCKSCOUT_PRO_API_KEY) {
+        console.log(
+          `Skipping blockscoutApi (PRO API) test: BLOCKSCOUT_PRO_API_KEY not set`,
+        );
+        return;
+      }
+
       // Remove all other fetchContractCreationTxUsing methods except the one we're testing
       const testChain = Object.create(
         Object.getPrototypeOf(sourcifyChain),
@@ -192,6 +213,14 @@ describe("creation-tx APIs (live)", function () {
         testChain.fetchContractCreationTxUsing = {
           [testCase.type]:
             testChain.fetchContractCreationTxUsing[testCase.type],
+        };
+      }
+      if (testCase.blockscoutProApi) {
+        testChain.fetchContractCreationTxUsing = {
+          blockscoutApi: {
+            ...testChain.fetchContractCreationTxUsing.blockscoutApi,
+            proApi: true,
+          },
         };
       }
       // Block the getBlockNumber call to block the binary search

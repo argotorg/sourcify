@@ -6,6 +6,7 @@ import { LocalChainFixture } from "../../../helpers/LocalChainFixture";
 import { ServerFixture } from "../../../helpers/ServerFixture";
 import {
   deployFromAbiAndBytecodeForCreatorTxHash,
+  deployFromBytecodeForCreatorTxHash,
   hookIntoVerificationWorkerRun,
 } from "../../../helpers/helpers";
 import type { SourcifyDatabaseService } from "../../../../src/server/services/storageServices/SourcifyDatabaseService";
@@ -554,5 +555,66 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       chainFixture.defaultContractAddress,
       "exact_match",
     );
+  });
+
+  it("should verify a Solar contract using a similar candidate stored in the database", async () => {
+    const solarCase = (
+      await import("../../verification-cases/testdata/solar/full_match.json")
+    ).default;
+    const { resolveWorkers } = makeWorkersWait();
+
+    // Store the Solar candidate through the standard JSON route
+    const first = await deployFromBytecodeForCreatorTxHash(
+      chainFixture.localSigner,
+      solarCase.onchain.creationBytecode,
+    );
+    const firstRes = await chai
+      .request(serverFixture.server.app)
+      .post(`/v2/verify/${chainFixture.chainId}/${first.contractAddress}`)
+      .send({
+        stdJsonInput: solarCase.input.stdJsonInput,
+        compilerVersion: solarCase.input.compilerVersion,
+        contractIdentifier: solarCase.input.contractIdentifier,
+        creationTransactionHash: first.txHash,
+      });
+    await assertJobVerification(
+      serverFixture,
+      firstRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      first.contractAddress,
+      "exact_match",
+    );
+
+    // A second deployment of the same bytecode is matched by similarity
+    const second = await deployFromBytecodeForCreatorTxHash(
+      chainFixture.localSigner,
+      solarCase.onchain.creationBytecode,
+    );
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${second.contractAddress}`,
+      )
+      .send({ creationTransactionHash: second.txHash });
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      second.contractAddress,
+      "exact_match",
+    );
+
+    const lookupRes = await chai
+      .request(serverFixture.server.app)
+      .get(
+        `/v2/contract/${chainFixture.chainId}/${second.contractAddress}?fields=compilation`,
+      );
+    chai.expect(lookupRes.status).to.equal(200);
+    chai.expect(lookupRes.body.compilation).to.include({
+      compiler: "solar",
+      compilerVersion: solarCase.input.compilerVersion,
+    });
   });
 });

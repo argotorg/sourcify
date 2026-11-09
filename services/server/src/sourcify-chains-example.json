@@ -4,7 +4,8 @@
     "supported": true,
     "fetchContractCreationTxUsing": {
       "blockscoutApi": {
-        "url": "https://eth.blockscout.com/"
+        "url": "https://eth.blockscout.com/",
+        "proApi": true
       },
       "routescanApi": {
         "type": "mainnet"

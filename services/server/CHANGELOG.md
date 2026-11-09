@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.3.0 - 2026-11-03
+
+- chore: bump Node to 22.23.4 for Brotli RCE CVE-2026-111497 (Node2Shell) (#3040)
+- fix: harden source fetching, match transformations and Blockscout key handling (GHSA-q975-797r-6pmw) (#3039)
+- fix(lib-sourcify): verify contracts with libraries compiled with solc < 0.4.10 (#3045)
+- feat: verify contracts compiled with Solar (#3050)
+- fix: verify contracts built with the Solar that Foundry bundles (#3052)
+- Update dependencies
+
+## sourcify-server@4.2.0 - 2026-10-21
+
+- fix(server): truncate explorer error response bodies (#3008)
+- fix(server): return the current match's time as verifiedAt (#3009)
+- Log each new verified match with its id after commit (#3024)
+- Add the contract name to the new match log line (#3026)
+- fix(server): report aragonOS app proxies in proxyResolution (#2986)
+- feat(server): use the Blockscout PRO API for creation tx fetching and verification (#3029)
+
+### Change to `verifiedAt` (#3009)
+
+`verifiedAt` now shows when the current match was verified. Before this release, it showed when the contract got its first match on Sourcify.
+
+This changes the value for approximately 665k contracts that got a better match after their first verification (for example, from `match` to `exact_match`). For these contracts, `verifiedAt` now shows the date of the upgrade.
+
+Affected endpoints:
+
+- `GET /v2/contract/{chainId}/{address}`
+- `GET /v2/contracts/{chainId}`
+- `GET /v2/contract/all-chains/{address}`
+- `GET /v2/verify/{verificationId}`
+
+If you use `verifiedAt` as "first verified on Sourcify", you get a later date for these contracts.
+
+## sourcify-server@4.1.2 - 2026-10-05
+
+- fix: replace retired ipfs.io gateway defaults (#2985)
+- docs(openapi): add bulk access and fair use guidance (#2988)
+- feat(server): serve the OpenAPI spec at /openapi.json and /v2/openapi.json (#2989)
+- docs(openapi): recommend a descriptive User-Agent (#2990)
+- perf(server): aggregate sources and signatures in subqueries in the contract lookup (#3001)
+- Update dependencies
+
 ## sourcify-server@4.1.1 - 2026-09-22
 
 - fix: detect Livepeer ManagerProxy in proxyResolution (#2959)\

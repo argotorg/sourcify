@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help with verification
+    url: https://discord.com/invite/6aqd9cfZ9s
+    about: Ask on Discord. You can also use Matrix (https://matrix.to/#/#ethereum_source-verify:gitter.im) or email hello@sourcify.dev.
+  - name: Add support for a new chain
+    url: https://docs.sourcify.dev/docs/chain-support/
+    about: Chains are configured in the sourcify-chains repository. Follow the chain support instructions.
+  - name: Report a security problem
+    url: https://github.com/argotorg/sourcify/security/advisories/new
+    about: Report security problems privately. Do not open a public issue.

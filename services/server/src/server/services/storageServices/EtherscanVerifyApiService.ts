@@ -23,7 +23,11 @@ const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT =
   "https://api.etherscan.io/v2/chainlist";
 const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
   "https://chains.blockscout.com/api/chains";
+// Blockscout PRO API gateway, see https://docs.blockscout.com/devs/pro-api
+const BLOCKSCOUT_PRO_API_URL = "https://api.blockscout.com/v2/api";
 const VERIFIER_ALREADY_VERIFIED = "VERIFIER_ALREADY_VERIFIED";
+// Explorers can return long HTML error pages. Keep the stored error short.
+const MAX_ERROR_RESPONSE_BODY_LENGTH = 500;
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
@@ -172,6 +176,8 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
     if (!blockscoutExplorer?.url) continue;
     try {
       const explorerUrl = new URL(blockscoutExplorer.url);
+      // The API key is in the query string, never send it over plain HTTP
+      explorerUrl.protocol = "https:";
       explorerUrl.pathname = explorerUrl.pathname.replace(/\/$/, "") + "/api";
       explorerUrl.search = "";
       explorerUrl.hash = "";
@@ -297,6 +303,18 @@ const fetchRoutescanInformation = async (): Promise<VerifierInformation> => {
   };
 };
 
+const buildFailedRequestError = async (
+  prefix: string,
+  response: Response,
+): Promise<Error> => {
+  const responseText = await response.text();
+  const body =
+    responseText.length > MAX_ERROR_RESPONSE_BODY_LENGTH
+      ? `${responseText.slice(0, MAX_ERROR_RESPONSE_BODY_LENGTH).replace(/[\uD800-\uDBFF]$/, "")}... [truncated, ${responseText.length} characters in total]`
+      : responseText;
+  return new Error(`${prefix} (${response.status}): ${body}`);
+};
+
 interface EtherscanRpcResponse {
   status: "0" | "1";
   message: string;
@@ -405,6 +423,17 @@ export interface EtherscanVerifyApiServiceOptions {
   apiKeys?: Record<string, string>;
   /** Optional fallback API key when chain-specific key is missing */
   defaultApiKey?: string;
+  /**
+   * Blockscout PRO API gateway settings. Only used by the BlockscoutVerify
+   * service. Solidity submissions for the listed chains go to the gateway
+   * with the PRO API key instead of the instance API URL. Vyper standard
+   * JSON input verification is not available on the gateway and keeps the
+   * instance API URL.
+   */
+  blockscoutProApi?: {
+    apiKey?: string;
+    chainIds?: string[];
+  };
 }
 
 export class EtherscanVerifyApiService implements WStorageService {
@@ -425,6 +454,7 @@ export class EtherscanVerifyApiService implements WStorageService {
       chainInformation: options?.chainInformation || {},
       apiKeys: options?.apiKeys || {},
       defaultApiKey: options?.defaultApiKey || "",
+      blockscoutProApi: options?.blockscoutProApi || {},
     };
     this.abortController = new AbortController();
   }
@@ -618,9 +648,9 @@ export class EtherscanVerifyApiService implements WStorageService {
       });
 
       if (!response.ok) {
-        const responseText = await response.text();
-        throw new Error(
-          `Explorer verification request failed (${response.status}): ${responseText}`,
+        throw await buildFailedRequestError(
+          "Explorer verification request failed",
+          response,
         );
       }
 
@@ -725,9 +755,9 @@ export class EtherscanVerifyApiService implements WStorageService {
       });
 
       if (!response.ok) {
-        const responseText = await response.text();
-        throw new Error(
-          `Blockscout Vyper verification request failed (${response.status}): ${responseText}`,
+        throw await buildFailedRequestError(
+          "Blockscout Vyper verification request failed",
+          response,
         );
       }
 
@@ -848,6 +878,8 @@ export class EtherscanVerifyApiService implements WStorageService {
     return JSON.stringify(jsonInput);
   }
 
+  // The PRO API does not offer Vyper standard JSON input verification.
+  // This always uses the instance url, also on PRO API chains.
   private buildBlockscoutVyperUrl(apiBaseUrl: string, address: string): string {
     const url = new URL(apiBaseUrl);
     const basePath = url.pathname.replace(/\/+$/, "");
@@ -909,6 +941,19 @@ export class EtherscanVerifyApiService implements WStorageService {
     chainId: number,
     includeApiKey = true,
   ): string {
+    // The PRO API needs the key for each request. Public urls keep the instance url.
+    const proApiKey = includeApiKey
+      ? this.getBlockscoutProApiKey(chainId)
+      : undefined;
+    if (proApiKey) {
+      const url = new URL(BLOCKSCOUT_PRO_API_URL);
+      url.searchParams.set("module", "contract");
+      url.searchParams.set("action", action);
+      url.searchParams.set("chain_id", String(chainId));
+      url.searchParams.set("apikey", proApiKey);
+      return url.toString();
+    }
+
     const url = new URL(apiBaseUrl);
 
     url.searchParams.set("module", "contract");
@@ -918,7 +963,14 @@ export class EtherscanVerifyApiService implements WStorageService {
     if (includeApiKey) {
       const apiKey = this.getApiKey(chainId);
       if (apiKey) {
-        url.searchParams.set("apikey", apiKey);
+        if (url.protocol !== "https:") {
+          logger.warn("Not attaching the API key to a non-HTTPS API URL", {
+            chainId,
+            apiBaseUrl,
+          });
+        } else {
+          url.searchParams.set("apikey", apiKey);
+        }
       }
     }
 
@@ -928,6 +980,21 @@ export class EtherscanVerifyApiService implements WStorageService {
   private getApiBaseUrl(chainId: number): string | undefined {
     const key = String(chainId);
     return this.options.chainInformation?.apiUrls?.[key];
+  }
+
+  /**
+   * Returns the PRO API key when this is the Blockscout service, the key is
+   * set and the chain is served by the PRO API gateway.
+   */
+  private getBlockscoutProApiKey(chainId: number): string | undefined {
+    if (this.IDENTIFIER !== WStorageIdentifiers.BlockscoutVerify) {
+      return undefined;
+    }
+    const { apiKey, chainIds } = this.options.blockscoutProApi;
+    if (!apiKey || !chainIds?.includes(String(chainId))) {
+      return undefined;
+    }
+    return apiKey;
   }
 
   private getApiKey(chainId: number): string | undefined {

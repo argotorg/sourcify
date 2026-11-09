@@ -1,0 +1,292 @@
+{
+  "_comment": "Solar: bytecodeHash none, so the CBOR auxdata only has the solar version and the best result is a match.",
+  "onchain": {
+    "creationBytecode": "0x6101af3803806101af6101003961010001601f01601f1916604052610100806101af38030190602001113417606b576101005160c0523360e05261014080606f6101003960c05161012d5260e05160601b6101555160a01b60a01c176101555260c05161017652610100f35b5f5ffd346027575f3560e01c80637d94792a14602b5780638da5cb5b146053578063c6dad08214606f575b5f5ffd5b7f00000000000000000000000000000000000000000000000000000000000000005f5260205ff35b7300000000000000000000000000000000000000005f5260205ff35b60c06040527f00000000000000000000000000000000000000000000000000000000000000006020608081815201908152604051606860ca8239602082606883015e6088905ff0801560c2575f5260205ff35b3d5f5f3e3d5ffd6068380380606860c03960c001601f01601f191660405260c08060683803019060200111341760375760c0515f55602d80603b5f395ff35b5f5ffd34601b575f3560e01c80630c55699c03601b575f545f5260205ff35b5f5ffdfea165736f6c617243000300000bfea165736f6c617243000300000b000000000000000000000000000000000000000000000000000000000000002a",
+    "deployedBytecode": "0x346027575f3560e01c80637d94792a14602b5780638da5cb5b146053578063c6dad08214606f575b5f5ffd5b7f000000000000000000000000000000000000000000000000000000000000002a5f5260205ff35b73f39fd6e51aad88f6f4ce6ab8827279cfffb922665f5260205ff35b60c06040527f000000000000000000000000000000000000000000000000000000000000002a6020608081815201908152604051606860ca8239602082606883015e6088905ff0801560c2575f5260205ff35b3d5f5f3e3d5ffd6068380380606860c03960c001601f01601f191660405260c08060683803019060200111341760375760c0515f55602d80603b5f395ff35b5f5ffd34601b575f3560e01c80630c55699c03601b575f545f5260205ff35b5f5ffdfea165736f6c617243000300000bfea165736f6c617243000300000b"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Factory.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "evmVersion": "cancun",
+        "metadata": {
+          "bytecodeHash": "none"
+        }
+      }
+    },
+    "compilerVersion": "0.8.38+commit.e7a91fc7.solar.0.3.0",
+    "contractIdentifier": "contracts/Factory.sol:Factory"
+  },
+  "output": {
+    "creationBytecode": "0x6101af3803806101af6101003961010001601f01601f1916604052610100806101af38030190602001113417606b576101005160c0523360e05261014080606f6101003960c05161012d5260e05160601b6101555160a01b60a01c176101555260c05161017652610100f35b5f5ffd346027575f3560e01c80637d94792a14602b5780638da5cb5b146053578063c6dad08214606f575b5f5ffd5b7f00000000000000000000000000000000000000000000000000000000000000005f5260205ff35b7300000000000000000000000000000000000000005f5260205ff35b60c06040527f00000000000000000000000000000000000000000000000000000000000000006020608081815201908152604051606860ca8239602082606883015e6088905ff0801560c2575f5260205ff35b3d5f5f3e3d5ffd6068380380606860c03960c001601f01601f191660405260c08060683803019060200111341760375760c0515f55602d80603b5f395ff35b5f5ffd34601b575f3560e01c80630c55699c03601b575f545f5260205ff35b5f5ffdfea165736f6c617243000300000bfea165736f6c617243000300000b",
+    "deployedBytecode": "0x346027575f3560e01c80637d94792a14602b5780638da5cb5b146053578063c6dad08214606f575b5f5ffd5b7f00000000000000000000000000000000000000000000000000000000000000005f5260205ff35b7300000000000000000000000000000000000000005f5260205ff35b60c06040527f00000000000000000000000000000000000000000000000000000000000000006020608081815201908152604051606860ca8239602082606883015e6088905ff0801560c2575f5260205ff35b3d5f5f3e3d5ffd6068380380606860c03960c001601f01601f191660405260c08060683803019060200111341760375760c0515f55602d80603b5f395ff35b5f5ffd34601b575f3560e01c80630c55699c03601b575f545f5260205ff35b5f5ffdfea165736f6c617243000300000bfea165736f6c617243000300000b",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "_seed",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "make",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "owner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "seed",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      },
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {},
+      "sourceMap": ":::-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;284:12:0;;;;306:18;;;-1:-1:-1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 404,
+          "value": "0xa165736f6c617243000300000b"
+        },
+        "2": {
+          "offset": 418,
+          "value": "0xa165736f6c617243000300000b"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {
+        "9": [
+          {
+            "start": 45,
+            "length": 32
+          },
+          {
+            "start": 118,
+            "length": 32
+          }
+        ],
+        "10": [
+          {
+            "start": 85,
+            "length": 20
+          }
+        ]
+      },
+      "linkReferences": {},
+      "sourceMap": ":::-:0;;;;;;;;;;;:::i;:::-;;;;:::i;:::-;;;;:::i;:::-;;;;;175:30:0;;;;;;-1:-1:-1;210:31:0;;;;;;-1:-1:-1;;;;415:4:0;405:15;;-1:-1:-1;;405:15:0;-1:-1:-1;;;405:15:0;-1:-1:-1;405:15:0;;;;;;;;;;;;;;;;;;;390:32;;;;;-1:-1:-1;405:15:0;;;;;;",
+      "cborAuxdata": {
+        "1": {
+          "offset": 293,
+          "value": "0xa165736f6c617243000300000b"
+        },
+        "2": {
+          "offset": 307,
+          "value": "0xa165736f6c617243000300000b"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "name": "solar",
+        "version": "0.8.38+commit.e7a91fc7.solar.0.3.0"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "_seed",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+          },
+          {
+            "inputs": [],
+            "name": "make",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "seed",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ],
+        "devdoc": {
+          "kind": "dev",
+          "methods": {},
+          "version": 1
+        },
+        "userdoc": {
+          "kind": "user",
+          "methods": {},
+          "version": 1
+        }
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Factory.sol": "Factory"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "none"
+        },
+        "optimizer": {
+          "enabled": true,
+          "runs": 200
+        },
+        "remappings": []
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "keccak256": "0x7d7511d4494586700410dc0d4b1c27241ce6c92709b201054bc48fa3b84be8fc",
+          "urls": [
+            "bzz-raw://29c341663250a97547b39c846f07e1cf5c8529500054bfd18db413f34aa8acf7",
+            "dweb:/ipfs/QmVts7aa4huE1L5Q5wZj3tQCCRyz1bXFZhrwwMEYQP2nkL"
+          ]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [
+      {
+        "type": "insert",
+        "reason": "constructorArguments",
+        "offset": 431
+      }
+    ],
+    "creationValues": {
+      "constructorArguments": "0x000000000000000000000000000000000000000000000000000000000000002a"
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 45,
+        "id": "9"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 85,
+        "id": "10"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 118,
+        "id": "9"
+      }
+    ],
+    "runtimeValues": {
+      "immutables": {
+        "9": "0x000000000000000000000000000000000000000000000000000000000000002a",
+        "10": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+      }
+    }
+  }
+}
