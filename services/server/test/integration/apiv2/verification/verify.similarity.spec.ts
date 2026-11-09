@@ -114,7 +114,7 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       .expect(jobResponse.body.error.customCode)
       .to.equal("no_similar_match_found");
 
-    // Clear incidental RPC calls from the initial request's middleware.
+    // Reset the getBytecode call of the first request.
     getBytecodeSpy.resetHistory();
     const retryResponse = await chai
       .request(serverFixture.server.app)
