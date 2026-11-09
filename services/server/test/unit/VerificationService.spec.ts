@@ -86,6 +86,7 @@ describe("VerificationService", function () {
           solJsonRepoPath: config.get("solJsonRepo"),
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
+          solarRepoPath: config.get("solarRepo"),
           similarityFailureCooldownSeconds: cooldownSeconds,
         },
         storage,
@@ -136,25 +137,30 @@ describe("VerificationService", function () {
       await Promise.all(verificationService["runningTasks"]);
     });
 
-    it("should allow a retry if the cooldown expires during the history lookup", async () => {
+    it("should report at least 1 second if the cooldown expires during the history lookup", async () => {
       const now = Date.now();
       const clock = sandbox.useFakeTimers({ now, toFake: ["Date"] });
-      const { storage, getBytecode } = createService(1);
+      const { storage } = createService(1);
       storage.performServiceOperation
         .withArgs("getRecentFailedSimilarityVerification")
         .callsFake(async () => {
           clock.tick(1);
           return new Date(now - 999);
         });
-      expect(
+      let error: unknown;
+      try {
         await verificationService.verifyFromSimilarityViaWorker(
           "/v2/verify/similarity/1/address",
           "1",
           "address",
-        ),
-      ).to.equal("similarity-job");
-      expect(getBytecode.calledOnce).to.be.true;
-      await Promise.all(verificationService["runningTasks"]);
+        );
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).to.be.instanceOf(SimilarityRecentlyFailedError);
+      expect(
+        (error as SimilarityRecentlyFailedError).retryAfterSeconds,
+      ).to.equal(1);
     });
   });
 

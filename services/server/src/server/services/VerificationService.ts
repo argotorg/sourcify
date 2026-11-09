@@ -127,14 +127,6 @@ export class VerificationService {
     this.sourcifyChainMap = options.sourcifyChainMap;
     this.similarityFailureCooldownSeconds =
       options.similarityFailureCooldownSeconds ?? 600;
-    if (
-      !Number.isFinite(this.similarityFailureCooldownSeconds) ||
-      this.similarityFailureCooldownSeconds < 0
-    ) {
-      throw new Error(
-        "similarityFailureCooldownSeconds must be a non-negative finite number",
-      );
-    }
 
     if (options.debugDataS3Config) {
       const s3Config = options.debugDataS3Config;
@@ -404,26 +396,18 @@ export class VerificationService {
     creationTransactionHash?: string,
   ): Promise<VerificationJobId> {
     if (this.similarityFailureCooldownSeconds > 0) {
+      const cooldownMs = this.similarityFailureCooldownSeconds * 1000;
       const failedAt = await this.storageService.performServiceOperation(
         "getRecentFailedSimilarityVerification",
-        [
-          chainId,
-          address,
-          new Date(Date.now() - this.similarityFailureCooldownSeconds * 1000),
-        ],
+        [chainId, address, new Date(Date.now() - cooldownMs)],
       );
       if (failedAt) {
-        const remainingMs =
-          failedAt.getTime() +
-          this.similarityFailureCooldownSeconds * 1000 -
-          Date.now();
-        // The cooldown may expire while the database query is running.
-        if (remainingMs > 0) {
-          throw new SimilarityRecentlyFailedError(
-            `Similarity verification for contract ${address} on chain ${chainId} recently found no match. Retry after the cooldown expires.`,
-            Math.ceil(remainingMs / 1000),
-          );
-        }
+        const remainingMs = failedAt.getTime() + cooldownMs - Date.now();
+        throw new SimilarityRecentlyFailedError(
+          `Similarity verification for contract ${address} on chain ${chainId} recently found no match. Retry after the cooldown expires.`,
+          // At least 1s, in case the cooldown expired during the query
+          Math.max(1, Math.ceil(remainingMs / 1000)),
+        );
       }
     }
 
