@@ -445,18 +445,23 @@ ${
       STORED_PROPERTIES_TO_SELECTORS["address"],
       STORED_PROPERTIES_TO_SELECTORS["verified_at"],
     ];
+    // Page sourcify_matches first, so the joins only read the returned rows
     return await this.pool.query(
       `
     SELECT
       ${selectors.join(", ")}
-    FROM ${this.schema}.sourcify_matches
+    FROM (
+      SELECT id, creation_match, runtime_match, verified_contract_id
+      FROM ${this.schema}.sourcify_matches
+      WHERE sourcify_matches.chain_id = $1
+      ${queryCursorCondition}
+      ${orderBy}
+      LIMIT $2
+    ) sourcify_matches
     JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
     JOIN ${this.schema}.contract_deployments ON
         contract_deployments.id = verified_contracts.deployment_id
-    WHERE sourcify_matches.chain_id = $1
-    ${queryCursorCondition}
     ${orderBy}
-    LIMIT $2
     `,
       values,
     );
