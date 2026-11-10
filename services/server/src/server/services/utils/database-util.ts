@@ -23,6 +23,7 @@ import type {
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
+  ISlangCompiler,
   Userdoc,
   Devdoc,
   VyperSourceMap,
@@ -32,6 +33,7 @@ import {
   PreRunCompilation,
   splitFullyQualifiedName,
   isSolarVersion,
+  isSlangVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   VerifiedContract as VerifiedContractApiObject,
@@ -822,8 +824,10 @@ export function getCompilerName(
   switch (language.toLocaleLowerCase()) {
     case "yul":
     case "solidity":
-      // Solar compiles Solidity too, its version names the Solar build
-      return isSolarVersion(compilerVersion) ? "solar" : "solc";
+      // Solar and Slang compile Solidity too, their versions name them
+      if (isSolarVersion(compilerVersion)) return "solar";
+      if (isSlangVersion(compilerVersion)) return "slang";
+      return "solc";
     case "vyper":
       return "vyper";
     case "fe":
@@ -1060,11 +1064,13 @@ export function createPreRunCompilationFromStoredCandidate(
     vyper,
     fe,
     solar,
+    slang,
   }: {
     solc: ISolidityCompiler;
     vyper: IVyperCompiler;
     fe: IFeCompiler;
     solar: ISolarCompiler;
+    slang: ISlangCompiler;
   },
   candidate: SimilarityCandidate,
 ): PreRunCompilation {
@@ -1092,7 +1098,9 @@ export function createPreRunCompilationFromStoredCandidate(
         ? vyper
         : isSolarVersion(version)
           ? solar
-          : solc;
+          : isSlangVersion(version)
+            ? slang
+            : solc;
   const compilation = new PreRunCompilation(
     compiler,
     version,

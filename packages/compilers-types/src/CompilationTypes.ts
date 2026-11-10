@@ -111,7 +111,7 @@ export interface MetadataCompilerSettings extends Omit<
 export interface Metadata {
   compiler: {
     keccak256?: string;
-    // Only Solar sets it, as "solar"
+    // Only Solar and Slang set it, as "solar" or "slang"
     name?: string;
     version: string;
   };

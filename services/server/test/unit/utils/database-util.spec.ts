@@ -128,6 +128,7 @@ describe("database-util", () => {
       expect(
         getCompilerName("Solidity", "0.8.38+commit.e7a91fc7.solar.0.3.0"),
       ).to.equal("solar");
+      expect(getCompilerName("Solidity", "0.2.0+slang")).to.equal("slang");
       expect(getCompilerName("Yul", "0.8.28+commit.7893614a")).to.equal("solc");
       expect(getCompilerName("Vyper", "0.4.1+commit.8a93dd27")).to.equal(
         "vyper",

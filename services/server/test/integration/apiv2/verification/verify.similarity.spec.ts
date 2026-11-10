@@ -617,4 +617,65 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       compilerVersion: solarCase.input.compilerVersion,
     });
   });
+
+  it("should verify a Slang contract using a similar candidate stored in the database", async () => {
+    const slangCase = (
+      await import("../../verification-cases/testdata/slang/full_match.json")
+    ).default;
+    const { resolveWorkers } = makeWorkersWait();
+
+    // Store the Slang candidate through the standard JSON route
+    const first = await deployFromBytecodeForCreatorTxHash(
+      chainFixture.localSigner,
+      slangCase.onchain.creationBytecode,
+    );
+    const firstRes = await chai
+      .request(serverFixture.server.app)
+      .post(`/v2/verify/${chainFixture.chainId}/${first.contractAddress}`)
+      .send({
+        stdJsonInput: slangCase.input.stdJsonInput,
+        compilerVersion: slangCase.input.compilerVersion,
+        contractIdentifier: slangCase.input.contractIdentifier,
+        creationTransactionHash: first.txHash,
+      });
+    await assertJobVerification(
+      serverFixture,
+      firstRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      first.contractAddress,
+      "exact_match",
+    );
+
+    // A second deployment of the same bytecode is matched by similarity
+    const second = await deployFromBytecodeForCreatorTxHash(
+      chainFixture.localSigner,
+      slangCase.onchain.creationBytecode,
+    );
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${second.contractAddress}`,
+      )
+      .send({ creationTransactionHash: second.txHash });
+    await assertJobVerification(
+      serverFixture,
+      verifyRes,
+      resolveWorkers,
+      chainFixture.chainId,
+      second.contractAddress,
+      "exact_match",
+    );
+
+    const lookupRes = await chai
+      .request(serverFixture.server.app)
+      .get(
+        `/v2/contract/${chainFixture.chainId}/${second.contractAddress}?fields=compilation`,
+      );
+    chai.expect(lookupRes.status).to.equal(200);
+    chai.expect(lookupRes.body.compilation).to.include({
+      compiler: "slang",
+      compilerVersion: slangCase.input.compilerVersion,
+    });
+  });
 });

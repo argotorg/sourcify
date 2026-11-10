@@ -87,6 +87,7 @@ describe("VerificationService", function () {
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
           solarRepoPath: config.get("solarRepo"),
+          slangRepoPath: config.get("slangRepo"),
           similarityFailureCooldownSeconds: cooldownSeconds,
         },
         storage,
@@ -225,6 +226,7 @@ describe("VerificationService", function () {
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
         solarRepoPath: config.get("solarRepo"),
+        slangRepoPath: config.get("slangRepo"),
       },
       new StorageService({
         enabledServices: {
@@ -285,6 +287,7 @@ describe("VerificationService", function () {
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
         solarRepoPath: config.get("solarRepo"),
+        slangRepoPath: config.get("slangRepo"),
         workerIdleTimeout: 20,
       },
       createMockStorageService("no-job"),
@@ -314,6 +317,7 @@ describe("VerificationService", function () {
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
         solarRepoPath: config.get("solarRepo"),
+        slangRepoPath: config.get("slangRepo"),
       },
       mockStorageService,
     );
@@ -376,6 +380,7 @@ describe("VerificationService", function () {
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
         solarRepoPath: config.get("solarRepo"),
+        slangRepoPath: config.get("slangRepo"),
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",
@@ -433,6 +438,7 @@ describe("VerificationService", function () {
         vyperRepoPath: config.get("vyperRepo"),
         feRepoPath: config.get("feRepo"),
         solarRepoPath: config.get("solarRepo"),
+        slangRepoPath: config.get("slangRepo"),
         debugDataS3Config: {
           bucket: testS3Bucket,
           region: "test-region",

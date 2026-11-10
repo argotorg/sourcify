@@ -13,6 +13,7 @@ export type SolidityDecodedObject = {
   ipfs?: string;
   solcVersion?: string;
   solarVersion?: string;
+  slangVersion?: string;
   experimental?: boolean;
   bzzr0?: string;
   bzzr1?: string;
@@ -183,6 +184,11 @@ export const decode = <T extends AuxdataStyle>(
           } else {
             result.solarVersion = cborDecodedObject.solar.join('.');
           }
+          break;
+        }
+        case 'slang': {
+          // Always 3 bytes: major, minor, patch
+          result.slangVersion = cborDecodedObject.slang.join('.');
           break;
         }
         case 'experimental': {

@@ -22,6 +22,7 @@ import { SolcLocal } from "../compiler/local/SolcLocal";
 import { VyperLocal } from "../compiler/local/VyperLocal";
 import { FeLocal } from "../compiler/local/FeLocal";
 import { SolarLocal } from "../compiler/local/SolarLocal";
+import { SlangLocal } from "../compiler/local/SlangLocal";
 import { v4 as uuidv4 } from "uuid";
 import { getCreatorTx } from "../utils/contract-creation-util";
 import type {
@@ -46,8 +47,9 @@ let solc: SolcLocal;
 let vyper: VyperLocal;
 let fe: FeLocal;
 let solar: SolarLocal;
+let slang: SlangLocal;
 const initWorker = () => {
-  if (chainRepository && solc && vyper && fe && solar) {
+  if (chainRepository && solc && vyper && fe && solar && slang) {
     return;
   }
 
@@ -86,6 +88,10 @@ const initWorker = () => {
   );
   solar = new SolarLocal(
     Piscina.workerData.solarRepoPath,
+    Piscina.workerData.compilerTimeoutMs,
+  );
+  slang = new SlangLocal(
+    Piscina.workerData.slangRepoPath,
     Piscina.workerData.compilerTimeoutMs,
   );
 };
@@ -135,7 +141,7 @@ async function _verifyFromJsonInput({
   let compilation: AnyCompilation;
   try {
     compilation = createCompilationFromJsonInput(
-      { solc, vyper, fe, solar },
+      { solc, vyper, fe, solar, slang },
       compilerVersion,
       jsonInput,
       compilationTarget,
@@ -192,8 +198,11 @@ async function _verifyFromMetadata({
     path,
     content,
   }));
-  // Solar is only supported with a standard JSON input for now
-  if (isSolarVersion(metadata.compiler.version)) {
+  // Solar and Slang are only supported with a standard JSON input for now
+  if (
+    isSolarVersion(metadata.compiler.version) ||
+    metadata.compiler.name === "slang"
+  ) {
     return {
       errorExport: createErrorExport(
         new CompilationError({ code: "unsupported_compiler_version" }),
@@ -322,7 +331,7 @@ async function _verifySimilarity({
     let compilation;
     try {
       compilation = createPreRunCompilationFromStoredCandidate(
-        { solc, vyper, fe, solar },
+        { solc, vyper, fe, solar, slang },
         candidate,
       );
     } catch (error: any) {

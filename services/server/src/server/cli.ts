@@ -21,6 +21,7 @@ import { SolcLocal } from "./services/compiler/local/SolcLocal";
 import { VyperLocal } from "./services/compiler/local/VyperLocal";
 import { FeLocal } from "./services/compiler/local/FeLocal";
 import { SolarLocal } from "./services/compiler/local/SolarLocal";
+import { SlangLocal } from "./services/compiler/local/SlangLocal";
 
 export const getEtherscanApiKeyForEachChain = (
   chainsMap: SourcifyChainMap,
@@ -112,6 +113,11 @@ const solarRepoPath =
   (config.get("solarRepo") as string) || path.join("/tmp", "solar-repo");
 export const solar = new SolarLocal(solarRepoPath, compilerTimeoutMs);
 
+logger.info("Using local Slang compiler");
+const slangRepoPath =
+  (config.get("slangRepo") as string) || path.join("/tmp", "slang-repo");
+export const slang = new SlangLocal(slangRepoPath, compilerTimeoutMs);
+
 // To print regexes in the config object logs below
 Object.defineProperty(RegExp.prototype, "toJSON", {
   value: RegExp.prototype.toString,
@@ -137,6 +143,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       vyper,
       fe,
       solar,
+      slang,
       chains: sourcifyChainsMap,
       verifyDeprecated: config.get("verifyDeprecated"),
       replaceContract: config.get("replaceContract"),
@@ -154,6 +161,7 @@ Object.defineProperty(RegExp.prototype, "toJSON", {
       vyperRepoPath,
       feRepoPath,
       solarRepoPath,
+      slangRepoPath,
       compilerTimeoutMs,
       similarityFailureCooldownSeconds: config.get<number>(
         "similarityFailureCooldownSeconds",

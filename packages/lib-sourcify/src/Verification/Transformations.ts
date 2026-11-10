@@ -1,4 +1,5 @@
 import { AuxdataStyle, isCborEncoded } from '@ethereum-sourcify/bytecode-utils';
+import { isSlangVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   ImmutableReferences,
   LinkReferences,
@@ -319,6 +320,10 @@ export function extractConstructorArgumentsTransformation(
  * Only Solidity versions are valid semver, so the version is coerced first.
  */
 function hasBareNamePlaceholders(compilerVersion?: string): boolean {
+  // A Slang version is not a solc version
+  if (compilerVersion && isSlangVersion(compilerVersion)) {
+    return false;
+  }
   const version = compilerVersion ? semver.coerce(compilerVersion) : null;
   return version !== null && semver.lt(version, '0.4.9');
 }

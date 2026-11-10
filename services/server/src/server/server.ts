@@ -23,6 +23,7 @@ import type {
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
+  ISlangCompiler,
   SourcifyChainMap,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
@@ -58,6 +59,7 @@ export interface ServerOptions {
   vyper: IVyperCompiler;
   fe: IFeCompiler;
   solar: ISolarCompiler;
+  slang: ISlangCompiler;
   verifyDeprecated: boolean;
   replaceContract: boolean;
   sourcifyPrivateToken?: string;
@@ -137,6 +139,7 @@ export class Server {
     this.app.set("vyper", options.vyper);
     this.app.set("fe", options.fe);
     this.app.set("solar", options.solar);
+    this.app.set("slang", options.slang);
     this.app.set("verifyDeprecated", options.verifyDeprecated);
     this.app.set("replaceContract", options.replaceContract);
     this.app.set("services", this.services);

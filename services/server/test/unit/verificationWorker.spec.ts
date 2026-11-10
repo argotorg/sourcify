@@ -26,6 +26,7 @@ import type { JobErrorData } from "../../src/server/services/utils/database-util
 import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { SolarLocal } from "../../src/server/services/compiler/local/SolarLocal";
 import type {
+  Metadata,
   SolidityOutput,
   OutputError,
 } from "@ethereum-sourcify/lib-sourcify";
@@ -52,6 +53,7 @@ describe("verificationWorker", function () {
       solJsonRepoPath: config.get("solJsonRepo"),
       vyperRepoPath: config.get("vyperRepo"),
       solarRepoPath: config.get("solarRepo"),
+      slangRepoPath: config.get("slangRepo"),
     });
   });
 
@@ -327,6 +329,24 @@ describe("verificationWorker", function () {
       });
 
       assertVerificationExport(result);
+    });
+
+    it("should not verify a Slang contract from its metadata", async () => {
+      const slangCase = (
+        await import("../integration/verification-cases/testdata/slang/full_match.json")
+      ).default;
+      const result = await verifyFromMetadata({
+        chainId: chainFixture.chainId,
+        address: chainFixture.defaultContractAddress,
+        metadata: slangCase.output.metadata as unknown as Metadata,
+        sources: {
+          "contracts/Factory.sol":
+            slangCase.input.stdJsonInput.sources["contracts/Factory.sol"]
+              .content,
+        },
+      });
+
+      assertErrorResponse(result, "unsupported_compiler_version");
     });
 
     it("should return an errorResponse if the metadata validation fails", async () => {

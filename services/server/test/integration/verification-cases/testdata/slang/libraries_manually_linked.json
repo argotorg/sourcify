@@ -1,0 +1,190 @@
+{
+  "_comment": "Slang: the library placeholder was replaced manually instead of linking with the compiler settings.",
+  "onchain": {
+    "creationBytecode": "0x34156008575f5ffd5b63000000c280630000001b6080396080f3fe608060405260043610607057346070576020600436031263a444f5e960e01b63ffffffff60e01b5f3516031760705763f40a049d60e01b608052600435608452602060806024815f1960601c737a250d5630b4cf539739df2c5dacb4c659f2488d165af41560745760203d1015607f575b5f5ffd5b6040513d90815f823efd5b60206040516080518152f3fea26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034",
+    "deployedBytecode": "0x608060405260043610607057346070576020600436031263a444f5e960e01b63ffffffff60e01b5f3516031760705763f40a049d60e01b608052600435608452602060806024815f1960601c737a250d5630b4cf539739df2c5dacb4c659f2488d165af41560745760203d1015607f575b5f5ffd5b6040513d90815f823efd5b60206040516080518152f3fea26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Calculator.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nlibrary MathLib {\n    function triple(uint256 x) external pure returns (uint256) {\n        return x * 3;\n    }\n}\n\ncontract Calculator {\n    function run(uint256 x) external pure returns (uint256) {\n        return MathLib.triple(x);\n    }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "mode": "3"
+        },
+        "evmVersion": "cancun",
+        "solidityVersion": "0.8.28"
+      }
+    },
+    "compilerVersion": "0.2.0+slang",
+    "contractIdentifier": "contracts/Calculator.sol:Calculator"
+  },
+  "output": {
+    "creationBytecode": "0x34156008575f5ffd5b63000000c280630000001b6080396080f3fe608060405260043610607057346070576020600436031263a444f5e960e01b63ffffffff60e01b5f3516031760705763f40a049d60e01b608052600435608452602060806024815f1960601c730000000000000000000000000000000000000000165af41560745760203d1015607f575b5f5ffd5b6040513d90815f823efd5b60206040516080518152f3fea26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034",
+    "deployedBytecode": "0x608060405260043610607057346070576020600436031263a444f5e960e01b63ffffffff60e01b5f3516031760705763f40a049d60e01b608052600435608452602060806024815f1960601c730000000000000000000000000000000000000000165af41560745760203d1015607f575b5f5ffd5b6040513d90815f823efd5b60206040516080518152f3fea26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "x",
+              "type": "uint256"
+            }
+          ],
+          "name": "run",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "pure",
+          "type": "function"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "sources": {
+        "contracts/Calculator.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {
+        "contracts/Calculator.sol": {
+          "MathLib": [
+            {
+              "start": 104,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 167,
+          "value": "0xa26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {},
+      "linkReferences": {
+        "contracts/Calculator.sol": {
+          "MathLib": [
+            {
+              "start": 77,
+              "length": 20
+            }
+          ]
+        }
+      },
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 140,
+          "value": "0xa26469706673582212202146786affb95e47e38e68f2d2242b7ad0bb5d54d791e769d46f110f5d950a5665736c616e67430002000034"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "name": "slang",
+        "version": "0.2.0"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "x",
+                "type": "uint256"
+              }
+            ],
+            "name": "run",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "pure",
+            "type": "function"
+          }
+        ]
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Calculator.sol": "Calculator"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "mode": "3",
+          "sizeFallback": false
+        },
+        "remappings": [],
+        "solidityVersion": "0.8.28"
+      },
+      "sources": {
+        "contracts/Calculator.sol": {
+          "keccak256": "0xb9314510ca58a0bbe35e5ea93a3242d3a9602f22b74fdc53b5f263d0ef4cbf95",
+          "urls": ["dweb:/ipfs/QmdxjmDzWvTcUcGrWRZdyLLa2vjLmnkDq2k3bx9xq2Svbj"]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "creationTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 104,
+        "id": "contracts/Calculator.sol:MathLib"
+      }
+    ],
+    "creationValues": {
+      "libraries": {
+        "contracts/Calculator.sol:MathLib": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+      }
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "library",
+        "offset": 77,
+        "id": "contracts/Calculator.sol:MathLib"
+      }
+    ],
+    "runtimeValues": {
+      "libraries": {
+        "contracts/Calculator.sol:MathLib": "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"
+      }
+    }
+  }
+}

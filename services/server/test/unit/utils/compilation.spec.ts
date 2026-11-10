@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import type {
+  ISlangCompiler,
   ISolarCompiler,
   ISolidityCompiler,
   IVyperCompiler,
@@ -7,6 +8,7 @@ import type {
   SolidityJsonInput,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
+  SlangCompilation,
   SolarCompilation,
   SolidityCompilation,
 } from "@ethereum-sourcify/lib-sourcify";
@@ -18,6 +20,7 @@ const compilers = {
   vyper: {} as IVyperCompiler,
   fe: {} as IFeCompiler,
   solar: {} as ISolarCompiler,
+  slang: {} as ISlangCompiler,
 };
 
 const jsonInput: SolidityJsonInput = {
@@ -38,6 +41,17 @@ describe("createCompilationFromJsonInput", () => {
     expect(compilation.compiler).to.equal(compilers.solar);
   });
 
+  it("uses Slang when the version ends with +slang", () => {
+    const compilation = createCompilationFromJsonInput(
+      compilers,
+      "0.2.0+slang",
+      jsonInput,
+      { path: "A.sol", name: "A" },
+    );
+    expect(compilation).to.be.instanceOf(SlangCompilation);
+    expect(compilation.compiler).to.equal(compilers.slang);
+  });
+
   it("uses solc for a solc version", () => {
     const compilation = createCompilationFromJsonInput(
       compilers,
@@ -47,6 +61,7 @@ describe("createCompilationFromJsonInput", () => {
     );
     expect(compilation).to.be.instanceOf(SolidityCompilation);
     expect(compilation).to.not.be.instanceOf(SolarCompilation);
+    expect(compilation).to.not.be.instanceOf(SlangCompilation);
     expect(compilation.compiler).to.equal(compilers.solc);
   });
 });

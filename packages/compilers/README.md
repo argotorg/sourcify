@@ -53,12 +53,19 @@ Vyper follows the same pattern.
 - A build that is not a release, such as `0.3.0-dev`, comes from the copies that Sourcify hosts, for example the Solar that Foundry v1.9.0 bundles. Sourcify hosts copies only for Linux x64. The file name is the cache name, `solar-<target>-v<solar version>+commit.<commit>`.
 - To use another build, put it in `solarRepoPath` under that name, for example `solar-x86_64-unknown-linux-musl-v0.3.0-dev+commit.d9f23fbe`.
 
+## Slang
+
+[Slang](https://github.com/NomicFoundation/solx) compiles Solidity with the standard JSON input and output of solc, plus its own settings such as `settings.solidityVersion` and `settings.optimizer.mode`. `useSlangCompiler(slangRepoPath, version, slangJsonInput, timeoutMs?)` takes the Slang version with the suffix `+slang`, for example `0.2.0+slang`. This is the long version that Hardhat reports for Slang.
+
+- The function downloads `slang-<platform>-v<slang version>` from the [mirror of the Slang releases](https://solx-releases-mirror.hardhat.org), checks its SHA-256, and checks that the binary reports the requested version.
+- To use another build, put it in `slangRepoPath` under that name, for example `slang-linux-amd64-gnu-v0.2.0`.
+
 ## Compilation timeout
 
-The last argument of `useSolidityCompiler`, `useVyperCompiler`, `useSolarCompiler` and `useFeCompiler` is an optional wall-clock timeout in milliseconds for the compilation. When it elapses the call rejects with an error whose `code` is `COMPILER_TIMEOUT` (exported as `COMPILER_TIMEOUT_CODE` from `@ethereum-sourcify/compilers-types`). If omitted, a default of 45 minutes applies.
+The last argument of `useSolidityCompiler`, `useVyperCompiler`, `useSolarCompiler`, `useSlangCompiler` and `useFeCompiler` is an optional wall-clock timeout in milliseconds for the compilation. When it elapses the call rejects with an error whose `code` is `COMPILER_TIMEOUT` (exported as `COMPILER_TIMEOUT_CODE` from `@ethereum-sourcify/compilers-types`). If omitted, a default of 45 minutes applies.
 
 It covers all three ways a compiler is run, each of which needs a different mechanism to stop it:
 
-- native `solc`/`vyper`/`solar` binaries run as a child process and are killed with `SIGKILL`
+- native `solc`/`vyper`/`solar`/`slang` binaries run as a child process and are killed with `SIGKILL`
 - `fe build` runs synchronously via `spawnSync`, which enforces the timeout itself
 - the soljson (Emscripten) build of `solc` runs in-process in a worker thread — there is no process to kill, so the thread is terminated instead

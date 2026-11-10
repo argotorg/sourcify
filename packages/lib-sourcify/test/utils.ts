@@ -7,9 +7,12 @@ import {
   useVyperCompiler,
   useFeCompiler,
   useSolarCompiler,
+  useSlangCompiler,
 } from '@ethereum-sourcify/compilers';
 import type {
   Metadata,
+  SlangJsonInput,
+  SlangOutput,
   SolarJsonInput,
   SolarOutput,
   SolidityJsonInput,
@@ -27,6 +30,7 @@ import type {
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
+  ISlangCompiler,
 } from '../src/Compilation/CompilationTypes';
 import fs from 'fs';
 import {
@@ -130,6 +134,21 @@ class SolarCompiler implements ISolarCompiler {
 }
 
 export const solarCompiler = new SolarCompiler();
+
+class SlangCompiler implements ISlangCompiler {
+  async compile(
+    version: string,
+    slangJsonInput: SlangJsonInput,
+  ): Promise<SlangOutput> {
+    return await useSlangCompiler(
+      path.join('/tmp', 'lib-sourcify-slang-repo'),
+      version,
+      slangJsonInput,
+    );
+  }
+}
+
+export const slangCompiler = new SlangCompiler();
 
 /**
  * Helper function to verify a Verification object using its getters
