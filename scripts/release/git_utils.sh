@@ -106,9 +106,10 @@ select_branch() {
   echo ""
   echo "Recent branches:"
   # Get last 5 branches
-  recent_branches=($(git branch --sort=-committerdate | head -n 5 | sed 's/^[ *]*//' | xargs))
+  recent_branches=($(git branch --sort=-committerdate --format='%(refname:short)' | head -n 5))
 
   echo "Choose a branch or create a new one:"
+  local COLUMNS=1 # select prints one option per line
   PS3="Select branch option (1-$((${#recent_branches[@]} + 1))): "
 
   options=()

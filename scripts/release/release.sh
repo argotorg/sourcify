@@ -10,6 +10,7 @@ declare -a packageNames
 declare -a versions          # For current versions read from file
 declare -A selected_versions # For selected new versions (pkgName -> newVersion)
 declare IS_GUI_EDITOR=true   # Flag to indicate if a GUI editor is selected, true by default
+declare EDITOR_SELECTED=false # The editor is asked for at the first changelog edit
 
 # Function to parse and increment version
 increment_version() {
@@ -47,6 +48,7 @@ select_editor() {
 
   # Always ask for editor choice
   echo "Choose an editor for editing changelogs:"
+  local COLUMNS=1 # select prints one option per line
   PS3="Select editor (1-5): "
   # IS_GUI_EDITOR is true by default. Only set to false for terminal editors.
   select editor_choice in "cursor" "nano" "vim" "code" "custom"; do
@@ -85,9 +87,21 @@ select_editor() {
   if [ "$IS_GUI_EDITOR" = true ]; then
     echo "Note: $EDITOR might open in a new window. The script will wait for you to save and close it before proceeding with the changelog."
   fi
+  EDITOR_SELECTED=true
 }
 
-# For each directory/package to be updated decide on patch, minor, or major, and then ask for changelog input
+# Opens a file in the selected editor and waits until the user is done
+edit_file() {
+  [ "$EDITOR_SELECTED" = true ] || select_editor
+  ${EDITOR:-nano} "$1"
+  if [ "$IS_GUI_EDITOR" = true ]; then
+    echo ""
+    read -n 1 -s -r -p "Changelog editor ($EDITOR) was opened. Please save your changes and close the editor, then press any key to continue..."
+    echo ""
+  fi
+}
+
+# For each changed package: show the changelog generated from the commits, choose the version, then confirm or edit the changelog
 update_packages_and_changelog() {
   echo "Checking which packages need a new version"
 
@@ -96,6 +110,9 @@ update_packages_and_changelog() {
   GITHUB_REPO_URL="https://github.com/${GITHUB_REPO_FULL_NAME}"
   GITHUB_PR_URL="${GITHUB_REPO_URL}/pull/${OPEN_PR_NUMBER}"
   GITHUB_PR_URL_FILES="${GITHUB_PR_URL}/files"
+
+  # The changelogs start at each package's last release tag
+  git fetch --tags --quiet origin || warn "Could not fetch the tags. The changelogs can contain commits that are already released."
 
   # Get the list of changed packages
   OUTPUT=$(npx lerna changed --all --long --parseable --include-merged-tags)
@@ -124,81 +141,112 @@ update_packages_and_changelog() {
     echo "${packageNames[$index]} at ${directories[$index]} (current version: ${versions[$index]})"
   done
 
-  select_editor
-
   for index in "${!directories[@]}"; do
-    pkg_name="${packageNames[$index]}"
-    current_version="${versions[$index]}"
-
-    prompt_execute_or_skip "selecting a version for $pkg_name" select_new_version "$pkg_name" "$current_version"
-    prompt_execute_or_skip "updating the changelog for $pkg_name" update_changelog "$pkg_name" "${directories[$index]}"
+    release_package "${packageNames[$index]}" "${directories[$index]}" "${versions[$index]}"
   done
 
   # Write all collected package data to the temporary file
   write_package_data directories packageNames versions selected_versions
 }
 
-# Selects a new version for the package and writes to global selected_versions variable
-select_new_version() {
+# Shows the generated changelog of a package, asks for its version, then writes the confirmed changelog
+release_package() {
   local pkg_name=$1
-  local current_version=$2
+  local directory=$2
+  local current_version=$3
+  local entries_file tag
 
-  new_patch=$(increment_version "$current_version" "patch")
-  new_minor=$(increment_version "$current_version" "minor")
-  new_major=$(increment_version "$current_version" "major")
+  entries_file=$(mktemp)
+  generate_changelog_entries "$pkg_name" "$directory" >"$entries_file"
+  tag=$(changelog_start_tag "$pkg_name" "$directory")
 
   echo ""
   echo "=============================="
   echo "$pkg_name"
+  echo "Commits since: $tag"
   echo "Review changes at: $GITHUB_PR_URL_FILES"
   echo "=============================="
-  echo "Select a new version for $pkg_name (currently $current_version)"
-  PS3="Choose the new version for $pkg_name (1, 2, 3, or 4): "
-  select version_type in "Patch ($new_patch)" "Minor ($new_minor)" "Major ($new_major)" "Current ($current_version)"; do
-    case $version_type in
-    "Patch ($new_patch)")
-      echo "You selected $version_type"
-      selected_versions["$pkg_name"]=$new_patch
-      break
+  if [ -n "$tag" ] && [ "$tag" != "$pkg_name@$current_version" ]; then
+    warn "There is no tag $pkg_name@$current_version, so the changelog starts at $tag. It can contain commits that are already released."
+  elif [ -n "$tag" ] && ! git merge-base --is-ancestor "$tag" HEAD; then
+    warn "$tag is not in the history of HEAD. Maybe its release PR was squash-merged. The changelog starts at $tag."
+  fi
+  echo "Changelog generated from the commit messages:"
+  echo ""
+  cat "$entries_file"
+  echo ""
+
+  select_new_version "$pkg_name" "$current_version" "$(suggest_version_bump "$pkg_name" "$directory")"
+  if [ "${selected_versions["$pkg_name"]}" = "$current_version" ]; then
+    echo "The version of $pkg_name does not change, so its changelog stays as it is."
+  elif review_changelog_entries "$pkg_name" "$entries_file"; then
+    update_changelog "$pkg_name" "$directory" "$entries_file"
+  else
+    echo "Skipped the changelog for $pkg_name"
+  fi
+  rm "$entries_file"
+}
+
+# Asks if the changelog entries are fine and opens the editor until they are. Returns 1 if the user skips.
+review_changelog_entries() {
+  local pkg_name=$1
+  local entries_file=$2
+  local answer
+
+  while true; do
+    read -p "Is the changelog of $pkg_name fine? (Y)es, (e)dit, or (s)kip writing it: " answer
+    case $answer in
+    [eEnN]*)
+      edit_file "$entries_file"
+      echo ""
+      echo "## $pkg_name@${selected_versions["$pkg_name"]}"
+      echo ""
+      cat "$entries_file"
+      echo ""
       ;;
-    "Minor ($new_minor)")
-      echo "You selected $version_type"
-      selected_versions["$pkg_name"]=$new_minor
-      break
-      ;;
-    "Major ($new_major)")
-      echo "You selected $version_type"
-      selected_versions["$pkg_name"]=$new_major
-      break
-      ;;
-    "Current ($current_version)")
-      echo "You selected $version_type"
-      selected_versions["$pkg_name"]=$current_version
-      break
-      ;;
-    *)
-      echo "Invalid option, try again."
-      ;;
+    [sS]*) return 1 ;;
+    *) return 0 ;;
     esac
   done
+}
+
+# Selects a new version for the package and writes to global selected_versions variable. Enter takes the suggested bump.
+select_new_version() {
+  local pkg_name=$1
+  local current_version=$2
+  local suggested_bump=$3
+  local -a bumps=(patch minor major current)
+  local -a choices=("$(increment_version "$current_version" patch)" "$(increment_version "$current_version" minor)" "$(increment_version "$current_version" major)" "$current_version")
+  local -a labels=()
+  local i default answer
+
+  echo "Select a new version for $pkg_name (currently $current_version)"
+  for i in "${!bumps[@]}"; do
+    labels[$i]="${bumps[$i]^} (${choices[$i]})"
+    if [ "${bumps[$i]}" = "$suggested_bump" ]; then
+      default=$((i + 1))
+      echo "$((i + 1))) ${labels[$i]} - suggested by the commit types"
+    else
+      echo "$((i + 1))) ${labels[$i]}"
+    fi
+  done
+
+  while true; do
+    read -p "Choose the new version for $pkg_name (1-4, Enter for $default): " answer
+    answer=${answer:-$default}
+    [[ $answer =~ ^[1-4]$ ]] && break
+    echo "Invalid option, try again."
+  done
+  selected_versions["$pkg_name"]=${choices[$((answer - 1))]}
+  echo "You selected ${labels[$((answer - 1))]}"
 }
 
 update_changelog() {
   local pkg_name=$1
   local directory=$2
+  local changelog_entry_filename=$3
 
   today=$(date '+%Y-%m-%d')
-  changelog_entry_filename=$(mktemp)
-
-  # Prompt the user to enter changelog details in their default editor
-  ${EDITOR:-nano} "$changelog_entry_filename"
-
-  # If a GUI editor is used, wait for the user to save and close the file
-  if [ "$IS_GUI_EDITOR" = true ]; then
-    echo ""
-    read -n 1 -s -r -p "Changelog editor ($EDITOR) was opened. Please save your changes and close the editor, then press any key to continue..."
-    echo ""
-  fi
 
   # Ensure the changelog entry ends with a newline
   if [ -s "$changelog_entry_filename" ] && [ -n "$(tail -c1 "$changelog_entry_filename")" ]; then
@@ -214,17 +262,14 @@ update_changelog() {
 
   # Create a new changelog content by combining parts with new entry
   {
-    echo "$upper_part"
-    echo ""
+    # Some changelogs have no title above the first version
+    [ -n "$upper_part" ] && printf '%s\n\n' "$upper_part"
     echo "$new_changelog_heading"
     echo ""
     cat "$changelog_entry_filename"
     echo ""
     echo "$lower_part"
   } >"$changelog_file"
-
-  # Clean up the temporary file used for user input
-  rm "$changelog_entry_filename"
 
   echo "Changelog updated for $pkg_name"
 
