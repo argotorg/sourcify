@@ -45,9 +45,11 @@ git submodule update --init
 
 **Extensions**
 
-- `pg_cron`: used to schedule the refresh of the signature stats materialized view. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
-  - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron job will be skipped in the migration.
-  - Importing `sourcify-database.sql` directly does not install `pg_cron` or create the `refresh-signature-stats` cron job. The cron job is created only when running migrations.
+- `pg_cron`: used to schedule the jobs below. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
+  - `reap-stale-verification-jobs` (every 15 minutes): fails verification jobs that are still running after 3 hours.
+  - `delete-expired-verification-jobs` (hourly): deletes `verification_jobs` rows older than 90 days and `verification_jobs_ephemeral` rows older than 14 days, at most 100,000 rows of each per run. To use other values, change the command of the job with `cron.alter_job`: the functions `delete_expired_verification_jobs` and `delete_expired_verification_jobs_ephemeral` take `retention` and `max_rows` as parameters.
+  - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron jobs will be skipped in the migrations. The functions are still installed, so you can call them from your own scheduler.
+  - Importing `sourcify-database.sql` directly does not install `pg_cron` or create the cron jobs. The cron jobs are created only when running migrations.
   - In Google Cloud SQL, you can install the extension by setting the flag `cloudsql.enable_pg_cron` to `true`, and setting the `cron.database_name` flag to the name of the database you are using.
 - `pg_trgm`: used to create the index on the `signatures` table.
 - `pgcrypto`: used to create the `signature_type_enum` type.
