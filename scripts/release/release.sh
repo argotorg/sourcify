@@ -154,17 +154,23 @@ release_package() {
   local pkg_name=$1
   local directory=$2
   local current_version=$3
-  local entries_file
+  local entries_file tag
 
   entries_file=$(mktemp)
   generate_changelog_entries "$pkg_name" "$directory" >"$entries_file"
+  tag=$(changelog_start_tag "$pkg_name" "$directory")
 
   echo ""
   echo "=============================="
   echo "$pkg_name"
-  echo "Commits since: $(last_release_tag "$pkg_name")"
+  echo "Commits since: $tag"
   echo "Review changes at: $GITHUB_PR_URL_FILES"
   echo "=============================="
+  if [ -n "$tag" ] && [ "$tag" != "$pkg_name@$current_version" ]; then
+    warn "There is no tag $pkg_name@$current_version, so the changelog starts at $tag. It can contain commits that are already released."
+  elif [ -n "$tag" ] && ! git merge-base --is-ancestor "$tag" HEAD; then
+    warn "$tag is not in the history of HEAD. Maybe its release PR was squash-merged. The changelog starts at $tag."
+  fi
   echo "Changelog generated from the commit messages:"
   echo ""
   cat "$entries_file"
