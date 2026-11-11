@@ -47,7 +47,7 @@
   "dependencies": {
     "@ethereum-sourcify/compilers-types": "^1.4.0",
     "semver": "7.8.5",
-    "solc": "0.8.37"
+    "solc": "0.8.38"
   },
   "devDependencies": {
     "@types/chai": "4.3.20",
@@ -57,7 +57,7 @@
     "c8": "11.0.0",
     "chai": "4.5.0",
     "mocha": "10.8.2",
-    "npm-run-all2": "9.0.3"
+    "npm-run-all2": "9.0.4"
   },
   "files": [
     "build/main",
