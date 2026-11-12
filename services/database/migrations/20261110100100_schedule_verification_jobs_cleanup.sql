@@ -63,10 +63,10 @@ DO $$
 BEGIN
     PERFORM cron.schedule(
         'delete-expired-verification-jobs',
-        '23 * * * *',
-        'SELECT public.delete_expired_verification_jobs_ephemeral(), public.delete_expired_verification_jobs();'
+        '0 5 * * *',
+        'SELECT public.delete_expired_verification_jobs_ephemeral(max_rows => 1000000), public.delete_expired_verification_jobs(max_rows => 1000000);'
     );
-    RAISE WARNING 'Scheduled verification-job cleanup (hourly, 90 days for jobs, 30 days for ephemeral rows)';
+    RAISE WARNING 'Scheduled verification-job cleanup (daily, 90 days for jobs, 30 days for ephemeral rows)';
 EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'pg_cron not available, verification-job cleanup must be run manually. Error: %', SQLERRM;
 END

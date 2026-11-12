@@ -188,6 +188,7 @@ paths:
         Endpoint to get the status of a verification job.
 
         Alternatively you can directly check the verification status of a contract with with chainId+address at `GET /v2/contract/{chainId}/{address}`
+
         Sourcify keeps a verification job for 90 days. After that, this endpoint returns `404`. For a failed job, the bytecodes and the `creationTransactionHash` in `error` are available for 30 days only.
       operationId: verification-status
       parameters:
