@@ -84,6 +84,11 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
       creationMatch: null,
       runtimeMatch: null,
     });
+
+    const ephemeral = await serverFixture.sourcifyDatabase.query(
+      "SELECT id FROM verification_jobs_ephemeral",
+    );
+    chai.expect(ephemeral.rows).to.have.length(0);
   });
 
   it("should reject an immediate retry after a completed no-match similarity job without repeating work", async () => {

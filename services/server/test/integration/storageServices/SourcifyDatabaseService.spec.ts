@@ -14,6 +14,8 @@ import {
 import { id as keccak256str } from "ethers";
 import { ConflictError } from "../../../src/common/errors/ConflictError";
 import logger from "../../../src/common/logger";
+import type { VerifyErrorExport } from "../../../src/server/services/workers/workerTypes";
+import { v4 as uuidv4 } from "uuid";
 
 use(chaiAsPromised);
 
@@ -331,5 +333,65 @@ describe("SourcifyDatabaseService", function () {
       "SELECT COUNT(*) as count FROM compiled_contracts_signatures",
     );
     expect(parseInt(contractSignaturesResult.rows[0].count)).to.equal(0);
+  });
+
+  describe("setJobError", () => {
+    const failJob = async (error: Partial<VerifyErrorExport>) => {
+      const verificationId = await databaseService.storeVerificationJob(
+        new Date(),
+        MockVerificationExport.chainId.toString(),
+        MockVerificationExport.address,
+        "/v2/verify",
+      );
+      await databaseService.setJobError(verificationId, new Date(), {
+        customCode: "no_match",
+        errorId: uuidv4(),
+        ...error,
+      });
+      const ephemeral = await databaseService.database.pool.query(
+        "SELECT * FROM verification_jobs_ephemeral WHERE id = $1",
+        [verificationId],
+      );
+      const job = await databaseService.getVerificationJob(verificationId);
+      return { ephemeralRows: ephemeral.rows, error: job?.error };
+    };
+
+    it("should not store an ephemeral row when the error has no bytecodes", async () => {
+      const withoutBytecodes = await failJob({});
+      expect(withoutBytecodes.ephemeralRows).to.have.length(0);
+      expect(withoutBytecodes.error?.customCode).to.equal("no_match");
+
+      // The onchain code of a contract that is not deployed
+      const withEmptyBytecodes = await failJob({
+        onchainRuntimeCode: "0x",
+        onchainCreationCode: "0x",
+      });
+      expect(withEmptyBytecodes.ephemeralRows).to.have.length(0);
+      expect(withEmptyBytecodes.error?.customCode).to.equal("no_match");
+      expect(withEmptyBytecodes.error?.onchainRuntimeCode).to.equal(undefined);
+    });
+
+    it("should store an ephemeral row when the error has bytecodes", async () => {
+      const { ephemeralRows, error } = await failJob({
+        onchainRuntimeCode: "0x6080",
+        recompiledRuntimeCode: "0x6081",
+        onchainCreationCode: "0x",
+      });
+      expect(ephemeralRows).to.have.length(1);
+      expect(ephemeralRows[0].onchain_creation_code).to.equal(null);
+      expect(error).to.include({
+        onchainRuntimeCode: "0x6080",
+        recompiledRuntimeCode: "0x6081",
+      });
+    });
+
+    it("should store an ephemeral row when the error has only a creation transaction hash", async () => {
+      const creationTransactionHash = keccak256str("some transaction");
+      const { ephemeralRows, error } = await failJob({
+        creationTransactionHash,
+      });
+      expect(ephemeralRows).to.have.length(1);
+      expect(error).to.include({ creationTransactionHash });
+    });
   });
 });

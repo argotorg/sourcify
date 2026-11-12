@@ -347,4 +347,86 @@ describe("GET /v2/verify/:verificationId", function () {
 
     chai.expect(retryRes.status).to.equal(202);
   });
+
+  // As for the reaper, the test database has no pg_cron. See #3028.
+  describe("retention cleanup", function () {
+    async function createFailedJob(daysAgo: number): Promise<string> {
+      const mockJob = await createMockJob(false, true);
+      await serverFixture.sourcifyDatabase.query(
+        `UPDATE verification_jobs
+        SET started_at = NOW() - make_interval(days => $2), completed_at = NOW() - make_interval(days => $2)
+        WHERE id = $1`,
+        [mockJob.verificationId, daysAgo],
+      );
+      return mockJob.verificationId;
+    }
+
+    async function getJob(verificationId: string) {
+      return chai
+        .request(serverFixture.server.app)
+        .get(`/v2/verify/${verificationId}`);
+    }
+
+    it("should delete the jobs older than 90 days with their ephemeral rows", async function () {
+      const expiredId = await createFailedJob(91);
+      const keptId = await createFailedJob(89);
+
+      const result = await serverFixture.sourcifyDatabase.query(
+        "SELECT public.delete_expired_verification_jobs() AS deleted",
+      );
+      chai.expect(result.rows[0].deleted).to.equal(1);
+
+      chai.expect((await getJob(expiredId)).status).to.equal(404);
+      const keptRes = await getJob(keptId);
+      chai.expect(keptRes.status).to.equal(200);
+      chai.expect(keptRes.body.error).to.have.property("onchainRuntimeCode");
+
+      const ephemeral = await serverFixture.sourcifyDatabase.query(
+        "SELECT id FROM verification_jobs_ephemeral",
+      );
+      chai.expect(ephemeral.rows).to.deep.equal([{ id: keptId }]);
+    });
+
+    it("should delete at most max_rows jobs, oldest first", async function () {
+      const oldestId = await createFailedJob(120);
+      const olderId = await createFailedJob(110);
+      const oldId = await createFailedJob(100);
+
+      const result = await serverFixture.sourcifyDatabase.query(
+        "SELECT public.delete_expired_verification_jobs(max_rows => 2) AS deleted",
+      );
+      chai.expect(result.rows[0].deleted).to.equal(2);
+
+      chai.expect((await getJob(oldestId)).status).to.equal(404);
+      chai.expect((await getJob(olderId)).status).to.equal(404);
+      chai.expect((await getJob(oldId)).status).to.equal(200);
+    });
+
+    it("should delete the ephemeral rows older than 30 days and keep their jobs", async function () {
+      const expiredId = await createFailedJob(31);
+      const keptId = await createFailedJob(29);
+
+      const result = await serverFixture.sourcifyDatabase.query(
+        "SELECT public.delete_expired_verification_jobs_ephemeral() AS deleted",
+      );
+      chai.expect(result.rows[0].deleted).to.equal(1);
+
+      const expiredRes = await getJob(expiredId);
+      chai.expect(expiredRes.status).to.equal(200);
+      chai.expect(expiredRes.body.error.customCode).to.equal("missing_source");
+      chai.expect(expiredRes.body.error).to.have.property("errorData");
+      chai
+        .expect(expiredRes.body.error)
+        .to.not.have.any.keys(
+          "onchainRuntimeCode",
+          "onchainCreationCode",
+          "recompiledRuntimeCode",
+          "recompiledCreationCode",
+          "creationTransactionHash",
+        );
+
+      const keptRes = await getJob(keptId);
+      chai.expect(keptRes.body.error).to.have.property("onchainRuntimeCode");
+    });
+  });
 });
