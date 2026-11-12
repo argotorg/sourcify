@@ -1270,7 +1270,8 @@ CREATE TABLE public.verification_jobs (
     hardware character varying,
     compilation_time bigint,
     external_verification jsonb
-);
+)
+WITH (autovacuum_vacuum_scale_factor='0.02');
 
 
 --

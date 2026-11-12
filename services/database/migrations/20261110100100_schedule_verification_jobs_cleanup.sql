@@ -1,8 +1,8 @@
 -- migrate:up
 
--- Cleanup functions for verification jobs, see https://github.com/argotorg/sourcify/issues/3028
--- Nothing calls them yet: the schedule comes when the archive of both tables works.
--- PL/pgSQL, so that Postgres plans the deletes with the real cutoff and limit. max_rows caps one call.
+-- Retention for verification jobs, see https://github.com/argotorg/sourcify/issues/3028
+-- Functions, so that they also work without pg_cron. max_rows caps one call.
+-- PL/pgSQL, so that Postgres plans the deletes with the real cutoff and limit.
 
 -- The ephemeral rows go with the jobs through ON DELETE CASCADE.
 CREATE OR REPLACE FUNCTION public.delete_expired_verification_jobs(retention interval DEFAULT '90 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
@@ -47,7 +47,43 @@ BEGIN
 END;
 $$;
 
+-- Jobs leave about 2% dead rows per day; the default waits for 20%.
+ALTER TABLE public.verification_jobs SET (autovacuum_vacuum_scale_factor = 0.02);
+
+-- Best effort, as for the reaper: without pg_cron the schedule is skipped.
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS pg_cron;
+EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'pg_cron extension not available, verification-job cleanup will not be scheduled. Error: %', SQLERRM;
+END
+$$;
+
+DO $$
+BEGIN
+    PERFORM cron.schedule(
+        'delete-expired-verification-jobs',
+        '23 * * * *',
+        'SELECT public.delete_expired_verification_jobs_ephemeral(), public.delete_expired_verification_jobs();'
+    );
+    RAISE WARNING 'Scheduled verification-job cleanup (hourly, 90 days for jobs, 30 days for ephemeral rows)';
+EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'pg_cron not available, verification-job cleanup must be run manually. Error: %', SQLERRM;
+END
+$$;
+
 -- migrate:down
+
+DO $$
+BEGIN
+    PERFORM cron.unschedule('delete-expired-verification-jobs');
+    RAISE WARNING 'Unscheduled verification-job cleanup';
+EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'pg_cron not available or job not found, continuing with cleanup. Error: %', SQLERRM;
+END
+$$;
+
+ALTER TABLE public.verification_jobs RESET (autovacuum_vacuum_scale_factor);
 
 DROP FUNCTION IF EXISTS public.delete_expired_verification_jobs_ephemeral(interval, integer);
 DROP FUNCTION IF EXISTS public.delete_expired_verification_jobs(interval, integer);

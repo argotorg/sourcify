@@ -348,8 +348,8 @@ describe("GET /v2/verify/:verificationId", function () {
     chai.expect(retryRes.status).to.equal(202);
   });
 
-  // Nothing schedules these functions yet. See #3028.
-  describe("cleanup functions", function () {
+  // As for the reaper, the test database has no pg_cron. See #3028.
+  describe("retention cleanup", function () {
     async function createFailedJob(daysAgo: number): Promise<string> {
       const mockJob = await createMockJob(false, true);
       await serverFixture.sourcifyDatabase.query(
