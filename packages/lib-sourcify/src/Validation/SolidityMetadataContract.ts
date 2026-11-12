@@ -3,6 +3,7 @@ import semver from 'semver';
 import { getFetchableSourceUrl, performFetch } from './fetchUtils';
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
 import { SolarCompilation } from '../Compilation/SolarCompilation';
+import { SlangCompilation } from '../Compilation/SlangCompilation';
 import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   SolidityJsonInput,
@@ -101,20 +102,29 @@ export class SolidityMetadataContract {
       path: this.path,
       name: this.name,
     };
-    // Solar metadata names the Solar build in the version, the caller passes the Solar compiler
-    this.compilation = isSolarVersion(this.metadata.compiler.version)
-      ? new SolarCompilation(
-          compiler,
-          this.metadata.compiler.version,
-          this.solcJsonInput!,
-          compilationTarget,
-        )
-      : new SolidityCompilation(
-          compiler,
-          this.metadata.compiler.version,
-          this.solcJsonInput!,
-          compilationTarget,
-        );
+    // Solar and Slang metadata name their compiler, the caller passes that compiler
+    if (this.metadata.compiler.name === 'slang') {
+      this.compilation = new SlangCompilation(
+        compiler,
+        `${this.metadata.compiler.version}+slang`,
+        this.solcJsonInput!,
+        compilationTarget,
+      );
+    } else if (isSolarVersion(this.metadata.compiler.version)) {
+      this.compilation = new SolarCompilation(
+        compiler,
+        this.metadata.compiler.version,
+        this.solcJsonInput!,
+        compilationTarget,
+      );
+    } else {
+      this.compilation = new SolidityCompilation(
+        compiler,
+        this.metadata.compiler.version,
+        this.solcJsonInput!,
+        compilationTarget,
+      );
+    }
 
     return this.compilation;
   }

@@ -211,6 +211,7 @@ module.exports = {
   solJsonRepo: "/tmp/solc-bin/soljson", // The path to the solJson binaries on the filesystem
   vyperRepo: "/tmp/vyper-bin/linux-amd64", // The path to the vyper binaries on the filesystem
   solarRepo: "/tmp/solar-bin", // The path to the Solar binaries on the filesystem
+  slangRepo: "/tmp/slang-bin", // The path to the Slang binaries on the filesystem
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   similarityFailureCooldownSeconds: 600, // Cooldown after a similarity job finds no match; 0 disables it

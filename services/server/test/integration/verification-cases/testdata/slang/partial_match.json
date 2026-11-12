@@ -1,0 +1,301 @@
+{
+  "_comment": "Slang: match when only a comment differs, so the metadata hashes in both CBOR auxdata differ.",
+  "onchain": {
+    "creationBytecode": "0x346045576300000295803803601f19601f8201169160c083019168010000000000000000831060bf19601f8301101615604957806020928460405260c039121560615750505b5f5ffd5b50505050634e487b7160e01b5f52604160045260245ffd5b60c0516080525f1960601c331660a05263000001fa9182630000009b83396080518061014683015261010382015261017760a051910152f3fe60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000db8063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000db803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f556300000067908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea26469706673582212207661db96b5ab56e50cd7e5e629d23ff5b0a3a44442cb490c8e74e12df639cf2365736c616e67430002000034a264697066735822122001dfaff1ee75700c936f911de924207746fa08487f84669651091e23405efcc565736c616e67430002000034000000000000000000000000000000000000000000000000000000000000002a",
+    "deployedBytecode": "0x60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000db8063000000e96080397f000000000000000000000000000000000000000000000000000000000000002a60808201520160805ff080604051911560df57905f1960601c602092168152f35b507f000000000000000000000000000000000000000000000000000000000000002a5b60805260206080f35b505f1960601c7f000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922661660a6565b5f5ffd5b503d90815f823efdfe3460435763000000db803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f556300000067908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea26469706673582212207661db96b5ab56e50cd7e5e629d23ff5b0a3a44442cb490c8e74e12df639cf2365736c616e67430002000034a264697066735822122001dfaff1ee75700c936f911de924207746fa08487f84669651091e23405efcc565736c616e67430002000034"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Factory.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n// A comment that changes the metadata\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "mode": "3"
+        },
+        "evmVersion": "cancun",
+        "solidityVersion": "0.8.28"
+      }
+    },
+    "compilerVersion": "0.2.0+slang",
+    "contractIdentifier": "contracts/Factory.sol:Factory"
+  },
+  "output": {
+    "creationBytecode": "0x346045576300000295803803601f19601f8201169160c083019168010000000000000000831060bf19601f8301101615604957806020928460405260c039121560615750505b5f5ffd5b50505050634e487b7160e01b5f52604160045260245ffd5b60c0516080525f1960601c331660a05263000001fa9182630000009b83396080518061014683015261010382015261017760a051910152f3fe60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000db8063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000db803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f556300000067908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea26469706673582212206a9370d8dc8bbf2ba86f57d7d824f1f8daf9fb84032e4eca68c3ec72c8b5540e65736c616e67430002000034a2646970667358221220057c476a3c09e98b48d18ce42577bee4186e8e74e36e47824b5bee54c4fdc42c65736c616e67430002000034",
+    "deployedBytecode": "0x60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000db8063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000db803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f556300000067908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea26469706673582212206a9370d8dc8bbf2ba86f57d7d824f1f8daf9fb84032e4eca68c3ec72c8b5540e65736c616e67430002000034a2646970667358221220057c476a3c09e98b48d18ce42577bee4186e8e74e36e47824b5bee54c4fdc42c65736c616e67430002000034",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_seed",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "make",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "seed",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {},
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 553,
+          "value": "0xa26469706673582212206a9370d8dc8bbf2ba86f57d7d824f1f8daf9fb84032e4eca68c3ec72c8b5540e65736c616e67430002000034"
+        },
+        "2": {
+          "offset": 607,
+          "value": "0xa2646970667358221220057c476a3c09e98b48d18ce42577bee4186e8e74e36e47824b5bee54c4fdc42c65736c616e67430002000034"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {
+        "24": [
+          {
+            "start": 67,
+            "length": 32
+          },
+          {
+            "start": 134,
+            "length": 32
+          }
+        ],
+        "28": [
+          {
+            "start": 183,
+            "length": 32
+          }
+        ]
+      },
+      "linkReferences": {},
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 398,
+          "value": "0xa26469706673582212206a9370d8dc8bbf2ba86f57d7d824f1f8daf9fb84032e4eca68c3ec72c8b5540e65736c616e67430002000034"
+        },
+        "2": {
+          "offset": 452,
+          "value": "0xa2646970667358221220057c476a3c09e98b48d18ce42577bee4186e8e74e36e47824b5bee54c4fdc42c65736c616e67430002000034"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "name": "slang",
+        "version": "0.2.0"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "_seed",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+          },
+          {
+            "inputs": [],
+            "name": "make",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "seed",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ]
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Factory.sol": "Factory"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+          "mode": "3",
+          "sizeFallback": false
+        },
+        "remappings": [],
+        "solidityVersion": "0.8.28"
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "keccak256": "0x361cb5947ed4e00f1eb11ce00e62856e2f9a1ee5e2a5d07581315a622f3b05bd",
+          "urls": ["dweb:/ipfs/QmduzgxDhHNV3q6149CWG8scJJxh3VBhhbTpA3SELyrH6S"]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [
+      {
+        "type": "replace",
+        "reason": "cborAuxdata",
+        "offset": 553,
+        "id": "1"
+      },
+      {
+        "type": "replace",
+        "reason": "cborAuxdata",
+        "offset": 607,
+        "id": "2"
+      },
+      {
+        "type": "insert",
+        "reason": "constructorArguments",
+        "offset": 661
+      }
+    ],
+    "creationValues": {
+      "cborAuxdata": {
+        "1": "0xa26469706673582212207661db96b5ab56e50cd7e5e629d23ff5b0a3a44442cb490c8e74e12df639cf2365736c616e67430002000034",
+        "2": "0xa264697066735822122001dfaff1ee75700c936f911de924207746fa08487f84669651091e23405efcc565736c616e67430002000034"
+      },
+      "constructorArguments": "0x000000000000000000000000000000000000000000000000000000000000002a"
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 67,
+        "id": "24"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 134,
+        "id": "24"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 183,
+        "id": "28"
+      },
+      {
+        "type": "replace",
+        "reason": "cborAuxdata",
+        "offset": 398,
+        "id": "1"
+      },
+      {
+        "type": "replace",
+        "reason": "cborAuxdata",
+        "offset": 452,
+        "id": "2"
+      }
+    ],
+    "runtimeValues": {
+      "immutables": {
+        "24": "0x000000000000000000000000000000000000000000000000000000000000002a",
+        "28": "0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+      },
+      "cborAuxdata": {
+        "1": "0xa26469706673582212207661db96b5ab56e50cd7e5e629d23ff5b0a3a44442cb490c8e74e12df639cf2365736c616e67430002000034",
+        "2": "0xa264697066735822122001dfaff1ee75700c936f911de924207746fa08487f84669651091e23405efcc565736c616e67430002000034"
+      }
+    }
+  }
+}

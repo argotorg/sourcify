@@ -5,6 +5,7 @@ import type {
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
+  ISlangCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   CompilationError,
@@ -13,10 +14,13 @@ import {
   YulCompilation,
   FeCompilation,
   SolarCompilation,
+  SlangCompilation,
   isSolarVersion,
+  isSlangVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type {
   AnyJsonInput,
+  SlangJsonInput,
   SolarJsonInput,
   SolidityJsonInput,
   VyperJsonInput,
@@ -29,6 +33,7 @@ export function createCompilationFromJsonInput(
     vyper: IVyperCompiler;
     fe: IFeCompiler;
     solar: ISolarCompiler;
+    slang: ISlangCompiler;
   },
   compilerVersion: string,
   jsonInput: AnyJsonInput,
@@ -42,6 +47,15 @@ export function createCompilationFromJsonInput(
           compilers.solar,
           compilerVersion,
           jsonInput as SolarJsonInput,
+          compilationTarget,
+        );
+      }
+      // Slang too, its version ends with +slang
+      if (isSlangVersion(compilerVersion)) {
+        return new SlangCompilation(
+          compilers.slang,
+          compilerVersion,
+          jsonInput as SlangJsonInput,
           compilationTarget,
         );
       }

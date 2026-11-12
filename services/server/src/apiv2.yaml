@@ -12,6 +12,8 @@ paths:
 
         Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Sourcify also supports the Solar build that Foundry v1.9.0 bundles, `0.8.38+commit.a2b44354.solar.0.3.0-dev`, which `forge build --use solar` uses. Solar is only supported on this endpoint.
 
+        Solidity contracts compiled with [Slang](https://github.com/NomicFoundation/solx) use the Solidity standard JSON input with the Slang settings, such as `settings.solidityVersion` and `settings.optimizer.mode`. Set `compilerVersion` to the Slang version with the suffix `+slang`, e.g. `0.2.0+slang`. This is the `solcLongVersion` of a Hardhat build info. Sourcify then compiles with that Slang release. Slang is only supported on this endpoint.
+
         You can optionally pass the `creationTransactionHash` to make Sourcify reliably fetching the creation bytecode. Otherwise, it will try to fetch it itself which is dependent on external services.
 
         **Note**: The `outputSelection` field in the `stdJsonInput.settings` will be overridden during verification to ensure all necessary artifacts are generated.
@@ -618,6 +620,30 @@ components:
                     evmVersion: cancun
                 compilerVersion: "0.8.38+commit.e7a91fc7.solar.0.3.0"
                 contractIdentifier: "contracts/Storage.sol:Storage"
+            Solidity Contract compiled with Slang:
+              value:
+                stdJsonInput:
+                  language: Solidity
+                  sources:
+                    "contracts/Storage.sol":
+                      content: |
+                        // SPDX-License-Identifier: MIT
+                        pragma solidity ^0.8.0;
+
+                        contract Storage {
+                            uint256 number;
+
+                            function setNumber(uint256 newNumber) public {
+                                number = newNumber;
+                            }
+                        }
+                  settings:
+                    solidityVersion: "0.8.28"
+                    optimizer:
+                      mode: "3"
+                    evmVersion: cancun
+                compilerVersion: "0.2.0+slang"
+                contractIdentifier: "contracts/Storage.sol:Storage"
     MetadataVerificationRequest:
       description: ""
       content:
@@ -831,7 +857,7 @@ components:
                         $ref: "#/components/schemas/Language"
                       compiler:
                         type: string
-                        description: "The compiler: `solc`, `solar`, `vyper` or `fe`. Solar compiles Solidity, so `language` is `Solidity` for both `solc` and `solar`."
+                        description: "The compiler: `solc`, `solar`, `slang`, `vyper` or `fe`. Solar and Slang compile Solidity, so `language` is `Solidity` for `solc`, `solar` and `slang`."
                         example: "solc"
                       compilerVersion:
                         allOf:
@@ -1447,7 +1473,8 @@ components:
       # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
       # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
-      description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
+      # - Slang: 0.2.0+slang (Slang version and the +slang suffix)
+      description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. For Slang, the Slang version with the suffix `+slang`, e.g. `0.2.0+slang`."
       pattern: '^v?\d+\.\d+\.\d+.*$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:

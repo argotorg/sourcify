@@ -30,6 +30,7 @@ module.exports = {
   vyperRepo: "/tmp/vyper-bin",
   feRepo: "/tmp/fe-bin",
   solarRepo: "/tmp/solar-bin",
+  slangRepo: "/tmp/slang-bin",
   // If true, downloads all production version compilers and saves them.
   initCompilers: false,
   // Cooldown after a similarity job finds no match. Set to 0 to disable.

@@ -428,4 +428,32 @@ describe("Specific Verification Cases", function () {
     ).default as unknown as VerificationTestCase;
     await testVerificationCase(solarMetadataHashNone);
   });
+
+  // Regenerate with generate-test-case.ts and the files in testdata/slang/generator
+  it("should store an exact match of a Slang factory with immutables and constructor arguments", async () => {
+    const slangFullMatch = (await import("./testdata/slang/full_match.json"))
+      .default as unknown as VerificationTestCase;
+    await testVerificationCase(slangFullMatch);
+  });
+
+  it("should store a match of a Slang contract whose metadata hashes differ", async () => {
+    const slangPartialMatch = (
+      await import("./testdata/slang/partial_match.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(slangPartialMatch);
+  });
+
+  it("should store a Slang contract with a manually linked library", async () => {
+    const slangLibraries = (
+      await import("./testdata/slang/libraries_manually_linked.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(slangLibraries);
+  });
+
+  it("should store a match of a Slang contract compiled with bytecodeHash none", async () => {
+    const slangMetadataHashNone = (
+      await import("./testdata/slang/metadata_hash_none.json")
+    ).default as unknown as VerificationTestCase;
+    await testVerificationCase(slangMetadataHashNone);
+  });
 });

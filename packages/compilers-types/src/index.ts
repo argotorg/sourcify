@@ -3,4 +3,5 @@ export * from "./FeTypes";
 export * from "./VyperTypes";
 export * from "./SolidityTypes";
 export * from "./SolarTypes";
+export * from "./SlangTypes";
 export * from "./FeTypes";

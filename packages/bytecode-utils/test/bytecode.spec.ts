@@ -1,6 +1,7 @@
 import chai from 'chai';
 import { readFileSync } from 'fs';
 import path from 'path';
+import bs58 from 'bs58';
 
 import {
   AuxdataStyle,
@@ -49,6 +50,11 @@ const BYTECODE_SOLAR_DEV = readFileSync(
 const BYTECODE_SOLAR_HASH_NONE = readFileSync(
   `${BYTECODES_FOLDER}/solar-hash-none.hex`,
 ).toString();
+
+// Trailers of the Slang CBOR unit tests (solx-utils/src/cbor.rs), not compiler output
+const SLANG_TRAILER_IPFS = `a264697066735822${'ab'.repeat(34)}65736c616e67430102030034`;
+const SLANG_TRAILER_HASH_NONE = 'a165736c616e6743010203000b';
+const SLANG_TRAILER_IPFS_CID = bs58.encode(Buffer.from('ab'.repeat(34), 'hex'));
 
 describe('bytecode utils', function () {
   it("return the whole bytecode when the bytecode that doesn't contain auxdata", () => {
@@ -139,6 +145,33 @@ describe('bytecode utils', function () {
   it('bytecode decode cbor of a Solar build with bytecodeHash none', () => {
     const decoded = decode(BYTECODE_SOLAR_HASH_NONE, AuxdataStyle.SOLIDITY);
     chai.expect(decoded).to.deep.equal({ solarVersion: '0.3.0' });
+  });
+
+  it('bytecode decode cbor with the `slang` property', () => {
+    const decoded = decode(
+      `0x5f5ffdfe${SLANG_TRAILER_IPFS}`,
+      AuxdataStyle.SOLIDITY,
+    );
+    chai.expect(decoded.slangVersion).to.equal('1.2.3');
+    chai.expect(decoded.solcVersion).to.be.undefined;
+    chai.expect(decoded.ipfs).to.equal(SLANG_TRAILER_IPFS_CID);
+  });
+
+  it('bytecode decode cbor of a Slang build with bytecodeHash none', () => {
+    const decoded = decode(
+      `0x5f5ffdfe${SLANG_TRAILER_HASH_NONE}`,
+      AuxdataStyle.SOLIDITY,
+    );
+    chai.expect(decoded).to.deep.equal({ slangVersion: '1.2.3' });
+  });
+
+  it('split the auxdata of a Slang bytecode', () => {
+    const [execution, auxdata, length] = splitAuxdata(
+      `0x5f5ffdfe${SLANG_TRAILER_IPFS}`,
+      AuxdataStyle.SOLIDITY,
+    );
+    chai.expect(execution).to.equal('0x5f5ffdfe');
+    chai.expect(`${auxdata}${length}`).to.equal(SLANG_TRAILER_IPFS);
   });
 
   it('bytecode decode Vyper cbor auxdata for version >= 0.4.1', () => {

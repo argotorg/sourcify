@@ -1,4 +1,6 @@
 import type {
+  SlangJsonInput,
+  SlangOutput,
   SolarJsonInput,
   SolarOutput,
   SolidityJsonInput,
@@ -88,6 +90,14 @@ export interface ISolarCompiler {
     version: string,
     solarJsonInput: SolarJsonInput,
   ): Promise<SolarOutput>;
+}
+
+// Slang takes and returns the solc standard JSON format plus Slang settings
+export interface ISlangCompiler {
+  compile(
+    version: string,
+    slangJsonInput: SlangJsonInput,
+  ): Promise<SlangOutput>;
 }
 
 export type AnyCompilation =

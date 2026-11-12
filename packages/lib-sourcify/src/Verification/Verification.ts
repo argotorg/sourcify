@@ -18,7 +18,10 @@ import type {
   StringMap,
 } from '../Compilation/CompilationTypes';
 import semver from 'semver';
-import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
+import {
+  isSlangVersion,
+  isSolarVersion,
+} from '@ethereum-sourcify/compilers-types';
 
 import type { Transformation, TransformationValues } from './Transformations';
 import {
@@ -47,6 +50,11 @@ import { SolidityMetadataContract } from '../Validation/SolidityMetadataContract
 import { SolidityCompilation } from '../Compilation/SolidityCompilation';
 import type { VyperCompilation } from '../Compilation/VyperCompilation';
 
+// Solar and Slang compile Solidity without solc, so they don't have its bugs
+function isSolcVersion(compilerVersion: string): boolean {
+  return !isSolarVersion(compilerVersion) && !isSlangVersion(compilerVersion);
+}
+
 function auxdataLacksMetadataOrIntegrityHash(
   auxdata: CompiledContractCborAuxdata[string],
   compilation: AbstractCompilation,
@@ -54,7 +62,9 @@ function auxdataLacksMetadataOrIntegrityHash(
   try {
     if (
       compilation.auxdataStyle === AuxdataStyle.SOLIDITY &&
-      semver.gte(compilation.compilerVersion, '0.4.7')
+      // A Slang version is not a solc version
+      (isSlangVersion(compilation.compilerVersion) ||
+        semver.gte(compilation.compilerVersion, '0.4.7'))
     ) {
       const { ipfs, bzzr0, bzzr1 } = decodeBytecode(
         auxdata.value,
@@ -170,9 +180,9 @@ export class Verification {
       compiledRuntimeBytecode.length !== this.onchainRuntimeBytecode.length
     ) {
       // Before throwing the bytecode length mismatch error, check for Solidity extra file input bug
-      const solidityBugType = isSolarVersion(this.compilation.compilerVersion)
-        ? SolidityBugType.NONE
-        : this.handleSolidityExtraFileInputBug();
+      const solidityBugType = isSolcVersion(this.compilation.compilerVersion)
+        ? this.handleSolidityExtraFileInputBug()
+        : SolidityBugType.NONE;
       if (solidityBugType === SolidityBugType.EXTRA_FILE_INPUT_BUG) {
         throw new VerificationError({
           code: 'extra_file_input_bug',
@@ -231,10 +241,10 @@ export class Verification {
       });
     }
 
-    // The solc bug workarounds don't apply to Solar
+    // The solc bug workarounds don't apply to Solar and Slang
     if (
       this.compilation.language === 'Solidity' &&
-      !isSolarVersion(this.compilation.compilerVersion) &&
+      isSolcVersion(this.compilation.compilerVersion) &&
       this.runtimeMatch === null
     ) {
       // Handle Solidity extra file input bug
@@ -350,9 +360,14 @@ export class Verification {
             this.onchainRuntimeBytecode,
           )
         ) {
+          const compilerVersion = this.compilation.compilerVersion;
           this.compilation = await solidityMetadataContract.createCompilation(
             this.compilation.compiler as ISolidityCompiler,
           );
+          // Slang metadata does not name a pre-release, keep the requested build
+          if (isSlangVersion(compilerVersion)) {
+            this.compilation.compilerVersion = compilerVersion;
+          }
           await this.compilation.compile(forceEmscripten);
         }
       }
@@ -401,10 +416,10 @@ export class Verification {
     const settings = compilation.jsonInput.settings;
     const usesCustomYulOptimizerSteps =
       settings.optimizer?.details?.yulDetails?.optimizerSteps !== undefined;
-    // Solar does not have the extra-file-input bug of old solc. Without this
-    // guard, semver.lt would read the solc part of the Solar version.
+    // Solar and Slang do not have the extra-file-input bug of old solc. Without
+    // this guard, semver.lt would read their versions as solc versions.
     const mayHitExtraFileInputBug =
-      !isSolarVersion(compilation.compilerVersion) &&
+      isSolcVersion(compilation.compilerVersion) &&
       settings.optimizer?.enabled &&
       (semver.lt(compilation.compilerVersion, '0.8.22') ||
         usesCustomYulOptimizerSteps);
@@ -788,6 +803,7 @@ export class Verification {
     if (this.compilation.compilerOutput?.sources) {
       if (
         this.compilation.language === 'Solidity' &&
+        !isSlangVersion(this.compilation.compilerVersion) &&
         semver.lt(this.compilation.compilerVersion, '0.3.6')
       ) {
         // In Solidity versions < 0.3.6 there is no id in sources

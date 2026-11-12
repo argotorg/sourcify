@@ -34,5 +34,6 @@ module.exports = {
   vyperRepo: "/home/app/data/compilers/vyper",
   feRepo: "/home/app/data/compilers/fe",
   solarRepo: "/home/app/data/compilers/solar",
+  slangRepo: "/home/app/data/compilers/slang",
   replaceContract: true,
 };

@@ -8,3 +8,4 @@ export * from './lib/solidityCompiler';
 export * from './lib/vyperCompiler';
 export * from './lib/feCompiler';
 export * from './lib/solarCompiler';
+export * from './lib/slangCompiler';

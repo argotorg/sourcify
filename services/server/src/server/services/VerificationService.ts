@@ -91,6 +91,7 @@ export interface VerificationServiceOptions {
   vyperRepoPath: string;
   feRepoPath: string;
   solarRepoPath: string;
+  slangRepoPath: string;
   compilerTimeoutMs?: number;
   workerIdleTimeout?: number;
   concurrentVerificationsPerWorker?: number;
@@ -181,6 +182,7 @@ export class VerificationService {
         vyperRepoPath: options.vyperRepoPath,
         feRepoPath: options.feRepoPath,
         solarRepoPath: options.solarRepoPath,
+        slangRepoPath: options.slangRepoPath,
         compilerTimeoutMs: options.compilerTimeoutMs,
       },
       minThreads,

@@ -13,6 +13,7 @@
  *
  * Pass a JSON file with the answers to skip the prompts, e.g. to regenerate the
  * Solar fixtures: `npx ts-node generate-test-case.ts testdata/solar/generator/full_match.json`
+ * The Slang fixtures have their answers in testdata/slang/generator.
  */
 
 import readline from "readline";
@@ -29,6 +30,7 @@ import type { JsonRpcSigner } from "ethers";
 import {
   useSolidityCompiler,
   useSolarCompiler,
+  useSlangCompiler,
 } from "@ethereum-sourcify/compilers";
 import type {
   SolidityOutput,
@@ -43,9 +45,12 @@ import {
   Verification,
   SolidityCompilation,
   SolarCompilation,
+  SlangCompilation,
   DEFAULT_OUTPUT_SELECTION_FIELDS,
   SOLAR_OUTPUT_SELECTION_FIELDS,
+  SLANG_OUTPUT_SELECTION_FIELDS,
   isSolarVersion,
+  isSlangVersion,
 } from "@ethereum-sourcify/lib-sourcify";
 import type { VerificationTestCase } from "./verification-cases.spec";
 import { toMatchLevel } from "../../../src/server/services/utils/util";
@@ -54,6 +59,7 @@ import SourcifyChainMock from "../../../src/server/services/utils/SourcifyChainM
 const solcRepoPath = "/tmp/solc-bin/linux-amd64";
 const solJsonRepoPath = "/tmp/solc-bin/soljson";
 const solarRepoPath = "/tmp/solar-bin";
+const slangRepoPath = "/tmp/slang-bin";
 
 // Optional answers file, keyed by the names passed to question() and readJsonInput()
 const answers: Record<string, any> | undefined = process.argv[2]
@@ -79,7 +85,7 @@ function question(query: string, key: string): Promise<string> {
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
-// Compiles with Solar when the version names a Solar build
+// Compiles with Solar or Slang when the version names one of them
 async function compile(
   version: string,
   input: SolidityJsonInput,
@@ -87,6 +93,9 @@ async function compile(
 ): Promise<SolidityOutput> {
   if (isSolarVersion(version)) {
     return await useSolarCompiler(solarRepoPath, version, input);
+  }
+  if (isSlangVersion(version)) {
+    return await useSlangCompiler(slangRepoPath, version, input);
   }
   return await useSolidityCompiler(
     solcRepoPath,
@@ -417,11 +426,14 @@ async function main() {
     // SolidityCompilation class, which scopes output to the target), so it
     // requests full output for every contract to build a complete fixture, hence the "*": "*" selection.
     const isSolar = isSolarVersion(verificationCompilerVersion.trim());
+    const isSlang = isSlangVersion(verificationCompilerVersion.trim());
     verificationStdJsonInput.settings.outputSelection = {
       "*": {
         "*": isSolar
           ? [...SOLAR_OUTPUT_SELECTION_FIELDS]
-          : [...DEFAULT_OUTPUT_SELECTION_FIELDS],
+          : isSlang
+            ? [...SLANG_OUTPUT_SELECTION_FIELDS]
+            : [...DEFAULT_OUTPUT_SELECTION_FIELDS],
       },
     };
 
@@ -482,7 +494,11 @@ async function main() {
           .split(":");
 
         const compilation = new (
-          isSolar ? SolarCompilation : SolidityCompilation
+          isSolar
+            ? SolarCompilation
+            : isSlang
+              ? SlangCompilation
+              : SolidityCompilation
         )(
           solcWrapper,
           verificationCompilerVersion.trim(),

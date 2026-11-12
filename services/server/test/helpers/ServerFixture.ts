@@ -12,6 +12,7 @@ import { SolcLocal } from "../../src/server/services/compiler/local/SolcLocal";
 import { VyperLocal } from "../../src/server/services/compiler/local/VyperLocal";
 import { FeLocal } from "../../src/server/services/compiler/local/FeLocal";
 import { SolarLocal } from "../../src/server/services/compiler/local/SolarLocal";
+import { SlangLocal } from "../../src/server/services/compiler/local/SlangLocal";
 import path from "path";
 import { testS3Bucket, testS3Path } from "./S3ClientMock";
 import { getIpfsMockGatewayUrl } from "./IpfsMockServer";
@@ -96,6 +97,7 @@ export class ServerFixture {
         vyper: new VyperLocal(config.get("vyperRepo")),
         fe: new FeLocal(config.get("feRepo")),
         solar: new SolarLocal(config.get("solarRepo")),
+        slang: new SlangLocal(config.get("slangRepo")),
         verifyDeprecated: true,
         replaceContract: true,
         sourcifyPrivateToken: "sourcify-test-token",
@@ -115,6 +117,7 @@ export class ServerFixture {
           vyperRepoPath: config.get("vyperRepo"),
           feRepoPath: config.get("feRepo"),
           solarRepoPath: config.get("solarRepo"),
+          slangRepoPath: config.get("slangRepo"),
         },
         {
           serverUrl: config.get("serverUrl"),

@@ -1,0 +1,264 @@
+{
+  "_comment": "Slang: bytecodeHash none, so the CBOR auxdata only has the slang version and the best result is a match.",
+  "onchain": {
+    "creationBytecode": "0x346045576300000243803803601f19601f8201169160c083019168010000000000000000831060bf19601f8301101615604957806020928460405260c039121560615750505b5f5ffd5b50505050634e487b7160e01b5f52604160045260245ffd5b60c0516080525f1960601c331660a05263000001a89182630000009b83396080518061014683015261010382015261017760a051910152f3fe60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000b28063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000b2803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f55630000003e908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea165736c616e6743000200000ba165736c616e6743000200000b000000000000000000000000000000000000000000000000000000000000002a",
+    "deployedBytecode": "0x60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000b28063000000e96080397f000000000000000000000000000000000000000000000000000000000000002a60808201520160805ff080604051911560df57905f1960601c602092168152f35b507f000000000000000000000000000000000000000000000000000000000000002a5b60805260206080f35b505f1960601c7f000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922661660a6565b5f5ffd5b503d90815f823efdfe3460435763000000b2803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f55630000003e908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea165736c616e6743000200000ba165736c616e6743000200000b"
+  },
+  "input": {
+    "stdJsonInput": {
+      "language": "Solidity",
+      "sources": {
+        "contracts/Factory.sol": {
+          "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract Child {\n    uint256 public x;\n\n    constructor(uint256 _x) {\n        x = _x;\n    }\n}\n\ncontract Factory {\n    uint256 public immutable seed;\n    address public immutable owner;\n\n    constructor(uint256 _seed) {\n        seed = _seed;\n        owner = msg.sender;\n    }\n\n    function make() external returns (address) {\n        return address(new Child(seed));\n    }\n}\n"
+        }
+      },
+      "settings": {
+        "optimizer": {
+          "mode": "3"
+        },
+        "evmVersion": "cancun",
+        "solidityVersion": "0.8.28",
+        "metadata": {
+          "bytecodeHash": "none"
+        }
+      }
+    },
+    "compilerVersion": "0.2.0+slang",
+    "contractIdentifier": "contracts/Factory.sol:Factory"
+  },
+  "output": {
+    "creationBytecode": "0x346045576300000243803803601f19601f8201169160c083019168010000000000000000831060bf19601f8301101615604957806020928460405260c039121560615750505b5f5ffd5b50505050634e487b7160e01b5f52604160045260245ffd5b60c0516080525f1960601c331660a05263000001a89182630000009b83396080518061014683015261010382015261017760a051910152f3fe60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000b28063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000b2803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f55630000003e908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea165736c616e6743000200000ba165736c616e6743000200000b",
+    "deployedBytecode": "0x60806040526004361060db573460db575f3560e01c637d94792a8114608357638da5cb5b811460af5763c6dad0820360db57602063000000b28063000000e96080397f000000000000000000000000000000000000000000000000000000000000000060808201520160805ff080604051911560df57905f1960601c602092168152f35b507f00000000000000000000000000000000000000000000000000000000000000005b60805260206080f35b505f1960601c7f00000000000000000000000000000000000000000000000000000000000000001660a6565b5f5ffd5b503d90815f823efdfe3460435763000000b2803803906080601f19601f8401160191680100000000000000008310607f19601f830110161560475780602092846040526080391215605e57505b5f5ffd5b505050634e487b7160e01b5f52604160045260245ffd5b6080515f55630000003e908163000000748239f3fe60043610602c5734602c5763ffffffff60e01b5f35166303155a6760e21b03602c575f5460805260206080f35b5f5ffdfea165736c616e6743000200000ba165736c616e6743000200000b",
+    "compilationArtifacts": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "_seed",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "constructor"
+        },
+        {
+          "inputs": [],
+          "name": "make",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "seed",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ],
+      "devdoc": null,
+      "userdoc": null,
+      "storageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "transientStorageLayout": {
+        "storage": [],
+        "types": null
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "id": 0
+        }
+      }
+    },
+    "creationCodeArtifacts": {
+      "linkReferences": {},
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 566,
+          "value": "0xa165736c616e6743000200000b"
+        }
+      }
+    },
+    "runtimeCodeArtifacts": {
+      "immutableReferences": {
+        "24": [
+          {
+            "start": 67,
+            "length": 32
+          },
+          {
+            "start": 134,
+            "length": 32
+          }
+        ],
+        "28": [
+          {
+            "start": 183,
+            "length": 32
+          }
+        ]
+      },
+      "linkReferences": {},
+      "sourceMap": null,
+      "cborAuxdata": {
+        "1": {
+          "offset": 411,
+          "value": "0xa165736c616e6743000200000b"
+        }
+      }
+    },
+    "metadata": {
+      "compiler": {
+        "name": "slang",
+        "version": "0.2.0"
+      },
+      "language": "Solidity",
+      "output": {
+        "abi": [
+          {
+            "inputs": [
+              {
+                "internalType": "uint256",
+                "name": "_seed",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+          },
+          {
+            "inputs": [],
+            "name": "make",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+              {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          },
+          {
+            "inputs": [],
+            "name": "seed",
+            "outputs": [
+              {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+              }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+          }
+        ]
+      },
+      "settings": {
+        "compilationTarget": {
+          "contracts/Factory.sol": "Factory"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+          "bytecodeHash": "none"
+        },
+        "optimizer": {
+          "mode": "3",
+          "sizeFallback": false
+        },
+        "remappings": [],
+        "solidityVersion": "0.8.28"
+      },
+      "sources": {
+        "contracts/Factory.sol": {
+          "keccak256": "0x7d7511d4494586700410dc0d4b1c27241ce6c92709b201054bc48fa3b84be8fc",
+          "urls": ["dweb:/ipfs/QmVts7aa4huE1L5Q5wZj3tQCCRyz1bXFZhrwwMEYQP2nkL"]
+        }
+      },
+      "version": 1
+    }
+  },
+  "verification": {
+    "creationMatch": "match",
+    "runtimeMatch": "match",
+    "creationTransformations": [
+      {
+        "type": "insert",
+        "reason": "constructorArguments",
+        "offset": 579
+      }
+    ],
+    "creationValues": {
+      "constructorArguments": "0x000000000000000000000000000000000000000000000000000000000000002a"
+    },
+    "runtimeTransformations": [
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 67,
+        "id": "24"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 134,
+        "id": "24"
+      },
+      {
+        "type": "replace",
+        "reason": "immutable",
+        "offset": 183,
+        "id": "28"
+      }
+    ],
+    "runtimeValues": {
+      "immutables": {
+        "24": "0x000000000000000000000000000000000000000000000000000000000000002a",
+        "28": "0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+      }
+    }
+  }
+}

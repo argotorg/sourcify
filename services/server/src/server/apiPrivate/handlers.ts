@@ -12,6 +12,7 @@ import type {
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
+  ISlangCompiler,
 } from "@ethereum-sourcify/lib-sourcify";
 import {
   createMetadataContractsFromFiles,
@@ -202,6 +203,7 @@ export async function replaceContract(
   const vyper = req.app.get("vyper") as IVyperCompiler;
   const fe = req.app.get("fe") as IFeCompiler;
   const solar = req.app.get("solar") as ISolarCompiler;
+  const slang = req.app.get("slang") as ISlangCompiler;
   const services = req.app.get("services") as Services;
 
   // Get the connection pool from SourcifyDatabaseService
@@ -223,6 +225,7 @@ export async function replaceContract(
         vyper,
         fe,
         solar,
+        slang,
       };
       compilation =
         await sourcifyDatabaseService.getPreRunCompilationFromDatabase(
@@ -243,7 +246,7 @@ export async function replaceContract(
       }
       try {
         compilation = createCompilationFromJsonInput(
-          { solc, vyper, fe, solar },
+          { solc, vyper, fe, solar, slang },
           compilerVersion,
           jsonInput,
           compilationTarget,
