@@ -82,7 +82,7 @@ $$;
 -- Name: delete_expired_verification_jobs_ephemeral(interval, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.delete_expired_verification_jobs_ephemeral(retention interval DEFAULT '14 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
+CREATE FUNCTION public.delete_expired_verification_jobs_ephemeral(retention interval DEFAULT '30 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -1270,8 +1270,7 @@ CREATE TABLE public.verification_jobs (
     hardware character varying,
     compilation_time bigint,
     external_verification jsonb
-)
-WITH (autovacuum_vacuum_scale_factor='0.02');
+);
 
 
 --

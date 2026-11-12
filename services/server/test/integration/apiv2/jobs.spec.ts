@@ -348,8 +348,8 @@ describe("GET /v2/verify/:verificationId", function () {
     chai.expect(retryRes.status).to.equal(202);
   });
 
-  // As for the reaper, the test database has no pg_cron. See #3028.
-  describe("retention cleanup", function () {
+  // Nothing schedules these functions yet. See #3028.
+  describe("cleanup functions", function () {
     async function createFailedJob(daysAgo: number): Promise<string> {
       const mockJob = await createMockJob(false, true);
       await serverFixture.sourcifyDatabase.query(
@@ -402,9 +402,9 @@ describe("GET /v2/verify/:verificationId", function () {
       chai.expect((await getJob(oldId)).status).to.equal(200);
     });
 
-    it("should delete the ephemeral rows older than 14 days and keep their jobs", async function () {
-      const expiredId = await createFailedJob(15);
-      const keptId = await createFailedJob(13);
+    it("should delete the ephemeral rows older than 30 days and keep their jobs", async function () {
+      const expiredId = await createFailedJob(31);
+      const keptId = await createFailedJob(29);
 
       const result = await serverFixture.sourcifyDatabase.query(
         "SELECT public.delete_expired_verification_jobs_ephemeral() AS deleted",
