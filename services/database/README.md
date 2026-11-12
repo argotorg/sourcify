@@ -139,3 +139,23 @@ node <script-name>.mjs [options]
 ```
 
 Pass `--help` (where supported) for the full list of options. The scripts read database connection details from `services/database/.env`, the same file used by dbmate.
+
+## Archive of the verification job tables
+
+`verification_jobs` and `verification_jobs_ephemeral` grow without limit, so old rows must leave the database (see [#3028](https://github.com/argotorg/sourcify/issues/3028)). Before a cleanup deletes them, a BigQuery scheduled query copies them to a private bucket.
+
+The query is [`bigquery/verification-jobs-archive.sql`](./bigquery/verification-jobs-archive.sql). Once a day, it reads the rows of one UTC day (2 days before the run date) from Postgres with `EXTERNAL_QUERY`, and it writes them as Parquet files with `EXPORT DATA`:
+
+- `gs://BUCKET/verification_jobs/dt=YYYY-MM-DD/`
+- `gs://BUCKET/verification_jobs_ephemeral/dt=YYYY-MM-DD/`
+
+A second run for the same day writes the same files again.
+
+The setup of an environment has these steps:
+
+1. Create a private bucket.
+2. Create a Postgres user that can only read the two tables.
+3. Create a BigQuery connection to the Cloud SQL instance with that user.
+4. Create a service account that can run BigQuery jobs, use the connection, and write to the bucket.
+5. Replace `CONNECTION` and `BUCKET` in the query, and create a daily scheduled query that runs as the service account.
+6. For older days, start a backfill of the scheduled query.
