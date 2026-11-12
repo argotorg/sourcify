@@ -51,7 +51,7 @@
     "@types/node": "22.20.5",
     "@types/semver": "7.8.0",
     "@types/sinon": "21.0.1",
-    "@types/sinon-chai": "4.0.0",
+    "@types/sinon-chai": "4.0.1",
     "c8": "11.0.0",
     "chai": "4.5.0",
     "chai-as-promised": "7.1.2",
@@ -61,7 +61,7 @@
     "gh-pages": "6.3.0",
     "mocha": "10.8.2",
     "nock": "14.0.17",
-    "npm-run-all2": "9.0.3",
+    "npm-run-all2": "9.0.4",
     "open-cli": "9.0.0",
     "sinon": "21.1.2",
     "sinon-chai": "3.7.0"

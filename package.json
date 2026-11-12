@@ -40,9 +40,9 @@
     "@eslint/eslintrc": "3.3.7",
     "@eslint/js": "10.0.1",
     "@google-cloud/bigquery": "8.3.1",
-    "@typescript-eslint/eslint-plugin": "8.71.2",
-    "@typescript-eslint/parser": "8.71.2",
-    "eslint": "10.12.0",
+    "@typescript-eslint/eslint-plugin": "8.72.1",
+    "@typescript-eslint/parser": "8.72.1",
+    "eslint": "10.13.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-no-only-tests": "3.4.0",
     "globals": "17.13.0",
@@ -61,7 +61,7 @@
     "fsevents": "2.3.3"
   },
   "overrides": {
-    "axios": "1.20.0",
+    "axios": "1.21.0",
     "yaml": "2.9.1",
     "brace-expansion": "5.0.12",
     "follow-redirects": "1.16.1",
