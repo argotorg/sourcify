@@ -161,6 +161,7 @@ paths:
                 - address
                 - forceCompilation
                 - forceRPCRequest
+                - customReplaceMethod
               properties:
                 chainId:
                   oneOf:
@@ -216,6 +217,15 @@ paths:
                       whose `immutableReferences` were never persisted; use with
                       `forceCompilation: true`. Only Vyper is supported (throws otherwise);
                       contracts without immutables are left untouched.
+                    - "replace-solidity-storage-layout": Reconstructs the storage layout of
+                      a verified Solidity 0.4.7 through 0.5.12 contract from its historical
+                      compiler AST and backfills only
+                      `compiled_contracts.compilation_artifacts.storageLayout`. Use with
+                      `forceCompilation: true`. The fresh compilation must match the deployment
+                      and exactly match the stored version, target, settings, additional input,
+                      and source set. Existing non-null layouts are never overwritten.
+                      Versions before 0.4.7 are excluded because their bytecode does not bind
+                      source metadata, so distinct layouts can share one compiled-contract row.
                   example: "replace-creation-information"
       responses:
         "200":

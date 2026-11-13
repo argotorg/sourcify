@@ -5,6 +5,7 @@ export const setCompilersLoggerLevel = setLevel;
 export type ICompilersLogger = ILogger;
 
 export * from './lib/solidityCompiler';
+export * from './lib/solidityStorageLayout';
 export * from './lib/vyperCompiler';
 export * from './lib/feCompiler';
 export * from './lib/solarCompiler';
