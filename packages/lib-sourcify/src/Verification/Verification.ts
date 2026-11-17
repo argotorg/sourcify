@@ -23,6 +23,7 @@ import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type { Transformation, TransformationValues } from './Transformations';
 import {
   extractAuxdataTransformation,
+  CALL_PROTECTION_GUARD,
   extractCallProtectionTransformation,
   extractConstructorArgumentsTransformation,
   extractImmutablesTransformation,
@@ -655,7 +656,7 @@ export class Verification {
     if (
       this.compilation.language === 'Solidity' &&
       callProtectionTransformationResult.transformations.length === 0 &&
-      this.compilation.runtimeBytecode.startsWith(`0x73${'00'.repeat(20)}3014`)
+      this.compilation.runtimeBytecode.startsWith(CALL_PROTECTION_GUARD)
     ) {
       logWarn(
         'Onchain code does not start with PUSH20 and the contract address, skipping call protection transformation',
