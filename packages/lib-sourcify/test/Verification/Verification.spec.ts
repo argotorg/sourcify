@@ -2,7 +2,14 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
-import { type JsonRpcSigner } from 'ethers';
+import {
+  AbiCoder,
+  Contract,
+  Interface,
+  type JsonRpcSigner,
+  type Log,
+  type LogDescription,
+} from 'ethers';
 import path from 'path';
 import {
   assertCborTransformations,
@@ -1232,6 +1239,83 @@ describe('Verification Class Tests', () => {
         .and.have.property('code', 'no_match');
     });
 
+    it('does not apply the call protection transformation when the onchain code does not start with PUSH20 and the contract address', async () => {
+      const content = `// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+library MathLib {
+    function increment(uint256 x) external pure returns (uint256) {
+        return x + 1;
+    }
+}
+`;
+      // The optimizer is off. With the optimizer on, a mismatch gives the extra_file_input_bug error.
+      const jsonInput = {
+        language: 'Solidity',
+        sources: { 'MathLib.sol': { content } },
+        settings: {
+          optimizer: { enabled: false, runs: 200 },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = () =>
+        new SolidityCompilation(solc, '0.8.19+commit.7dd6d404', jsonInput, {
+          name: 'MathLib',
+          path: 'MathLib.sol',
+        });
+
+      const compiled = makeCompilation();
+      await compiled.compile();
+      const zeroOperandRuntime = compiled.runtimeBytecode;
+      expect(zeroOperandRuntime.startsWith('0x73' + '00'.repeat(20) + '3014'))
+        .to.be.true;
+
+      // Control: deployed exactly as compiled, the library still verifies
+      const unchangedAddress = await deployRuntimeBytecode(zeroOperandRuntime);
+      const unchanged = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        unchangedAddress,
+      );
+      await unchanged.verify();
+      expectVerification(unchanged, {
+        status: { runtimeMatch: 'perfect', creationMatch: null },
+      });
+      expect(unchanged.transformations.runtime.list).to.be.empty;
+
+      // The first 21 bytes are not PUSH20 and an address
+      const fillerAddress = await deployRuntimeBytecode(
+        '0x' + '5b'.repeat(21) + zeroOperandRuntime.slice(44),
+      );
+      const filler = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        fillerAddress,
+      );
+      await expect(filler.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+      expect(filler.status.runtimeMatch).to.be.null;
+      expect(filler.status.creationMatch).to.be.null;
+
+      // The PUSH20 operand is another address
+      const otherOperandAddress = await deployRuntimeBytecode(
+        '0x73' +
+          UNUSED_ADDRESS.slice(2).toLowerCase() +
+          zeroOperandRuntime.slice(44),
+      );
+      const otherOperand = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        otherOperandAddress,
+      );
+      await expect(otherOperand.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+      expect(otherOperand.status.runtimeMatch).to.be.null;
+      expect(otherOperand.status.creationMatch).to.be.null;
+    });
+
     it('refuses a match when one library is linked to different addresses', async () => {
       const content = `// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
@@ -2302,6 +2386,221 @@ contract LinkedTwice {
       await expect(verification.verify())
         .to.eventually.be.rejectedWith()
         .and.have.property('code', 'compiled_bytecode_is_zero');
+    });
+
+    describe('factory creation tx whose deployed code differs from the code at the address', () => {
+      const content = `// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+contract Remover {
+    fallback() external {
+        selfdestruct(payable(msg.sender));
+    }
+}
+
+contract First {
+    constructor(address remover) {
+        (bool success, ) = remover.delegatecall("");
+        require(success);
+    }
+
+    function value() external pure returns (uint256) {
+        return 1;
+    }
+}
+
+contract Second {
+    function value() external pure returns (uint256) {
+        return 2;
+    }
+}
+
+contract Deployer {
+    event Created(address child);
+
+    function deploy(bytes memory initCode) external {
+        address child;
+        assembly {
+            child := create(0, add(initCode, 0x20), mload(initCode))
+        }
+        require(child != address(0));
+        emit Created(child);
+        selfdestruct(payable(msg.sender));
+    }
+}
+
+contract Runner {
+    function run(bytes32 salt, bytes memory initCode) external {
+        Deployer deployer = new Deployer{salt: salt}();
+        deployer.deploy(initCode);
+    }
+}
+`;
+      const jsonInput = {
+        language: 'Solidity',
+        sources: { 'Recreated.sol': { content } },
+        settings: {
+          optimizer: { enabled: false, runs: 200 },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = (name: string) =>
+        new SolidityCompilation(solc, '0.8.26+commit.8a97fa7a', jsonInput, {
+          name,
+          path: 'Recreated.sol',
+        });
+
+      // This chain reads callTracer traces from the Hardhat node
+      const sourcifyChainHardhatWithTraces = new SourcifyChain({
+        ...hardhatChain,
+        rpcs: [
+          {
+            rpc: `http://localhost:${HARDHAT_PORT}`,
+            traceSupport: 'debug_traceTransaction',
+          },
+        ],
+      });
+
+      // A raw call avoids the short result cache of ethers
+      const getCode = (address: string) =>
+        sourcifyChainHardhat.rpcs[0].provider!.send('eth_getCode', [
+          address,
+          'latest',
+        ]);
+
+      let runner: Contract;
+      let deployerInterface: Interface;
+      let secondInitCode: string;
+      let address: string;
+      let firstTxHash: string;
+      let secondTxHash: string;
+
+      const deploy = async (name: string, args: unknown[] = []) => {
+        const compilation = makeCompilation(name);
+        await compilation.compile();
+        return deployCompiledContract(signer, compilation, args);
+      };
+
+      const runRunner = async (salt: string, initCode: string) => {
+        const tx = await runner.run(salt, initCode);
+        const receipt = await tx.wait();
+        const createdLog = receipt.logs
+          .map((log: Log) => deployerInterface.parseLog(log))
+          .find((parsed: LogDescription | null) => parsed?.name === 'Created');
+        return {
+          childAddress: createdLog.args.child as string,
+          txHash: tx.hash as string,
+        };
+      };
+
+      before(async () => {
+        const { contractAddress: removerAddress } = await deploy('Remover');
+        const { contractAddress: runnerAddress } = await deploy('Runner');
+        const runnerCompilation = makeCompilation('Runner');
+        await runnerCompilation.compile();
+        runner = new Contract(
+          runnerAddress,
+          (runnerCompilation.contractCompilerOutput as any).abi,
+          signer,
+        );
+        const deployerCompilation = makeCompilation('Deployer');
+        await deployerCompilation.compile();
+        deployerInterface = new Interface(
+          (deployerCompilation.contractCompilerOutput as any).abi,
+        );
+
+        const firstCompilation = makeCompilation('First');
+        await firstCompilation.compile();
+        const firstInitCode =
+          firstCompilation.creationBytecode +
+          AbiCoder.defaultAbiCoder()
+            .encode(['address'], [removerAddress])
+            .slice(2);
+
+        const secondCompilation = makeCompilation('Second');
+        await secondCompilation.compile();
+        secondInitCode = secondCompilation.creationBytecode;
+        // Both contracts have runtime code of the same length.
+        expect(secondCompilation.runtimeBytecode.length).to.equal(
+          firstCompilation.runtimeBytecode.length,
+        );
+
+        const salt = '0x' + '11'.repeat(32);
+        // The first tx creates and removes the contract.
+        const first = await runRunner(salt, firstInitCode);
+        expect(await getCode(first.childAddress)).to.equal('0x');
+
+        // The second tx creates other code at the same address.
+        const second = await runRunner(salt, secondInitCode);
+        expect(second.childAddress).to.equal(first.childAddress);
+        expect(await getCode(second.childAddress)).to.equal(
+          secondCompilation.runtimeBytecode,
+        );
+
+        address = second.childAddress;
+        firstTxHash = first.txHash;
+        secondTxHash = second.txHash;
+      });
+
+      it('should reject a factory creation tx whose deployed code differs from the code at the address', async () => {
+        const verification = new Verification(
+          makeCompilation('First'),
+          sourcifyChainHardhatWithTraces,
+          address,
+          firstTxHash,
+        );
+        await expect(verification.verify())
+          .to.eventually.be.rejectedWith()
+          .and.have.property('code', 'no_match');
+        expectVerification(verification, {
+          status: { runtimeMatch: null, creationMatch: null },
+        });
+      });
+
+      it('should drop the creation data of that tx and keep the runtime match of the code at the address', async () => {
+        const verification = new Verification(
+          makeCompilation('Second'),
+          sourcifyChainHardhatWithTraces,
+          address,
+          firstTxHash,
+        );
+        await verification.verify();
+        expectVerification(verification, {
+          status: { runtimeMatch: 'perfect', creationMatch: null },
+        });
+        expect(verification.deploymentInfo.txHash).to.be.undefined;
+        expect(verification.deploymentInfo.blockNumber).to.be.undefined;
+        expect(verification.deploymentInfo.deployer).to.be.undefined;
+      });
+
+      it('should keep the creation match of the tx that created the code at the address', async () => {
+        const verification = new Verification(
+          makeCompilation('Second'),
+          sourcifyChainHardhatWithTraces,
+          address,
+          secondTxHash,
+        );
+        await verification.verify();
+        expectVerification(verification, {
+          status: { runtimeMatch: 'perfect', creationMatch: 'perfect' },
+        });
+      });
+
+      it('should keep the creation match of a contract that a factory created once', async () => {
+        const salt = '0x' + '22'.repeat(32);
+        const { childAddress, txHash } = await runRunner(salt, secondInitCode);
+
+        const verification = new Verification(
+          makeCompilation('Second'),
+          sourcifyChainHardhatWithTraces,
+          childAddress,
+          txHash,
+        );
+        await verification.verify();
+        expectVerification(verification, {
+          status: { runtimeMatch: 'perfect', creationMatch: 'perfect' },
+        });
+      });
     });
   });
 });

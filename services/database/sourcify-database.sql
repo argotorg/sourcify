@@ -1,7 +1,7 @@
 \restrict dbmate
 
 -- Dumped from database version 15.19 (Debian 15.19-1.pgdg13+2)
--- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)
+-- Dumped by pg_dump version 15.19 (Debian 15.19-1.pgdg13+2)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -51,6 +51,57 @@ CREATE TYPE public.signature_type_enum AS ENUM (
     'event',
     'error'
 );
+
+
+--
+-- Name: delete_expired_verification_jobs(interval, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.delete_expired_verification_jobs(retention interval DEFAULT '90 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  deleted integer;
+BEGIN
+  DELETE FROM public.verification_jobs
+  -- ctid = ANY(ARRAY(...)) fetches only these rows; id IN (...) can scan the full table
+  WHERE ctid = ANY (ARRAY(
+    SELECT ctid
+    FROM public.verification_jobs
+    WHERE started_at < NOW() - retention
+    ORDER BY started_at
+    LIMIT max_rows
+  ));
+  GET DIAGNOSTICS deleted = ROW_COUNT;
+  RETURN deleted;
+END;
+$$;
+
+
+--
+-- Name: delete_expired_verification_jobs_ephemeral(interval, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.delete_expired_verification_jobs_ephemeral(retention interval DEFAULT '30 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  deleted integer;
+BEGIN
+  DELETE FROM public.verification_jobs_ephemeral
+  WHERE ctid = ANY (ARRAY(
+    SELECT ephemeral.ctid
+    FROM public.verification_jobs_ephemeral ephemeral
+    -- A scalar subquery, so that each job is a primary key lookup and never a table scan
+    WHERE (
+      SELECT started_at FROM public.verification_jobs WHERE id = ephemeral.id
+    ) < NOW() - retention
+    LIMIT max_rows
+  ));
+  GET DIAGNOSTICS deleted = ROW_COUNT;
+  RETURN deleted;
+END;
+$$;
 
 
 --
@@ -1219,7 +1270,8 @@ CREATE TABLE public.verification_jobs (
     hardware character varying,
     compilation_time bigint,
     external_verification jsonb
-);
+)
+WITH (autovacuum_vacuum_scale_factor='0.02');
 
 
 --
@@ -1690,6 +1742,13 @@ CREATE INDEX verification_jobs_chain_id_address_idx ON public.verification_jobs 
 --
 
 CREATE INDEX verification_jobs_in_progress_idx ON public.verification_jobs USING btree (started_at) WHERE (completed_at IS NULL);
+
+
+--
+-- Name: verification_jobs_started_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX verification_jobs_started_at_idx ON public.verification_jobs USING btree (started_at);
 
 
 --
@@ -2268,4 +2327,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260826100000'),
     ('20260908145004'),
     ('20260915115359'),
-    ('20261020100000');
+    ('20261020100000'),
+    ('20261110100000'),
+    ('20261110100100');

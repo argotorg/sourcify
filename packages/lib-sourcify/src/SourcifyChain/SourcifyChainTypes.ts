@@ -132,6 +132,11 @@ type Currency = {
   decimals: number;
 };
 
+export interface FactoryCreationData {
+  creationBytecode: string;
+  deployedRuntimeBytecode: string;
+}
+
 // https://geth.ethereum.org/docs/developers/evm-tracing/built-in-tracers#call-tracer
 export interface CallFrame {
   type: string;
