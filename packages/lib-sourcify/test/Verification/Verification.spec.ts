@@ -1232,6 +1232,83 @@ describe('Verification Class Tests', () => {
         .and.have.property('code', 'no_match');
     });
 
+    it('does not apply the call protection transformation when the onchain code does not start with PUSH20 and the contract address', async () => {
+      const content = `// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+library MathLib {
+    function increment(uint256 x) external pure returns (uint256) {
+        return x + 1;
+    }
+}
+`;
+      // The optimizer is off. With the optimizer on, a mismatch gives the extra_file_input_bug error.
+      const jsonInput = {
+        language: 'Solidity',
+        sources: { 'MathLib.sol': { content } },
+        settings: {
+          optimizer: { enabled: false, runs: 200 },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = () =>
+        new SolidityCompilation(solc, '0.8.19+commit.7dd6d404', jsonInput, {
+          name: 'MathLib',
+          path: 'MathLib.sol',
+        });
+
+      const compiled = makeCompilation();
+      await compiled.compile();
+      const zeroOperandRuntime = compiled.runtimeBytecode;
+      expect(zeroOperandRuntime.startsWith('0x73' + '00'.repeat(20) + '3014'))
+        .to.be.true;
+
+      // Control: deployed exactly as compiled, the library still verifies
+      const unchangedAddress = await deployRuntimeBytecode(zeroOperandRuntime);
+      const unchanged = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        unchangedAddress,
+      );
+      await unchanged.verify();
+      expectVerification(unchanged, {
+        status: { runtimeMatch: 'perfect', creationMatch: null },
+      });
+      expect(unchanged.transformations.runtime.list).to.be.empty;
+
+      // The first 21 bytes are not PUSH20 and an address
+      const fillerAddress = await deployRuntimeBytecode(
+        '0x' + '5b'.repeat(21) + zeroOperandRuntime.slice(44),
+      );
+      const filler = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        fillerAddress,
+      );
+      await expect(filler.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+      expect(filler.status.runtimeMatch).to.be.null;
+      expect(filler.status.creationMatch).to.be.null;
+
+      // The PUSH20 operand is another address
+      const otherOperandAddress = await deployRuntimeBytecode(
+        '0x73' +
+          UNUSED_ADDRESS.slice(2).toLowerCase() +
+          zeroOperandRuntime.slice(44),
+      );
+      const otherOperand = new Verification(
+        makeCompilation(),
+        sourcifyChainHardhat,
+        otherOperandAddress,
+      );
+      await expect(otherOperand.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
+      expect(otherOperand.status.runtimeMatch).to.be.null;
+      expect(otherOperand.status.creationMatch).to.be.null;
+    });
+
     it('refuses a match when one library is linked to different addresses', async () => {
       const content = `// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
