@@ -28,6 +28,7 @@ import type {
   VerificationJob,
   Match,
   VerificationJobId,
+  Bytes,
   BytesKeccak,
   SimilarityCandidate,
 } from "../../types";
@@ -52,6 +53,12 @@ type NewSourcifyMatch = VerifiedContractMinimal &
   Required<Pick<VerifiedContractMinimal, "matchId" | "verifiedAt">> & {
     name: string;
   };
+
+// "0x" gives an empty Buffer, which is truthy
+function bytesOrNull(str: string | undefined): Bytes | null {
+  const bytes = bytesFromString(str);
+  return bytes?.length ? bytes : null;
+}
 
 export class SourcifyDatabaseService
   extends AbstractDatabaseService
@@ -478,16 +485,21 @@ export class SourcifyDatabaseService
       error_data: error.errorData || null,
     });
 
+    const ephemeral = {
+      recompiled_creation_code: bytesOrNull(error.recompiledCreationCode),
+      recompiled_runtime_code: bytesOrNull(error.recompiledRuntimeCode),
+      onchain_creation_code: bytesOrNull(error.onchainCreationCode),
+      onchain_runtime_code: bytesOrNull(error.onchainRuntimeCode),
+      creation_transaction_hash: bytesOrNull(error.creationTransactionHash),
+    };
+    // Most failed jobs have nothing to keep
+    if (Object.values(ephemeral).every((value) => value === null)) {
+      return;
+    }
+
     await this.database.insertVerificationJobEphemeral({
       id: verificationId,
-      recompiled_creation_code:
-        bytesFromString(error.recompiledCreationCode) || null,
-      recompiled_runtime_code:
-        bytesFromString(error.recompiledRuntimeCode) || null,
-      onchain_creation_code: bytesFromString(error.onchainCreationCode) || null,
-      onchain_runtime_code: bytesFromString(error.onchainRuntimeCode) || null,
-      creation_transaction_hash:
-        bytesFromString(error.creationTransactionHash) || null,
+      ...ephemeral,
     });
   }
 
