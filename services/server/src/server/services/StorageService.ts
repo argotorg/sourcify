@@ -84,6 +84,11 @@ export interface RWStorageService extends WStorageService {
     chainId: string,
     address: string,
   ): Promise<Pick<VerificationJob, "isJobCompleted">[]>;
+  getRecentFailedSimilarityVerification?(
+    chainId: string,
+    address: string,
+    failedAfter: Date,
+  ): Promise<Date | null>;
   getSimilarityCandidateIdsByRuntimeCode?(
     runtimeBytecode: string,
     limit: number,

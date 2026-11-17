@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## sourcify-server@4.4.0 - 2026-11-17
+
+- fix(server): cool down recently failed similarity verification jobs (#3002)
+- perf(server): apply LIMIT before the joins in the contracts list query (#3064)
+- feat: stop empty ephemeral rows and schedule the verification jobs cleanup (#3062)
+- fix: check the deployed code of a factory creation transaction (#3073)
+- Harden input validation for Fe source paths and compiler versions (#3074)
+- Update dependencies
+
 ## sourcify-server@4.3.0 - 2026-11-03
 
 - chore: bump Node to 22.23.4 for Brotli RCE CVE-2026-111497 (Node2Shell) (#3040)

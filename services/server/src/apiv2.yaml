@@ -110,6 +110,12 @@ paths:
         deployed contract's runtime bytecode must be at least 75 bytes long. Shorter bytecode —
         for example EIP-1167 minimal proxies, which are 45 bytes — is rejected with a `400` response
         and `customCode: bytecode_too_short_for_similarity`.
+
+        After a job finishes with `no_similar_match_found`, requests for the same chain and address
+        are rejected during a configurable cooldown (10 minutes by default) with a `429` response,
+        `customCode: similarity_recently_failed`, and a `Retry-After` header in seconds.
+        Other failures do not trigger this cooldown. A new candidate or changed deployment can
+        become verifiable during the cooldown; retry after it expires.
       operationId: verify-similarity
       parameters:
         - $ref: "#/components/parameters/chainId"
@@ -149,7 +155,13 @@ paths:
                     message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is already verified with runtimeMatch and creationMatch both being exact matches.
                     errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
         "429":
-          description: The contract is already being verified
+          description: The contract is already being verified or a recent similarity verification found no match
+          headers:
+            Retry-After:
+              description: Seconds until the recent no-match cooldown expires; only present for similarity_recently_failed
+              schema:
+                type: integer
+                minimum: 1
           content:
             application/json:
               schema:
@@ -159,6 +171,11 @@ paths:
                   value:
                     customCode: duplicate_verification_request
                     message: Contract 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 on chain 31337 is already being verified.
+                    errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
+                similarity_recently_failed:
+                  value:
+                    customCode: similarity_recently_failed
+                    message: Similarity verification for this contract recently found no match. Retry after the cooldown expires.
                     errorId: 23aaf52e-168a-4cfa-8463-65ddfb792efc
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
@@ -171,6 +188,8 @@ paths:
         Endpoint to get the status of a verification job.
 
         Alternatively you can directly check the verification status of a contract with with chainId+address at `GET /v2/contract/{chainId}/{address}`
+
+        Sourcify keeps a verification job for 90 days. After that, this endpoint returns `404`.
       operationId: verification-status
       parameters:
         - $ref: "#/components/parameters/verificationId"
@@ -1425,13 +1444,16 @@ components:
     CompilerVersion:
       type: string
       title: CompilerVersion
-      # Pattern accepts both Solidity and Vyper version formats:
-      # We need to be permissive here because Vyper versions are named inconsistently.
-      # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
-      # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
+      # The pattern accepts the version formats of all supported compilers:
+      # - Solidity: 0.8.7+commit.e28d00a7, 0.8.27-nightly.2024.5.1+commit.e5a2e4e0
+      # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, 0.1.0-beta.16+commit.5e4a94a
+      # - Fe: 26.0.0-alpha.10
       # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
+      # It rejects "/" and a second "+". The suffix after the patch number must not start
+      # with a digit. This keeps the match linear in time.
       description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
-      pattern: '^v?\d+\.\d+\.\d+.*$'
+      maxLength: 128
+      pattern: '^v?\d+\.\d+\.\d+([A-Za-z.-][0-9A-Za-z.-]*)?(\+[0-9A-Za-z.-]+)?$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:
       type: string

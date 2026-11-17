@@ -6,6 +6,7 @@ import fs from 'fs';
 import { AuxdataStyle } from '@ethereum-sourcify/bytecode-utils';
 import type { ImmutableReferences } from '@ethereum-sourcify/compilers-types';
 import {
+  returnFixedVyperVersion,
   returnImmutableReferences,
   VyperCompilation,
 } from '../../src/Compilation/VyperCompilation';
@@ -454,6 +455,20 @@ describe('VyperCompilation', () => {
     );
   });
 
+  it('should return a semver compatible version for valid Vyper versions', () => {
+    const cases: Record<string, string> = {
+      '0.3.10+commit.91361694': '0.3.10+commit.91361694',
+      '0.1.0-beta.16+commit.5e4a94a': '0.1.0-beta.16+commit.5e4a94a',
+      '0.1.0b16+commit.5e4a94a': '0.1.0+commit.5e4a94a',
+      '0.4.0rc3+commit.f2136550': '0.4.0+commit.f2136550',
+      '0.4.1b1+commit.039d3692': '0.4.1+commit.039d3692',
+      '0.4.1rc1': '0.4.1',
+    };
+    for (const [input, expected] of Object.entries(cases)) {
+      expect(returnFixedVyperVersion(input), input).to.equal(expected);
+    }
+  });
+
   it('should throw error for invalid Vyper version format', () => {
     const contractPath = path.join(
       __dirname,
@@ -468,31 +483,40 @@ describe('VyperCompilation', () => {
       'utf8',
     );
 
-    expect(
-      () =>
-        new VyperCompilation(
-          vyperCompiler,
-          'invalid.version.format', // Invalid version format
-          {
-            language: 'Vyper',
-            sources: {
-              [contractFileName]: {
-                content: contractContent,
+    for (const invalidVersion of [
+      'invalid.version.format',
+      '0.3.10rc1+commit.91361694+/../../x/payload',
+      '0.3.10+commit.91361694+commit.91361694',
+      '0.3.01',
+      '00.3.1',
+      '99999999999999999999.0.0',
+    ]) {
+      expect(
+        () =>
+          new VyperCompilation(
+            vyperCompiler,
+            invalidVersion,
+            {
+              language: 'Vyper',
+              sources: {
+                [contractFileName]: {
+                  content: contractContent,
+                },
+              },
+              settings: {
+                evmVersion: 'istanbul',
+                outputSelection: {
+                  '*': ['evm.bytecode'],
+                },
               },
             },
-            settings: {
-              evmVersion: 'istanbul',
-              outputSelection: {
-                '*': ['evm.bytecode'],
-              },
+            {
+              name: contractFileName.split('.')[0],
+              path: contractFileName,
             },
-          },
-          {
-            name: contractFileName.split('.')[0],
-            path: contractFileName,
-          },
-        ),
-    ).to.throw('Invalid compiler version');
+          ),
+      ).to.throw('Invalid compiler version');
+    }
   });
 
   it('should handle bytecode decoding errors in getImmutableReferences', async () => {

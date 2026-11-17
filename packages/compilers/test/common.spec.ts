@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { asyncExec } from '../src/lib/common';
+import { asyncExec, resolveCompilerPath } from '../src/lib/common';
 import {
   COMPILER_OOM_CODE,
   COMPILER_TIMEOUT_CODE,
@@ -14,7 +14,7 @@ describe('asyncExec robustness (#2880)', () => {
   it('resolves normally for a well-behaved subprocess', async () => {
     // `cat` echoes stdin back to stdout, mirroring how a compiler consumes
     // the standard-json input we stream in.
-    const output = await asyncExec('cat', '{}', MAX_BUFFER);
+    const output = await asyncExec('cat', [], '{}', MAX_BUFFER);
     expect(output).to.equal('{}');
   });
 
@@ -23,7 +23,7 @@ describe('asyncExec robustness (#2880)', () => {
     try {
       // `sleep` never reads stdin and never exits within the timeout window.
       // The tiny timeout kills it almost immediately instead of hanging.
-      await asyncExec('sleep 30', '{}', MAX_BUFFER, 150);
+      await asyncExec('sleep', ['30'], '{}', MAX_BUFFER, 150);
     } catch (error) {
       thrown = error;
     }
@@ -40,7 +40,7 @@ describe('asyncExec robustness (#2880)', () => {
     // (signal === 'SIGKILL'), not from the stdin listener.
     let thrown: any;
     try {
-      await asyncExec('kill -9 $$', '{}', MAX_BUFFER);
+      await asyncExec('sh', ['-c', 'kill -9 $$'], '{}', MAX_BUFFER);
     } catch (error) {
       thrown = error;
     }
@@ -55,7 +55,8 @@ describe('asyncExec robustness (#2880)', () => {
     let thrown: any;
     try {
       await asyncExec(
-        'node -e "process.stdin.destroy(); process.exit(0)"',
+        'node',
+        ['-e', 'process.stdin.destroy(); process.exit(0)'],
         largeInput,
         MAX_BUFFER,
       );
@@ -68,14 +69,14 @@ describe('asyncExec robustness (#2880)', () => {
   });
 
   it('does not misattribute a failed spawn as out of memory', async () => {
-    // A missing compiler binary exits 127 immediately, which breaks the stdin
-    // pipe while we are still streaming a large input. The real exit error must
-    // win over the EPIPE, otherwise a bad-binary incident is reported as OOM.
+    // A missing binary breaks stdin during a large write.
+    // The test expects the spawn error, not an OOM error.
     const largeInput = JSON.stringify({ blob: 'a'.repeat(20 * 1024 * 1024) });
     let thrown: any;
     try {
       await asyncExec(
-        'this-compiler-binary-does-not-exist --standard-json',
+        'this-compiler-binary-does-not-exist',
+        ['--standard-json'],
         largeInput,
         MAX_BUFFER,
       );
@@ -108,7 +109,7 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
     // `pwd` reports where the subprocess ran: a temp dir, not the host cwd.
     // The command reads stdin first. Else the stdin write can fail with EPIPE.
     const cwd = (
-      await asyncExec('cat > /dev/null && pwd', '{}', MAX_BUFFER)
+      await asyncExec('sh', ['-c', 'cat > /dev/null && pwd'], '{}', MAX_BUFFER)
     ).trim();
     expect(cwd).to.not.equal(process.cwd());
     expect(cwd.startsWith(fs.realpathSync(os.tmpdir()))).to.equal(true);
@@ -118,7 +119,7 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
     // The same relative path a leaking import would use must fail to read.
     let thrown: any;
     try {
-      await asyncExec(`cat "./${secretName}"`, '{}', MAX_BUFFER);
+      await asyncExec('cat', [`./${secretName}`], '{}', MAX_BUFFER);
     } catch (error) {
       thrown = error;
     }
@@ -132,11 +133,67 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
     const before = fs
       .readdirSync(os.tmpdir())
       .filter((d) => d.startsWith('sourcify-compiler-'));
-    await asyncExec('cat', '{}', MAX_BUFFER);
+    await asyncExec('cat', [], '{}', MAX_BUFFER);
     const after = fs
       .readdirSync(os.tmpdir())
       .filter((d) => d.startsWith('sourcify-compiler-'));
     // No temp dir left behind after a run.
     expect(after.length).to.be.at.most(before.length);
+  });
+});
+
+describe('asyncExec arguments', () => {
+  it('does not interpret shell metacharacters in an argument', async () => {
+    const markerDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'sourcify-exec-marker-'),
+    );
+    const markerPath = path.join(markerDir, 'marker');
+    try {
+      const arg = `x; touch ${markerPath} $(touch ${markerPath}) | true`;
+      // `node -e` prints its first argument without a shell.
+      const output = await asyncExec(
+        'node',
+        ['-e', 'process.stdout.write(process.argv[1])', arg],
+        '{}',
+        MAX_BUFFER,
+      );
+      expect(output).to.equal(arg);
+      expect(fs.existsSync(markerPath)).to.equal(false);
+    } finally {
+      fs.rmSync(markerDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('resolveCompilerPath', () => {
+  const repoPath = path.join(os.tmpdir(), 'sourcify-compiler-repo-unit');
+
+  it('resolves a file name directly inside the repository', () => {
+    expect(resolveCompilerPath(repoPath, 'vyper.0.3.10.linux')).to.equal(
+      path.resolve(repoPath, 'vyper.0.3.10.linux'),
+    );
+  });
+
+  it('resolves a relative repository path to an absolute path', () => {
+    const resolved = resolveCompilerPath('compilers', 'solc-linux-v0.8.7');
+    expect(path.isAbsolute(resolved)).to.equal(true);
+    expect(path.dirname(resolved)).to.equal(path.resolve('compilers'));
+  });
+
+  it('rejects file names that leave the repository', () => {
+    for (const fileName of [
+      'vyper.0.3.10+/../../x/payload.linux',
+      '../solc',
+      'a/b',
+      'a\\b',
+      'solc\0',
+      '..',
+      '.',
+      '',
+    ]) {
+      expect(() => resolveCompilerPath(repoPath, fileName), fileName).to.throw(
+        Error,
+      );
+    }
   });
 });

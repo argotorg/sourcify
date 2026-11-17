@@ -23,6 +23,7 @@ import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type { Transformation, TransformationValues } from './Transformations';
 import {
   extractAuxdataTransformation,
+  CALL_PROTECTION_GUARD,
   extractCallProtectionTransformation,
   extractConstructorArgumentsTransformation,
   extractImmutablesTransformation,
@@ -267,6 +268,7 @@ export class Verification {
             this.address,
             this.creatorTxHash,
             creatorTx,
+            this.onchainRuntimeBytecode,
           );
         this._onchainCreationBytecode = creationBytecode;
         this.txIndex = txReceipt.index;
@@ -650,7 +652,23 @@ export class Verification {
         this.compilation.runtimeBytecode,
         this.onchainRuntimeBytecode,
         this.compilation.language,
+        this.address,
       );
+    if (
+      this.compilation.language === 'Solidity' &&
+      callProtectionTransformationResult.transformations.length === 0 &&
+      this.compilation.runtimeBytecode.startsWith(CALL_PROTECTION_GUARD) &&
+      // Onchain code with the zero placeholder is equal to the compiler output.
+      !this.onchainRuntimeBytecode.startsWith(CALL_PROTECTION_GUARD)
+    ) {
+      logWarn(
+        'Onchain code does not start with PUSH20 and the contract address, skipping call protection transformation',
+        {
+          address: this.address,
+          chainId: this.sourcifyChain.chainId,
+        },
+      );
+    }
 
     // Handle immutable references
     const immutablesTransformationResult = extractImmutablesTransformation(

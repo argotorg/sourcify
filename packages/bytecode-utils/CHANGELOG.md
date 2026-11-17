@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/bytecode-utils@1.7.1 - 2026-11-17
+
+- Update dependencies
+
 ## @ethereum-sourcify/bytecode-utils@1.7.0 - 2026-11-03
 
 - feat: verify contracts compiled with Solar (#3050)

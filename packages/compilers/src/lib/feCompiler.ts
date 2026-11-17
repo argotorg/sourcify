@@ -8,6 +8,7 @@ import {
   createCompilerTimeoutError,
   DEFAULT_COMPILE_TIMEOUT_MS,
   fetchWithBackoff,
+  resolveCompilerPath,
 } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
@@ -17,8 +18,8 @@ const HOST_FE_REPO = 'https://github.com/argotorg/fe/releases/download/';
 const MINIMUM_FE_VERSION = '26.0.0-alpha.12';
 
 /**
- * Resolve a Fe source key under `root`. `path.join` treats an absolute
- * segment as a new root, and `src/../..` walks out of the temp ingot.
+ * Resolve a Fe source key under `root`. The key must name a `.fe` file under
+ * `<root>/src/`. Other keys could replace `fe.toml` or walk out of the ingot.
  */
 export function resolveFeSourcePath(root: string, sourcePath: string): string {
   if (sourcePath.includes('\0')) {
@@ -28,15 +29,10 @@ export function resolveFeSourcePath(root: string, sourcePath: string): string {
     throw new Error(`Fe source path must be relative: ${sourcePath}`);
   }
   const resolved = path.resolve(root, sourcePath);
-  const rootResolved = path.resolve(root);
-  const prefix = rootResolved.endsWith(path.sep)
-    ? rootResolved
-    : rootResolved + path.sep;
-  // A key must name a file under the root. `src/..` resolves to the root
-  // itself and would otherwise hit EISDIR on write.
-  if (!resolved.startsWith(prefix)) {
+  const srcDir = path.join(path.resolve(root), 'src') + path.sep;
+  if (!resolved.startsWith(srcDir) || !resolved.endsWith('.fe')) {
     throw new Error(
-      `Fe source path escapes the compilation directory: ${sourcePath}`,
+      `Fe source path must be a .fe file under src/: ${sourcePath}`,
     );
   }
   return resolved;
@@ -71,7 +67,7 @@ export async function getFeExecutable(
   version: string,
 ): Promise<string> {
   const fileName = `fe-${version}-${platform}`;
-  const fePath = path.join(feRepoPath, fileName);
+  const fePath = resolveCompilerPath(feRepoPath, fileName);
   if (validateFePath(fePath)) {
     return fePath;
   }
@@ -154,7 +150,11 @@ export async function useFeCompiler(
   feJsonInput: FeJsonInput,
   timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
 ): Promise<FeOutput> {
-  if (!semver.valid(version) || semver.lt(version, MINIMUM_FE_VERSION)) {
+  // semver.valid trims whitespace. Require the exact version string.
+  if (
+    semver.valid(version) !== version ||
+    semver.lt(version, MINIMUM_FE_VERSION)
+  ) {
     throw new Error(
       `Fe compiler version ${version} is not supported. Minimum supported version is ${MINIMUM_FE_VERSION}.`,
     );
@@ -173,15 +173,38 @@ export async function useFeCompiler(
   );
 
   try {
-    // Scaffold ingot structure
+    // Check all source keys before the first write.
+    // sourcePaths already have the src/ prefix, e.g. 'src/lib.fe'.
+    const sourceFiles = Object.entries(feJsonInput.sources).map(
+      ([sourcePath, source]) => ({
+        fullPath: resolveFeSourcePath(tmpDir, sourcePath),
+        content: source.content,
+      }),
+    );
+    for (const { fullPath, content } of sourceFiles) {
+      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.promises.writeFile(fullPath, content);
+    }
+
+    // Write the manifest last. No source file can replace it.
     const feToml = `[ingot]\nname = "sourcify_verification"\nversion = "0.1.0"\n`;
     await fs.promises.writeFile(path.join(tmpDir, 'fe.toml'), feToml);
 
-    // Write source files (sourcePaths already have src/ prefix, e.g. 'src/lib.fe')
-    for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
-      const fullPath = resolveFeSourcePath(tmpDir, sourcePath);
-      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.promises.writeFile(fullPath, source.content);
+    // Give fe a home inside tmpDir. The cleanup below deletes its caches.
+    const feHome = path.join(tmpDir, '.home');
+    await fs.promises.mkdir(feHome);
+    // Keep the env small. FE_CACHE_DIR and FE_REMOTE_CACHE_DIR stay unset.
+    const feEnv: NodeJS.ProcessEnv = {
+      PATH: process.env.PATH ?? '',
+      HOME: feHome,
+      USERPROFILE: feHome,
+      XDG_CACHE_HOME: path.join(feHome, '.cache'),
+    };
+    for (const name of ['SystemRoot', 'TEMP', 'TMP', 'TMPDIR']) {
+      const value = process.env[name];
+      if (value !== undefined) {
+        feEnv[name] = value;
+      }
     }
 
     // Run fe build
@@ -191,6 +214,7 @@ export async function useFeCompiler(
     // free the verification worker slot (#2880).
     const spawned = spawnSync(fePath, ['build', tmpDir], {
       cwd: tmpDir,
+      env: feEnv,
       maxBuffer: 250 * 1024 * 1024,
       timeout: timeoutMs,
       killSignal: 'SIGKILL',

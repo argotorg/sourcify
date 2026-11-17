@@ -45,9 +45,12 @@ git submodule update --init
 
 **Extensions**
 
-- `pg_cron`: used to schedule the refresh of the signature stats materialized view. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
-  - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron job will be skipped in the migration.
-  - Importing `sourcify-database.sql` directly does not install `pg_cron` or create the `refresh-signature-stats` cron job. The cron job is created only when running migrations.
+- `pg_cron`: used to schedule the jobs below. Make sure you [install the `pg_cron` extension](https://github.com/citusdata/pg_cron) and set the `cron.database_name` variable to the name of the database you are using.
+  - `reap-stale-verification-jobs` (every 15 minutes): fails verification jobs that are still running after 3 hours.
+  - `delete-expired-verification-jobs` (daily at 05:00 UTC): deletes `verification_jobs` rows older than 90 days, at most 1,000,000 per run. Their `verification_jobs_ephemeral` rows go with them (`ON DELETE CASCADE`). To use other values, change the command of the job with `cron.alter_job`: the function `delete_expired_verification_jobs` takes `retention` and `max_rows` as parameters. For a shorter retention of the bytecodes only, add `delete_expired_verification_jobs_ephemeral` to the command. It takes the same parameters, and its default is 30 days.
+  - `pg_cron` runs a job as the database user that scheduled it, with the `statement_timeout` of that user. A full run of `delete-expired-verification-jobs` can need some minutes. If it reaches the limit, Postgres cancels it and rolls it back, and the next run tries the same rows again. A `SET statement_timeout` clause on the function does not lift the limit. With `cron.use_background_workers = on`, as on Google Cloud SQL, a `SET statement_timeout` in the command of the job does not lift it either. If the migration user has such a limit, move the job to a user with a longer limit. That user needs `USAGE` on the schema `cron`, and `SELECT` and `DELETE` on `verification_jobs`. First, as that user, call `cron.schedule` with the name, the schedule and the command of the job. Then, as the migration user, call `cron.unschedule('delete-expired-verification-jobs')`. After the move, read `cron.job_run_details` and call `cron.alter_job` as the new owner. The migrations do not know the moved job: `migrate:down` of the cleanup migration does not remove it, and a later migration that schedules the job again adds a second job for the migration user.
+  - If the `pg_cron` extension is not available, adding `pg_cron` and creating the cron jobs will be skipped in the migrations. The functions are still installed, so you can call them from your own scheduler.
+  - Importing `sourcify-database.sql` directly does not install `pg_cron` or create the cron jobs. The cron jobs are created only when running migrations.
   - In Google Cloud SQL, you can install the extension by setting the flag `cloudsql.enable_pg_cron` to `true`, and setting the `cron.database_name` flag to the name of the database you are using.
 - `pg_trgm`: used to create the index on the `signatures` table.
 - `pgcrypto`: used to create the `signature_type_enum` type.
@@ -139,3 +142,45 @@ node <script-name>.mjs [options]
 ```
 
 Pass `--help` (where supported) for the full list of options. The scripts read database connection details from `services/database/.env`, the same file used by dbmate.
+
+## Archive of the verification job tables
+
+`verification_jobs` and `verification_jobs_ephemeral` grow without limit, so old rows must leave the database (see [#3028](https://github.com/argotorg/sourcify/issues/3028)). Before the cleanup job `delete-expired-verification-jobs` deletes them, a BigQuery scheduled query copies them to a private bucket.
+
+The query is [`bigquery/verification-jobs-archive.sql`](./bigquery/verification-jobs-archive.sql). Once a day, it reads the rows of one UTC day (2 days before the run date) from Postgres with `EXTERNAL_QUERY`, and it writes them as Parquet files with `EXPORT DATA`:
+
+- `gs://BUCKET/verification_jobs/dt=YYYY-MM-DD/`
+- `gs://BUCKET/verification_jobs_ephemeral/dt=YYYY-MM-DD/`
+
+A run replaces the files of its day. While Postgres has all rows of that day, a second run writes the same files again. After the cleanup deleted rows of the day, a second run would write fewer rows. Two protections prevent the loss of the complete files:
+
+- The query fails for a day that is older than 85 days, because the cleanup deletes rows after 90 days. If you change the retention of the cleanup, change this limit too.
+- The bucket has Object Versioning, so a replaced file stays as an earlier version.
+
+The setup of an environment has these steps:
+
+1. Create a private bucket, and turn on Object Versioning for it.
+2. Create a Postgres user that can only read the two tables.
+3. Create a BigQuery connection to the Cloud SQL instance with that user.
+4. Create a service account that can run BigQuery jobs, use the connection, and write to the bucket.
+5. Replace `CONNECTION` and `BUCKET` in the query, and create a daily scheduled query that runs as the service account.
+6. Add an alert for a run that fails and for a day without a run. Nothing else shows that the archive stopped, because the cleanup does not look at the bucket. Sourcify uses a monitor of its infra observer that reads the `completed_runs` metric of the BigQuery Data Transfer Service and sends a message to Telegram. The email notification of the scheduled query is a simpler option.
+7. Copy the old rows (see below), before the first run of the cleanup.
+
+### Copy of the old rows
+
+Each run exports one day, and the run date is the day to export plus 2 days. So a manual run with the run time `2026-11-12T04:00:00Z` exports 2026-11-10:
+
+```bash
+bq mk --transfer_run --run_time=2026-11-12T04:00:00Z <resource name of the scheduled query>
+```
+
+For the first copy of an environment, set `allow_old_days` to `TRUE` in the scheduled query. Set it back to `FALSE` when the copy is complete.
+
+A backfill request for a range of days (`--start_time` and `--end_time`, or "Schedule backfill" in the console) does not wait for a run to end before it starts the next one. On a large database, several runs then read the main database at the same time. On Sourcify production we started one run for each day from a script, with a limit on the load: a new run started only while few runs were active and the processor use of the database was low. The script skipped the days that were in the bucket already, so a stop and a new start were safe. The copy of 554 days took about 7 hours.
+
+Check the result before the cleanup runs: for each day, compare the number of rows and the sum of the bytecode sizes in the files with Postgres.
+
+### Repair of a failed day
+
+Start a manual run for that day, as above. Do it before the day is 85 days old. After that the query refuses the day, and after 90 days the cleanup deletes its rows.

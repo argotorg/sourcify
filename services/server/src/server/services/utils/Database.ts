@@ -445,18 +445,23 @@ ${
       STORED_PROPERTIES_TO_SELECTORS["address"],
       STORED_PROPERTIES_TO_SELECTORS["verified_at"],
     ];
+    // Page sourcify_matches first, so the joins only read the returned rows
     return await this.pool.query(
       `
     SELECT
       ${selectors.join(", ")}
-    FROM ${this.schema}.sourcify_matches
+    FROM (
+      SELECT id, creation_match, runtime_match, verified_contract_id
+      FROM ${this.schema}.sourcify_matches
+      WHERE sourcify_matches.chain_id = $1
+      ${queryCursorCondition}
+      ${orderBy}
+      LIMIT $2
+    ) sourcify_matches
     JOIN ${this.schema}.verified_contracts ON verified_contracts.id = sourcify_matches.verified_contract_id
     JOIN ${this.schema}.contract_deployments ON
         contract_deployments.id = verified_contracts.deployment_id
-    WHERE sourcify_matches.chain_id = $1
-    ${queryCursorCondition}
     ${orderBy}
-    LIMIT $2
     `,
       values,
     );
@@ -941,6 +946,25 @@ ${
       AND verification_jobs.contract_address = $2
     `,
       [chainId, address],
+    );
+  }
+
+  async getRecentFailedSimilarityVerification(
+    chainId: string,
+    address: Bytes,
+    failedAfter: Date,
+  ): Promise<QueryResult<{ completed_at: Date }>> {
+    return await this.pool.query(
+      `SELECT completed_at
+       FROM ${this.schema}.verification_jobs
+       WHERE chain_id = $1
+         AND contract_address = $2
+         AND verification_endpoint LIKE '/v2/verify/similarity/%'
+         AND error_code = 'no_similar_match_found'
+         AND completed_at > $3
+       ORDER BY completed_at DESC
+       LIMIT 1`,
+      [chainId, address, failedAfter],
     );
   }
 

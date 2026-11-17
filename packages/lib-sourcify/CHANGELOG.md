@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## @ethereum-sourcify/lib-sourcify@3.8.1 - 2026-11-17
+
+- fix(lib-sourcify): require the contract address in the library call protection (#3072)
+- fix: check the deployed code of a factory creation transaction (#3073)
+- Harden input validation for Fe source paths and compiler versions (#3074)
+- Update dependencies
+
 ## @ethereum-sourcify/lib-sourcify@3.8.0 - 2026-11-03
 
 - fix: harden source fetching, match transformations and Blockscout key handling (GHSA-q975-797r-6pmw) (#3039)
