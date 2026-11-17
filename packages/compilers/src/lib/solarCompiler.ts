@@ -4,7 +4,12 @@ import { gunzipSync } from 'zlib';
 import { spawnSync } from 'child_process';
 import { randomUUID } from 'crypto';
 import { threadId } from 'worker_threads';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerPath,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import { parseSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
@@ -70,7 +75,8 @@ export async function useSolarCompiler(
   let compiled: string;
   try {
     compiled = await asyncExec(
-      `${absoluteSolarPath} --standard-json`,
+      absoluteSolarPath,
+      ['--standard-json'],
       JSON.stringify(solarJsonInput),
       250 * 1024 * 1024,
       timeoutMs,
@@ -112,7 +118,7 @@ export async function getSolarExecutable(
   version: SolarVersion,
 ): Promise<string> {
   const fileName = `solar-${platform}-v${version.solarVersion}+commit.${version.commit}`;
-  const solarPath = path.join(solarRepoPath, fileName);
+  const solarPath = resolveCompilerPath(solarRepoPath, fileName);
   const isRelease = !version.solarVersion.includes('-');
   if (fs.existsSync(solarPath)) {
     try {

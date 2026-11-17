@@ -12,6 +12,7 @@ import {
   createCompilerTimeoutError,
   DEFAULT_COMPILE_TIMEOUT_MS,
   fetchWithBackoff,
+  resolveCompilerPath,
 } from './common';
 import { isSolarVersion } from '@ethereum-sourcify/compilers-types';
 import type {
@@ -107,7 +108,8 @@ export async function useSolidityCompiler(
     startCompilation = Date.now();
     try {
       compiled = await asyncExec(
-        `${absoluteSolcPath} --standard-json`,
+        absoluteSolcPath,
+        ['--standard-json'],
         inputStringified,
         250 * 1024 * 1024,
         timeoutMs,
@@ -199,7 +201,7 @@ export async function getSolcExecutable(
   version: string,
 ): Promise<string | null> {
   const fileName = `solc-${platform}-v${version}`;
-  const solcPath = path.join(solcRepoPath, fileName);
+  const solcPath = resolveCompilerPath(solcRepoPath, fileName);
   if (fs.existsSync(solcPath) && validateSolcPath(solcPath)) {
     logDebug('Found existing solc', { version, platform, solcPath });
     return solcPath;
@@ -312,7 +314,7 @@ export async function getSolcJs(
   }
 
   const fileName = `soljson-${version}.js`;
-  const solJsonPath = path.resolve(solJsonRepoPath, fileName);
+  const solJsonPath = resolveCompilerPath(solJsonRepoPath, fileName);
 
   if (!fs.existsSync(solJsonPath)) {
     logDebug('Solc-js not found locally, downloading', {

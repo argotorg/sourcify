@@ -63,7 +63,29 @@ describe('Verify Fe Compiler', () => {
       Error,
     );
     expect((thrown as Error).message).to.include(
-      'escapes the compilation directory',
+      'must be a .fe file under src/',
+    );
+  });
+
+  it('Should reject a source key that targets fe.toml', async () => {
+    let thrown: unknown;
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          'src/lib.fe': { content: 'pub contract Empty {}' },
+          'src/../fe.toml': { content: '[ingot]\nname = "other"\n' },
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the compilation to reject').to.be.instanceOf(
+      Error,
+    );
+    expect((thrown as Error).message).to.include(
+      'must be a .fe file under src/',
     );
   });
 
@@ -73,13 +95,33 @@ describe('Verify Fe Compiler', () => {
     expect(inside).to.equal(path.resolve(root, 'src/lib.fe'));
     expect(() =>
       resolveFeSourcePath(root, 'src/../../../tmp/sourcify-fe-escape-probe'),
-    ).to.throw('escapes the compilation directory');
+    ).to.throw('must be a .fe file under src/');
     expect(() => resolveFeSourcePath(root, 'src/..')).to.throw(
-      'escapes the compilation directory',
+      'must be a .fe file under src/',
     );
     expect(() => resolveFeSourcePath(root, '/etc/passwd')).to.throw(
       'must be relative',
     );
+  });
+
+  it('Should only resolve .fe files under src/', () => {
+    const root = path.join(os.tmpdir(), 'sourcify-fe-jail-unit');
+    expect(resolveFeSourcePath(root, 'src/a/b.fe')).to.equal(
+      path.resolve(root, 'src/a/b.fe'),
+    );
+    for (const key of [
+      'src/../fe.toml',
+      'src/x.toml',
+      'fe.toml',
+      'src/../src/../fe.toml',
+      'lib.fe',
+      'src',
+      'src/',
+    ]) {
+      expect(() => resolveFeSourcePath(root, key), key).to.throw(
+        'must be a .fe file under src/',
+      );
+    }
   });
 
   it('Should throw for Fe versions older than minimum supported', async () => {

@@ -1450,7 +1450,7 @@ components:
       # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
       # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
       description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
-      pattern: '^v?\d+\.\d+\.\d+.*$'
+      pattern: '^v?\d+\.\d+\.\d+[0-9A-Za-z.-]*(\+[0-9A-Za-z.-]+)?$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:
       type: string

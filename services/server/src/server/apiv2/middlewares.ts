@@ -277,7 +277,7 @@ export function validateAndNormalizeFeInput(
       resolveFeSourcePath(keyCheckRoot, sourcePath);
     } catch {
       throw new InvalidParametersError(
-        "Fe source paths must stay under the compilation directory.",
+        'Fe sources must be ".fe" files under "src/".',
       );
     }
   }

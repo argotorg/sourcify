@@ -2,7 +2,12 @@
 import path from 'path';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerPath,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
 import type {
   VyperJsonInput,
@@ -10,6 +15,17 @@ import type {
 } from '@ethereum-sourcify/compilers-types';
 
 const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
+
+// Early releases use the form `0.1.0-beta.16+commit.5e4a94a`.
+const VYPER_VERSION_REGEX =
+  /^\d+\.\d+\.\d+((a|b|rc)\d+|-beta\.\d+)?(\+commit\.[0-9a-f]{7,40})?$/;
+
+/**
+ * Check a Vyper version, e.g. `0.3.10+commit.91361694` or `0.4.1rc1`.
+ */
+export function isValidVyperVersion(version: string): boolean {
+  return VYPER_VERSION_REGEX.test(version);
+}
 
 export function stringifyVyperJsonInput(
   vyperJsonInput: VyperJsonInput,
@@ -73,7 +89,8 @@ export async function useVyperCompiler(
   const absoluteVyperPath = path.resolve(vyperPath);
   try {
     compiled = await asyncExec(
-      `${absoluteVyperPath} --standard-json`,
+      absoluteVyperPath,
+      ['--standard-json'],
       inputStringified,
       250 * 1024 * 1024,
       timeoutMs,
@@ -112,8 +129,11 @@ export async function getVyperExecutable(
   platform: string,
   version: string,
 ): Promise<string> {
+  if (!isValidVyperVersion(version)) {
+    throw new Error(`Invalid Vyper version: ${version}`);
+  }
   const fileName = `vyper.${version}.${platform}`;
-  const vyperPath = path.join(vyperRepoPath, fileName);
+  const vyperPath = resolveCompilerPath(vyperRepoPath, fileName);
   if (validateVyperPath(vyperPath)) {
     return vyperPath;
   }

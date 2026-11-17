@@ -681,6 +681,70 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.have.property("message");
   });
 
+  it("should return a 400 if a Fe source key is not a .fe file under src/", async () => {
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({
+        stdJsonInput: {
+          language: "Fe",
+          sources: {
+            "src/lib.fe": { content: "pub contract Counter {}" },
+            "src/../fe.toml": { content: '[ingot]\nname = "other"\n' },
+          },
+          settings: {},
+        },
+        compilerVersion: "26.0.0-alpha.12",
+        contractIdentifier: "src/lib.fe:Counter",
+      });
+
+    chai.expect(verifyRes.status).to.equal(400);
+    chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    chai.expect(verifyRes.body.message).to.include('"src/"');
+    chai.expect(verifyRes.body).to.have.property("errorId");
+  });
+
+  for (const [description, compilerVersion] of [
+    ["contains a slash", "0.3.10rc1+commit.91361694/../../x/payload"],
+    ["contains a second +", "0.3.10rc1+commit.91361694+/../../x/payload"],
+  ]) {
+    it(`should return a 400 if the Vyper compiler version ${description}`, async () => {
+      const vyperContractPath = path.join(
+        __dirname,
+        "..",
+        "..",
+        "..",
+        "sources",
+        "vyper",
+        "testcontract",
+      );
+      const vyperContent = fs
+        .readFileSync(path.join(vyperContractPath, "test.vy"))
+        .toString();
+
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: {
+            language: "Vyper",
+            sources: { "test.vy": { content: vyperContent } },
+            settings: { outputSelection: { "*": ["*"] } },
+          },
+          compilerVersion,
+          contractIdentifier: "test.vy:test",
+        });
+
+      chai.expect(verifyRes.status).to.equal(400);
+      chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+      chai.expect(verifyRes.body).to.have.property("errorId");
+    });
+  }
+
   it("should return a 400 when the chain is not found", async function () {
     const unknownChainId = "1337";
     const chainMap = serverFixture.sourcifyChainsMap;
