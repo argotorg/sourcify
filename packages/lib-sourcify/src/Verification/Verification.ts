@@ -656,7 +656,9 @@ export class Verification {
     if (
       this.compilation.language === 'Solidity' &&
       callProtectionTransformationResult.transformations.length === 0 &&
-      this.compilation.runtimeBytecode.startsWith(CALL_PROTECTION_GUARD)
+      this.compilation.runtimeBytecode.startsWith(CALL_PROTECTION_GUARD) &&
+      // Onchain code with the zero placeholder is equal to the compiler output.
+      !this.onchainRuntimeBytecode.startsWith(CALL_PROTECTION_GUARD)
     ) {
       logWarn(
         'Onchain code does not start with PUSH20 and the contract address, skipping call protection transformation',
