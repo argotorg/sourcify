@@ -8,6 +8,7 @@ import {
   type VyperDecodedObject,
 } from '@ethereum-sourcify/bytecode-utils';
 import semver, { gte, gt, lt } from 'semver';
+import { isValidVyperVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   VyperJsonInput,
   VyperOutput,
@@ -28,18 +29,21 @@ import {
 } from './legacyVyperImmutablesHelpers';
 
 export function returnFixedVyperVersion(compilerVersion: string): string {
+  if (!isValidVyperVersion(compilerVersion)) {
+    throw new CompilationError({ code: 'invalid_compiler_version' });
+  }
   if (semver.valid(compilerVersion)) {
     return compilerVersion;
-  } else {
-    // Check for beta or release candidate versions
-    if (compilerVersion.match(/\d+\.\d+\.\d+(b\d+|rc\d+)/)) {
-      return `${compilerVersion.split('+')[0].replace(/(b\d+|rc\d+)$/, '')}+${
-        compilerVersion.split('+')[1]
-      }`;
-    } else {
-      throw new CompilationError({ code: 'invalid_compiler_version' });
-    }
   }
+  // Versions with an a, b or rc suffix are not semver. Remove the suffix.
+  const [version, build] = compilerVersion.split('+');
+  const fixedVersion = version.replace(/(a|b|rc)\d+$/, '');
+  const result = build ? `${fixedVersion}+${build}` : fixedVersion;
+  // Leading zeros or very large numbers are not semver.
+  if (!semver.valid(result)) {
+    throw new CompilationError({ code: 'invalid_compiler_version' });
+  }
+  return result;
 }
 
 // evm.bytecode.sourceMap is supported from 0.4.0rc4 onwards.

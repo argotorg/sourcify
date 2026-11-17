@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -81,8 +81,28 @@ export function createCompilerTimeoutError(timeoutMs: number): Error & {
   return timeoutError;
 }
 
+/**
+ * Resolve a compiler binary path. The file must be directly inside `repoPath`.
+ */
+export function resolveCompilerPath(
+  repoPath: string,
+  fileName: string,
+): string {
+  if (/[/\\\0]/.test(fileName)) {
+    throw new Error(`Invalid compiler file name: ${fileName}`);
+  }
+  const resolved = path.resolve(repoPath, fileName);
+  if (path.dirname(resolved) !== path.resolve(repoPath)) {
+    throw new Error(
+      `Compiler path escapes the compiler directory: ${fileName}`,
+    );
+  }
+  return resolved;
+}
+
 export async function asyncExec(
-  command: string,
+  file: string,
+  args: string[],
   inputStringified: string,
   maxBuffer: number,
   timeoutMs: number = DEFAULT_COMPILE_TIMEOUT_MS,
@@ -92,14 +112,15 @@ export async function asyncExec(
 
   // Run in an empty temp cwd so a user-controlled `import "./.env"` cannot make
   // the compiler read host files (#2920). Callers must pass an absolute binary
-  // path in `command`, since a relative one would break once cwd changes.
+  // path in `file`, since a relative one would break once cwd changes.
   const sandboxCwd = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'sourcify-compiler-'),
   );
 
   try {
     return await runInSandbox(
-      command,
+      file,
+      args,
       inputStringified,
       maxBuffer,
       timeoutMs,
@@ -111,7 +132,8 @@ export async function asyncExec(
 }
 
 function runInSandbox(
-  command: string,
+  file: string,
+  args: string[],
   inputStringified: string,
   maxBuffer: number,
   timeoutMs: number,
@@ -145,8 +167,10 @@ function runInSandbox(
       settleResolve(stdout);
     };
 
-    const child = exec(
-      command,
+    // execFile does not start a shell, so arguments are not interpreted.
+    const child = execFile(
+      file,
+      args,
       {
         maxBuffer,
         timeout: timeoutMs,

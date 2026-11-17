@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import fs from 'fs';
 import os from 'os';
 import {
   findFePlatform,
@@ -63,8 +64,96 @@ describe('Verify Fe Compiler', () => {
       Error,
     );
     expect((thrown as Error).message).to.include(
-      'escapes the compilation directory',
+      'must be a .fe file under src/',
     );
+  });
+
+  it('Should reject a source key that targets fe.toml', async () => {
+    let thrown: unknown;
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          'src/lib.fe': { content: 'pub contract Empty {}' },
+          'src/../fe.toml': { content: '[ingot]\nname = "other"\n' },
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown, 'expected the compilation to reject').to.be.instanceOf(
+      Error,
+    );
+    expect((thrown as Error).message).to.include(
+      'must be a .fe file under src/',
+    );
+  });
+
+  it('Should check all source keys before it writes a file', async () => {
+    const written: string[] = [];
+    const originalWriteFile = fs.promises.writeFile;
+    fs.promises.writeFile = (async (...args: any[]) => {
+      written.push(String(args[0]));
+      return (originalWriteFile as any)(...args);
+    }) as typeof fs.promises.writeFile;
+    let thrown: unknown;
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          'src/lib.fe': { content: 'pub contract Empty {}' },
+          'src/../fe.toml': { content: '[ingot]\nname = "other"\n' },
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    } finally {
+      fs.promises.writeFile = originalWriteFile;
+    }
+    expect(thrown).to.be.instanceOf(Error);
+    expect((thrown as Error).message).to.include(
+      'must be a .fe file under src/',
+    );
+    expect(written).to.deep.equal([]);
+  });
+
+  it('Should reject a Fe version that is not exact semver before any download', async () => {
+    const repoPath = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'sourcify-fe-repo-'),
+    );
+    const originalFetch = globalThis.fetch;
+    let fetchCalls = 0;
+    globalThis.fetch = (async () => {
+      fetchCalls++;
+      throw new Error('fetch must not be called');
+    }) as typeof fetch;
+    try {
+      for (const badVersion of [
+        `${version}\t`,
+        `${version}\n`,
+        ` ${version}`,
+        `v${version}`,
+      ]) {
+        let thrown: unknown;
+        try {
+          await useFeCompiler(repoPath, badVersion, {
+            language: 'Fe',
+            settings: {},
+            sources: { 'src/lib.fe': { content: '' } },
+          });
+        } catch (error) {
+          thrown = error;
+        }
+        expect(thrown, JSON.stringify(badVersion)).to.be.instanceOf(Error);
+        expect((thrown as Error).message).to.include('not supported');
+      }
+      expect(fetchCalls).to.equal(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(repoPath, { recursive: true, force: true });
+    }
   });
 
   it('Should resolve Fe source paths under the compilation directory', () => {
@@ -73,13 +162,33 @@ describe('Verify Fe Compiler', () => {
     expect(inside).to.equal(path.resolve(root, 'src/lib.fe'));
     expect(() =>
       resolveFeSourcePath(root, 'src/../../../tmp/sourcify-fe-escape-probe'),
-    ).to.throw('escapes the compilation directory');
+    ).to.throw('must be a .fe file under src/');
     expect(() => resolveFeSourcePath(root, 'src/..')).to.throw(
-      'escapes the compilation directory',
+      'must be a .fe file under src/',
     );
     expect(() => resolveFeSourcePath(root, '/etc/passwd')).to.throw(
       'must be relative',
     );
+  });
+
+  it('Should only resolve .fe files under src/', () => {
+    const root = path.join(os.tmpdir(), 'sourcify-fe-jail-unit');
+    expect(resolveFeSourcePath(root, 'src/a/b.fe')).to.equal(
+      path.resolve(root, 'src/a/b.fe'),
+    );
+    for (const key of [
+      'src/../fe.toml',
+      'src/x.toml',
+      'fe.toml',
+      'src/../src/../fe.toml',
+      'lib.fe',
+      'src',
+      'src/',
+    ]) {
+      expect(() => resolveFeSourcePath(root, key), key).to.throw(
+        'must be a .fe file under src/',
+      );
+    }
   });
 
   it('Should throw for Fe versions older than minimum supported', async () => {

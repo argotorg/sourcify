@@ -134,3 +134,14 @@ export interface VyperOutput {
   sources: VyperOutputSources;
   contracts: VyperOutputContracts;
 }
+
+// Early releases use the form `0.1.0-beta.16+commit.5e4a94a`.
+const VYPER_VERSION_REGEX =
+  /^\d+\.\d+\.\d+((a|b|rc)\d+|-beta\.\d+)?(\+commit\.[0-9a-f]{7,40})?$/;
+
+/**
+ * Check a Vyper version, e.g. `0.3.10+commit.91361694` or `0.4.1rc1`.
+ */
+export function isValidVyperVersion(version: string): boolean {
+  return typeof version === "string" && VYPER_VERSION_REGEX.test(version);
+}

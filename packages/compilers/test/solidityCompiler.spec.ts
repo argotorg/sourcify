@@ -10,10 +10,66 @@ import earlyCompilerInput from './utils/pre-v0.4.0-input.json';
 import { keccak256 } from 'ethers';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 describe('Verify Solidity Compiler', () => {
   const compilersPath = path.join('/tmp', 'compilers-solc-repo');
   const solJsonRepo = path.join('/tmp', 'compilers-soljson-repo');
+
+  describe('Traversal in the version', () => {
+    const traversalVersion = '0.8.7+commit.e28d00a7/../../../tmp/payload';
+    let baseDir: string;
+    let missingRepo: string;
+    let originalFetch: typeof fetch;
+    let fetchCalls: number;
+
+    beforeEach(() => {
+      baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sourcify-solc-repo-'));
+      // The tests expect that this directory is never created.
+      missingRepo = path.join(baseDir, 'repo');
+      originalFetch = globalThis.fetch;
+      fetchCalls = 0;
+      globalThis.fetch = (async () => {
+        fetchCalls++;
+        throw new Error('fetch must not be called');
+      }) as typeof fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(baseDir, { recursive: true, force: true });
+    });
+
+    it('Should reject a traversal version in getSolcExecutable', async () => {
+      let thrown: unknown;
+      try {
+        await getSolcExecutable(missingRepo, 'linux-amd64', traversalVersion);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include(
+        'Invalid compiler file name',
+      );
+      expect(fetchCalls).to.equal(0);
+      expect(fs.existsSync(missingRepo)).to.equal(false);
+    });
+
+    it('Should reject a traversal version in getSolcJs', async () => {
+      let thrown: unknown;
+      try {
+        await getSolcJs(missingRepo, traversalVersion);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include(
+        'Invalid compiler file name',
+      );
+      expect(fetchCalls).to.equal(0);
+      expect(fs.existsSync(missingRepo)).to.equal(false);
+    });
+  });
 
   it('Should fetch latest SolcJS compiler', async () => {
     expect(await getSolcJs(solJsonRepo, 'latest')).not.equals(null);

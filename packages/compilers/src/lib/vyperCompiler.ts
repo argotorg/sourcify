@@ -2,8 +2,14 @@
 import path from 'path';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import { asyncExec, CompilerError, fetchWithBackoff } from './common';
+import {
+  asyncExec,
+  CompilerError,
+  fetchWithBackoff,
+  resolveCompilerPath,
+} from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
+import { isValidVyperVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   VyperJsonInput,
   VyperOutput,
@@ -73,7 +79,8 @@ export async function useVyperCompiler(
   const absoluteVyperPath = path.resolve(vyperPath);
   try {
     compiled = await asyncExec(
-      `${absoluteVyperPath} --standard-json`,
+      absoluteVyperPath,
+      ['--standard-json'],
       inputStringified,
       250 * 1024 * 1024,
       timeoutMs,
@@ -112,8 +119,11 @@ export async function getVyperExecutable(
   platform: string,
   version: string,
 ): Promise<string> {
+  if (!isValidVyperVersion(version)) {
+    throw new Error(`Invalid Vyper version: ${version}`);
+  }
   const fileName = `vyper.${version}.${platform}`;
-  const vyperPath = path.join(vyperRepoPath, fileName);
+  const vyperPath = resolveCompilerPath(vyperRepoPath, fileName);
   if (validateVyperPath(vyperPath)) {
     return vyperPath;
   }
