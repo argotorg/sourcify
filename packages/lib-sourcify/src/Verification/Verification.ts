@@ -650,7 +650,21 @@ export class Verification {
         this.compilation.runtimeBytecode,
         this.onchainRuntimeBytecode,
         this.compilation.language,
+        this.address,
       );
+    if (
+      this.compilation.language === 'Solidity' &&
+      callProtectionTransformationResult.transformations.length === 0 &&
+      this.compilation.runtimeBytecode.startsWith(`0x73${'00'.repeat(20)}3014`)
+    ) {
+      logWarn(
+        'Onchain code does not start with PUSH20 and the contract address, skipping call protection transformation',
+        {
+          address: this.address,
+          chainId: this.sourcifyChain.chainId,
+        },
+      );
+    }
 
     // Handle immutable references
     const immutablesTransformationResult = extractImmutablesTransformation(

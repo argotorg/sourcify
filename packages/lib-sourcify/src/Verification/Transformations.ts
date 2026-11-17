@@ -128,10 +128,12 @@ function isVyperImmutableAuxdataStyle(auxdataStyle: AuxdataStyle): boolean {
 
 // returns the full bytecode with the call protection replaced with the real address
 // Only Solidity libraries have the `PUSH20 <address> ADDRESS EQ` guard; a leading PUSH20 elsewhere (e.g. Yul) is data.
+// The onchain code must start with PUSH20 and the contract address. Otherwise, the function changes nothing.
 export function extractCallProtectionTransformation(
   populatedRecompiledBytecode: string,
   onchainRuntimeBytecode: string,
   language: CompilationLanguage,
+  address: string,
 ) {
   const transformations: Transformation[] = [];
   const transformationValues: TransformationValues = {};
@@ -143,8 +145,15 @@ export function extractCallProtectionTransformation(
   const addressOp = '30';
   const eqOp = '14';
   const callProtectionGuard = `${callProtection}${addressOp}${eqOp}`;
+  const addressHex = address.toLowerCase().replace(/^0x/, '');
+  const expectedPrefix = `0x${push20CodeOp}${addressHex}`;
 
-  if (language === 'Solidity' && template.startsWith(callProtectionGuard)) {
+  if (
+    language === 'Solidity' &&
+    template.startsWith(callProtectionGuard) &&
+    /^[0-9a-f]{40}$/.test(addressHex) &&
+    real.slice(0, callProtection.length).toLowerCase() === expectedPrefix
+  ) {
     const replacedCallProtection = real.slice(0, 0 + callProtection.length);
     const callProtectionAddress = replacedCallProtection.slice(4); // remove 0x73
     transformations.push(CallProtectionTransformation());

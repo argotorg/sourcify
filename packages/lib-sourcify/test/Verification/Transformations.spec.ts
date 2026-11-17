@@ -342,6 +342,7 @@ describe('extractCallProtectionTransformation', () => {
       guardTemplate,
       guardOnchain,
       'Solidity',
+      '0x' + ADDRESS_A,
     );
     expect(result.populatedRecompiledBytecode).to.equal(guardOnchain);
     expect(result.transformations).to.deep.equal([
@@ -357,6 +358,7 @@ describe('extractCallProtectionTransformation', () => {
       guardTemplate,
       guardOnchain,
       'Yul',
+      '0x' + ADDRESS_A,
     );
     expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
     expect(result.transformations).to.be.empty;
@@ -371,9 +373,112 @@ describe('extractCallProtectionTransformation', () => {
       template,
       onchain,
       'Solidity',
+      '0x' + ADDRESS_A,
     );
     expect(result.populatedRecompiledBytecode).to.equal(template);
     expect(result.transformations).to.be.empty;
+  });
+
+  it('does not apply the call protection transformation when the onchain code does not start with PUSH20', () => {
+    const onchain = `0x${'5b'.repeat(21)}3014${tail}`;
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      onchain,
+      'Solidity',
+      '0x' + ADDRESS_A,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+    expect(result.transformations).to.be.empty;
+    expect(result.transformationValues).to.deep.equal({});
+  });
+
+  it('does not apply the call protection transformation when the onchain operand is not the contract address', () => {
+    const onchain = `0x73${ADDRESS_B}3014${tail}`;
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      onchain,
+      'Solidity',
+      '0x' + ADDRESS_A,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+    expect(result.transformations).to.be.empty;
+    expect(result.transformationValues).to.deep.equal({});
+  });
+
+  it('applies the call protection transformation regardless of the letter case of the address', () => {
+    const checksummedAddress = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
+    const lowerCaseAddress = checksummedAddress.slice(2).toLowerCase();
+    const onchain = `0x73${lowerCaseAddress.toUpperCase()}3014${tail}`;
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      onchain,
+      'Solidity',
+      checksummedAddress,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(onchain);
+    expect(result.transformations).to.deep.equal([
+      { type: 'replace', reason: 'callProtection', offset: 1 },
+    ]);
+    expect(result.transformationValues.callProtection?.toLowerCase()).to.equal(
+      '0x' + lowerCaseAddress,
+    );
+  });
+
+  it('applies the call protection transformation when the address has no 0x prefix', () => {
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      guardOnchain,
+      'Solidity',
+      ADDRESS_A,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardOnchain);
+    expect(result.transformations).to.deep.equal([
+      { type: 'replace', reason: 'callProtection', offset: 1 },
+    ]);
+    expect(result.transformationValues).to.deep.equal({
+      callProtection: '0x' + ADDRESS_A,
+    });
+  });
+
+  it('does not apply the call protection transformation when the address is malformed', () => {
+    const shortOnchain = '0x73';
+    for (const address of ['', '0x', '0x' + '11'.repeat(19)]) {
+      for (const onchain of [guardOnchain, shortOnchain]) {
+        const result = extractCallProtectionTransformation(
+          guardTemplate,
+          onchain,
+          'Solidity',
+          address,
+        );
+        expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+        expect(result.transformations).to.be.empty;
+        expect(result.transformationValues).to.deep.equal({});
+      }
+    }
+  });
+
+  it('does not apply the call protection transformation when the onchain code is shorter than 21 bytes', () => {
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      `0x73${ADDRESS_A.slice(0, 38)}`,
+      'Solidity',
+      '0x' + ADDRESS_A,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+    expect(result.transformations).to.be.empty;
+    expect(result.transformationValues).to.deep.equal({});
+  });
+
+  it('does not apply the call protection transformation when the onchain operand is the zero placeholder', () => {
+    const result = extractCallProtectionTransformation(
+      guardTemplate,
+      guardTemplate,
+      'Solidity',
+      '0x' + ADDRESS_A,
+    );
+    expect(result.populatedRecompiledBytecode).to.equal(guardTemplate);
+    expect(result.transformations).to.be.empty;
+    expect(result.transformationValues).to.deep.equal({});
   });
 });
 
