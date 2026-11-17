@@ -1233,13 +1233,31 @@ describe('Verification Class Tests', () => {
     });
 
     it('does not apply the call protection transformation when the onchain code does not start with PUSH20 and the contract address', async () => {
-      const contractFolderPath = path.join(
-        __dirname,
-        '..',
-        'sources',
-        'CallProtectionForLibraries',
-      );
-      const compiled = await getCompilationFromMetadata(contractFolderPath);
+      const content = `// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+library MathLib {
+    function increment(uint256 x) external pure returns (uint256) {
+        return x + 1;
+    }
+}
+`;
+      // The optimizer is off. With the optimizer on, a mismatch gives the extra_file_input_bug error.
+      const jsonInput = {
+        language: 'Solidity',
+        sources: { 'MathLib.sol': { content } },
+        settings: {
+          optimizer: { enabled: false, runs: 200 },
+          outputSelection: { '*': { '*': ['*'] } },
+        },
+      } as unknown as SolidityJsonInput;
+      const makeCompilation = () =>
+        new SolidityCompilation(solc, '0.8.19+commit.7dd6d404', jsonInput, {
+          name: 'MathLib',
+          path: 'MathLib.sol',
+        });
+
+      const compiled = makeCompilation();
       await compiled.compile();
       const zeroOperandRuntime = compiled.runtimeBytecode;
       expect(zeroOperandRuntime.startsWith('0x73' + '00'.repeat(20) + '3014'))
@@ -1248,7 +1266,7 @@ describe('Verification Class Tests', () => {
       // Control: deployed exactly as compiled, the library still verifies
       const unchangedAddress = await deployRuntimeBytecode(zeroOperandRuntime);
       const unchanged = new Verification(
-        await getCompilationFromMetadata(contractFolderPath),
+        makeCompilation(),
         sourcifyChainHardhat,
         unchangedAddress,
       );
@@ -1263,11 +1281,13 @@ describe('Verification Class Tests', () => {
         '0x' + '5b'.repeat(21) + zeroOperandRuntime.slice(44),
       );
       const filler = new Verification(
-        await getCompilationFromMetadata(contractFolderPath),
+        makeCompilation(),
         sourcifyChainHardhat,
         fillerAddress,
       );
-      await expect(filler.verify()).to.eventually.be.rejected;
+      await expect(filler.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
       expect(filler.status.runtimeMatch).to.be.null;
       expect(filler.status.creationMatch).to.be.null;
 
@@ -1278,7 +1298,7 @@ describe('Verification Class Tests', () => {
           zeroOperandRuntime.slice(44),
       );
       const otherOperand = new Verification(
-        await getCompilationFromMetadata(contractFolderPath),
+        makeCompilation(),
         sourcifyChainHardhat,
         otherOperandAddress,
       );
