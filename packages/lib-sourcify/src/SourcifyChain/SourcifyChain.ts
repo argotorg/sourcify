@@ -12,6 +12,7 @@ import { logDebug, logInfo, logWarn } from '../logger';
 import { getHttpStatus, isAuthFailure, summarizeRpcError } from './rpcErrors';
 import type {
   CallFrame,
+  FactoryCreationData,
   FetchContractCreationTxMethods,
   FetchRequestRPC,
   SourcifyChainInstance,
@@ -407,6 +408,21 @@ export class SourcifyChain {
     creatorTxHash: string,
     address: string,
   ): Promise<string> => {
+    const { creationBytecode } = await this.getCreationDataForFactory(
+      creatorTxHash,
+      address,
+    );
+    return creationBytecode;
+  };
+
+  /**
+   * Fetches the creation bytecode of a factory contract and the runtime bytecode
+   * that the creation deployed, from the traces of the creation transaction.
+   */
+  getCreationDataForFactory = async (
+    creatorTxHash: string,
+    address: string,
+  ): Promise<FactoryCreationData> => {
     // TODO: Alternative methods e.g. getting from Coleslaw. Not only traces.
     return this.getRpcDataViaTraceType(
       (rpc, creatorTxHash, address) =>
@@ -421,7 +437,7 @@ export class SourcifyChain {
           creatorTxHash,
           address,
         ),
-      `getCreationBytecodeForFactory(${creatorTxHash}, ${address})`,
+      `getCreationDataForFactory(${creatorTxHash}, ${address})`,
       creatorTxHash,
       address,
     );
@@ -553,7 +569,7 @@ export class SourcifyChain {
     rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,
-  ): Promise<string> => {
+  ): Promise<FactoryCreationData> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -599,11 +615,19 @@ export class SourcifyChain {
       creatorTxHash,
       chainId: this.chainId,
     });
-    if (contractTrace.action.init) {
-      return contractTrace.action.init as string;
-    } else {
+    const creationBytecode = contractTrace.action?.init;
+    if (!creationBytecode || typeof creationBytecode !== 'string') {
       throw new Error('.action.init not found in traces');
     }
+    // A plain Error lets the next RPC try
+    const deployedRuntimeBytecode = contractTrace.result?.code;
+    if (
+      !deployedRuntimeBytecode ||
+      typeof deployedRuntimeBytecode !== 'string'
+    ) {
+      throw new Error('.result.code not found in traces');
+    }
+    return { creationBytecode, deployedRuntimeBytecode };
   };
 
   /**
@@ -679,7 +703,7 @@ export class SourcifyChain {
     rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,
-  ): Promise<string> => {
+  ): Promise<FactoryCreationData> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
 
@@ -728,7 +752,19 @@ export class SourcifyChain {
       );
     }
 
-    return ourCreateCall.input;
+    const creationBytecode = ourCreateCall.input;
+    if (!creationBytecode || typeof creationBytecode !== 'string') {
+      throw new Error('.input not found in the CREATE frame of the traces');
+    }
+    // A plain Error lets the next RPC try
+    const deployedRuntimeBytecode = ourCreateCall.output;
+    if (
+      !deployedRuntimeBytecode ||
+      typeof deployedRuntimeBytecode !== 'string'
+    ) {
+      throw new Error('.output not found in the CREATE frame of the traces');
+    }
+    return { creationBytecode, deployedRuntimeBytecode };
   };
 
   /**
@@ -953,6 +989,7 @@ export class SourcifyChain {
     address: string,
     transactionHash: string,
     creatorTx?: TransactionResponse,
+    onchainRuntimeBytecode?: string,
   ): Promise<{
     creationBytecode: string;
     txReceipt: TransactionReceipt;
@@ -990,10 +1027,23 @@ export class SourcifyChain {
       logDebug(
         `Contract ${address} not created directly by the transaction, fetching traces`,
       );
-      creationBytecode = await this.getCreationBytecodeForFactory(
-        transactionHash,
-        address,
-      );
+      const {
+        creationBytecode: factoryCreationBytecode,
+        deployedRuntimeBytecode,
+      } = await this.getCreationDataForFactory(transactionHash, address);
+      // An address can get new code after its contract is removed.
+      // Then this tx did not create the contract that is at the address now.
+      const currentRuntimeBytecode =
+        onchainRuntimeBytecode ?? (await this.getBytecode(address));
+      if (
+        deployedRuntimeBytecode.toLowerCase() !==
+        currentRuntimeBytecode.toLowerCase()
+      ) {
+        throw new Error(
+          `Transaction ${transactionHash} deployed different code at ${address} than the code that is at this address now`,
+        );
+      }
+      creationBytecode = factoryCreationBytecode;
     }
 
     logInfo('Fetched creation bytecode', {

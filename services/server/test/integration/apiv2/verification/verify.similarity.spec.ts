@@ -37,22 +37,49 @@ describe("POST /v2/verify/similarity/:chainId/:address", function () {
     await databaseService.storeVerification(verification);
 
     const { resolveWorkers, runTaskStub } = makeWorkersWait();
-    const customCreationHash = "0x" + "1".repeat(64);
 
     const verifyRes = await chai
       .request(serverFixture.server.app)
       .post(
         `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
       )
-      .send({ creationTransactionHash: customCreationHash });
+      .send({ creationTransactionHash: chainFixture.defaultContractCreatorTx });
 
     await resolveWorkers();
     chai.expect(verifyRes.status).to.equal(202);
     chai.expect(runTaskStub.calledOnce).to.be.true;
     const [workerInput] = runTaskStub.firstCall.args;
     chai.expect(workerInput.creationData).to.include({
-      creationTransactionHash: customCreationHash,
+      creationTransactionHash: chainFixture.defaultContractCreatorTx,
+      creationBytecode: chainFixture.defaultContractArtifact.bytecode,
     });
+  });
+
+  it("should not pass a creationTransactionHash to the worker when its creation data cannot be fetched", async () => {
+    const databaseService = serverFixture.server.services.storage.rwServices[
+      "SourcifyDatabase"
+    ] as SourcifyDatabaseService;
+    const verification = structuredClone(MockVerificationExport);
+    verification.address = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF";
+    await databaseService.storeVerification(verification);
+
+    const { resolveWorkers, runTaskStub } = makeWorkersWait();
+    const unknownCreationHash = "0x" + "1".repeat(64);
+
+    const verifyRes = await chai
+      .request(serverFixture.server.app)
+      .post(
+        `/v2/verify/similarity/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+      )
+      .send({ creationTransactionHash: unknownCreationHash });
+
+    await resolveWorkers();
+    chai.expect(verifyRes.status).to.equal(202);
+    chai.expect(runTaskStub.calledOnce).to.be.true;
+    const [workerInput] = runTaskStub.firstCall.args;
+    chai
+      .expect(workerInput.creationData)
+      .to.not.have.property("creationTransactionHash");
   });
   it("should store a job error when no candidates are found", async () => {
     const { resolveWorkers } = makeWorkersWait();

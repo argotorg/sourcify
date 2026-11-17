@@ -267,6 +267,7 @@ export class Verification {
             this.address,
             this.creatorTxHash,
             creatorTx,
+            this.onchainRuntimeBytecode,
           );
         this._onchainCreationBytecode = creationBytecode;
         this.txIndex = txReceipt.index;

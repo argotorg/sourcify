@@ -77,15 +77,16 @@ describe('SourcifyChain', () => {
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
-          result: { address: '0xtokenAddress' },
+          result: { address: '0xtokenAddress', code: '0xtokenRuntime' },
           action: { init: '0xtokenCreationBytecode' },
         },
         {
           type: 'create',
-          result: { address: '0xpairAddress' },
+          result: { address: '0xpairAddress', code: '0xpairRuntime' },
           action: { init: '0xpairCreationBytecode' },
         },
       ]);
+      sandbox.stub(sourcifyChain, 'getBytecode').resolves('0xpairRuntime');
 
       const { creationBytecode } =
         await sourcifyChain.getContractCreationBytecodeAndReceipt(
@@ -194,6 +195,235 @@ describe('SourcifyChain', () => {
     });
   });
 
+  describe('deployed code of a factory creation', () => {
+    const traceCases = [
+      {
+        traceSupport: 'trace_transaction',
+        // Parity style: one flat list of frames
+        buildTrace: (deployedCode?: string) => [
+          {
+            type: 'call',
+            action: {},
+            result: {},
+            traceAddress: [],
+          },
+          {
+            type: 'create',
+            action: { init: '0xcreationBytecode' },
+            result:
+              deployedCode === undefined
+                ? { address: '0xaddress' }
+                : { address: '0xaddress', code: deployedCode },
+            traceAddress: [0],
+          },
+        ],
+        extract: (chain: SourcifyChain) =>
+          chain.extractCreationBytecodeFromParityTraceProvider(
+            chain.rpcs[0],
+            '0xhash',
+            '0xaddress',
+          ),
+        missingCodeError: '.result.code not found in traces',
+      },
+      {
+        traceSupport: 'debug_traceTransaction',
+        // Geth style: nested call frames
+        buildTrace: (deployedCode?: string) => ({
+          type: 'CALL',
+          to: '0xfactoryAddress',
+          calls: [
+            {
+              type: 'CREATE',
+              to: '0xaddress',
+              input: '0xcreationBytecode',
+              ...(deployedCode === undefined ? {} : { output: deployedCode }),
+            },
+          ],
+        }),
+        extract: (chain: SourcifyChain) =>
+          chain.extractCreationBytecodeFromGethTraceProvider(
+            chain.rpcs[0],
+            '0xhash',
+            '0xaddress',
+          ),
+        missingCodeError: '.output not found in the CREATE frame of the traces',
+      },
+    ] as const;
+
+    for (const traceCase of traceCases) {
+      describe(traceCase.traceSupport, () => {
+        let sendStub: sinon.SinonStub;
+
+        const createChain = (rpcCount: number) => {
+          const chain = new SourcifyChain({
+            name: 'TestChain',
+            chainId: 1,
+            rpcs: Array.from({ length: rpcCount }, (_, i) => ({
+              rpc: `http://localhost:${8545 + i}`,
+              traceSupport: traceCase.traceSupport,
+            })),
+            supported: true,
+          });
+          return chain;
+        };
+
+        const stubFactoryTx = (chain: SourcifyChain, deployedCode?: string) => {
+          sandbox
+            .stub(chain, 'getTxReceipt')
+            .resolves({ contractAddress: null, index: 3 } as any);
+          sandbox
+            .stub(chain, 'getTx')
+            .resolves({ data: '0xfactoryCallData' } as any);
+          sendStub = sandbox
+            .stub(chain.rpcs[0].provider!, 'send')
+            .resolves(traceCase.buildTrace(deployedCode));
+        };
+
+        it('should extract the creation bytecode and the deployed code', async () => {
+          const chain = createChain(1);
+          sandbox
+            .stub(chain.rpcs[0].provider!, 'send')
+            .resolves(traceCase.buildTrace('0xruntimeBytecode'));
+
+          expect(await traceCase.extract(chain)).to.deep.equal({
+            creationBytecode: '0xcreationBytecode',
+            deployedRuntimeBytecode: '0xruntimeBytecode',
+          });
+        });
+
+        it('should throw a non-definitive error when the trace has no deployed code', async () => {
+          const chain = createChain(1);
+          sandbox
+            .stub(chain.rpcs[0].provider!, 'send')
+            .resolves(traceCase.buildTrace());
+
+          const error = await traceCase.extract(chain).then(
+            () => {
+              throw new Error('Should have failed');
+            },
+            (e) => e,
+          );
+          expect(error.message).to.equal(traceCase.missingCodeError);
+          expect(error).to.not.be.instanceOf(DefinitiveError);
+        });
+
+        it('should try the next RPC when a trace has no deployed code', async () => {
+          const chain = createChain(2);
+          const sendStub1 = sandbox
+            .stub(chain.rpcs[0].provider!, 'send')
+            .resolves(traceCase.buildTrace());
+          const sendStub2 = sandbox
+            .stub(chain.rpcs[1].provider!, 'send')
+            .resolves(traceCase.buildTrace('0xruntimeBytecode'));
+
+          expect(
+            await chain.getCreationDataForFactory('0xhash', '0xaddress'),
+          ).to.deep.equal({
+            creationBytecode: '0xcreationBytecode',
+            deployedRuntimeBytecode: '0xruntimeBytecode',
+          });
+          expect(sendStub1).to.have.been.calledOnce;
+          expect(sendStub2).to.have.been.calledOnce;
+        });
+
+        it('should fail when no RPC gives the deployed code', async () => {
+          const chain = createChain(2);
+          sandbox
+            .stub(chain.rpcs[0].provider!, 'send')
+            .resolves(traceCase.buildTrace());
+          sandbox
+            .stub(chain.rpcs[1].provider!, 'send')
+            .resolves(traceCase.buildTrace());
+
+          await expect(
+            chain.getCreationDataForFactory('0xhash', '0xaddress'),
+          ).to.be.rejectedWith('All RPCs failed or are blocked');
+        });
+
+        it('should reject a creation tx whose deployed code differs from the code at the address', async () => {
+          const chain = createChain(1);
+          stubFactoryTx(chain, '0xruntimeBytecode');
+
+          await expect(
+            chain.getContractCreationBytecodeAndReceipt(
+              '0xaddress',
+              '0xhash',
+              undefined,
+              '0xotherRuntimeBytecode',
+            ),
+          ).to.be.rejectedWith(
+            'Transaction 0xhash deployed different code at 0xaddress than the code that is at this address now',
+          );
+        });
+
+        it('should accept a creation tx whose deployed code equals the code at the address, ignoring the hex case', async () => {
+          const chain = createChain(1);
+          stubFactoryTx(chain, '0xABCDEF');
+          const getBytecodeStub = sandbox.stub(chain, 'getBytecode');
+
+          const { creationBytecode, txReceipt } =
+            await chain.getContractCreationBytecodeAndReceipt(
+              '0xaddress',
+              '0xhash',
+              undefined,
+              '0xabcdef',
+            );
+          expect(creationBytecode).to.equal('0xcreationBytecode');
+          expect(txReceipt.index).to.equal(3);
+          // The given code is used, so no second fetch happens
+          expect(getBytecodeStub).to.not.have.been.called;
+        });
+
+        it('should fetch the code at the address when the caller does not give it', async () => {
+          const chain = createChain(1);
+          stubFactoryTx(chain, '0xruntimeBytecode');
+          const getBytecodeStub = sandbox
+            .stub(chain, 'getBytecode')
+            .resolves('0xotherRuntimeBytecode');
+
+          await expect(
+            chain.getContractCreationBytecodeAndReceipt('0xaddress', '0xhash'),
+          ).to.be.rejectedWith(
+            'deployed different code at 0xaddress than the code that is at this address now',
+          );
+          expect(getBytecodeStub).to.have.been.calledOnceWith('0xaddress');
+
+          getBytecodeStub.resolves('0xruntimeBytecode');
+          const { creationBytecode } =
+            await chain.getContractCreationBytecodeAndReceipt(
+              '0xaddress',
+              '0xhash',
+            );
+          expect(creationBytecode).to.equal('0xcreationBytecode');
+          expect(getBytecodeStub).to.have.been.calledTwice;
+        });
+
+        it('should not fetch traces or compare code for a direct deployment', async () => {
+          const chain = createChain(1);
+          sandbox
+            .stub(chain, 'getTxReceipt')
+            .resolves({ contractAddress: '0xAddress' } as any);
+          sandbox
+            .stub(chain, 'getTx')
+            .resolves({ data: '0xcreationBytecode' } as any);
+          sendStub = sandbox.stub(chain.rpcs[0].provider!, 'send');
+          const getBytecodeStub = sandbox.stub(chain, 'getBytecode');
+
+          const { creationBytecode } =
+            await chain.getContractCreationBytecodeAndReceipt(
+              '0xaddress',
+              '0xhash',
+              undefined,
+              '0xotherRuntimeBytecode',
+            );
+          expect(creationBytecode).to.equal('0xcreationBytecode');
+          expect(sendStub).to.not.have.been.called;
+          expect(getBytecodeStub).to.not.have.been.called;
+        });
+      });
+    }
+  });
+
   describe('getCreationBytecodeForFactory', () => {
     it('should throw an error if trace support is not available', async () => {
       sourcifyChain = new SourcifyChain({
@@ -218,7 +448,7 @@ describe('SourcifyChain', () => {
       sandbox.stub(mockProvider, 'send').resolves([
         {
           type: 'create',
-          result: { address: '0xaddress' },
+          result: { address: '0xaddress', code: '0xruntimeBytecode' },
           action: { init: '0xcreationBytecode' },
         },
       ]);
@@ -268,7 +498,7 @@ describe('SourcifyChain', () => {
       sandbox.stub(mockProvider2, 'send').resolves([
         {
           type: 'create',
-          result: { address: '0xaddress' },
+          result: { address: '0xaddress', code: '0xruntimeBytecode' },
           action: { init: '0xcreationBytecode' },
         },
       ]);
@@ -299,6 +529,7 @@ describe('SourcifyChain', () => {
             type: 'CREATE',
             to: '0xaddress',
             input: '0xcreationBytecode',
+            output: '0xruntimeBytecode',
           },
         ],
       });
@@ -426,6 +657,7 @@ describe('SourcifyChain', () => {
                 type: 'CREATE',
                 to: '0xaddress',
                 input: '0xcreationBytecode',
+                output: '0xruntimeBytecode',
               },
             ],
           },
@@ -631,7 +863,7 @@ describe('SourcifyChain', () => {
         },
         {
           type: 'create',
-          result: { address: '0xaddress' },
+          result: { address: '0xaddress', code: '0xruntimeBytecode' },
           action: { init: '0xcreationBytecode' },
           traceAddress: [2],
         },
@@ -643,7 +875,10 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.equal('0xcreationBytecode');
+      expect(result).to.deep.equal({
+        creationBytecode: '0xcreationBytecode',
+        deployedRuntimeBytecode: '0xruntimeBytecode',
+      });
     });
 
     it('should skip a create under a reverted parent frame', async () => {
@@ -688,6 +923,7 @@ describe('SourcifyChain', () => {
             type: 'CREATE',
             to: '0xaddress',
             input: '0xcreationBytecode',
+            output: '0xruntimeBytecode',
           },
         ],
       });
@@ -698,7 +934,10 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.equal('0xcreationBytecode');
+      expect(result).to.deep.equal({
+        creationBytecode: '0xcreationBytecode',
+        deployedRuntimeBytecode: '0xruntimeBytecode',
+      });
     });
 
     it('should handle nested CREATE calls in geth traces', async () => {
@@ -714,6 +953,7 @@ describe('SourcifyChain', () => {
                 type: 'CREATE',
                 to: '0xaddress',
                 input: '0xcreationBytecode',
+                output: '0xruntimeBytecode',
               },
             ],
           },
@@ -726,7 +966,10 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.equal('0xcreationBytecode');
+      expect(result).to.deep.equal({
+        creationBytecode: '0xcreationBytecode',
+        deployedRuntimeBytecode: '0xruntimeBytecode',
+      });
     });
 
     it('should find the root CREATE frame of a direct deployment', async () => {
@@ -735,6 +978,7 @@ describe('SourcifyChain', () => {
         type: 'CREATE',
         to: '0xaddress',
         input: '0xcreationBytecode',
+        output: '0xruntimeBytecode',
       });
 
       const result =
@@ -743,7 +987,10 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.equal('0xcreationBytecode');
+      expect(result).to.deep.equal({
+        creationBytecode: '0xcreationBytecode',
+        deployedRuntimeBytecode: '0xruntimeBytecode',
+      });
     });
 
     it('should give a definitive error when a direct deployment creates a different contract', async () => {
@@ -799,6 +1046,7 @@ describe('SourcifyChain', () => {
             type: 'CREATE',
             to: '0xaddress',
             input: '0xcreationBytecode',
+            output: '0xruntimeBytecode',
           },
         ],
       });
@@ -809,7 +1057,10 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.equal('0xcreationBytecode');
+      expect(result).to.deep.equal({
+        creationBytecode: '0xcreationBytecode',
+        deployedRuntimeBytecode: '0xruntimeBytecode',
+      });
     });
 
     it('should throw an error if traces response is empty or malformed', async () => {

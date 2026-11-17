@@ -515,6 +515,7 @@ export class VerificationService {
     const creationData = await this.resolveSimilarityCreationData(
       chainId,
       address,
+      runtimeBytecode,
       creationTransactionHash,
     );
 
@@ -547,6 +548,7 @@ export class VerificationService {
   private async resolveSimilarityCreationData(
     chainId: string,
     address: string,
+    runtimeBytecode: string,
     creationTransactionHash?: string,
   ): Promise<SimilarityCreationData> {
     const sourcifyChain = this.sourcifyChainMap[chainId];
@@ -568,6 +570,7 @@ export class VerificationService {
           address,
           resolvedCreatorTxHash,
           creatorTx,
+          runtimeBytecode,
         );
       return {
         creationTransactionHash: resolvedCreatorTxHash,
@@ -586,7 +589,7 @@ export class VerificationService {
           error: error?.message,
         },
       );
-      return { creationTransactionHash: resolvedCreatorTxHash };
+      return {};
     }
   }
 
