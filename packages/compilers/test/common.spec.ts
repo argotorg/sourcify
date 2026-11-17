@@ -144,21 +144,24 @@ describe('asyncExec compiler cwd sandbox (import path leak)', () => {
 
 describe('asyncExec arguments', () => {
   it('does not interpret shell metacharacters in an argument', async () => {
-    const markerPath = path.join(
-      os.tmpdir(),
-      `sourcify-exec-marker-${process.pid}`,
+    const markerDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'sourcify-exec-marker-'),
     );
-    fs.rmSync(markerPath, { force: true });
-    const arg = `x; touch ${markerPath} $(touch ${markerPath}) | true`;
-    // `node -e` prints its first argument without a shell.
-    const output = await asyncExec(
-      'node',
-      ['-e', 'process.stdout.write(process.argv[1])', arg],
-      '{}',
-      MAX_BUFFER,
-    );
-    expect(output).to.equal(arg);
-    expect(fs.existsSync(markerPath)).to.equal(false);
+    const markerPath = path.join(markerDir, 'marker');
+    try {
+      const arg = `x; touch ${markerPath} $(touch ${markerPath}) | true`;
+      // `node -e` prints its first argument without a shell.
+      const output = await asyncExec(
+        'node',
+        ['-e', 'process.stdout.write(process.argv[1])', arg],
+        '{}',
+        MAX_BUFFER,
+      );
+      expect(output).to.equal(arg);
+      expect(fs.existsSync(markerPath)).to.equal(false);
+    } finally {
+      fs.rmSync(markerDir, { recursive: true, force: true });
+    }
   });
 });
 

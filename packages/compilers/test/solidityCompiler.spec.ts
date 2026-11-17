@@ -10,6 +10,7 @@ import earlyCompilerInput from './utils/pre-v0.4.0-input.json';
 import { keccak256 } from 'ethers';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 describe('Verify Solidity Compiler', () => {
   const compilersPath = path.join('/tmp', 'compilers-solc-repo');
@@ -17,12 +18,15 @@ describe('Verify Solidity Compiler', () => {
 
   describe('Traversal in the version', () => {
     const traversalVersion = '0.8.7+commit.e28d00a7/../../../tmp/payload';
-    const missingRepo = path.join('/tmp', 'compilers-solc-missing-repo');
+    let baseDir: string;
+    let missingRepo: string;
     let originalFetch: typeof fetch;
     let fetchCalls: number;
 
     beforeEach(() => {
-      fs.rmSync(missingRepo, { recursive: true, force: true });
+      baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sourcify-solc-repo-'));
+      // The tests expect that this directory is never created.
+      missingRepo = path.join(baseDir, 'repo');
       originalFetch = globalThis.fetch;
       fetchCalls = 0;
       globalThis.fetch = (async () => {
@@ -33,6 +37,7 @@ describe('Verify Solidity Compiler', () => {
 
     afterEach(() => {
       globalThis.fetch = originalFetch;
+      fs.rmSync(baseDir, { recursive: true, force: true });
     });
 
     it('Should reject a traversal version in getSolcExecutable', async () => {

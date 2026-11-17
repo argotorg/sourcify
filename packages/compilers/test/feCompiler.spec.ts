@@ -119,27 +119,41 @@ describe('Verify Fe Compiler', () => {
     expect(written).to.deep.equal([]);
   });
 
-  it('Should reject a Fe version with whitespace before any download', async () => {
-    for (const badVersion of [
-      `${version}\t`,
-      `${version}\n`,
-      ` ${version}`,
-      `v${version}`,
-    ]) {
-      let thrown: unknown;
-      try {
-        await useFeCompiler('/nonexistent-fe-repo', badVersion, {
-          language: 'Fe',
-          settings: {},
-          sources: { 'src/lib.fe': { content: '' } },
-        });
-      } catch (error) {
-        thrown = error;
+  it('Should reject a Fe version that is not exact semver before any download', async () => {
+    const repoPath = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'sourcify-fe-repo-'),
+    );
+    const originalFetch = globalThis.fetch;
+    let fetchCalls = 0;
+    globalThis.fetch = (async () => {
+      fetchCalls++;
+      throw new Error('fetch must not be called');
+    }) as typeof fetch;
+    try {
+      for (const badVersion of [
+        `${version}\t`,
+        `${version}\n`,
+        ` ${version}`,
+        `v${version}`,
+      ]) {
+        let thrown: unknown;
+        try {
+          await useFeCompiler(repoPath, badVersion, {
+            language: 'Fe',
+            settings: {},
+            sources: { 'src/lib.fe': { content: '' } },
+          });
+        } catch (error) {
+          thrown = error;
+        }
+        expect(thrown, JSON.stringify(badVersion)).to.be.instanceOf(Error);
+        expect((thrown as Error).message).to.include('not supported');
       }
-      expect(thrown, JSON.stringify(badVersion)).to.be.instanceOf(Error);
-      expect((thrown as Error).message).to.include('not supported');
+      expect(fetchCalls).to.equal(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(repoPath, { recursive: true, force: true });
     }
-    expect(fs.existsSync('/nonexistent-fe-repo')).to.equal(false);
   });
 
   it('Should resolve Fe source paths under the compilation directory', () => {
