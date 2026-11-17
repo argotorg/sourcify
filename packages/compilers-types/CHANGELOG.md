@@ -1,3 +1,8 @@
+## @ethereum-sourcify/compilers-types@1.4.1 - 2026-11-17
+
+- Harden input validation for Fe source paths and compiler versions (#3074)
+- Update dependencies
+
 ## @ethereum-sourcify/compilers-types@1.4.0 - 2026-11-03
 
 - feat: verify contracts compiled with Solar (#3050)

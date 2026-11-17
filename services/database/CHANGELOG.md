@@ -1,5 +1,12 @@
 # Changelog for `sourcify-database`
 
+## sourcify-database@2.16.0 - 2026-11-17
+
+- feat: stop empty ephemeral rows and schedule the verification jobs cleanup (#3062)
+- docs(database): the cleanup job and a statement timeout of the database user (#3071)
+- chore: add the daily archive of the verification job tables (#3065)
+- Update dependencies
+
 ## sourcify-database@2.15.4 - 2026-11-03
 
 - Update dependencies
