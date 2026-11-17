@@ -9,6 +9,7 @@ import {
   resolveCompilerPath,
 } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
+import { isValidVyperVersion } from '@ethereum-sourcify/compilers-types';
 import type {
   VyperJsonInput,
   VyperOutput,
@@ -16,16 +17,7 @@ import type {
 
 const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
 
-// Early releases use the form `0.1.0-beta.16+commit.5e4a94a`.
-const VYPER_VERSION_REGEX =
-  /^\d+\.\d+\.\d+((a|b|rc)\d+|-beta\.\d+)?(\+commit\.[0-9a-f]{7,40})?$/;
-
-/**
- * Check a Vyper version, e.g. `0.3.10+commit.91361694` or `0.4.1rc1`.
- */
-export function isValidVyperVersion(version: string): boolean {
-  return VYPER_VERSION_REGEX.test(version);
-}
+export { isValidVyperVersion };
 
 export function stringifyVyperJsonInput(
   vyperJsonInput: VyperJsonInput,

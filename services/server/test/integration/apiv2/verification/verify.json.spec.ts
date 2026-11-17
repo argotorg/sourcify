@@ -709,6 +709,7 @@ describe("POST /v2/verify/:chainId/:address", function () {
   for (const [description, compilerVersion] of [
     ["contains a slash", "0.3.10rc1+commit.91361694/../../x/payload"],
     ["contains a second +", "0.3.10rc1+commit.91361694+/../../x/payload"],
+    ["is longer than 128 characters", `0.3.10rc1${"1".repeat(130)}`],
   ]) {
     it(`should return a 400 if the Vyper compiler version ${description}`, async () => {
       const vyperContractPath = path.join(

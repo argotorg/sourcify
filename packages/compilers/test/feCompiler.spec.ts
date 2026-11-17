@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import fs from 'fs';
 import os from 'os';
 import {
   findFePlatform,
@@ -87,6 +88,58 @@ describe('Verify Fe Compiler', () => {
     expect((thrown as Error).message).to.include(
       'must be a .fe file under src/',
     );
+  });
+
+  it('Should check all source keys before it writes a file', async () => {
+    const written: string[] = [];
+    const originalWriteFile = fs.promises.writeFile;
+    fs.promises.writeFile = (async (...args: any[]) => {
+      written.push(String(args[0]));
+      return (originalWriteFile as any)(...args);
+    }) as typeof fs.promises.writeFile;
+    let thrown: unknown;
+    try {
+      await useFeCompiler(feRepoPath, version, {
+        language: 'Fe',
+        settings: {},
+        sources: {
+          'src/lib.fe': { content: 'pub contract Empty {}' },
+          'src/../fe.toml': { content: '[ingot]\nname = "other"\n' },
+        },
+      });
+    } catch (error) {
+      thrown = error;
+    } finally {
+      fs.promises.writeFile = originalWriteFile;
+    }
+    expect(thrown).to.be.instanceOf(Error);
+    expect((thrown as Error).message).to.include(
+      'must be a .fe file under src/',
+    );
+    expect(written).to.deep.equal([]);
+  });
+
+  it('Should reject a Fe version with whitespace before any download', async () => {
+    for (const badVersion of [
+      `${version}\t`,
+      `${version}\n`,
+      ` ${version}`,
+      `v${version}`,
+    ]) {
+      let thrown: unknown;
+      try {
+        await useFeCompiler('/nonexistent-fe-repo', badVersion, {
+          language: 'Fe',
+          settings: {},
+          sources: { 'src/lib.fe': { content: '' } },
+        });
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown, JSON.stringify(badVersion)).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include('not supported');
+    }
+    expect(fs.existsSync('/nonexistent-fe-repo')).to.equal(false);
   });
 
   it('Should resolve Fe source paths under the compilation directory', () => {

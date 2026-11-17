@@ -15,6 +15,57 @@ describe('Verify Solidity Compiler', () => {
   const compilersPath = path.join('/tmp', 'compilers-solc-repo');
   const solJsonRepo = path.join('/tmp', 'compilers-soljson-repo');
 
+  describe('Traversal in the version', () => {
+    const traversalVersion = '0.8.7+commit.e28d00a7/../../../tmp/payload';
+    const missingRepo = path.join('/tmp', 'compilers-solc-missing-repo');
+    let originalFetch: typeof fetch;
+    let fetchCalls: number;
+
+    beforeEach(() => {
+      fs.rmSync(missingRepo, { recursive: true, force: true });
+      originalFetch = globalThis.fetch;
+      fetchCalls = 0;
+      globalThis.fetch = (async () => {
+        fetchCalls++;
+        throw new Error('fetch must not be called');
+      }) as typeof fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it('Should reject a traversal version in getSolcExecutable', async () => {
+      let thrown: unknown;
+      try {
+        await getSolcExecutable(missingRepo, 'linux-amd64', traversalVersion);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include(
+        'Invalid compiler file name',
+      );
+      expect(fetchCalls).to.equal(0);
+      expect(fs.existsSync(missingRepo)).to.equal(false);
+    });
+
+    it('Should reject a traversal version in getSolcJs', async () => {
+      let thrown: unknown;
+      try {
+        await getSolcJs(missingRepo, traversalVersion);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include(
+        'Invalid compiler file name',
+      );
+      expect(fetchCalls).to.equal(0);
+      expect(fs.existsSync(missingRepo)).to.equal(false);
+    });
+  });
+
   it('Should fetch latest SolcJS compiler', async () => {
     expect(await getSolcJs(solJsonRepo, 'latest')).not.equals(null);
   });

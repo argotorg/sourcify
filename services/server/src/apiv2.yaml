@@ -1444,13 +1444,16 @@ components:
     CompilerVersion:
       type: string
       title: CompilerVersion
-      # Pattern accepts both Solidity and Vyper version formats:
-      # We need to be permissive here because Vyper versions are named inconsistently.
-      # - Solidity: 0.8.7+commit.e28d00a7 (8-char commit hash)
-      # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, etc.
+      # The pattern accepts the version formats of all supported compilers:
+      # - Solidity: 0.8.7+commit.e28d00a7, 0.8.27-nightly.2024.5.1+commit.e5a2e4e0
+      # - Vyper: v0.3.10, 0.3.8+commit.036f1536, v0.4.1rc1, 0.1.0-beta.16+commit.5e4a94a
+      # - Fe: 26.0.0-alpha.10
       # - Solar: 0.8.38+commit.e7a91fc7.solar.0.3.0 (emulated solc version, Solar commit and version)
+      # It rejects "/" and a second "+". The suffix after the patch number must not start
+      # with a digit. This keeps the match linear in time.
       description: "The compiler version. For Solar, the solc-compatible version that Solar reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`."
-      pattern: '^v?\d+\.\d+\.\d+[0-9A-Za-z.-]*(\+[0-9A-Za-z.-]+)?$'
+      maxLength: 128
+      pattern: '^v?\d+\.\d+\.\d+([A-Za-z.-][0-9A-Za-z.-]*)?(\+[0-9A-Za-z.-]+)?$'
       example: "0.8.7+commit.e28d00a7"
     Keccak256:
       type: string

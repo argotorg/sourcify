@@ -487,6 +487,9 @@ describe('VyperCompilation', () => {
       'invalid.version.format',
       '0.3.10rc1+commit.91361694+/../../x/payload',
       '0.3.10+commit.91361694+commit.91361694',
+      '0.3.01',
+      '00.3.1',
+      '99999999999999999999.0.0',
     ]) {
       expect(
         () =>

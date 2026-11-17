@@ -69,10 +69,8 @@ describe('asyncExec robustness (#2880)', () => {
   });
 
   it('does not misattribute a failed spawn as out of memory', async () => {
-    // A missing compiler binary fails to spawn immediately, which breaks the
-    // stdin pipe while we are still streaming a large input. The real spawn
-    // error must win over the EPIPE, otherwise a bad-binary incident is
-    // reported as OOM.
+    // A missing binary breaks stdin during a large write.
+    // The test expects the spawn error, not an OOM error.
     const largeInput = JSON.stringify({ blob: 'a'.repeat(20 * 1024 * 1024) });
     let thrown: any;
     try {
