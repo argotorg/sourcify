@@ -1302,7 +1302,9 @@ library MathLib {
         sourcifyChainHardhat,
         otherOperandAddress,
       );
-      await expect(otherOperand.verify()).to.eventually.be.rejected;
+      await expect(otherOperand.verify())
+        .to.eventually.be.rejectedWith()
+        .and.have.property('code', 'no_match');
       expect(otherOperand.status.runtimeMatch).to.be.null;
       expect(otherOperand.status.creationMatch).to.be.null;
     });
