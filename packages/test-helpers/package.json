@@ -1,6 +1,6 @@
 {
   "name": "@ethereum-sourcify/test-helpers",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Shared test helpers for the Sourcify monorepo (internal, not published).",
   "private": true,
   "main": "src/index.ts",
