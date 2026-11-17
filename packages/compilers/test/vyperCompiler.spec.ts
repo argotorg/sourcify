@@ -4,10 +4,10 @@ import os from 'os';
 import {
   findVyperPlatform,
   getVyperExecutable,
-  isValidVyperVersion,
   stringifyVyperJsonInput,
   useVyperCompiler,
 } from '../src/lib/vyperCompiler';
+import { isValidVyperVersion } from '@ethereum-sourcify/compilers-types';
 import path from 'path';
 
 describe('Verify Vyper Compiler', () => {

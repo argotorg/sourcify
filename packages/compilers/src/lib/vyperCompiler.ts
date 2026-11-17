@@ -17,8 +17,6 @@ import type {
 
 const HOST_VYPER_REPO = 'https://github.com/vyperlang/vyper/releases/download/';
 
-export { isValidVyperVersion };
-
 export function stringifyVyperJsonInput(
   vyperJsonInput: VyperJsonInput,
 ): string {
