@@ -426,13 +426,13 @@ export class SourcifyChain {
     // TODO: Alternative methods e.g. getting from Coleslaw. Not only traces.
     return this.getRpcDataViaTraceType(
       (rpc, creatorTxHash, address) =>
-        this.extractCreationBytecodeFromParityTraceProvider(
+        this.extractCreationDataFromParityTraceProvider(
           rpc,
           creatorTxHash,
           address,
         ),
       (rpc, creatorTxHash, address) =>
-        this.extractCreationBytecodeFromGethTraceProvider(
+        this.extractCreationDataFromGethTraceProvider(
           rpc,
           creatorTxHash,
           address,
@@ -569,6 +569,24 @@ export class SourcifyChain {
     rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,
+  ): Promise<string> => {
+    const { creationBytecode } =
+      await this.extractCreationDataFromParityTraceProvider(
+        rpc,
+        creatorTxHash,
+        address,
+      );
+    return creationBytecode;
+  };
+
+  /**
+   * For Parity style traces `trace_transaction`
+   * Extracts the creation bytecode and the deployed runtime bytecode from the traces of a transaction
+   */
+  private extractCreationDataFromParityTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
+    creatorTxHash: string,
+    address: string,
   ): Promise<FactoryCreationData> => {
     if (!rpc.provider) throw new Error('No provider found in rpc');
     const provider = rpc.provider;
@@ -700,6 +718,24 @@ export class SourcifyChain {
    * Extracts the creation bytecode from the traces of a transaction
    */
   extractCreationBytecodeFromGethTraceProvider = async (
+    rpc: SourcifyRpcWithProvider,
+    creatorTxHash: string,
+    address: string,
+  ): Promise<string> => {
+    const { creationBytecode } =
+      await this.extractCreationDataFromGethTraceProvider(
+        rpc,
+        creatorTxHash,
+        address,
+      );
+    return creationBytecode;
+  };
+
+  /**
+   * For Geth style traces `debug_traceTransaction`
+   * Extracts the creation bytecode and the deployed runtime bytecode from the traces of a transaction
+   */
+  private extractCreationDataFromGethTraceProvider = async (
     rpc: SourcifyRpcWithProvider,
     creatorTxHash: string,
     address: string,

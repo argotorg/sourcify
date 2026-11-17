@@ -218,7 +218,7 @@ describe('SourcifyChain', () => {
           },
         ],
         extract: (chain: SourcifyChain) =>
-          chain.extractCreationBytecodeFromParityTraceProvider(
+          chain['extractCreationDataFromParityTraceProvider'](
             chain.rpcs[0],
             '0xhash',
             '0xaddress',
@@ -241,7 +241,7 @@ describe('SourcifyChain', () => {
           ],
         }),
         extract: (chain: SourcifyChain) =>
-          chain.extractCreationBytecodeFromGethTraceProvider(
+          chain['extractCreationDataFromGethTraceProvider'](
             chain.rpcs[0],
             '0xhash',
             '0xaddress',
@@ -875,10 +875,7 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.deep.equal({
-        creationBytecode: '0xcreationBytecode',
-        deployedRuntimeBytecode: '0xruntimeBytecode',
-      });
+      expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should skip a create under a reverted parent frame', async () => {
@@ -934,10 +931,7 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.deep.equal({
-        creationBytecode: '0xcreationBytecode',
-        deployedRuntimeBytecode: '0xruntimeBytecode',
-      });
+      expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should handle nested CREATE calls in geth traces', async () => {
@@ -966,10 +960,7 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.deep.equal({
-        creationBytecode: '0xcreationBytecode',
-        deployedRuntimeBytecode: '0xruntimeBytecode',
-      });
+      expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should find the root CREATE frame of a direct deployment', async () => {
@@ -987,10 +978,7 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.deep.equal({
-        creationBytecode: '0xcreationBytecode',
-        deployedRuntimeBytecode: '0xruntimeBytecode',
-      });
+      expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should give a definitive error when a direct deployment creates a different contract', async () => {
@@ -1057,10 +1045,7 @@ describe('SourcifyChain', () => {
           '0xhash',
           '0xaddress',
         );
-      expect(result).to.deep.equal({
-        creationBytecode: '0xcreationBytecode',
-        deployedRuntimeBytecode: '0xruntimeBytecode',
-      });
+      expect(result).to.equal('0xcreationBytecode');
     });
 
     it('should throw an error if traces response is empty or malformed', async () => {
