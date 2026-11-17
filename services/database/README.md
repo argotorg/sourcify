@@ -145,20 +145,42 @@ Pass `--help` (where supported) for the full list of options. The scripts read d
 
 ## Archive of the verification job tables
 
-`verification_jobs` and `verification_jobs_ephemeral` grow without limit, so old rows must leave the database (see [#3028](https://github.com/argotorg/sourcify/issues/3028)). Before a cleanup deletes them, a BigQuery scheduled query copies them to a private bucket.
+`verification_jobs` and `verification_jobs_ephemeral` grow without limit, so old rows must leave the database (see [#3028](https://github.com/argotorg/sourcify/issues/3028)). Before the cleanup job `delete-expired-verification-jobs` deletes them, a BigQuery scheduled query copies them to a private bucket.
 
 The query is [`bigquery/verification-jobs-archive.sql`](./bigquery/verification-jobs-archive.sql). Once a day, it reads the rows of one UTC day (2 days before the run date) from Postgres with `EXTERNAL_QUERY`, and it writes them as Parquet files with `EXPORT DATA`:
 
 - `gs://BUCKET/verification_jobs/dt=YYYY-MM-DD/`
 - `gs://BUCKET/verification_jobs_ephemeral/dt=YYYY-MM-DD/`
 
-A second run for the same day writes the same files again.
+A run replaces the files of its day. While Postgres has all rows of that day, a second run writes the same files again. After the cleanup deleted rows of the day, a second run would write fewer rows. Two protections prevent the loss of the complete files:
+
+- The query fails for a day that is older than 85 days, because the cleanup deletes rows after 90 days. If you change the retention of the cleanup, change this limit too.
+- The bucket has Object Versioning, so a replaced file stays as an earlier version.
 
 The setup of an environment has these steps:
 
-1. Create a private bucket.
+1. Create a private bucket, and turn on Object Versioning for it.
 2. Create a Postgres user that can only read the two tables.
 3. Create a BigQuery connection to the Cloud SQL instance with that user.
 4. Create a service account that can run BigQuery jobs, use the connection, and write to the bucket.
 5. Replace `CONNECTION` and `BUCKET` in the query, and create a daily scheduled query that runs as the service account.
-6. For older days, start a backfill of the scheduled query.
+6. Add an alert for a run that fails and for a day without a run. Nothing else shows that the archive stopped, because the cleanup does not look at the bucket. Sourcify uses a monitor of its infra observer that reads the `completed_runs` metric of the BigQuery Data Transfer Service and sends a message to Telegram. The email notification of the scheduled query is a simpler option.
+7. Copy the old rows (see below), before the first run of the cleanup.
+
+### Copy of the old rows
+
+Each run exports one day, and the run date is the day to export plus 2 days. So a manual run with the run time `2026-11-12T04:00:00Z` exports 2026-11-10:
+
+```bash
+bq mk --transfer_run --run_time=2026-11-12T04:00:00Z <resource name of the scheduled query>
+```
+
+For the first copy of an environment, set `allow_old_days` to `TRUE` in the scheduled query. Set it back to `FALSE` when the copy is complete.
+
+A backfill request for a range of days (`--start_time` and `--end_time`, or "Schedule backfill" in the console) does not wait for a run to end before it starts the next one. On a large database, several runs then read the main database at the same time. On Sourcify production we started one run for each day from a script, with a limit on the load: a new run started only while few runs were active and the processor use of the database was low. The script skipped the days that were in the bucket already, so a stop and a new start were safe. The copy of 554 days took about 7 hours.
+
+Check the result before the cleanup runs: for each day, compare the number of rows and the sum of the bytecode sizes in the files with Postgres.
+
+### Repair of a failed day
+
+Start a manual run for that day, as above. Do it before the day is 85 days old. After that the query refuses the day, and after 90 days the cleanup deletes its rows.

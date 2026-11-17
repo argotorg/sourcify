@@ -5,6 +5,13 @@
 DECLARE day DATE DEFAULT DATE_SUB(@run_date, INTERVAL 2 DAY);
 DECLARE day_start STRING DEFAULT FORMAT('%tT00:00:00Z', day);
 DECLARE day_end STRING DEFAULT FORMAT('%tT00:00:00Z', DATE_ADD(day, INTERVAL 1 DAY));
+-- TRUE only for the first copy of the old rows, before the cleanup deletes any row.
+DECLARE allow_old_days BOOL DEFAULT FALSE;
+
+-- The cleanup deletes rows after 90 days, and a run replaces the files of its day.
+IF NOT allow_old_days AND day < DATE_SUB(CURRENT_DATE(), INTERVAL 85 DAY) THEN
+  RAISE USING MESSAGE = FORMAT('Day %t is older than 85 days: the cleanup can have deleted its rows', day);
+END IF;
 
 -- EXTERNAL_QUERY does not support uuid and jsonb, so Postgres casts them to text.
 EXECUTE IMMEDIATE FORMAT("""
