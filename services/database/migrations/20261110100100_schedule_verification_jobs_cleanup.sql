@@ -25,7 +25,7 @@ BEGIN
 END;
 $$;
 
--- 30 days gives margin if an export to the archive fails.
+-- Not scheduled. For a shorter retention of the bytecodes than of the jobs.
 CREATE OR REPLACE FUNCTION public.delete_expired_verification_jobs_ephemeral(retention interval DEFAULT '30 days'::interval, max_rows integer DEFAULT 100000) RETURNS integer
     LANGUAGE plpgsql
     AS $$
@@ -64,9 +64,9 @@ BEGIN
     PERFORM cron.schedule(
         'delete-expired-verification-jobs',
         '0 5 * * *',
-        'SELECT public.delete_expired_verification_jobs_ephemeral(max_rows => 1000000), public.delete_expired_verification_jobs(max_rows => 1000000);'
+        'SELECT public.delete_expired_verification_jobs(max_rows => 1000000);'
     );
-    RAISE WARNING 'Scheduled verification-job cleanup (daily, 90 days for jobs, 30 days for ephemeral rows)';
+    RAISE WARNING 'Scheduled verification-job cleanup (daily, 90 days)';
 EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'pg_cron not available, verification-job cleanup must be run manually. Error: %', SQLERRM;
 END
