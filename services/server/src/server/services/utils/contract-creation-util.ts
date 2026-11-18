@@ -192,14 +192,24 @@ async function queryHyperSync(
 ): Promise<any[]> {
   const endpoint = `${url.replace(/\/+$/, "")}/query`;
   const rows: any[] = [];
+  const startTime = Date.now();
+  let requestCount = 0;
   let fromBlock = 0;
+  const logFinished = () =>
+    logger.debug("HyperSync query finished", {
+      endpoint,
+      table,
+      requestCount,
+      durationMs: Date.now() - startTime,
+    });
   while (true) {
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) {
       throw new Error(
-        `HyperSync lookup timed out after ${HYPERSYNC_LOOKUP_TIMEOUT_MS} ms`,
+        `HyperSync lookup timed out after ${HYPERSYNC_LOOKUP_TIMEOUT_MS} ms and ${requestCount} requests on the ${table} query`,
       );
     }
+    requestCount++;
     const res = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -215,25 +225,29 @@ async function queryHyperSync(
       throw new Error(`HyperSync API returned status ${res.status}`);
     }
     const response = await res.json();
-    const chunks = Array.isArray(response?.data) ? response.data : [];
-    for (const chunk of chunks) {
+    const nextBlock = response?.next_block;
+    const archiveHeight = response?.archive_height;
+    if (
+      !Array.isArray(response?.data) ||
+      typeof nextBlock !== "number" ||
+      typeof archiveHeight !== "number"
+    ) {
+      throw new Error("HyperSync API returned an unexpected response");
+    }
+    for (const chunk of response.data) {
       if (Array.isArray(chunk?.[table])) {
         rows.push(...chunk[table]);
       }
     }
-    if (isComplete?.(rows)) {
+    if (isComplete?.(rows) || nextBlock > archiveHeight) {
+      logFinished();
       return rows;
     }
-
-    const nextBlock = response?.next_block;
-    const archiveHeight = response?.archive_height;
-    if (
-      typeof nextBlock !== "number" ||
-      typeof archiveHeight !== "number" ||
-      nextBlock > archiveHeight ||
-      nextBlock <= fromBlock
-    ) {
-      return rows;
+    // An incomplete scan must not count as a miss.
+    if (nextBlock <= fromBlock) {
+      throw new Error(
+        `HyperSync API did not advance from block ${fromBlock} on the ${table} query`,
+      );
     }
     fromBlock = nextBlock;
   }
@@ -412,10 +426,11 @@ export const getCreatorTx = async (
         return result;
       }
     } catch (e: any) {
+      // The fetch error of an invalid header value contains the token.
       logger.warn("Error fetching creation tx from HyperSync", {
         chainId: sourcifyChain.chainId,
         contractAddress,
-        error: e.message,
+        error: String(e?.message).split(envioApiToken).join("****"),
       });
     }
   }

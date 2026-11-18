@@ -362,14 +362,78 @@ describe("contract creation util", function () {
         .to.deep.equal([0, 40, 80]);
     });
 
-    it("should stop when the response does not advance", async function () {
-      fetchStub.resolves(hyperSyncResponse([], 0, 100));
+    it("should remove trailing slashes from the urls", async function () {
+      fetchStub.resolves(hyperSyncResponse([]));
+      const chain = new SourcifyChain({
+        name: "HyperSync Chain",
+        chainId: 1,
+        supported: true,
+        rpcs: [{ rpc: "http://localhost/" }],
+        fetchContractCreationTxUsing: {
+          hyperSyncApi: { url: `${URL}/`, tracesUrl: `${TRACES_URL}//` },
+        },
+      });
 
-      const creatorTx = await getCreatorTxWithoutBinarySearch(createChain());
+      await getCreatorTxWithoutBinarySearch(chain);
 
-      chai.expect(creatorTx).to.equal(null);
-      chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai
+        .expect(fetchStub.getCalls().map((call) => call.args[0]))
+        .to.deep.equal([`${URL}/query`, `${TRACES_URL}/query`]);
     });
+
+    // An incomplete scan must not count as a miss without a warning.
+    const unexpectedResponses: { name: string; body: any; error: string }[] = [
+      {
+        name: "does not advance",
+        body: { data: [], next_block: 0, archive_height: 100 },
+        error:
+          "HyperSync API did not advance from block 0 on the transactions query",
+      },
+      {
+        name: "has no archive_height",
+        body: { data: [], next_block: 50, archive_height: null },
+        error: "HyperSync API returned an unexpected response",
+      },
+      {
+        name: "has no data array",
+        body: { data: {}, next_block: 101, archive_height: 100 },
+        error: "HyperSync API returned an unexpected response",
+      },
+      {
+        name: "is empty",
+        body: null,
+        error: "HyperSync API returned an unexpected response",
+      },
+    ];
+    for (const { name, body, error } of unexpectedResponses) {
+      it(`should use the next fetcher when the response ${name}`, async function () {
+        fetchStub
+          .onCall(0)
+          .resolves({ status: 200, json: async () => body } as any);
+        fetchStub.onCall(1).resolves(blockscoutResponse);
+        const warnStub = sinon.stub(logger, "warn");
+
+        let creatorTx: string | null;
+        try {
+          creatorTx = await getCreatorTx(
+            createChain({ blockscout: true }),
+            ADDRESS,
+          );
+        } finally {
+          warnStub.restore();
+        }
+
+        chai.expect(creatorTx).to.equal("0xblockscout");
+        chai.expect(fetchStub.callCount).to.equal(2);
+        const warnCall = warnStub
+          .getCalls()
+          .map((call) => call.args as any[])
+          .find(
+            (args) => args[0] === "Error fetching creation tx from HyperSync",
+          );
+        chai.expect(warnCall?.[1]?.error).to.equal(error);
+      });
+    }
 
     it("should find the creation tx of a factory deployment in the traces", async function () {
       fetchStub.onCall(0).resolves(hyperSyncResponse([]));
@@ -481,6 +545,92 @@ describe("contract creation util", function () {
       chai.expect(creatorTx).to.equal("0xlast");
       chai.expect(fetchStub.callCount).to.equal(3);
       chai.expect(getBody(fetchStub.thirdCall).from_block).to.equal(50);
+    });
+
+    it("should use the block and the tx position to find the last create trace", async function () {
+      fetchStub.onCall(0).resolves(hyperSyncResponse([]));
+      fetchStub.onCall(1).resolves(
+        hyperSyncResponse([
+          {
+            traces: [
+              {
+                transaction_hash: "0xsameBlockLater",
+                block_number: 60,
+                transaction_position: 9,
+              },
+              {
+                transaction_hash: "0xsameBlockEarlier",
+                block_number: 60,
+                transaction_position: 4,
+              },
+              {
+                transaction_hash: "0xearlierBlock",
+                block_number: 7,
+                transaction_position: 20,
+              },
+            ],
+          },
+        ]),
+      );
+
+      const creatorTx = await getCreatorTx(
+        createChain({ tracesUrl: TRACES_URL }),
+        ADDRESS,
+      );
+
+      chai.expect(creatorTx).to.equal("0xsameBlockLater");
+    });
+
+    it("should use the next fetcher when the trace query fails", async function () {
+      fetchStub.onCall(0).resolves(hyperSyncResponse([]));
+      fetchStub
+        .onCall(1)
+        .resolves({ status: 403, json: async () => ({}) } as any);
+      fetchStub.onCall(2).resolves(blockscoutResponse);
+
+      const creatorTx = await getCreatorTx(
+        createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+        ADDRESS,
+      );
+
+      chai.expect(creatorTx).to.equal("0xblockscout");
+      chai.expect(fetchStub.callCount).to.equal(3);
+      chai.expect(fetchStub.secondCall.args[0]).to.equal(`${TRACES_URL}/query`);
+    });
+
+    it("should use one lookup timeout for the transaction query and the trace query", async function () {
+      const clock = sinon.useFakeTimers({ toFake: ["Date"] });
+      // Each request takes 20 seconds. The transaction query needs one request.
+      fetchStub.callsFake(async (url: string) => {
+        if (url === `${URL}/query`) {
+          clock.tick(20 * 1000);
+          return hyperSyncResponse([]);
+        }
+        if (url === `${TRACES_URL}/query`) {
+          clock.tick(20 * 1000);
+          return hyperSyncResponse([], 50, 100);
+        }
+        return blockscoutResponse;
+      });
+
+      try {
+        const creatorTx = await getCreatorTx(
+          createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+          ADDRESS,
+        );
+        chai.expect(creatorTx).to.equal("0xblockscout");
+      } finally {
+        clock.restore();
+      }
+
+      // The second trace request does not start, because the 30 seconds are over.
+      chai
+        .expect(fetchStub.getCalls().map((call) => call.args[0]))
+        .to.deep.equal([
+          `${URL}/query`,
+          `${TRACES_URL}/query`,
+          `${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`,
+        ]);
     });
 
     it("should return null when all create traces have an error", async function () {
@@ -632,6 +782,35 @@ describe("contract creation util", function () {
       }
 
       chai.expect(loggedArgs).to.not.include(TOKEN);
+    });
+
+    it("should not log the token when the fetch error contains it", async function () {
+      // fetch rejects an invalid header value and puts the value into the error message.
+      fetchStub.restore();
+      process.env.ENVIO_API_TOKEN = `${TOKEN}\nSECOND_LINE`;
+      const warnStub = sinon.stub(logger, "warn");
+      const debugStub = sinon.stub(logger, "debug");
+      let loggedArgs: string;
+      try {
+        await getCreatorTxWithoutBinarySearch(createChain());
+        loggedArgs = JSON.stringify(
+          [warnStub, debugStub].flatMap((stub) =>
+            stub.getCalls().map((call) => call.args),
+          ),
+        );
+      } finally {
+        warnStub.restore();
+        debugStub.restore();
+        // afterEach restores the stub.
+        fetchStub = sinon.stub(global, "fetch" as any);
+      }
+
+      chai
+        .expect(loggedArgs)
+        .to.include("Error fetching creation tx from HyperSync");
+      chai.expect(loggedArgs).to.include("****");
+      chai.expect(loggedArgs).to.not.include(TOKEN);
+      chai.expect(loggedArgs).to.not.include("SECOND_LINE");
     });
   });
 
