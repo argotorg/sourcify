@@ -22,6 +22,7 @@ describe("creation-tx APIs (live)", function () {
         supported: true,
         rpcs: dummyRpcs,
         fetchContractCreationTxUsing: {
+          hyperSyncApi: { url: "https://1.hypersync.xyz" },
           etherscanApi: true,
           blockscoutApi: { url: "https://eth.blockscout.com/" },
           routescanApi: { type: "mainnet" },
@@ -117,6 +118,13 @@ describe("creation-tx APIs (live)", function () {
     blockscoutProApi?: boolean;
   }[] = [
     {
+      type: "hyperSyncApi",
+      chainId: 1,
+      address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+      txHash:
+        "0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0",
+    },
+    {
       type: "blockscoutApi",
       chainId: 1,
       address: "0x00000000219ab540356cBB839Cbe05303d7705Fa",
@@ -187,6 +195,12 @@ describe("creation-tx APIs (live)", function () {
         process.env.CIRCLE_PR_REPONAME !== undefined
       ) {
         console.log(`Skipping ${testCase.type} test for external PR`);
+        return;
+      }
+
+      // Skip hyperSyncApi test if ENVIO_API_TOKEN is not set
+      if (testCase.type === "hyperSyncApi" && !process.env.ENVIO_API_TOKEN) {
+        console.log(`Skipping hyperSyncApi test: ENVIO_API_TOKEN not set`);
         return;
       }
 

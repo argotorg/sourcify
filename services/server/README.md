@@ -246,6 +246,12 @@ A full example of a chain entry is as follows:
     // optional
     "fetchContractCreationTxUsing": {
       // How to find the transaction hash that created the contract
+      "hyperSyncApi": {
+        // Envio HyperSync. Needs the ENVIO_API_TOKEN env var. The server tries it first.
+        "url": "https://1.hypersync.xyz",
+        // optional. The HyperSync traces endpoint of the chain. It finds contracts that a factory created.
+        "tracesUrl": "https://eth-traces.hypersync.xyz"
+      },
       "etherscanApi": true, // if supported by the new etherscan api. Need to provide the etherscanApi config
       "blockscoutApi": {
         // blockscout v2 instances have an api endpoint for this

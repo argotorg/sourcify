@@ -22,6 +22,19 @@ export type SourcifyChainExtension = {
 };
 
 export interface FetchContractCreationTxMethods {
+  /**
+   * Envio HyperSync. The server needs the ENVIO_API_TOKEN to use it.
+   */
+  hyperSyncApi?: {
+    // The HyperSync endpoint of the chain, e.g. "https://1.hypersync.xyz"
+    url: string;
+    /**
+     * The HyperSync endpoint that serves the traces of the chain,
+     * e.g. "https://eth-traces.hypersync.xyz". It finds contracts that
+     * a factory created. Only some chains have one.
+     */
+    tracesUrl?: string;
+  };
   blockscoutApi?: {
     url: string;
     /**

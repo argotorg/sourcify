@@ -17,6 +17,9 @@ const VECHAIN_API_URL =
   "https://api.vechainstats.com/v2/contract/info?address=${ADDRESS}&expanded=true&VCS_API_KEY=";
 
 export const BINARY_SEARCH_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+export const HYPERSYNC_REQUEST_TIMEOUT_MS = 15 * 1000;
+// Limit for all requests of one lookup
+export const HYPERSYNC_LOOKUP_TIMEOUT_MS = 30 * 1000;
 
 interface ContractCreationFetcher {
   type: "api";
@@ -172,6 +175,158 @@ async function getCreatorTxUsingNodeReal(
   return null;
 }
 
+type HyperSyncTable = "transactions" | "traces";
+
+/**
+ * Runs a HyperSync query from the first block to the chain head.
+ * One request scans a limited block range, so the function requests the next range until the scan is complete.
+ * Returns the rows of the given table.
+ */
+async function queryHyperSync(
+  url: string,
+  token: string,
+  query: Record<string, unknown>,
+  table: HyperSyncTable,
+  deadline: number,
+  isComplete?: (rows: any[]) => boolean,
+): Promise<any[]> {
+  const endpoint = `${url.replace(/\/+$/, "")}/query`;
+  const rows: any[] = [];
+  let fromBlock = 0;
+  while (true) {
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) {
+      throw new Error(
+        `HyperSync lookup timed out after ${HYPERSYNC_LOOKUP_TIMEOUT_MS} ms`,
+      );
+    }
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ ...query, from_block: fromBlock }),
+      signal: AbortSignal.timeout(
+        Math.min(HYPERSYNC_REQUEST_TIMEOUT_MS, remainingMs),
+      ),
+    });
+    if (res.status !== StatusCodes.OK) {
+      throw new Error(`HyperSync API returned status ${res.status}`);
+    }
+    const response = await res.json();
+    const chunks = Array.isArray(response?.data) ? response.data : [];
+    for (const chunk of chunks) {
+      if (Array.isArray(chunk?.[table])) {
+        rows.push(...chunk[table]);
+      }
+    }
+    if (isComplete?.(rows)) {
+      return rows;
+    }
+
+    const nextBlock = response?.next_block;
+    const archiveHeight = response?.archive_height;
+    if (
+      typeof nextBlock !== "number" ||
+      typeof archiveHeight !== "number" ||
+      nextBlock > archiveHeight ||
+      nextBlock <= fromBlock
+    ) {
+      return rows;
+    }
+    fromBlock = nextBlock;
+  }
+}
+
+// Receipts from before the Byzantium fork have no status.
+function isFailedHyperSyncTx(tx: any): boolean {
+  return (
+    tx?.status !== undefined && tx?.status !== null && Number(tx.status) === 0
+  );
+}
+
+/**
+ * Finds the creation transaction with Envio HyperSync.
+ * The transaction query finds contracts that a transaction created directly.
+ * The trace query finds contracts that a factory created. It needs the traces endpoint of the chain.
+ */
+async function getCreatorTxUsingHyperSync(
+  hyperSyncApi: { url: string; tracesUrl?: string },
+  contractAddress: string,
+  token: string,
+): Promise<string | null> {
+  const address = contractAddress.toLowerCase();
+  const deadline = Date.now() + HYPERSYNC_LOOKUP_TIMEOUT_MS;
+  logger.debug("Fetching Creator Tx from HyperSync", {
+    url: hyperSyncApi.url,
+    tracesUrl: hyperSyncApi.tracesUrl,
+    contractAddress,
+  });
+
+  const findCreationTx = (transactions: any[]) =>
+    transactions.find((tx) => tx?.hash && !isFailedHyperSyncTx(tx));
+  const transactions = await queryHyperSync(
+    hyperSyncApi.url,
+    token,
+    {
+      transactions: [{ contract_address: [address] }],
+      field_selection: { transaction: ["hash", "status", "block_number"] },
+      join_mode: "JoinNothing",
+    },
+    "transactions",
+    deadline,
+    (rows) => findCreationTx(rows) !== undefined,
+  );
+  const creationTx = findCreationTx(transactions);
+  if (creationTx) {
+    return creationTx.hash as string;
+  }
+
+  if (!hyperSyncApi.tracesUrl) {
+    logger.debug("HyperSync returned no creation tx", { contractAddress });
+    return null;
+  }
+
+  const traces = await queryHyperSync(
+    hyperSyncApi.tracesUrl,
+    token,
+    {
+      traces: [{ type: ["create"], address: [address] }],
+      field_selection: {
+        trace: [
+          "transaction_hash",
+          "block_number",
+          "transaction_position",
+          "error",
+        ],
+      },
+      join_mode: "JoinNothing",
+    },
+    "traces",
+    deadline,
+  );
+  // A create on an address with code fails with an error.
+  // Thus the last create without an error deployed the current code.
+  let creationTrace: any;
+  for (const trace of traces) {
+    if (!trace?.transaction_hash || trace.error) continue;
+    if (
+      !creationTrace ||
+      trace.block_number > creationTrace.block_number ||
+      (trace.block_number === creationTrace.block_number &&
+        trace.transaction_position >= creationTrace.transaction_position)
+    ) {
+      creationTrace = trace;
+    }
+  }
+  if (creationTrace) {
+    return creationTrace.transaction_hash as string;
+  }
+  logger.debug("HyperSync returned no creation tx", { contractAddress });
+  return null;
+}
+
 async function getCreatorTxUsingFetcher(
   fetcher: ContractCreationFetcher,
   contractAddress: string,
@@ -237,7 +392,35 @@ export const getCreatorTx = async (
   sourcifyChain: SourcifyChain,
   contractAddress: string,
 ): Promise<string | null> => {
-  // Try blockscout first
+  // Try HyperSync first
+  const envioApiToken = process.env.ENVIO_API_TOKEN;
+  if (
+    sourcifyChain.fetchContractCreationTxUsing?.hyperSyncApi &&
+    envioApiToken
+  ) {
+    try {
+      const result = await getCreatorTxUsingHyperSync(
+        sourcifyChain.fetchContractCreationTxUsing.hyperSyncApi,
+        contractAddress,
+        envioApiToken,
+      );
+      if (result) {
+        logger.debug("Fetched Creator Tx from HyperSync", {
+          contractAddress,
+          creatorTx: result,
+        });
+        return result;
+      }
+    } catch (e: any) {
+      logger.warn("Error fetching creation tx from HyperSync", {
+        chainId: sourcifyChain.chainId,
+        contractAddress,
+        error: e.message,
+      });
+    }
+  }
+
+  // Try blockscout if HyperSync fails
   if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi) {
     const { url, proApi } =
       sourcifyChain.fetchContractCreationTxUsing.blockscoutApi;
