@@ -220,14 +220,16 @@ describe("contract creation util", function () {
     const URL = "https://1.hypersync.xyz";
     const TRACES_URL = "https://eth-traces.hypersync.xyz";
     const BLOCKSCOUT_URL = "https://eth.blockscout.com/";
+    const BINARY_SEARCH_TX = "0xbinarysearch";
     let prevToken: string | undefined;
     let fetchStub: sinon.SinonStub;
 
     const createChain = (options?: {
       tracesUrl?: string;
       blockscout?: boolean;
-    }) =>
-      new SourcifyChain({
+      binarySearchHit?: boolean;
+    }) => {
+      const chain = new SourcifyChain({
         name: "HyperSync Chain",
         chainId: 1,
         supported: true,
@@ -239,6 +241,19 @@ describe("contract creation util", function () {
             : {}),
         },
       });
+      // The binary search is the step after HyperSync.
+      if (options?.binarySearchHit) {
+        sinon.stub(chain, "getBlockNumber").resolves(0);
+        sinon.stub(chain, "getBlock").resolves({
+          number: 0,
+          prefetchedTransactions: [{ to: null, hash: BINARY_SEARCH_TX }],
+        } as any);
+        sinon
+          .stub(chain, "getTxReceipt")
+          .resolves({ contractAddress: ADDRESS } as any);
+      }
+      return chain;
+    };
 
     const hyperSyncResponse = (
       data: any[],
@@ -303,18 +318,42 @@ describe("contract creation util", function () {
       });
     });
 
-    it("should run before the other fetchers", async function () {
-      fetchStub.resolves(
-        hyperSyncResponse([{ transactions: [{ hash: "0xabc", status: 1 }] }]),
-      );
+    it("should not run when another fetcher finds the creation tx", async function () {
+      fetchStub.resolves(blockscoutResponse);
 
       const creatorTx = await getCreatorTx(
         createChain({ blockscout: true }),
         ADDRESS,
       );
 
-      chai.expect(creatorTx).to.equal("0xabc");
+      chai.expect(creatorTx).to.equal("0xblockscout");
       chai.expect(fetchStub.calledOnce).to.equal(true);
+      chai
+        .expect(fetchStub.firstCall.args[0])
+        .to.equal(`${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`);
+    });
+
+    it("should run after the other fetchers and before the binary search", async function () {
+      fetchStub.onCall(0).resolves({ status: 200, json: async () => ({}) });
+      fetchStub
+        .onCall(1)
+        .resolves(
+          hyperSyncResponse([{ transactions: [{ hash: "0xabc", status: 1 }] }]),
+        );
+      const chain = createChain({ blockscout: true, binarySearchHit: true });
+
+      const creatorTx = await getCreatorTx(chain, ADDRESS);
+
+      chai.expect(creatorTx).to.equal("0xabc");
+      chai
+        .expect(fetchStub.getCalls().map((call) => call.args[0]))
+        .to.deep.equal([
+          `${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`,
+          `${URL}/query`,
+        ]);
+      chai
+        .expect((chain.getBlockNumber as sinon.SinonStub).called)
+        .to.equal(false);
     });
 
     it("should accept a creation tx without a status", async function () {
@@ -406,25 +445,24 @@ describe("contract creation util", function () {
       },
     ];
     for (const { name, body, error } of unexpectedResponses) {
-      it(`should use the next fetcher when the response ${name}`, async function () {
+      it(`should use the binary search when the response ${name}`, async function () {
         fetchStub
           .onCall(0)
           .resolves({ status: 200, json: async () => body } as any);
-        fetchStub.onCall(1).resolves(blockscoutResponse);
         const warnStub = sinon.stub(logger, "warn");
 
         let creatorTx: string | null;
         try {
           creatorTx = await getCreatorTx(
-            createChain({ blockscout: true }),
+            createChain({ binarySearchHit: true }),
             ADDRESS,
           );
         } finally {
           warnStub.restore();
         }
 
-        chai.expect(creatorTx).to.equal("0xblockscout");
-        chai.expect(fetchStub.callCount).to.equal(2);
+        chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
+        chai.expect(fetchStub.callCount).to.equal(1);
         const warnCall = warnStub
           .getCalls()
           .map((call) => call.args as any[])
@@ -581,20 +619,19 @@ describe("contract creation util", function () {
       chai.expect(creatorTx).to.equal("0xsameBlockLater");
     });
 
-    it("should use the next fetcher when the trace query fails", async function () {
+    it("should use the binary search when the trace query fails", async function () {
       fetchStub.onCall(0).resolves(hyperSyncResponse([]));
       fetchStub
         .onCall(1)
         .resolves({ status: 403, json: async () => ({}) } as any);
-      fetchStub.onCall(2).resolves(blockscoutResponse);
 
       const creatorTx = await getCreatorTx(
-        createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+        createChain({ tracesUrl: TRACES_URL, binarySearchHit: true }),
         ADDRESS,
       );
 
-      chai.expect(creatorTx).to.equal("0xblockscout");
-      chai.expect(fetchStub.callCount).to.equal(3);
+      chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
+      chai.expect(fetchStub.callCount).to.equal(2);
       chai.expect(fetchStub.secondCall.args[0]).to.equal(`${TRACES_URL}/query`);
     });
 
@@ -606,19 +643,16 @@ describe("contract creation util", function () {
           clock.tick(20 * 1000);
           return hyperSyncResponse([]);
         }
-        if (url === `${TRACES_URL}/query`) {
-          clock.tick(20 * 1000);
-          return hyperSyncResponse([], 50, 100);
-        }
-        return blockscoutResponse;
+        clock.tick(20 * 1000);
+        return hyperSyncResponse([], 50, 100);
       });
 
       try {
         const creatorTx = await getCreatorTx(
-          createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+          createChain({ tracesUrl: TRACES_URL, binarySearchHit: true }),
           ADDRESS,
         );
-        chai.expect(creatorTx).to.equal("0xblockscout");
+        chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
       } finally {
         clock.restore();
       }
@@ -626,11 +660,7 @@ describe("contract creation util", function () {
       // The second trace request does not start, because the 30 seconds are over.
       chai
         .expect(fetchStub.getCalls().map((call) => call.args[0]))
-        .to.deep.equal([
-          `${URL}/query`,
-          `${TRACES_URL}/query`,
-          `${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`,
-        ]);
+        .to.deep.equal([`${URL}/query`, `${TRACES_URL}/query`]);
     });
 
     it("should return null when all create traces have an error", async function () {
@@ -667,37 +697,32 @@ describe("contract creation util", function () {
     });
 
     for (const status of [401, 403, 429]) {
-      it(`should use the next fetcher when HyperSync returns status ${status}`, async function () {
-        fetchStub.onCall(0).resolves({ status, json: async () => ({}) } as any);
-        fetchStub.onCall(1).resolves(blockscoutResponse);
+      it(`should use the binary search when HyperSync returns status ${status}`, async function () {
+        fetchStub.resolves({ status, json: async () => ({}) } as any);
 
         const creatorTx = await getCreatorTx(
-          createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+          createChain({ tracesUrl: TRACES_URL, binarySearchHit: true }),
           ADDRESS,
         );
 
-        chai.expect(creatorTx).to.equal("0xblockscout");
-        chai.expect(fetchStub.callCount).to.equal(2);
-        chai
-          .expect(fetchStub.secondCall.args[0])
-          .to.equal(`${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`);
+        chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
+        chai.expect(fetchStub.calledOnce).to.equal(true);
       });
     }
 
-    it("should use the next fetcher when the HyperSync request times out", async function () {
+    it("should use the binary search when the HyperSync request times out", async function () {
       const timeoutError = new Error(
         "The operation was aborted due to timeout",
       );
       timeoutError.name = "TimeoutError";
-      fetchStub.onCall(0).rejects(timeoutError);
-      fetchStub.onCall(1).resolves(blockscoutResponse);
+      fetchStub.rejects(timeoutError);
 
       const creatorTx = await getCreatorTx(
-        createChain({ blockscout: true }),
+        createChain({ binarySearchHit: true }),
         ADDRESS,
       );
 
-      chai.expect(creatorTx).to.equal("0xblockscout");
+      chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
       chai
         .expect(fetchStub.firstCall.args[1].signal)
         .to.be.instanceOf(AbortSignal);
@@ -707,8 +732,7 @@ describe("contract creation util", function () {
       const clock = sinon.useFakeTimers({ toFake: ["Date"] });
       let nextBlock = 0;
       // Each request takes 10 seconds and does not reach the chain head.
-      fetchStub.callsFake(async (url: string) => {
-        if (url !== `${URL}/query`) return blockscoutResponse;
+      fetchStub.callsFake(async () => {
         clock.tick(10 * 1000);
         nextBlock += 10;
         return hyperSyncResponse([], nextBlock, 1000);
@@ -716,33 +740,29 @@ describe("contract creation util", function () {
 
       try {
         const creatorTx = await getCreatorTx(
-          createChain({ blockscout: true }),
+          createChain({ binarySearchHit: true }),
           ADDRESS,
         );
-        chai.expect(creatorTx).to.equal("0xblockscout");
+        chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
       } finally {
         clock.restore();
       }
 
       // Three requests of 10 seconds reach the limit of 30 seconds.
       chai.expect(HYPERSYNC_LOOKUP_TIMEOUT_MS).to.equal(30 * 1000);
-      chai.expect(fetchStub.callCount).to.equal(4);
+      chai.expect(fetchStub.callCount).to.equal(3);
     });
 
     it("should skip HyperSync when ENVIO_API_TOKEN is not set", async function () {
       delete process.env.ENVIO_API_TOKEN;
-      fetchStub.resolves(blockscoutResponse);
 
       const creatorTx = await getCreatorTx(
-        createChain({ tracesUrl: TRACES_URL, blockscout: true }),
+        createChain({ tracesUrl: TRACES_URL, binarySearchHit: true }),
         ADDRESS,
       );
 
-      chai.expect(creatorTx).to.equal("0xblockscout");
-      chai.expect(fetchStub.calledOnce).to.equal(true);
-      chai
-        .expect(fetchStub.firstCall.args[0])
-        .to.equal(`${BLOCKSCOUT_URL}/api/v2/addresses/${ADDRESS}`);
+      chai.expect(creatorTx).to.equal(BINARY_SEARCH_TX);
+      chai.expect(fetchStub.called).to.equal(false);
     });
 
     it("should not log the token", async function () {

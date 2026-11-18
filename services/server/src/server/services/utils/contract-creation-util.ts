@@ -406,36 +406,7 @@ export const getCreatorTx = async (
   sourcifyChain: SourcifyChain,
   contractAddress: string,
 ): Promise<string | null> => {
-  // Try HyperSync first
-  const envioApiToken = process.env.ENVIO_API_TOKEN;
-  if (
-    sourcifyChain.fetchContractCreationTxUsing?.hyperSyncApi &&
-    envioApiToken
-  ) {
-    try {
-      const result = await getCreatorTxUsingHyperSync(
-        sourcifyChain.fetchContractCreationTxUsing.hyperSyncApi,
-        contractAddress,
-        envioApiToken,
-      );
-      if (result) {
-        logger.debug("Fetched Creator Tx from HyperSync", {
-          contractAddress,
-          creatorTx: result,
-        });
-        return result;
-      }
-    } catch (e: any) {
-      // The fetch error of an invalid header value contains the token.
-      logger.warn("Error fetching creation tx from HyperSync", {
-        chainId: sourcifyChain.chainId,
-        contractAddress,
-        error: String(e?.message).split(envioApiToken).join("****"),
-      });
-    }
-  }
-
-  // Try blockscout if HyperSync fails
+  // Try blockscout first
   if (sourcifyChain.fetchContractCreationTxUsing?.blockscoutApi) {
     const { url, proApi } =
       sourcifyChain.fetchContractCreationTxUsing.blockscoutApi;
@@ -534,6 +505,35 @@ export const getCreatorTx = async (
     const result = await getCreatorTxUsingFetcher(fetcher, contractAddress);
     if (result) {
       return result;
+    }
+  }
+
+  // Try HyperSync if the other APIs fail
+  const envioApiToken = process.env.ENVIO_API_TOKEN;
+  if (
+    sourcifyChain.fetchContractCreationTxUsing?.hyperSyncApi &&
+    envioApiToken
+  ) {
+    try {
+      const result = await getCreatorTxUsingHyperSync(
+        sourcifyChain.fetchContractCreationTxUsing.hyperSyncApi,
+        contractAddress,
+        envioApiToken,
+      );
+      if (result) {
+        logger.debug("Fetched Creator Tx from HyperSync", {
+          contractAddress,
+          creatorTx: result,
+        });
+        return result;
+      }
+    } catch (e: any) {
+      // The fetch error of an invalid header value contains the token.
+      logger.warn("Error fetching creation tx from HyperSync", {
+        chainId: sourcifyChain.chainId,
+        contractAddress,
+        error: String(e?.message).split(envioApiToken).join("****"),
+      });
     }
   }
 

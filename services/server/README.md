@@ -247,7 +247,7 @@ A full example of a chain entry is as follows:
     "fetchContractCreationTxUsing": {
       // How to find the transaction hash that created the contract
       "hyperSyncApi": {
-        // Envio HyperSync. Needs the ENVIO_API_TOKEN env var. The server tries it first.
+        // Envio HyperSync. Needs the ENVIO_API_TOKEN env var. The server tries it after the other APIs.
         "url": "https://1.hypersync.xyz",
         // optional. The HyperSync traces endpoint of the chain. It finds contracts that a factory created.
         "tracesUrl": "https://eth-traces.hypersync.xyz"
