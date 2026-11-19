@@ -8,6 +8,7 @@ import yaml from "yamljs";
 import logger from "./logger";
 import { FourByteServer } from "./FourByteServer";
 import { parseBaseMaxAgeMs } from "./SignatureStats";
+import { brownoutSchedule } from "./brownoutSchedule";
 
 const port = process.env.PORT || 4444;
 
@@ -32,6 +33,7 @@ const server = new FourByteServer({
       process.env.SIGNATURE_STATS_BASE_MAX_AGE_HOURS,
     ),
   },
+  brownout: brownoutSchedule,
 });
 
 // Enable Swagger UI for CLI usage

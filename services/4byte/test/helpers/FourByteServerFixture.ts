@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import { FourByteServer } from "../../src/FourByteServer";
+import type { BrownoutConfig } from "../../src/api/brownout";
 import { id as keccak256str } from "ethers";
 import { SignatureType } from "../../src/utils/signature-util";
 
@@ -11,6 +12,7 @@ export interface TestSignature {
 export type FourByteServerFixtureOptions = {
   port?: number;
   skipDatabaseReset?: boolean;
+  brownout?: BrownoutConfig;
 };
 
 export interface TestVerifiedContract {
@@ -63,6 +65,7 @@ export class FourByteServerFixture {
         },
         // Count up to now. Tests call server.stats.reset() after they change the database.
         statsOptions: { commitMarginMs: 0, countStepMs: 1 },
+        brownout: fixtureOptions?.brownout,
       });
 
       // Start the server
