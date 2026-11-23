@@ -19,23 +19,31 @@ export type EtherscanVerifyApiIdentifiers =
   | WStorageIdentifiers.BlockscoutVerify
   | WStorageIdentifiers.RoutescanVerify;
 
-const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT =
-  "https://api.etherscan.io/v2/chainlist";
-const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT =
-  "https://chains.blockscout.com/api/chains";
+// The chain lists of the explorers. The server reads the copies that
+// sourcify-chains stores and publishes, not the endpoints of the explorers:
+// a broken explorer endpoint must not affect the server (#3081). Each copy has
+// the shape of the explorer's response, reduced to the fields read below.
+// See https://github.com/sourcifyeth/sourcify-chains#explorer-chain-lists
+const EXPLORER_CHAIN_LISTS_URL =
+  "https://storage.googleapis.com/sourcifyeth-chains/explorer-chain-lists";
+const DEFAULT_ETHERSCAN_CHAINLIST_ENDPOINT = `${EXPLORER_CHAIN_LISTS_URL}/etherscan.json`;
+const DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT = `${EXPLORER_CHAIN_LISTS_URL}/blockscout.json`;
 // Blockscout PRO API gateway, see https://docs.blockscout.com/devs/pro-api
 const BLOCKSCOUT_PRO_API_URL = "https://api.blockscout.com/v2/api";
 const VERIFIER_ALREADY_VERIFIED = "VERIFIER_ALREADY_VERIFIED";
 // Explorers can return long HTML error pages. Keep the stored error short.
 const MAX_ERROR_RESPONSE_BODY_LENGTH = 500;
+// Time limit of one chain list request. The server waits for these requests
+// at startup, so a slow answer must not block it.
+const CHAINLIST_REQUEST_TIMEOUT_MS = 5000;
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
-    endpoint: "https://api.routescan.io/v2/network/mainnet/evm/all/blockchains",
+    endpoint: `${EXPLORER_CHAIN_LISTS_URL}/routescan-mainnet.json`,
   },
   {
     workspace: "testnet",
-    endpoint: "https://api.routescan.io/v2/network/testnet/evm/all/blockchains",
+    endpoint: `${EXPLORER_CHAIN_LISTS_URL}/routescan-testnet.json`,
   },
 ] as const;
 const ROUTESCAN_API_URL_TEMPLATE =
@@ -65,7 +73,9 @@ const fetchEtherscanInformation = async (): Promise<VerifierInformation> => {
   let response: Response;
 
   try {
-    response = await fetch(targetEndpoint);
+    response = await fetch(targetEndpoint, {
+      signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+    });
   } catch (error) {
     logger.error("Failed to fetch Etherscan chain list", {
       endpoint: targetEndpoint,
@@ -147,7 +157,9 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
   let response: Response;
   const endpoint = DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT;
   try {
-    response = await fetch(endpoint);
+    response = await fetch(endpoint, {
+      signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+    });
   } catch (error) {
     logger.error("Failed to fetch Blockscout chain list", {
       endpoint,
@@ -217,7 +229,9 @@ const fetchRoutescanInformation = async (): Promise<VerifierInformation> => {
     let response: Response;
 
     try {
-      response = await fetch(endpoint);
+      response = await fetch(endpoint, {
+        signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+      });
     } catch (error) {
       logger.error("Failed to fetch Routescan chain list", {
         workspace,
@@ -464,27 +478,38 @@ export class EtherscanVerifyApiService implements WStorageService {
       !this.options.chainInformation ||
       Object.keys(this.options.chainInformation).length === 0
     ) {
-      switch (this.IDENTIFIER) {
-        case WStorageIdentifiers.EtherscanVerify: {
-          const { apiUrls, explorerUrls } = await fetchEtherscanInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
-          break;
+      // The explorers are optional targets. A chain list that cannot be
+      // loaded must not stop the server (#3081). Without its list, the
+      // service submits nothing until the next start.
+      try {
+        switch (this.IDENTIFIER) {
+          case WStorageIdentifiers.EtherscanVerify: {
+            const { apiUrls, explorerUrls } = await fetchEtherscanInformation();
+            this.options.chainInformation.apiUrls = apiUrls;
+            this.options.chainInformation.explorerUrls = explorerUrls;
+            break;
+          }
+          case WStorageIdentifiers.BlockscoutVerify: {
+            const { apiUrls, explorerUrls } =
+              await fetchBlockscoutInformation();
+            this.options.chainInformation.apiUrls = apiUrls;
+            this.options.chainInformation.explorerUrls = explorerUrls;
+            break;
+          }
+          case WStorageIdentifiers.RoutescanVerify: {
+            const { apiUrls, explorerUrls } = await fetchRoutescanInformation();
+            this.options.chainInformation.apiUrls = apiUrls;
+            this.options.chainInformation.explorerUrls = explorerUrls;
+            break;
+          }
+          default:
+            throw new Error(`Unsupported verifier: ${this.IDENTIFIER}`);
         }
-        case WStorageIdentifiers.BlockscoutVerify: {
-          const { apiUrls, explorerUrls } = await fetchBlockscoutInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
-          break;
-        }
-        case WStorageIdentifiers.RoutescanVerify: {
-          const { apiUrls, explorerUrls } = await fetchRoutescanInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
-          break;
-        }
-        default:
-          throw new Error(`Unsupported verifier: ${this.IDENTIFIER}`);
+      } catch (error) {
+        logger.warn(
+          "Failed to load the explorer chain list. No verification is submitted to this explorer",
+          { identifier: this.IDENTIFIER, error },
+        );
       }
     }
     return true;
