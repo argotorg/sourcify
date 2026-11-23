@@ -7,6 +7,8 @@ import express from "express";
 import cors from "cors";
 import { createSignatureHandlers } from "./api/handlers";
 import { validateHashQueries, validateSearchQuery } from "./api/validation";
+import { createBrownoutMiddleware } from "./api/brownout";
+import type { BrownoutConfig } from "./api/brownout";
 
 export interface DatabaseConfig {
   host: string;
@@ -22,6 +24,7 @@ export interface ServerOptions {
   port: string | number;
   databaseConfig: DatabaseConfig;
   statsOptions?: SignatureStatsOptions;
+  brownout?: BrownoutConfig;
 }
 
 export class FourByteServer {
@@ -49,6 +52,10 @@ export class FourByteServer {
     });
 
     this.app.use(cors());
+    // After cors, so that browsers can read the 503
+    if (options.brownout) {
+      this.app.use(createBrownoutMiddleware(options.brownout));
+    }
     this.app.use(express.json());
 
     const handlers = createSignatureHandlers(this.database, this.stats, logger);
