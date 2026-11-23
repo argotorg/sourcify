@@ -67,6 +67,7 @@ describe("brownout", () => {
     it("returns 503 for the deprecated host during a window", async () => {
       const res = await lookup(inside, "api.openchain.xyz");
       expect(res).to.have.status(503);
+      expect(res.body.ok).to.equal(false);
       expect(res.body.error).to.equal(
         "Service Unavailable - api.openchain.xyz Brownout",
       );
@@ -76,7 +77,8 @@ describe("brownout", () => {
         "retry-after",
         new Date(window.end).toUTCString(),
       );
-      expect(res).to.have.header("deprecation", "true");
+      expect(res).to.have.header("deprecation", "@1794268800");
+      expect(res).to.have.header("sunset", "Mon, 01 Jun 2026 14:00:00 GMT");
       expect(res).to.have.header("warning");
       expect(res).to.have.header("cache-control", "no-store");
       expect(res).to.have.header("access-control-allow-origin", "*");
@@ -90,7 +92,8 @@ describe("brownout", () => {
     it("passes the deprecated host outside a window, with deprecation headers", async () => {
       const res = await lookup(outside, "api.openchain.xyz");
       expect(res).to.have.status(200);
-      expect(res).to.have.header("deprecation", "true");
+      expect(res).to.have.header("deprecation", "@1794268800");
+      expect(res).to.have.header("sunset");
       expect(res).to.have.header("warning");
       expect(res).to.not.have.header("retry-after");
     });

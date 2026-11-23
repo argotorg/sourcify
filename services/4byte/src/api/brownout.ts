@@ -10,6 +10,8 @@ export type BrownoutConfig = Record<string, BrownoutWindow[]>;
 
 const NEW_API_URL = "https://api.4byte.sourcify.dev";
 const SCHEDULE_URL = "https://github.com/argotorg/sourcify/issues/3061";
+// Date of the deprecation issue, as Unix seconds (RFC 9745)
+const DEPRECATED_SINCE = Date.parse("2026-11-10T00:00:00Z") / 1000;
 
 export function getActiveBrownoutWindow(
   windows: BrownoutWindow[],
@@ -32,11 +34,14 @@ export function createBrownoutMiddleware(
   return (req: Request, res: Response, next: NextFunction) => {
     const host = req.hostname?.toLowerCase();
     const windows = host ? config[host] : undefined;
-    if (!host || !windows) {
+    if (!host || !windows?.length) {
       return next();
     }
 
-    res.setHeader("Deprecation", "true");
+    res.setHeader("Deprecation", `@${DEPRECATED_SINCE}`);
+    // The last window is the permanent shutdown
+    const shutdown = windows[windows.length - 1].start;
+    res.setHeader("Sunset", new Date(shutdown).toUTCString());
     res.setHeader(
       "Warning",
       `299 - "Deprecated: ${host} will shut down. Use ${NEW_API_URL}. See ${SCHEDULE_URL}"`,
@@ -50,6 +55,7 @@ export function createBrownoutMiddleware(
     res.setHeader("Retry-After", new Date(activeWindow.end).toUTCString());
     res.setHeader("Cache-Control", "no-store");
     res.status(503).json({
+      ok: false,
       error: `Service Unavailable - ${host} Brownout`,
       message: `${host} is temporarily unavailable during a scheduled brownout period. Please migrate to ${NEW_API_URL}. It is the same API, only the host name changes. Schedule: ${SCHEDULE_URL}`,
       brownout: {

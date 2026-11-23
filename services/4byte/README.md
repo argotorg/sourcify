@@ -4,7 +4,7 @@ A standalone service for serving Ethereum function, event, and error signatures.
 
 The API is backwards compatible with the [openchain.xyz](https://openchain.xyz/) API.
 
-The `api.openchain.xyz` host is deprecated. Use `https://api.4byte.sourcify.dev`, only the host name changes. During the scheduled brownout windows in [`src/brownoutSchedule.ts`](src/brownoutSchedule.ts) the old host answers `503`, and after the last window it stays off. `api-test.openchain.xyz` always answers the brownout `503`, so that you can test your client. See [#3061](https://github.com/argotorg/sourcify/issues/3061).
+The `api.openchain.xyz` host is deprecated. Use `https://api.4byte.sourcify.dev`, only the host name changes. During the scheduled brownout windows in [`src/brownoutSchedule.ts`](src/brownoutSchedule.ts) the old host answers `503`, and after the last window it stays off. See [#3061](https://github.com/argotorg/sourcify/issues/3061).
 
 ## Overview
 

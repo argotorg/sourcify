@@ -19,8 +19,4 @@ export const brownoutSchedule: BrownoutConfig = {
     // Week 9+: permanent shutdown
     { start: "2027-02-23T00:00:00Z", end: "2028-01-01T00:00:00Z" },
   ],
-  // Always in brownout, so that clients can test their handling
-  "api-test.openchain.xyz": [
-    { start: "2026-11-18T00:00:00Z", end: "2028-01-01T00:00:00Z" },
-  ],
 };
