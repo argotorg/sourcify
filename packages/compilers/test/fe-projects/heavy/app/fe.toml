@@ -1,0 +1,6 @@
+[ingot]
+name = "heavy_app"
+version = "1.0.0"
+
+[dependencies]
+checks = { path = "../checks" }

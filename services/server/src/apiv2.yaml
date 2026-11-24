@@ -8,6 +8,8 @@ paths:
       description: |-
         Submit a contract for verification via the [Solidity standard JSON input](https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description), [Vyper JSON input](https://docs.vyperlang.org/en/stable/compiling-a-contract.html#input-json-description), or Fe JSON input (a Sourcify-defined format — Fe has no official compiler JSON interface).
 
+        For Fe 26.3.0 and later, build with `fe build --emit metadata` and send `language: Fe` with the `sources` and `settings` of the `<Contract>.metadata.json` it writes as `stdJsonInput`. Sourcify then rebuilds with `fe build --from-metadata`, which restores the ingot names, the dependency ingots and the optimizer level; the ingot name changes the bytecode. Use the key of `settings.compilationTarget` and the contract name as `contractIdentifier`. Fe input with empty `settings` is built in one ingot named `sourcify_verification` at the default optimizer level.
+
         There are no "single file" or "multi-part" verification endpoints because those are essentially wrappers around the Solidity compiler's JSON interface. The verification frontend can provide files and settings options to resemble these.
 
         Solidity contracts compiled with [Solar](https://github.com/paradigmxyz/solar) use the same Solidity standard JSON input. Set `compilerVersion` to the version that `SOLC_WRAPPER=1 solar --version` reports, e.g. `0.8.38+commit.e7a91fc7.solar.0.3.0`. Sourcify then compiles with that Solar release. Sourcify also supports the Solar build that Foundry v1.9.0 bundles, `0.8.38+commit.a2b44354.solar.0.3.0-dev`, which `forge build --use solar` uses. Solar is only supported on this endpoint.
@@ -595,6 +597,42 @@ components:
                             }
                         }
                 compilerVersion: "26.0.0-alpha.10"
+                contractIdentifier: "src/lib.fe:Counter"
+            Fe Contract from Fe metadata:
+              value:
+                stdJsonInput:
+                  language: Fe
+                  sources:
+                    "src/lib.fe":
+                      content: |
+                        use checks::mix
+
+                        pub contract Counter { ... }
+                    "checks/src/lib.fe":
+                      content: |
+                        pub fn mix(x: u256) -> u256 { ... }
+                  settings:
+                    compilationTarget:
+                      "src/lib.fe": Counter
+                    optimizer:
+                      level: s
+                    ingots:
+                      - name: my_app
+                        version: 1.0.0
+                        namespace: ""
+                        arithmetic: checked
+                        dependencies:
+                          checks: checks
+                          core: core
+                          std: std
+                      - name: checks
+                        version: 0.2.0
+                        namespace: checks
+                        arithmetic: checked
+                        dependencies:
+                          core: core
+                          std: std
+                compilerVersion: "26.7.0"
                 contractIdentifier: "src/lib.fe:Counter"
             Solidity Contract compiled with Solar:
               value:

@@ -11,11 +11,140 @@ import {
   resolveCompilerPath,
 } from './common';
 import { logDebug, logError, logInfo, logWarn } from '../logger';
-import type { FeJsonInput, FeOutput } from '@ethereum-sourcify/compilers-types';
+import type {
+  FeJsonInput,
+  FeMetadataSettings,
+  FeOutput,
+} from '@ethereum-sourcify/compilers-types';
 import type { JsonFragment } from 'ethers';
 
 const HOST_FE_REPO = 'https://github.com/argotorg/fe/releases/download/';
 const MINIMUM_FE_VERSION = '26.0.0-alpha.12';
+/** First Fe release with `fe build --from-metadata`. */
+export const MINIMUM_FE_METADATA_VERSION = '26.3.0';
+
+/**
+ * True if the input carries the `settings` of Fe metadata
+ * (`fe build --emit metadata`) and is compiled with `--from-metadata`.
+ */
+export function isFeMetadataInput(
+  feJsonInput: FeJsonInput,
+): feJsonInput is FeJsonInput & { settings: FeMetadataSettings } {
+  const settings: unknown = feJsonInput.settings;
+  return (
+    typeof settings === 'object' &&
+    settings !== null &&
+    !Array.isArray(settings) &&
+    'ingots' in settings
+  );
+}
+
+// The alphabet Fe's metadata reader accepts for a namespace.
+const FE_NAMESPACE_PATTERN = /^[\p{L}\p{N}_.-]+$/u;
+
+/**
+ * Check the shape of a Fe metadata input before `fe build --from-metadata`
+ * reads it. Fe checks the input again when it rebuilds the project. This
+ * check gives an early, clear error and keeps every source key inside the
+ * rebuilt project: root ingot files must be `.fe` files under `src/` (or a
+ * bare `<file>.fe` for a standalone file, which Fe writes to `src/`), and
+ * dependency files `.fe` files under `<namespace>/src/`.
+ */
+export function validateFeMetadataInput(feJsonInput: FeJsonInput): void {
+  if (!isFeMetadataInput(feJsonInput)) {
+    throw new Error('Fe settings must be an object with an ingots array.');
+  }
+  const settings = feJsonInput.settings;
+  const ingots: unknown = settings.ingots;
+  if (!Array.isArray(ingots) || ingots.length === 0) {
+    throw new Error('Fe settings.ingots must be a non-empty array.');
+  }
+  const namespaces = new Set<string>();
+  let rootCount = 0;
+  for (const ingot of ingots) {
+    if (
+      typeof ingot !== 'object' ||
+      ingot === null ||
+      typeof ingot.name !== 'string' ||
+      typeof ingot.namespace !== 'string'
+    ) {
+      throw new Error(
+        'Each Fe settings.ingots entry must have a string name and namespace.',
+      );
+    }
+    if (ingot.namespace === '') {
+      rootCount++;
+      continue;
+    }
+    if (
+      !FE_NAMESPACE_PATTERN.test(ingot.namespace) ||
+      ingot.namespace === '.' ||
+      ingot.namespace === '..' ||
+      ingot.namespace === 'src'
+    ) {
+      throw new Error(`Invalid Fe ingot namespace: ${ingot.namespace}`);
+    }
+    if (namespaces.has(ingot.namespace)) {
+      throw new Error(`Duplicate Fe ingot namespace: ${ingot.namespace}`);
+    }
+    namespaces.add(ingot.namespace);
+  }
+  if (rootCount !== 1) {
+    throw new Error(
+      `Fe settings.ingots must have exactly one root entry (empty namespace), found ${rootCount}.`,
+    );
+  }
+
+  const sources = feJsonInput.sources ?? {};
+  const keys = Object.keys(sources);
+  if (keys.length === 0) {
+    throw new Error('Fe sources must not be empty.');
+  }
+  for (const key of keys) {
+    const segments = key.split('/');
+    const rel =
+      segments.length > 1 && namespaces.has(segments[0])
+        ? segments.slice(1)
+        : segments;
+    const standaloneFile = segments.length === 1;
+    if (
+      key.includes('\0') ||
+      key.includes('\\') ||
+      (!standaloneFile && (rel.length < 2 || rel[0] !== 'src')) ||
+      rel.some((s) => s === '' || s === '.' || s === '..') ||
+      !key.endsWith('.fe')
+    ) {
+      throw new Error(
+        `Fe source path must be a .fe file under src/ or <namespace>/src/: ${key}`,
+      );
+    }
+    // Fe writes a bare key to src/<key>, so it must not shadow a src/ key.
+    if (standaloneFile && `src/${key}` in sources) {
+      throw new Error(`Fe sources ${key} and src/${key} name the same file.`);
+    }
+  }
+
+  if (settings.compilationTarget !== undefined) {
+    const target: unknown = settings.compilationTarget;
+    if (
+      typeof target !== 'object' ||
+      target === null ||
+      Array.isArray(target) ||
+      Object.keys(target).length !== 1 ||
+      typeof Object.values(target)[0] !== 'string'
+    ) {
+      throw new Error(
+        'Fe settings.compilationTarget must have exactly one source path and contract name.',
+      );
+    }
+    const targetPath = Object.keys(target)[0];
+    if (!(targetPath in sources)) {
+      throw new Error(
+        `Fe settings.compilationTarget names a file that is not in sources: ${targetPath}`,
+      );
+    }
+  }
+}
 
 /**
  * Resolve a Fe source key under `root`. The key must name a `.fe` file under
@@ -160,6 +289,16 @@ export async function useFeCompiler(
     );
   }
 
+  const fromMetadata = isFeMetadataInput(feJsonInput);
+  if (fromMetadata) {
+    if (semver.lt(version, MINIMUM_FE_METADATA_VERSION)) {
+      throw new Error(
+        `Fe metadata input needs Fe ${MINIMUM_FE_METADATA_VERSION} or later, got ${version}.`,
+      );
+    }
+    validateFeMetadataInput(feJsonInput);
+  }
+
   const fePlatform = findFePlatform();
   if (!fePlatform) {
     throw new Error('Fe compiler is not supported on this machine.');
@@ -173,22 +312,46 @@ export async function useFeCompiler(
   );
 
   try {
-    // Check all source keys before the first write.
-    // sourcePaths already have the src/ prefix, e.g. 'src/lib.fe'.
-    const sourceFiles = Object.entries(feJsonInput.sources).map(
-      ([sourcePath, source]) => ({
-        fullPath: resolveFeSourcePath(tmpDir, sourcePath),
-        content: source.content,
-      }),
-    );
-    for (const { fullPath, content } of sourceFiles) {
-      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.promises.writeFile(fullPath, content);
-    }
+    const outDir = path.join(tmpDir, 'out');
+    let buildArgs: string[];
+    if (fromMetadata) {
+      // Fe rebuilds the recorded ingots (names, dependencies, optimizer level)
+      // from this file in a temp project of its own.
+      const metadataPath = path.join(tmpDir, 'metadata.json');
+      const metadata = {
+        version: 1,
+        language: 'Fe',
+        compiler: { version },
+        sources: feJsonInput.sources,
+        settings: feJsonInput.settings,
+      };
+      await fs.promises.writeFile(metadataPath, JSON.stringify(metadata));
+      buildArgs = [
+        'build',
+        '--from-metadata',
+        metadataPath,
+        '--out-dir',
+        outDir,
+      ];
+    } else {
+      // Check all source keys before the first write.
+      // sourcePaths already have the src/ prefix, e.g. 'src/lib.fe'.
+      const sourceFiles = Object.entries(feJsonInput.sources).map(
+        ([sourcePath, source]) => ({
+          fullPath: resolveFeSourcePath(tmpDir, sourcePath),
+          content: source.content,
+        }),
+      );
+      for (const { fullPath, content } of sourceFiles) {
+        await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+        await fs.promises.writeFile(fullPath, content);
+      }
 
-    // Write the manifest last. No source file can replace it.
-    const feToml = `[ingot]\nname = "sourcify_verification"\nversion = "0.1.0"\n`;
-    await fs.promises.writeFile(path.join(tmpDir, 'fe.toml'), feToml);
+      // Write the manifest last. No source file can replace it.
+      const feToml = `[ingot]\nname = "sourcify_verification"\nversion = "0.1.0"\n`;
+      await fs.promises.writeFile(path.join(tmpDir, 'fe.toml'), feToml);
+      buildArgs = ['build', tmpDir];
+    }
 
     // Give fe a home inside tmpDir. The cleanup below deletes its caches.
     const feHome = path.join(tmpDir, '.home');
@@ -206,13 +369,22 @@ export async function useFeCompiler(
         feEnv[name] = value;
       }
     }
+    if (fromMetadata) {
+      // `--from-metadata` builds in a temp project. Keep it inside tmpDir,
+      // so the cleanup below deletes it even when the timeout kills fe.
+      const feTmp = path.join(tmpDir, '.tmp');
+      await fs.promises.mkdir(feTmp);
+      feEnv.TMPDIR = feTmp;
+      feEnv.TMP = feTmp;
+      feEnv.TEMP = feTmp;
+    }
 
     // Run fe build
     const startCompilation = Date.now();
     // spawnSync blocks this thread until fe exits, so a timer could never fire
     // here: its own timeout option is the only way to bound a hung compile and
     // free the verification worker slot (#2880).
-    const spawned = spawnSync(fePath, ['build', tmpDir], {
+    const spawned = spawnSync(fePath, buildArgs, {
       cwd: tmpDir,
       env: feEnv,
       maxBuffer: 250 * 1024 * 1024,
@@ -250,7 +422,6 @@ export async function useFeCompiler(
     }
 
     // Read output files from out/
-    const outDir = path.join(tmpDir, 'out');
     const outFiles = await fs.promises.readdir(outDir);
 
     const contracts: FeOutput['contracts'] = {};
@@ -263,18 +434,34 @@ export async function useFeCompiler(
       }
     }
 
+    // fe builds only the contracts of the root ingot. Its files are under
+    // src/, or a bare `<file>.fe` for a standalone file. Dependency files
+    // (`<namespace>/src/...`) may reuse the contract names.
+    const rootSourcePaths = Object.keys(feJsonInput.sources).filter(
+      (sourcePath) =>
+        sourcePath.startsWith('src/') || !sourcePath.includes('/'),
+    );
+
     // Build contractName → sourcePath map by scanning source files for "pub contract Name"
     const contractToSourcePath: Record<string, string> = {};
-    for (const [sourcePath, source] of Object.entries(feJsonInput.sources)) {
+    for (const sourcePath of rootSourcePaths) {
+      const source = feJsonInput.sources[sourcePath];
       const matches = source.content.matchAll(/pub\s+contract\s+(\w+)/g);
       for (const match of matches) {
         contractToSourcePath[match[1]] = sourcePath;
       }
     }
 
-    for (const contractName of contractNames) {
-      const binPath = path.join(outDir, `${contractName}.bin`);
-      const runtimeBinPath = path.join(outDir, `${contractName}.runtime.bin`);
+    // With a compilationTarget, `fe build --from-metadata` builds only that
+    // contract. Its artifact name can differ from the contract name (e.g.
+    // `lib__Vault` when two files declare `Vault`), so key it by the target.
+    const recordedTarget = fromMetadata
+      ? (feJsonInput.settings as FeMetadataSettings).compilationTarget
+      : undefined;
+
+    for (const artifactName of contractNames) {
+      const binPath = path.join(outDir, `${artifactName}.bin`);
+      const runtimeBinPath = path.join(outDir, `${artifactName}.runtime.bin`);
 
       const creationBytecode = (
         await fs.promises.readFile(binPath, 'utf8')
@@ -283,14 +470,23 @@ export async function useFeCompiler(
         await fs.promises.readFile(runtimeBinPath, 'utf8')
       ).trim();
 
-      // Map back to the source path using regex scan; fallback to first source
-      const sourcePath =
-        contractToSourcePath[contractName] ??
-        Object.keys(feJsonInput.sources)[0];
-      // Read ABI (always present for supported Fe versions >= 26.0.0-alpha.12)
-      const abiPath = path.join(outDir, `${contractName}.abi.json`);
-      const abiContent = await fs.promises.readFile(abiPath, 'utf8');
-      const abi: JsonFragment[] = JSON.parse(abiContent.trim());
+      let sourcePath: string;
+      let contractName: string;
+      if (recordedTarget && contractNames.size === 1) {
+        [sourcePath, contractName] = Object.entries(recordedTarget)[0];
+      } else {
+        // Map back to the source path using regex scan; fallback to first root source
+        contractName = artifactName;
+        sourcePath =
+          contractToSourcePath[artifactName] ??
+          rootSourcePaths[0] ??
+          Object.keys(feJsonInput.sources)[0];
+      }
+      // Fe writes no ABI file for a contract without ABI entries.
+      const abiPath = path.join(outDir, `${artifactName}.abi.json`);
+      const abi: JsonFragment[] = fs.existsSync(abiPath)
+        ? JSON.parse((await fs.promises.readFile(abiPath, 'utf8')).trim())
+        : [];
 
       if (!contracts[sourcePath]) {
         contracts[sourcePath] = {};

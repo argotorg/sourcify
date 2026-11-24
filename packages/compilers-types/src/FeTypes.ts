@@ -11,20 +11,69 @@ import type { JsonFragment } from "ethers";
  *
  * ABI output is supported starting from v26.0.0-alpha.12 (`ContractName.abi.json`).
  * Older versions are not supported.
+ *
+ * Since v26.3.0, `fe build --emit metadata` writes a `<Contract>.metadata.json`
+ * recompilation input, and `fe build --from-metadata` rebuilds from it. Its
+ * `sources` and `settings` fit this interface. An input whose settings carry
+ * `ingots` is compiled with `--from-metadata`, which restores the ingot names,
+ * the dependency ingots and the optimizer level of the original build.
  */
 
-/** Fe has no compiler settings */
-export type FeSettings = Record<string, never>;
+/** One ingot of a Fe build, as recorded in `settings.ingots` of Fe metadata. */
+export interface FeIngotSettings {
+  /** Ingot name from fe.toml. It is part of the symbols, so it changes the bytecode. */
+  name: string;
+  /** Ingot version, or null for a standalone file */
+  version?: string | null;
+  /** "" for the root ingot. Dependency sources are keyed by `<namespace>/...` */
+  namespace: string;
+  arithmetic?: string;
+  dependencyArithmetic?: string;
+  /** Dependency alias to namespace, with "std" and "core" for the builtin ingots */
+  dependencies?: Record<string, string>;
+}
+
+/**
+ * The `settings` object of Fe metadata (`fe build --emit metadata`), with the
+ * fields Fe writes. `fe build --from-metadata` reads `ingots` (including the
+ * per-ingot `arithmetic`), `optimizer` and `compilationTarget`.
+ */
+export interface FeMetadataSettings {
+  ingots: FeIngotSettings[];
+  optimizer?: { level: string };
+  /** `{ "<source path>": "<contract name>" }` */
+  compilationTarget?: Record<string, string>;
+  /** Written by Fe for information. The rebuild does not read it. */
+  evmVersion?: string;
+  /** Written by Fe for information. The rebuild reads `ingots[].arithmetic`. */
+  arithmetic?: string;
+  /** Written by Fe for information. The rebuild does not read it. */
+  dependencyArithmetic?: string;
+  /** Fe has no output selection. Typed for code that strips it from any settings. */
+  outputSelection?: never;
+}
+
+/**
+ * Either the empty object (one ingot named `sourcify_verification`, default
+ * optimizer level), or the `settings` of Fe metadata.
+ */
+export type FeSettings = Record<string, never> | FeMetadataSettings;
 
 export interface FeJsonInput {
   language: "Fe";
-  /** Source files keyed by path relative to src/ */
+  /**
+   * Source files. With empty settings, keyed by path under src/
+   * (e.g. `src/lib.fe`). With metadata settings, keyed as in Fe metadata:
+   * root ingot files by `src/...` (or a bare `<file>.fe` for a standalone
+   * file), dependency files by `<namespace>/src/...`.
+   */
   sources: {
     [sourcePath: string]: {
       content: string;
+      /** Written by `fe build --emit metadata`. Not checked by Sourcify or Fe. */
+      keccak256?: string;
     };
   };
-  /** Fe alpha has no configurable settings; pass an empty object or omit entirely */
   settings: FeSettings;
 }
 

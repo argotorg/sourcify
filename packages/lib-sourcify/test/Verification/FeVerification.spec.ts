@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'mocha';
 import { expect, use } from 'chai';
 import { Verification } from '../../src/Verification/Verification';
 import type { ChildProcess } from 'child_process';
-import { type JsonRpcSigner } from 'ethers';
+import { AbiCoder, type JsonRpcSigner } from 'ethers';
 import path from 'path';
 import { deployFeContract, expectVerification, feCompiler } from '../utils';
 import {
@@ -30,6 +30,18 @@ const FE_MULTI_FILE_FOLDER = path.join(
   'sources',
   'Fe',
   'multi_file',
+);
+
+// Fe metadata of a contract built at -O s in an ingot named `heavy_app`,
+// with a dependency ingot. Made with
+// `fe build -O s --emit bytecode,runtime-bytecode,abi,metadata` (Fe 26.7.0)
+// from packages/compilers/test/fe-projects/heavy.
+const FE_WITH_DEPENDENCY_FOLDER = path.join(
+  __dirname,
+  '..',
+  'sources',
+  'Fe',
+  'with_dependency',
 );
 
 const HARDHAT_PORT = 8545;
@@ -225,6 +237,97 @@ pub contract Counter {
       expectVerification(verification, {
         status: { runtimeMatch: 'partial', creationMatch: 'partial' },
       });
+    });
+  });
+
+  describe('Fe metadata input', () => {
+    // init(seed: u256), ABI-encoded seed = 3
+    const constructorArguments = AbiCoder.defaultAbiCoder()
+      .encode(['uint256'], [3])
+      .slice(2);
+
+    async function deployHeavy() {
+      const artifact = JSON.parse(
+        fs.readFileSync(
+          path.join(FE_WITH_DEPENDENCY_FOLDER, 'artifact.json'),
+          'utf8',
+        ),
+      );
+      return deployFeContract(
+        signer,
+        artifact.creationBytecode + constructorArguments,
+      );
+    }
+
+    function readMetadata() {
+      return JSON.parse(
+        fs.readFileSync(
+          path.join(FE_WITH_DEPENDENCY_FOLDER, 'metadata.json'),
+          'utf8',
+        ),
+      );
+    }
+
+    it('should verify a contract with a dependency ingot from its Fe metadata', async () => {
+      const { contractAddress, txHash } = await deployHeavy();
+      const metadata = readMetadata();
+
+      const compilation = new FeCompilation(
+        feCompiler,
+        metadata.compiler.version,
+        {
+          language: 'Fe',
+          sources: metadata.sources,
+          settings: metadata.settings,
+        },
+        { name: 'Heavy', path: 'src/lib.fe' },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChain,
+        contractAddress,
+        txHash,
+      );
+      await verification.verify();
+
+      expectVerification(verification, {
+        status: { runtimeMatch: 'partial', creationMatch: 'partial' },
+      });
+    });
+
+    // The ingot name changes the bytecode (argotorg/fe#2088), so it is part
+    // of the input.
+    it('should not verify the contract under another root ingot name (no_match)', async () => {
+      const { contractAddress, txHash } = await deployHeavy();
+      const metadata = readMetadata();
+      for (const ingot of metadata.settings.ingots) {
+        if (ingot.namespace === '') {
+          ingot.name = 'sourcify_verification';
+        }
+      }
+
+      const compilation = new FeCompilation(
+        feCompiler,
+        metadata.compiler.version,
+        {
+          language: 'Fe',
+          sources: metadata.sources,
+          settings: metadata.settings,
+        },
+        { name: 'Heavy', path: 'src/lib.fe' },
+      );
+
+      const verification = new Verification(
+        compilation,
+        sourcifyChain,
+        contractAddress,
+        txHash,
+      );
+
+      await expect(verification.verify())
+        .to.be.rejectedWith(SourcifyLibError)
+        .and.eventually.have.property('code', 'no_match');
     });
   });
 });
