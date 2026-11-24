@@ -497,7 +497,7 @@ export class EtherscanVerifyApiService implements WStorageService {
         this.options.chainInformation.apiUrls = apiUrls;
         this.options.chainInformation.explorerUrls = explorerUrls;
       } catch (error) {
-        logger.warn(
+        logger.error(
           "Failed to load the explorer chain list. No verification is submitted to this explorer",
           { identifier: this.IDENTIFIER, error },
         );
