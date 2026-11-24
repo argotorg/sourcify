@@ -636,4 +636,184 @@ describe("EtherscanVerifyApiService", function () {
     await expect(storePromise).to.eventually.be.rejectedWith("Delay cancelled");
     expect(fetchStub.callCount).to.equal(1);
   });
+
+  describe("chain list loading", () => {
+    const ETHERSCAN_LIST = "https://api.etherscan.io/v2/chainlist";
+    const BLOCKSCOUT_LIST = "https://chains.blockscout.com/api/chains";
+    const ROUTESCAN_MAINNET_LIST =
+      "https://api.routescan.io/v2/network/mainnet/evm/all/blockchains";
+    const ROUTESCAN_TESTNET_LIST =
+      "https://api.routescan.io/v2/network/testnet/evm/all/blockchains";
+    const chainId = MockVerificationExport.chainId;
+
+    // A service without chain information in its options, as on the
+    // deployed servers: init() must load the chain list of the explorer.
+    const createServiceWithoutChainList = (
+      identifier: EtherscanVerifyApiIdentifiers,
+      upsertStub: sinon.SinonStub = sandbox.stub().resolves(),
+    ): EtherscanVerifyApiService =>
+      new EtherscanVerifyApiService(identifier, {
+        database: { upsertExternalVerification: upsertStub },
+      } as unknown as SourcifyDatabaseService);
+
+    const jsonResponse = (body: unknown): Response =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+
+    // The answers of the explorers, reduced to the fields that the server reads
+    const chainLists: Record<string, unknown> = {
+      [ETHERSCAN_LIST]: {
+        result: [
+          {
+            chainname: "Test chain",
+            chainid: String(chainId),
+            blockexplorer: "https://etherscan.example",
+            apiurl: `https://api.etherscan.example/v2/api?chainid=${chainId}`,
+            status: 1,
+          },
+        ],
+      },
+      [BLOCKSCOUT_LIST]: {
+        [chainId]: {
+          name: "Test chain",
+          explorers: [
+            { url: "https://blockscout.example", hostedBy: "blockscout" },
+          ],
+        },
+      },
+      [ROUTESCAN_MAINNET_LIST]: {
+        items: [
+          {
+            name: "Test chain",
+            chainId: String(chainId),
+            evmChainId: String(chainId),
+          },
+        ],
+      },
+      [ROUTESCAN_TESTNET_LIST]: {
+        items: [{ name: "Other chain", chainId: "2", evmChainId: "2" }],
+      },
+    };
+
+    const loadedFrom: Record<
+      EtherscanVerifyApiIdentifiers,
+      { lists: string[]; apiUrl: string }
+    > = {
+      [WStorageIdentifiers.EtherscanVerify]: {
+        lists: [ETHERSCAN_LIST],
+        apiUrl: `https://api.etherscan.example/v2/api?chainid=${chainId}&module=contract&action=checkverifystatus`,
+      },
+      [WStorageIdentifiers.BlockscoutVerify]: {
+        lists: [BLOCKSCOUT_LIST],
+        apiUrl: `https://blockscout.example/api?module=contract&action=checkverifystatus&chainid=${chainId}`,
+      },
+      [WStorageIdentifiers.RoutescanVerify]: {
+        lists: [ROUTESCAN_MAINNET_LIST, ROUTESCAN_TESTNET_LIST],
+        apiUrl: `https://api.routescan.io/v2/network/mainnet/evm/${chainId}/etherscan/api?module=contract&action=checkverifystatus&chainid=${chainId}`,
+      },
+    };
+
+    explorers.forEach(({ label, identifier }) => {
+      it(`loads the ${label} chain list`, async () => {
+        const service = createServiceWithoutChainList(identifier);
+        fetchStub.callsFake(async (url) => jsonResponse(chainLists[url]));
+
+        await expect(service.init()).to.eventually.equal(true);
+
+        expect(fetchStub.getCalls().map((call) => call.args[0])).to.deep.equal(
+          loadedFrom[identifier].lists,
+        );
+        expect(service.getApiUrl("checkverifystatus", chainId)).to.equal(
+          loadedFrom[identifier].apiUrl,
+        );
+        expect(service.getExplorerUrl(chainId)).to.be.a("string");
+      });
+
+      // The answer of the Routescan chain list endpoints from 2026-11-20:
+      // HTTP 200 with an empty body. It stopped the server at startup (#3081).
+      it(`starts when the ${label} chain list has an empty body`, async () => {
+        const service = createServiceWithoutChainList(identifier);
+        fetchStub.callsFake(
+          async () =>
+            new Response("", {
+              status: 200,
+              headers: { "content-type": "application/json; charset=utf-8" },
+            }),
+        );
+
+        await expect(service.init()).to.eventually.equal(true);
+
+        sinon.assert.calledOnce(fetchStub);
+        expect(service.getApiUrl("checkverifystatus", chainId)).to.equal(
+          undefined,
+        );
+        expect(service.getExplorerUrl(chainId)).to.equal(undefined);
+      });
+
+      it(`starts when the ${label} chain list request fails`, async () => {
+        const service = createServiceWithoutChainList(identifier);
+        fetchStub.rejects(new Error("network error"));
+
+        await expect(service.init()).to.eventually.equal(true);
+      });
+
+      // For example the 429 answer of Routescan on 2026-11-10
+      it(`starts when the ${label} chain list answer is not OK`, async () => {
+        const service = createServiceWithoutChainList(identifier);
+        fetchStub.callsFake(
+          async () => new Response("rate limited", { status: 429 }),
+        );
+
+        await expect(service.init()).to.eventually.equal(true);
+      });
+    });
+
+    it("does not start with an unsupported verifier", async () => {
+      const service = createServiceWithoutChainList(
+        "UnknownVerify" as EtherscanVerifyApiIdentifiers,
+      );
+
+      await expect(service.init()).to.be.rejectedWith(
+        "Unsupported verifier: UnknownVerify",
+      );
+      sinon.assert.notCalled(fetchStub);
+    });
+
+    it("sends the chain list requests with a time limit", async () => {
+      const service = createServiceWithoutChainList(
+        WStorageIdentifiers.RoutescanVerify,
+      );
+      fetchStub.callsFake(async (url) => jsonResponse(chainLists[url]));
+
+      await service.init();
+
+      sinon.assert.calledTwice(fetchStub);
+      fetchStub.getCalls().forEach((call) => {
+        expect(call.args[1]?.signal).to.be.instanceOf(AbortSignal);
+      });
+    });
+
+    it("submits nothing when the chain list was not loaded", async () => {
+      const upsertStub = sandbox.stub().resolves();
+      const service = createServiceWithoutChainList(
+        WStorageIdentifiers.RoutescanVerify,
+        upsertStub,
+      );
+      fetchStub.callsFake(async () => new Response("", { status: 200 }));
+      await service.init();
+      fetchStub.resetHistory();
+
+      await expect(
+        service.storeVerification(structuredClone(MockVerificationExport), {
+          verificationId: "verification-job-id",
+          finishTime: new Date(),
+        }),
+      ).to.eventually.be.fulfilled;
+
+      sinon.assert.notCalled(fetchStub);
+      sinon.assert.notCalled(upsertStub);
+    });
+  });
 });

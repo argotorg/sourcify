@@ -28,6 +28,9 @@ const BLOCKSCOUT_PRO_API_URL = "https://api.blockscout.com/v2/api";
 const VERIFIER_ALREADY_VERIFIED = "VERIFIER_ALREADY_VERIFIED";
 // Explorers can return long HTML error pages. Keep the stored error short.
 const MAX_ERROR_RESPONSE_BODY_LENGTH = 500;
+// Time limit of one chain list request. The server waits for these requests
+// at startup, so a slow explorer must not block it.
+const CHAINLIST_REQUEST_TIMEOUT_MS = 5000;
 const ROUTESCAN_CHAINLIST_ENDPOINTS = [
   {
     workspace: "mainnet",
@@ -65,7 +68,9 @@ const fetchEtherscanInformation = async (): Promise<VerifierInformation> => {
   let response: Response;
 
   try {
-    response = await fetch(targetEndpoint);
+    response = await fetch(targetEndpoint, {
+      signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+    });
   } catch (error) {
     logger.error("Failed to fetch Etherscan chain list", {
       endpoint: targetEndpoint,
@@ -147,7 +152,9 @@ const fetchBlockscoutInformation = async (): Promise<VerifierInformation> => {
   let response: Response;
   const endpoint = DEFAULT_BLOCKSCOUT_CHAINLIST_ENDPOINT;
   try {
-    response = await fetch(endpoint);
+    response = await fetch(endpoint, {
+      signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+    });
   } catch (error) {
     logger.error("Failed to fetch Blockscout chain list", {
       endpoint,
@@ -217,7 +224,9 @@ const fetchRoutescanInformation = async (): Promise<VerifierInformation> => {
     let response: Response;
 
     try {
-      response = await fetch(endpoint);
+      response = await fetch(endpoint, {
+        signal: AbortSignal.timeout(CHAINLIST_REQUEST_TIMEOUT_MS),
+      });
     } catch (error) {
       logger.error("Failed to fetch Routescan chain list", {
         workspace,
@@ -464,27 +473,34 @@ export class EtherscanVerifyApiService implements WStorageService {
       !this.options.chainInformation ||
       Object.keys(this.options.chainInformation).length === 0
     ) {
+      let fetchChainInformation: () => Promise<VerifierInformation>;
       switch (this.IDENTIFIER) {
-        case WStorageIdentifiers.EtherscanVerify: {
-          const { apiUrls, explorerUrls } = await fetchEtherscanInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
+        case WStorageIdentifiers.EtherscanVerify:
+          fetchChainInformation = fetchEtherscanInformation;
           break;
-        }
-        case WStorageIdentifiers.BlockscoutVerify: {
-          const { apiUrls, explorerUrls } = await fetchBlockscoutInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
+        case WStorageIdentifiers.BlockscoutVerify:
+          fetchChainInformation = fetchBlockscoutInformation;
           break;
-        }
-        case WStorageIdentifiers.RoutescanVerify: {
-          const { apiUrls, explorerUrls } = await fetchRoutescanInformation();
-          this.options.chainInformation.apiUrls = apiUrls;
-          this.options.chainInformation.explorerUrls = explorerUrls;
+        case WStorageIdentifiers.RoutescanVerify:
+          fetchChainInformation = fetchRoutescanInformation;
           break;
-        }
         default:
+          // A programming mistake, not a failed download: keep it an error
           throw new Error(`Unsupported verifier: ${this.IDENTIFIER}`);
+      }
+
+      // The explorers are optional targets. A chain list that cannot be
+      // loaded must not stop the server (#3081). Without its list, the
+      // service submits nothing to this explorer until the next start.
+      try {
+        const { apiUrls, explorerUrls } = await fetchChainInformation();
+        this.options.chainInformation.apiUrls = apiUrls;
+        this.options.chainInformation.explorerUrls = explorerUrls;
+      } catch (error) {
+        logger.error(
+          "Failed to load the explorer chain list. No verification is submitted to this explorer",
+          { identifier: this.IDENTIFIER, error },
+        );
       }
     }
     return true;
