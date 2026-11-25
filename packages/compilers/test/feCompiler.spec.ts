@@ -1,14 +1,20 @@
 import { expect } from 'chai';
 import fs from 'fs';
 import os from 'os';
+import { spawnSync } from 'child_process';
 import {
   findFePlatform,
   getFeExecutable,
+  isFeMetadataInput,
   resolveFeSourcePath,
   useFeCompiler,
+  validateFeMetadataInput,
 } from '../src/lib/feCompiler';
 import { CompilerError } from '../src/lib/common';
-import { COMPILER_TIMEOUT_CODE } from '@ethereum-sourcify/compilers-types';
+import {
+  COMPILER_TIMEOUT_CODE,
+  type FeJsonInput,
+} from '@ethereum-sourcify/compilers-types';
 import path from 'path';
 
 describe('Verify Fe Compiler', () => {
@@ -357,5 +363,392 @@ pub contract Counter {
       Error,
     );
     expect(thrown.code).to.equal(COMPILER_TIMEOUT_CODE);
+  });
+
+  describe('Fe metadata input', () => {
+    const metadataVersion = '26.7.0';
+    const fixture = path.join(__dirname, 'fe-projects', 'heavy');
+
+    function metadataInput(
+      settings: Record<string, unknown>,
+      sources: FeJsonInput['sources'] = {
+        'src/lib.fe': { content: '' },
+        'checks/src/lib.fe': { content: '' },
+      },
+    ): FeJsonInput {
+      return {
+        language: 'Fe',
+        sources,
+        settings: settings as FeJsonInput['settings'],
+      };
+    }
+
+    const ingots = [
+      { name: 'heavy_app', version: '1.0.0', namespace: '' },
+      { name: 'checks', version: '0.2.0', namespace: 'checks' },
+    ];
+
+    function runFe(fePath: string, cwd: string, args: string[]) {
+      const spawned = spawnSync(fePath, args, { cwd });
+      if (spawned.status !== 0) {
+        throw new Error(
+          `fe ${args.join(' ')} failed: ${spawned.stderr?.toString()}`,
+        );
+      }
+    }
+
+    function readBytecode(dir: string, name: string) {
+      return {
+        creation: fs.readFileSync(path.join(dir, `${name}.bin`), 'utf8').trim(),
+        runtime: fs
+          .readFileSync(path.join(dir, `${name}.runtime.bin`), 'utf8')
+          .trim(),
+      };
+    }
+
+    it('Should tell metadata input from plain input', () => {
+      expect(isFeMetadataInput(metadataInput({ ingots }))).to.be.true;
+      expect(isFeMetadataInput(metadataInput({}))).to.be.false;
+      for (const settings of ['invalid', 123, null, [], undefined]) {
+        expect(
+          isFeMetadataInput({
+            language: 'Fe',
+            sources: {},
+            settings: settings as unknown as FeJsonInput['settings'],
+          }),
+          String(settings),
+        ).to.be.false;
+      }
+    });
+
+    it('Should accept the shape that fe build --emit metadata writes', () => {
+      expect(() =>
+        validateFeMetadataInput(
+          metadataInput({
+            ingots,
+            optimizer: { level: 's' },
+            compilationTarget: { 'src/lib.fe': 'Heavy' },
+          }),
+        ),
+      ).to.not.throw();
+    });
+
+    it('Should reject metadata settings without exactly one root ingot', () => {
+      expect(() =>
+        validateFeMetadataInput(metadataInput({ ingots: [ingots[1]] })),
+      ).to.throw('exactly one root entry');
+      expect(() =>
+        validateFeMetadataInput(
+          metadataInput({ ingots: [ingots[0], { ...ingots[0] }] }),
+        ),
+      ).to.throw('exactly one root entry');
+      expect(() =>
+        validateFeMetadataInput(metadataInput({ ingots: [] })),
+      ).to.throw('non-empty array');
+    });
+
+    it('Should reject invalid ingot namespaces', () => {
+      for (const namespace of ['..', '.', 'a/b', 'src', 'x y']) {
+        expect(
+          () =>
+            validateFeMetadataInput(
+              metadataInput({
+                ingots: [ingots[0], { ...ingots[1], namespace }],
+              }),
+            ),
+          namespace,
+        ).to.throw('Invalid Fe ingot namespace');
+      }
+    });
+
+    it('Should reject metadata source keys outside the ingot src/ directories', () => {
+      for (const key of [
+        '../escape.fe',
+        'src/../../escape.fe',
+        'checks/../../escape.fe',
+        'checks/src/../../../escape.fe',
+        '/abs/src/lib.fe',
+        'src/x.toml',
+        'fe.toml',
+        'unknown/src/lib.fe',
+        'src\\lib.fe',
+        'src//lib.fe',
+        'checks/lib.fe',
+      ]) {
+        expect(
+          () =>
+            validateFeMetadataInput(
+              metadataInput({ ingots }, { [key]: { content: '' } }),
+            ),
+          key,
+        ).to.throw('Fe source path must be a .fe file');
+      }
+    });
+
+    it('Should accept the bare source key of a standalone file', () => {
+      const standalone = [{ name: 'standalone', version: null, namespace: '' }];
+      expect(() =>
+        validateFeMetadataInput(
+          metadataInput(
+            {
+              ingots: standalone,
+              compilationTarget: { 'counter.fe': 'Counter' },
+            },
+            { 'counter.fe': { content: '' } },
+          ),
+        ),
+      ).to.not.throw();
+      // Fe writes a bare key to src/<key>.
+      expect(() =>
+        validateFeMetadataInput(
+          metadataInput(
+            { ingots: standalone },
+            { 'lib.fe': { content: '' }, 'src/lib.fe': { content: '' } },
+          ),
+        ),
+      ).to.throw('name the same file');
+    });
+
+    it('Should reject a compilationTarget that is not one contract in sources', () => {
+      for (const compilationTarget of [
+        { 'src/lib.fe': 'A', 'checks/src/lib.fe': 'B' },
+        ['Heavy'],
+        'src/lib.fe:Heavy',
+        { 'src/lib.fe': 1 },
+      ]) {
+        expect(
+          () =>
+            validateFeMetadataInput(
+              metadataInput({ ingots, compilationTarget }),
+            ),
+          JSON.stringify(compilationTarget),
+        ).to.throw('exactly one source path and contract name');
+      }
+      expect(() =>
+        validateFeMetadataInput(
+          metadataInput({
+            ingots,
+            compilationTarget: { 'src/missing.fe': 'Heavy' },
+          }),
+        ),
+      ).to.throw('not in sources');
+    });
+
+    it('Should reject metadata input for Fe versions without --from-metadata', async () => {
+      let thrown: unknown;
+      try {
+        await useFeCompiler(feRepoPath, version, metadataInput({ ingots }));
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).to.be.instanceOf(Error);
+      expect((thrown as Error).message).to.include('26.3.0 or later');
+    });
+
+    // The ingot name is part of some symbols, and Sonatina orders functions by
+    // symbol. So the same sources give different bytecode under another
+    // ingot name (argotorg/fe#2088). The metadata input restores the name,
+    // the dependency and the optimizer level of the original build.
+    it('Should reproduce the bytecode of a Fe project with a dependency from its metadata', async () => {
+      const platform = findFePlatform();
+      if (!platform) {
+        return;
+      }
+      const fePath = await getFeExecutable(
+        feRepoPath,
+        platform,
+        metadataVersion,
+      );
+      const workDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'sourcify-fe-meta-'),
+      );
+      try {
+        fs.cpSync(fixture, workDir, { recursive: true });
+        const appDir = path.join(workDir, 'app');
+        runFe(fePath, appDir, [
+          'build',
+          '.',
+          '-O',
+          's',
+          '--emit',
+          'bytecode,runtime-bytecode,abi,metadata',
+        ]);
+        const original = readBytecode(path.join(appDir, 'out'), 'Heavy');
+
+        // The fixture must show the effect: under the name Sourcify uses
+        // for plain input, the bytecode differs.
+        const manifest = path.join(appDir, 'fe.toml');
+        fs.writeFileSync(
+          manifest,
+          fs
+            .readFileSync(manifest, 'utf8')
+            .replace('"heavy_app"', '"sourcify_verification"'),
+        );
+        runFe(fePath, appDir, [
+          'build',
+          '.',
+          '-O',
+          's',
+          '--out-dir',
+          'renamed',
+        ]);
+        const renamed = readBytecode(path.join(appDir, 'renamed'), 'Heavy');
+        expect(renamed.runtime).to.not.equal(original.runtime);
+        // And at the default level (1) it differs too, so the match below
+        // also shows that the optimizer level is restored.
+        fs.writeFileSync(
+          manifest,
+          fs
+            .readFileSync(manifest, 'utf8')
+            .replace('"sourcify_verification"', '"heavy_app"'),
+        );
+        runFe(fePath, appDir, ['build', '.', '--out-dir', 'default-level']);
+        const defaultLevel = readBytecode(
+          path.join(appDir, 'default-level'),
+          'Heavy',
+        );
+        expect(defaultLevel.runtime).to.not.equal(original.runtime);
+
+        const metadata = JSON.parse(
+          fs.readFileSync(
+            path.join(appDir, 'out', 'Heavy.metadata.json'),
+            'utf8',
+          ),
+        );
+        const output = await useFeCompiler(feRepoPath, metadataVersion, {
+          language: 'Fe',
+          sources: metadata.sources,
+          settings: metadata.settings,
+        });
+
+        const heavy = output.contracts['src/lib.fe']?.Heavy;
+        expect(heavy, 'Heavy in src/lib.fe').to.not.be.undefined;
+        expect(heavy.evm.bytecode.object).to.equal(original.creation);
+        expect(heavy.evm.deployedBytecode.object).to.equal(original.runtime);
+        expect(heavy.abi).to.be.an('array').that.is.not.empty;
+      } finally {
+        fs.rmSync(workDir, { recursive: true, force: true });
+      }
+    });
+
+    async function buildAndRebuild(
+      files: Record<string, string>,
+      buildTarget: string,
+      artifactName: string,
+    ) {
+      const platform = findFePlatform();
+      if (!platform) {
+        return undefined;
+      }
+      const fePath = await getFeExecutable(
+        feRepoPath,
+        platform,
+        metadataVersion,
+      );
+      const workDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'sourcify-fe-meta-'),
+      );
+      try {
+        for (const [file, content] of Object.entries(files)) {
+          fs.mkdirSync(path.dirname(path.join(workDir, file)), {
+            recursive: true,
+          });
+          fs.writeFileSync(path.join(workDir, file), content);
+        }
+        runFe(fePath, workDir, [
+          'build',
+          buildTarget,
+          '--emit',
+          'bytecode,runtime-bytecode,abi,metadata',
+        ]);
+        const original = readBytecode(path.join(workDir, 'out'), artifactName);
+        const metadata = JSON.parse(
+          fs.readFileSync(
+            path.join(workDir, 'out', `${artifactName}.metadata.json`),
+            'utf8',
+          ),
+        );
+        const output = await useFeCompiler(feRepoPath, metadataVersion, {
+          language: 'Fe',
+          sources: metadata.sources,
+          settings: metadata.settings,
+        });
+        return { original, metadata, output };
+      } finally {
+        fs.rmSync(workDir, { recursive: true, force: true });
+      }
+    }
+
+    it('Should rebuild a standalone Fe file from its metadata', async () => {
+      const result = await buildAndRebuild(
+        {
+          'counter.fe': `use std::evm::Ctx
+
+pub contract Counter uses (ctx: mut Ctx) {
+    mut store: Store,
+
+    recv M {
+        Bump {} -> u256 uses (mut store) {
+            store.count += 1
+            store.count
+        }
+    }
+}
+
+struct Store {
+    count: u256,
+}
+
+msg M {
+    #[selector = sol("bump()")]
+    Bump -> u256,
+}
+`,
+        },
+        'counter.fe',
+        'Counter',
+      );
+      if (!result) {
+        return;
+      }
+      expect(result.metadata.settings.compilationTarget).to.deep.equal({
+        'counter.fe': 'Counter',
+      });
+      const counter = result.output.contracts['counter.fe']?.Counter;
+      expect(counter, 'Counter in counter.fe').to.not.be.undefined;
+      expect(counter.evm.bytecode.object).to.equal(result.original.creation);
+      expect(counter.evm.deployedBytecode.object).to.equal(
+        result.original.runtime,
+      );
+    });
+
+    // Two files declare `Vault`, so Fe names the artifact `lib__Vault`. The
+    // contract has no ABI entries, so Fe writes no ABI file.
+    it('Should key the output by compilationTarget when the artifact name differs', async () => {
+      const result = await buildAndRebuild(
+        {
+          'fe.toml': '[ingot]\nname = "vaults"\nversion = "0.1.0"\n',
+          'src/lib.fe': 'pub contract Vault {}\n',
+          'src/other.fe': 'pub contract Vault {}\n',
+        },
+        '.',
+        'lib__Vault',
+      );
+      if (!result) {
+        return;
+      }
+      expect(result.metadata.settings.compilationTarget).to.deep.equal({
+        'src/lib.fe': 'Vault',
+      });
+      expect(Object.keys(result.output.contracts)).to.deep.equal([
+        'src/lib.fe',
+      ]);
+      const vault = result.output.contracts['src/lib.fe'].Vault;
+      expect(vault, 'Vault in src/lib.fe').to.not.be.undefined;
+      expect(vault.abi).to.deep.equal([]);
+      expect(vault.evm.deployedBytecode.object).to.equal(
+        result.original.runtime,
+      );
+    });
   });
 });

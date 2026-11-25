@@ -1,0 +1,103 @@
+use std::evm::{Address, Ctx, StorageMap}
+use std::evm::effects::Log
+use checks::mix
+
+pub contract Heavy uses (ctx: mut Ctx, log: mut Log) {
+    mut store: Store,
+
+    init(seed: u256) uses (mut store, mut log) {
+        let a = mint(x: seed)
+        let b = abcd(x: seed + 3)
+        let c = zzz_helper(x: seed + 5)
+        store.total = a + b + c
+    }
+
+    recv HeavyMsg {
+        One { x } -> u256 uses (mut store, mut log) {
+            let a = mint(x: x)
+            let b = abcd(x: x + 1)
+            let c = zzz_helper(x: x + 2)
+            a + b + c + mid_check(x: x) + mix(x: x)
+        }
+        Two { x } -> u256 uses (mut store, mut log) {
+            let a = mint(x: x * 3)
+            let b = abcd(x: x * 5)
+            let c = zzz_helper(x: x * 7)
+            a * b + c + mid_check(x: x + 9)
+        }
+        Three { x } -> u256 uses (mut store, mut log) {
+            let c = zzz_helper(x: x)
+            let b = abcd(x: x)
+            let a = mint(x: x)
+            a - b - c - mid_check(x: x * 2)
+        }
+    }
+}
+
+fn mint(x: u256) -> u256 uses (store: mut Store, log: mut Log) {
+    var i: u256 = 0
+    var acc: u256 = x
+    while i < x {
+        acc = acc * 31 + store.vals.get(i)
+        store.vals.set(key: i, value: acc)
+        i += 1
+    }
+    store.total += acc
+    log.emit(Ev { value: acc })
+    acc
+}
+
+fn abcd(x: u256) -> u256 uses (store: mut Store, log: mut Log) {
+    var i: u256 = 0
+    var acc: u256 = x + 7
+    while i < x {
+        acc = acc * 17 + store.vals.get(i + 100)
+        store.vals.set(key: i + 100, value: acc)
+        i += 2
+    }
+    store.total -= acc
+    log.emit(Ev { value: acc })
+    acc
+}
+
+fn zzz_helper(x: u256) -> u256 uses (store: mut Store, log: mut Log) {
+    var i: u256 = 0
+    var acc: u256 = x + 11
+    while i < x {
+        acc = acc * 13 + store.vals.get(i + 200)
+        store.vals.set(key: i + 200, value: acc)
+        i += 3
+    }
+    store.total += acc * 2
+    log.emit(Ev { value: acc })
+    acc
+}
+
+struct Store {
+    total: u256,
+    vals: StorageMap<u256, u256>,
+}
+
+msg HeavyMsg {
+    #[selector = sol("one(uint256)")]
+    One { x: u256 } -> u256,
+    #[selector = sol("two(uint256)")]
+    Two { x: u256 } -> u256,
+    #[selector = sol("three(uint256)")]
+    Three { x: u256 } -> u256,
+}
+
+#[event]
+struct Ev {
+    value: u256,
+}
+
+fn mid_check(x: u256) -> u256 {
+    var i: u256 = 0
+    var acc: u256 = x
+    while i < x {
+        acc = acc * 7 + i * i + 3
+        i += 1
+    }
+    acc
+}

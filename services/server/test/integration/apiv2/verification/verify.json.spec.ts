@@ -706,6 +706,146 @@ describe("POST /v2/verify/:chainId/:address", function () {
     chai.expect(verifyRes.body).to.have.property("errorId");
   });
 
+  describe("Fe metadata input", () => {
+    // Fe metadata (`fe build --emit metadata`, Fe 26.7.0) of a contract built
+    // at -O s in an ingot named `heavy_app`, with a dependency ingot.
+    const feFolder = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "sources",
+      "fe",
+      "with_dependency",
+    );
+    const readFeMetadata = () =>
+      JSON.parse(fs.readFileSync(path.join(feFolder, "metadata.json"), "utf8"));
+
+    it("should verify a Fe contract with a dependency ingot from its metadata", async () => {
+      const { resolveWorkers } = makeWorkersWait();
+      const metadata = readFeMetadata();
+      const artifact = JSON.parse(
+        fs.readFileSync(path.join(feFolder, "artifact.json"), "utf8"),
+      );
+
+      const { contractAddress, txHash } =
+        await deployFromAbiAndBytecodeForCreatorTxHash(
+          chainFixture.localSigner,
+          metadata.output.abi,
+          artifact.creationBytecode,
+          [3],
+        );
+
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(`/v2/verify/${chainFixture.chainId}/${contractAddress}`)
+        .send({
+          stdJsonInput: {
+            language: "Fe",
+            sources: metadata.sources,
+            settings: metadata.settings,
+          },
+          compilerVersion: metadata.compiler.version,
+          contractIdentifier: "src/lib.fe:Heavy",
+          creationTransactionHash: txHash,
+        });
+
+      await assertJobVerification(
+        serverFixture,
+        verifyRes,
+        resolveWorkers,
+        chainFixture.chainId,
+        contractAddress,
+        "match",
+        false,
+      );
+
+      // The stored std JSON input keeps the metadata settings and the
+      // dependency source, so the contract can be compiled again.
+      const contractRes = await chai
+        .request(serverFixture.server.app)
+        .get(
+          `/v2/contract/${chainFixture.chainId}/${contractAddress}?fields=stdJsonInput`,
+        );
+      chai.expect(contractRes.status).to.equal(200);
+      const stored = contractRes.body.stdJsonInput;
+      chai
+        .expect(stored.settings.ingots)
+        .to.deep.equal(metadata.settings.ingots);
+      chai.expect(stored.settings.optimizer).to.deep.equal({ level: "s" });
+      chai
+        .expect(Object.keys(stored.sources).sort())
+        .to.deep.equal(["checks/src/lib.fe", "src/lib.fe"]);
+    });
+
+    it("should return a 400 if the Fe settings are not an object", async () => {
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: {
+            language: "Fe",
+            sources: { "src/lib.fe": { content: "pub contract Heavy {}" } },
+            settings: "invalid",
+          },
+          compilerVersion: "26.7.0",
+          contractIdentifier: "src/lib.fe:Heavy",
+        });
+
+      chai.expect(verifyRes.status).to.equal(400);
+      chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+    });
+
+    it("should return a 400 if a Fe metadata source key leaves the ingot", async () => {
+      const metadata = readFeMetadata();
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: {
+            language: "Fe",
+            sources: {
+              ...metadata.sources,
+              "checks/../../escape.fe": { content: "pub fn f() {}" },
+            },
+            settings: metadata.settings,
+          },
+          compilerVersion: metadata.compiler.version,
+          contractIdentifier: "src/lib.fe:Heavy",
+        });
+
+      chai.expect(verifyRes.status).to.equal(400);
+      chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+      chai.expect(verifyRes.body.message).to.include("checks/../../escape.fe");
+    });
+
+    it("should return a 400 if the Fe compilationTarget names another contract", async () => {
+      const metadata = readFeMetadata();
+      const verifyRes = await chai
+        .request(serverFixture.server.app)
+        .post(
+          `/v2/verify/${chainFixture.chainId}/${chainFixture.defaultContractAddress}`,
+        )
+        .send({
+          stdJsonInput: {
+            language: "Fe",
+            sources: metadata.sources,
+            settings: metadata.settings,
+          },
+          compilerVersion: metadata.compiler.version,
+          contractIdentifier: "src/lib.fe:Other",
+        });
+
+      chai.expect(verifyRes.status).to.equal(400);
+      chai.expect(verifyRes.body.customCode).to.equal("invalid_parameter");
+      chai.expect(verifyRes.body.message).to.include("compilationTarget");
+    });
+  });
+
   for (const [description, compilerVersion] of [
     ["contains a slash", "0.3.10rc1+commit.91361694/../../x/payload"],
     ["contains a second +", "0.3.10rc1+commit.91361694+/../../x/payload"],

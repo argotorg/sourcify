@@ -1,5 +1,9 @@
 import path from "path";
-import { resolveFeSourcePath } from "@ethereum-sourcify/compilers";
+import {
+  isFeMetadataInput,
+  resolveFeSourcePath,
+  validateFeMetadataInput,
+} from "@ethereum-sourcify/compilers";
 import type { Request, Response, NextFunction } from "express";
 import type { ChainRepository } from "../../sourcify-chain-repository";
 import logger from "../../common/logger";
@@ -22,6 +26,7 @@ import type {
   SolidityJsonInput,
   VyperJsonInput,
   FeJsonInput,
+  FeMetadataSettings,
 } from "@ethereum-sourcify/lib-sourcify";
 
 export function validateChainId(
@@ -243,42 +248,65 @@ export function validateAndNormalizeFeInput(
     return next();
   }
 
-  const sources = stdJsonInput.sources as Record<string, { content: string }>;
-  const keys = Object.keys(sources);
-  const withSrc = keys.filter((k) => k.startsWith("src/"));
-
-  // Reject mixed paths (some with src/, some without)
-  // Fe's file structure is based on this convention https://fe-lang.org/ingots/project-structure/
-  if (withSrc.length > 0 && withSrc.length < keys.length) {
-    throw new InvalidParametersError(
-      'Fe sources must either all have a "src/" prefix or none. Mixed paths are not allowed.',
-    );
+  const settings: unknown = stdJsonInput.settings;
+  if (
+    settings !== undefined &&
+    (typeof settings !== "object" ||
+      settings === null ||
+      Array.isArray(settings))
+  ) {
+    throw new InvalidParametersError("Fe settings must be an object.");
   }
 
-  // If no keys have src/ prefix: add it to all keys
-  if (withSrc.length === 0) {
-    const normalized: Record<string, { content: string }> = {};
-    for (const [k, v] of Object.entries(sources)) {
-      normalized[`src/${k}`] = v;
-    }
-    req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
-  }
-
-  // Same rules as resolveFeSourcePath in the compiler write loop. The
-  // root is only used to classify the key; nothing is written here.
-  // Kept so the API returns 400 before a verification job starts.
-  const jailedSources = req.body.stdJsonInput.sources as Record<
-    string,
-    { content: string }
-  >;
-  const keyCheckRoot = path.resolve("sourcify-fe-key-check");
-  for (const sourcePath of Object.keys(jailedSources)) {
+  const fromMetadata = isFeMetadataInput(stdJsonInput as FeJsonInput);
+  if (fromMetadata) {
+    // Sources and settings of Fe metadata (`fe build --emit metadata`).
+    // The keys are used as they are: root ingot files under "src/" (or a
+    // bare "<file>.fe" for a standalone file), dependency files under
+    // "<namespace>/src/".
     try {
-      resolveFeSourcePath(keyCheckRoot, sourcePath);
-    } catch {
+      validateFeMetadataInput(stdJsonInput as FeJsonInput);
+    } catch (error) {
+      throw new InvalidParametersError((error as Error).message);
+    }
+  } else {
+    const sources = stdJsonInput.sources as Record<string, { content: string }>;
+    const keys = Object.keys(sources);
+    const withSrc = keys.filter((k) => k.startsWith("src/"));
+
+    // Reject mixed paths (some with src/, some without)
+    // Fe's file structure is based on this convention https://fe-lang.org/ingots/project-structure/
+    if (withSrc.length > 0 && withSrc.length < keys.length) {
       throw new InvalidParametersError(
-        'Fe sources must be ".fe" files under "src/".',
+        'Fe sources must either all have a "src/" prefix or none. Mixed paths are not allowed.',
       );
+    }
+
+    // If no keys have src/ prefix: add it to all keys
+    if (withSrc.length === 0) {
+      const normalized: Record<string, { content: string }> = {};
+      for (const [k, v] of Object.entries(sources)) {
+        normalized[`src/${k}`] = v;
+      }
+      req.body.stdJsonInput = { ...stdJsonInput, sources: normalized };
+    }
+
+    // Same rules as resolveFeSourcePath in the compiler write loop. The
+    // root is only used to classify the key; nothing is written here.
+    // Kept so the API returns 400 before a verification job starts.
+    const jailedSources = req.body.stdJsonInput.sources as Record<
+      string,
+      { content: string }
+    >;
+    const keyCheckRoot = path.resolve("sourcify-fe-key-check");
+    for (const sourcePath of Object.keys(jailedSources)) {
+      try {
+        resolveFeSourcePath(keyCheckRoot, sourcePath);
+      } catch {
+        throw new InvalidParametersError(
+          'Fe sources must be ".fe" files under "src/".',
+        );
+      }
     }
   }
 
@@ -295,7 +323,10 @@ export function validateAndNormalizeFeInput(
     } else {
       let contractPath = ci.slice(0, colonIdx);
       const contractName = ci.slice(colonIdx + 1);
-      if (!contractPath.startsWith("src/")) {
+      // A standalone file in Fe metadata keeps its bare key.
+      const isMetadataSourceKey =
+        fromMetadata && contractPath in stdJsonInput.sources;
+      if (!contractPath.startsWith("src/") && !isMetadataSourceKey) {
         contractPath = `src/${contractPath}`;
       }
       if (!contractPath.endsWith(".fe")) {
@@ -305,6 +336,18 @@ export function validateAndNormalizeFeInput(
         );
       }
       req.body.contractIdentifier = `${contractPath}:${contractName}`;
+
+      // fe builds only the contract in settings.compilationTarget, so it
+      // must be the one to verify.
+      const recordedTarget = fromMetadata
+        ? (stdJsonInput as FeJsonInput & { settings: FeMetadataSettings })
+            .settings.compilationTarget
+        : undefined;
+      if (recordedTarget && recordedTarget[contractPath] !== contractName) {
+        throw new InvalidParametersError(
+          `Fe settings.compilationTarget does not name ${contractPath}:${contractName}.`,
+        );
+      }
     }
   }
 

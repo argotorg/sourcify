@@ -1,0 +1,131 @@
+{
+  "compiler": {
+    "commit": "e6e6342",
+    "version": "26.7.0"
+  },
+  "language": "Fe",
+  "output": {
+    "abi": [
+      {
+        "inputs": [
+          {
+            "name": "seed",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [
+          {
+            "name": "x",
+            "type": "uint256"
+          }
+        ],
+        "name": "one",
+        "outputs": [
+          {
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "name": "x",
+            "type": "uint256"
+          }
+        ],
+        "name": "two",
+        "outputs": [
+          {
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "name": "x",
+            "type": "uint256"
+          }
+        ],
+        "name": "three",
+        "outputs": [
+          {
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "name": "Ev",
+        "type": "event"
+      }
+    ]
+  },
+  "settings": {
+    "arithmetic": "checked",
+    "compilationTarget": {
+      "src/lib.fe": "Heavy"
+    },
+    "dependencyArithmetic": "defer",
+    "evmVersion": "osaka",
+    "ingots": [
+      {
+        "arithmetic": "checked",
+        "dependencies": {
+          "checks": "checks",
+          "core": "core",
+          "std": "std"
+        },
+        "dependencyArithmetic": "defer",
+        "name": "heavy_app",
+        "namespace": "",
+        "version": "1.0.0"
+      },
+      {
+        "arithmetic": "checked",
+        "dependencies": {
+          "core": "core",
+          "std": "std"
+        },
+        "dependencyArithmetic": "defer",
+        "name": "checks",
+        "namespace": "checks",
+        "version": "0.2.0"
+      }
+    ],
+    "optimizer": {
+      "level": "s"
+    }
+  },
+  "sources": {
+    "checks/src/lib.fe": {
+      "content": "pub fn mix(x: u256) -> u256 {\n    var i: u256 = 0\n    var acc: u256 = x\n    while i < x {\n        acc = acc * 5 + i + 1\n        i += 1\n    }\n    acc\n}\n",
+      "keccak256": "0xe5ab15aa09890297ce070700b7a680f06baf03b9199148d2990bcce74785bf14"
+    },
+    "src/lib.fe": {
+      "content": "use std::evm::{Address, Ctx, StorageMap}\nuse std::evm::effects::Log\nuse checks::mix\n\npub contract Heavy uses (ctx: mut Ctx, log: mut Log) {\n    mut store: Store,\n\n    init(seed: u256) uses (mut store, mut log) {\n        let a = mint(x: seed)\n        let b = abcd(x: seed + 3)\n        let c = zzz_helper(x: seed + 5)\n        store.total = a + b + c\n    }\n\n    recv HeavyMsg {\n        One { x } -> u256 uses (mut store, mut log) {\n            let a = mint(x: x)\n            let b = abcd(x: x + 1)\n            let c = zzz_helper(x: x + 2)\n            a + b + c + mid_check(x: x) + mix(x: x)\n        }\n        Two { x } -> u256 uses (mut store, mut log) {\n            let a = mint(x: x * 3)\n            let b = abcd(x: x * 5)\n            let c = zzz_helper(x: x * 7)\n            a * b + c + mid_check(x: x + 9)\n        }\n        Three { x } -> u256 uses (mut store, mut log) {\n            let c = zzz_helper(x: x)\n            let b = abcd(x: x)\n            let a = mint(x: x)\n            a - b - c - mid_check(x: x * 2)\n        }\n    }\n}\n\nfn mint(x: u256) -> u256 uses (store: mut Store, log: mut Log) {\n    var i: u256 = 0\n    var acc: u256 = x\n    while i < x {\n        acc = acc * 31 + store.vals.get(i)\n        store.vals.set(key: i, value: acc)\n        i += 1\n    }\n    store.total += acc\n    log.emit(Ev { value: acc })\n    acc\n}\n\nfn abcd(x: u256) -> u256 uses (store: mut Store, log: mut Log) {\n    var i: u256 = 0\n    var acc: u256 = x + 7\n    while i < x {\n        acc = acc * 17 + store.vals.get(i + 100)\n        store.vals.set(key: i + 100, value: acc)\n        i += 2\n    }\n    store.total -= acc\n    log.emit(Ev { value: acc })\n    acc\n}\n\nfn zzz_helper(x: u256) -> u256 uses (store: mut Store, log: mut Log) {\n    var i: u256 = 0\n    var acc: u256 = x + 11\n    while i < x {\n        acc = acc * 13 + store.vals.get(i + 200)\n        store.vals.set(key: i + 200, value: acc)\n        i += 3\n    }\n    store.total += acc * 2\n    log.emit(Ev { value: acc })\n    acc\n}\n\nstruct Store {\n    total: u256,\n    vals: StorageMap<u256, u256>,\n}\n\nmsg HeavyMsg {\n    #[selector = sol(\"one(uint256)\")]\n    One { x: u256 } -> u256,\n    #[selector = sol(\"two(uint256)\")]\n    Two { x: u256 } -> u256,\n    #[selector = sol(\"three(uint256)\")]\n    Three { x: u256 } -> u256,\n}\n\n#[event]\nstruct Ev {\n    value: u256,\n}\n\nfn mid_check(x: u256) -> u256 {\n    var i: u256 = 0\n    var acc: u256 = x\n    while i < x {\n        acc = acc * 7 + i * i + 3\n        i += 1\n    }\n    acc\n}\n",
+      "keccak256": "0xa5833fad855a5904cb4bd2080593966c4716e227b66112d10d7146ab41f172be"
+    }
+  },
+  "version": 1
+}
