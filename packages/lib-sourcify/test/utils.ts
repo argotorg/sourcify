@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import type { Signer } from 'ethers';
 import { ContractFactory, type JsonRpcSigner } from 'ethers';
 import {
+  generateHistoricalSolidityStorageLayout,
   useSolidityCompiler,
   useVyperCompiler,
   useFeCompiler,
@@ -23,11 +24,13 @@ import type {
 import type { Verification } from '../src/Verification/Verification';
 import type {
   CompiledContractCborAuxdata,
+  CompilationTarget,
   ISolidityCompiler,
   IVyperCompiler,
   IFeCompiler,
   ISolarCompiler,
 } from '../src/Compilation/CompilationTypes';
+import type { StorageLayout } from '@ethereum-sourcify/compilers-types';
 import fs from 'fs';
 import {
   type PathContent,
@@ -83,6 +86,20 @@ class Solc implements ISolidityCompiler {
       version,
       solcJsonInput,
       forceEmscripten,
+    );
+  }
+
+  async extractStorageLayout(
+    version: string,
+    solcJsonInput: SolidityJsonInput,
+    compilerOutput: SolidityOutput,
+    compilationTarget: CompilationTarget,
+  ): Promise<StorageLayout | undefined> {
+    return generateHistoricalSolidityStorageLayout(
+      version,
+      solcJsonInput,
+      compilerOutput,
+      compilationTarget,
     );
   }
 }
@@ -276,6 +293,20 @@ export class TestSolidityCompiler implements ISolidityCompiler {
       version,
       solcJsonInput,
       forceEmscripten,
+    );
+  }
+
+  async extractStorageLayout(
+    version: string,
+    solcJsonInput: SolidityJsonInput,
+    compilerOutput: SolidityOutput,
+    compilationTarget: CompilationTarget,
+  ): Promise<StorageLayout | undefined> {
+    return generateHistoricalSolidityStorageLayout(
+      version,
+      solcJsonInput,
+      compilerOutput,
+      compilationTarget,
     );
   }
 }
